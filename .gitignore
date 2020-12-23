@@ -1,0 +1,19 @@
+# Logs
+logs
+*.log
+
+# Dependency directory
+node_modules
+
+#Webstorm files
+.idea/
+
+#Visual studio file
+.vscode/
+
+#env file
+.env
+
+#package-lock file
+package-lock.json
+*.gz
