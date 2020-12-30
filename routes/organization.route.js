@@ -95,7 +95,7 @@ router.post('/', async function (req, res) {
         Logger.log.info('User created successfully.');
         Logger.log.info('Dialogflow Object created successfully.');
         let newPromiseArr = [];
-        let signUpToken = jwt.sign(JSON.stringify({_id: userData._id}), config.jwtSecret);
+        let signUpToken = jwt.sign(JSON.stringify({_id: userData._id}), config.jwt.secret);
         organizationData.originAdminId = userData._id;
         await organizationData.save();
         userData.signUpToken = signUpToken;

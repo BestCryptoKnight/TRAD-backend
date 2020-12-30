@@ -146,14 +146,9 @@ router.get('/:userId', async function (req, res) {
  */
 router.get('/', async function (req, res) {
     Logger.log.info('In list user call');
-    if (!req.query.organizationId || !mongoose.Types.ObjectId.isValid(req.query.organizationId)) {
-        Logger.log.error('Organization Id not found in query params.');
-        return res.status(400).send({message: 'Organization Id not found in query params.'});
-    }
-    Logger.log.info('Organization Id:', req.query.organizationId);
     try {
         let queryFilter = {
-            organizationId: req.query.organizationId,
+            isDeleted: false
         };
         if (req.query.search) queryFilter.name = {$regex: req.query.search, $options: 'i'};
         let option = {
@@ -185,10 +180,6 @@ router.get('/', async function (req, res) {
  */
 router.post('/', async function (req, res) {
     Logger.log.info('In create user call');
-    if (!req.body.organizationId) {
-        Logger.log.error('Organization id not found in req');
-        return res.status(400).send({message: 'Organisation id not found in request.'});
-    }
     if (!req.user || !req.user._id) {
         Logger.log.error('You must login first to create a new user.');
         return res.status(401).send({message: 'You must login first to create a new user.'});
@@ -204,20 +195,21 @@ router.post('/', async function (req, res) {
     try {
         let objToSave = req.body;
         objToSave.createdBy = req.user._id;
+        objToSave.organizationId = req.user.organizationId;
         let user = new User(objToSave);
         Logger.log.info('New user created successfully.');
-        let signUpToken = jwt.sign(JSON.stringify({_id: user._id}), config.jwtSecret);
+        let signUpToken = jwt.sign(JSON.stringify({_id: user._id}), config.jwt.secret);
         user.signUpToken = signUpToken;
-        let newUser = await user.save();
+        await user.save();
         let mailObj = {
-            toAddress: [newUser.email],
+            toAddress: [user.email],
             subject: 'Welcome to TRAD',
             text: {
-                name: newUser.name ? newUser.name : '',
+                name: user.name ? user.name : '',
                 setPasswordLink:
                     config.server.frontendUrls.adminPanelBase +
                     config.server.frontendUrls.setPasswordPage +
-                    newUser._id +
+                    user._id +
                     '?token=' +
                     signUpToken,
             },
@@ -290,7 +282,7 @@ router.delete('/:userId', async function (req, res) {
     }
     try {
         let userId = req.params.userId;
-        await User.deleteOne({_id: userId});
+        await User.updateOne({_id: userId}, {isDeleted: true});
         res.status(200).send({message: 'User deleted successfully.'});
     } catch (e) {
         Logger.log.error('Error occurred.', e.message || e);

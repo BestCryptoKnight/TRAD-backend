@@ -27,7 +27,7 @@ let authMiddleWare = async (req, res, next) => {
             }
         } catch (e) {
             Logger.log.error('Error occurred.', e.message || e);
-            return reject(e);
+            res.status(401).send('Auth-Token is not valid');
         }
     } else {
         Logger.log.warn('JWT - Auth-Token not set in header');

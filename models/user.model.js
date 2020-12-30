@@ -23,16 +23,17 @@ const userSchema = new Schema({
             required: true,
             unique: true
         },
+        isDeleted: { type: Schema.Types.Boolean, default: false },
         password: Schema.Types.String,
         signUpToken: Schema.Types.String,
         contactNumber: Schema.Types.String,
         profilePicture: Schema.Types.String,
+        jwtToken: [Schema.Types.String],
         role: {
             type: Schema.Types.String,
             enum: ['admin', 'user', 'superAdmin'],
             default: 'admin',
         },
-        forgetToken: Schema.Types.String,
         organizationId: {type: Schema.Types.ObjectId, ref: 'organization'},
     },
     {timestamps: true},
@@ -41,7 +42,7 @@ const userSchema = new Schema({
 userSchema.statics.findByCredentials = async function (email, password) {
     try {
         let user = this;
-        user = await user.findOne({email});
+        user = await user.findOne({email, isDeleted: false});
         if (!user) {
             return Promise.reject({
                 status: 'USER_NOT_FOUND',
@@ -67,26 +68,47 @@ userSchema.statics.findByCredentials = async function (email, password) {
     }
 };
 
-userSchema.statics.findByToken = function (token) {
-    let user = this;
+userSchema.statics.findByToken = async function (token) {
+    let admin = this;
     let decoded;
-    let jwtSecret = config.jwtSecret;
+    let jwtSecret = config.jwt.secret;
+    let d = new Date();
+    let adminData;
     try {
         decoded = jwt.verify(token, jwtSecret);
+        console.log(decoded);
+        adminData = await admin
+            .findOne({
+                _id: decoded._id,
+            })
+            .select({'password': 0});
+        if (adminData.jwtToken.indexOf(token) !== -1) {
+            if (decoded.expiredTime > d.getTime()) {
+                return adminData;
+            } else {
+                adminData.jwtToken.splice(adminData.jwtToken.indexOf(token), 1);
+                await adminData.save();
+                return Promise.reject({ status: 'TOKEN_EXPIRED', message: 'JwtToken is expired' });
+            }
+        } else {
+            return Promise.reject({ status: 'TOKEN_NOT_FOUND', message: 'JwtToken is not found' });
+        }
     } catch (e) {
-        return Promise.reject({status: 'INVALID_TOKEN', message: 'Cannot decode token'});
+        return Promise.reject({ status: 'INVALID_TOKEN', message: 'Cannot decode token' });
     }
-
-    return user.findOne({
-        _id: decoded._id,
-    });
 };
 
 userSchema.methods.getAuthToken = function () {
-    let u = this;
-    let jwtSecret = config.jwtSecret;
+    let a = this;
+    let d = new Date();
+    let jwtSecret = config.jwt.secret;
     let access = 'auth';
-    return jwt.sign({_id: u._id.toHexString(), access}, jwtSecret).toString();
+    return jwt
+        .sign(
+            { _id: a._id.toHexString(), expiredTime: parseInt(config.jwt.expireTime) * 3600000 + d.getTime(), access },
+            jwtSecret,
+        )
+        .toString();
 };
 
 userSchema.pre('save', function (next) {

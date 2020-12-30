@@ -29,7 +29,9 @@ router.post('/login', async function (req, res) {
         let user = await User.findByCredentials(userId, password);
         if (user) {
             let token = user.getAuthToken();
+            user.jwtToken.push(token);
             user.profilePicture = getProfileUrl(user.profilePicture);
+            await user.save();
             res.send({
                 name: user.name,
                 email: user.email,
@@ -109,7 +111,7 @@ router.post('/forget-password', async (req, res) => {
                 message: 'If user exists then mail with reset password link will be sent.',
             });
         } else {
-            let token = jwt.sign(JSON.stringify({_id: user._id, timeStamp: Date.now()}), config.jwtSecret);
+            let token = jwt.sign(JSON.stringify({_id: user._id, timeStamp: Date.now()}), config.jwt.secret);
             let mailObj = {
                 toAddress: [req.body.email],
                 subject: 'Reset Password Link',
@@ -143,7 +145,7 @@ router.post('/forget-password', async (req, res) => {
  * Reset Password
  */
 router.post('/:id/reset-password', async (req, res) => {
-    jwt.verify(req.body.token, config.jwtSecret, async (err, decoded) => {
+    jwt.verify(req.body.token, config.jwt.secret, async (err, decoded) => {
         if (err) {
             Logger.log.warn('JWT - Authentication failed. Error in decoding token.');
             return res.status(401).send({message: 'Authentication failed. Error in decoding token.'});
@@ -182,7 +184,7 @@ router.post('/:id/reset-password', async (req, res) => {
  * Set Password (Initially & One time)
  */
 router.post('/:id/set-password', async (req, res) => {
-    jwt.verify(req.body.signUpToken, config.jwtSecret, async (err, decoded) => {
+    jwt.verify(req.body.signUpToken, config.jwt.secret, async (err, decoded) => {
         if (err) {
             Logger.log.warn('JWT - Authentication failed. Error in decoding token.');
             return res.status(401).send({message: 'Authentication failed. Error in decoding token.'});

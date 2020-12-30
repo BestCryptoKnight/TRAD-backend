@@ -14,7 +14,10 @@ let frontendUrls = {
 };
 
 module.exports = {
-    jwtSecret: process.env.JWT_SECRET || 'SimpleJWT',
+    jwt: {
+        secret: process.env.JWT_SECRET || 'SimpleJWT',
+        expireTime: process.env.JWT_EXPIRE_TIME || '2', //in hrs
+    },
     uploadLocations: uploadLocations,
     mailer: {
         fromAddress: process.env.FROM_EMAIL_ADDRESS || 'no-reply@kevit.io',
@@ -32,6 +35,9 @@ module.exports = {
     },
     superAdmin: {
         email: process.env.SUPER_ADMIN_EMAIL,
+    },
+    organization: {
+        name: 'Trade Credit Risk',
     },
     environment: process.env.ENVIRONMENT || 'dev',
 };

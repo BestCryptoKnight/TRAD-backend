@@ -4,6 +4,7 @@
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const User = mongoose.model('user');
+const Organization = mongoose.model('organization');
 
 /*
 * Local Imports
@@ -27,8 +28,13 @@ let createSuperAdmin = () => {
                 password: config.superAdmin.password,
                 profilePicture: null,
             });
-            let signUpToken = jwt.sign(JSON.stringify({_id: user._id}), config.jwtSecret);
+            let organization = new Organization({
+                name: config.organization.name
+            });
+            await organization.save();
+            let signUpToken = jwt.sign(JSON.stringify({_id: user._id}), config.jwt.secret);
             user.signUpToken = signUpToken;
+            user.organizationId = organization._id;
             await user.save();
             let mailObj = {
                 toAddress: [user.email],

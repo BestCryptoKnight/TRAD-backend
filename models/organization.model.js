@@ -11,14 +11,15 @@ const Schema = mongoose.Schema;
 const organizationSchema = new Schema(
     {
         name: Schema.Types.String,
+        isDeleted: {type: Schema.Types.Boolean, default: false},
         email: Schema.Types.String,
         website: Schema.Types.String,
         contactNumber: Schema.Types.String,
         address: Schema.Types.String,
         profileImage: Schema.Types.String,
-        originAdminId: { type: Schema.Types.ObjectId, ref: 'user' }
+        originAdminId: {type: Schema.Types.ObjectId, ref: 'user'}
     },
-    { timestamps: true },
+    {timestamps: true},
 );
 
 organizationSchema.plugin(pagination);
