@@ -1,6 +1,6 @@
-/**
- * System and 3rd party libs
- */
+/*
+* Module Imports
+* */
 let express = require('express');
 let path = require('path');
 let cookieParser = require('cookie-parser');
@@ -8,17 +8,18 @@ let bodyParser = require('body-parser');
 const fs = require('fs');
 let mongoose = require('mongoose');
 const cors = require('cors');
+
+/*
+* Local Imports
+* */
 const config = require('./config');
-/**
- * Required Services
- */
 let Logger = require('./services/logger');
 
 /**
  * Global declarations
  */
 let models = path.join(__dirname, 'models');
-let dbURL = config.server.mongoDBConnectionUrl || 'mongodb://127.0.0.1:27017/TRAD';
+let dbURL = config.server.mongoDBConnectionUrl;
 
 /**
  * Bootstrap Models
@@ -27,12 +28,15 @@ fs.readdirSync(models)
     .forEach(file => require(path.join(models, file)));
 
 
+
 /**
  * Bootstrap App
  */
 let app = express();
 
-//CORS
+/**
+ * CORS
+ */
 app.use(cors({
     origin: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -40,37 +44,55 @@ app.use(cors({
     credentials: true
 }));
 app.use(Logger.morgan);
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({extended: false}));
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.urlencoded({
+    limit: '50mb',
+    extended: false
+}));
 app.use(cookieParser());
-app.use(express.static(__dirname + '/uploads'));
+app.use(express.static(path.join(__dirname, 'upload')));
 
 /**
- * Import and Register Routes & Middlewares
+ * Import Middlewares
+ */
+const authenticate = require('./middlewares/authenticate').authMiddleWare;
+const adminMiddleware = require('./middlewares/authenticate').adminMiddleWare;
+const superAdminMiddleWare = require('./middlewares/authenticate').superAdminMiddleWare;
+
+/**
+ * Import and Register Routes
  */
 let index = require('./routes/index');
+let auth = require('./routes/auth.route');
+let organization = require('./routes/organization.route');
+let user = require('./routes/user.route');
+
+
 
 app.use('/', index);
+app.use('/auth', auth);
+app.use('/organization', authenticate, superAdminMiddleWare, organization);
+app.use('/user', authenticate, user);
 
 /**
  * Catch 404 routes
  */
-app.use(function (req, res, next) {
-    let err = new Error('Not Found');
-    err.status = 404;
-    next(err);
+app.use(function(req, res, next) {
+  let err = new Error('Not Found');
+  err.status = 404;
+  next(err);
 });
 
 /**
  * Error Handler
  */
-app.use(function (err, req, res, next) {
-    // set locals, only providing error in development
-    res.locals.message = err.message;
-    res.locals.error = req.app.get('env') === 'development' ? err : {};
+app.use(function(err, req, res, next) {
+  // set locals, only providing error in development
+  res.locals.message = err.message;
+  res.locals.error = req.app.get('env') === 'development' ? err : {};
 
-    res.status(err.status || 500);
-    res.json(err);
+  res.status(err.status || 500);
+  res.json(err);
 });
 
 /**
@@ -102,6 +124,10 @@ let connectDb = function () {
             Logger.log.fatal('DATABASE - Error:' + err);
         });
 };
+
+//Checks whether required attributes/documents are set in the database
+const ProjectInitialization = require('./helper/projectInitialization');
+ProjectInitialization.createSuperAdmin();
 
 connectDb();
 module.exports = app;

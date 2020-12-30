@@ -1,6 +1,6 @@
-/**
- * System and 3rd party libs
- */
+/*
+* Module Imports
+* */
 const express = require('express');
 const router = express.Router();
 
@@ -10,11 +10,6 @@ const router = express.Router();
 router.get('/', function (req, res, next) {
     res.send("Hello, This is root");
 });
-
-router.post('/', function (req, res, next) {
-    res.status(200).send();
-});
-
 
 /**
  * Export Router

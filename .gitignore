@@ -2,8 +2,16 @@
 logs
 *.log
 
+# environment files
+.env
+
+
 # Dependency directory
+# https://docs.npmjs.com/cli/shrinkwrap#caveats
 node_modules
+
+# Debug log from npm
+npm-debug.log
 
 #Webstorm files
 .idea/
@@ -11,9 +19,8 @@ node_modules
 #Visual studio file
 .vscode/
 
-#env file
-.env
-
-#package-lock file
+#package-lock
 package-lock.json
-*.gz
+
+#Static Files
+upload/**/*
