@@ -34,6 +34,10 @@ const userSchema = new Schema({
             enum: ['admin', 'user', 'superAdmin'],
             default: 'admin',
         },
+        moduleAccess: [{
+            name: {type: Schema.Types.String},
+            accessTypes: [{type: Schema.Types.String, enum: ['read', 'write', 'full-access']}]
+        }],
         organizationId: {type: Schema.Types.ObjectId, ref: 'organization'},
     },
     {timestamps: true},

@@ -16,8 +16,10 @@ const organizationSchema = new Schema(
         website: Schema.Types.String,
         contactNumber: Schema.Types.String,
         address: Schema.Types.String,
-        profileImage: Schema.Types.String,
-        originAdminId: {type: Schema.Types.ObjectId, ref: 'user'}
+        modules: [{
+            name: {type: Schema.Types.String},
+            accessTypes: [{type: Schema.Types.String, enum: ['read', 'write', 'full-access']}]
+        }]
     },
     {timestamps: true},
 );

@@ -11,8 +11,8 @@ const Schema = mongoose.Schema;
 const noteSchema = new Schema(
     {
         noteFor: {type: Schema.Types.String, enum: ['client', 'client-debtor', 'debtor', 'application']},
-        entityId: {type: Schema.Types.ObjectId, ref: 'debtor'},
-        description: {type: Schema.Types.ObjectId, ref: 'application'},
+        entityId: {type: Schema.Types.ObjectId},
+        description: {type: Schema.Types.String},
         isDeleted: {type: Schema.Types.Boolean, default: false},
     },
     {timestamps: true},
