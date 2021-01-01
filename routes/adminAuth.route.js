@@ -103,42 +103,115 @@ router.post('/forget-password', async (req, res) => {
         return;
     }
     try {
-
-        let user = await User.findOne({email: req.body.email});
+        let user = await User.findOne({email: req.body.email, isDeleted: false});
         if (!user) {
             Logger.log.warn('For forget password, user not found in the database with the email:', req.body.email);
-            res.status(200).send({
+            return res.status(200).json({
+                status: 'SUCCESS',
                 message: 'If user exists then mail with reset password link will be sent.',
             });
         } else {
-            let token = jwt.sign(JSON.stringify({_id: user._id, timeStamp: Date.now()}), config.jwt.secret);
+            let data = await User.generateOtp(user);
             let mailObj = {
                 toAddress: [req.body.email],
-                subject: 'Reset Password Link',
+                subject: 'Reset Password OTP',
                 text: {
                     name: user.name ? user.name : '',
+                    otp: data.verificationOtp
                 },
                 mailFor: 'forgotPassword',
             };
-            mailObj.text.resetPasswordLink =
-                config.server.frontendUrls.adminPanelBase +
-                config.server.frontendUrls.resetPasswordPage +
-                user._id +
-                '?token=' +
-                token;
-            mailObj.text.forgotPasswordLink =
-                config.server.frontendUrls.adminPanelBase + config.server.frontendUrls.forgotPasswordPage;
             await MailHelper.sendMail(mailObj);
-            Logger.log.info('Reset Password link:', 'reset/' + user._id + '?token=' + token);
-            res.status(200).send({
-                message: 'If user exists then mail with reset password link will be sent.',
+            res.status(200).json({
+                status: "SUCCESS",
+                message: 'If user exists then mail with verification OTP will be sent.',
+                id: user._id
             });
         }
+        // let user = await User.findOne({email: req.body.email});
+        // if (!user) {
+        //     Logger.log.warn('For forget password, user not found in the database with the email:', req.body.email);
+        //     res.status(200).send({
+        //         message: 'If user exists then mail with reset password link will be sent.',
+        //     });
+        // } else {
+        //     let token = jwt.sign(JSON.stringify({_id: user._id, timeStamp: Date.now()}), config.jwt.secret);
+        //     let mailObj = {
+        //         toAddress: [req.body.email],
+        //         subject: 'Reset Password Link',
+        //         text: {
+        //             name: user.name ? user.name : '',
+        //         },
+        //         mailFor: 'forgotPassword',
+        //     };
+        //     mailObj.text.resetPasswordLink =
+        //         config.server.frontendUrls.adminPanelBase +
+        //         config.server.frontendUrls.resetPasswordPage +
+        //         user._id +
+        //         '?token=' +
+        //         token;
+        //     mailObj.text.forgotPasswordLink =
+        //         config.server.frontendUrls.adminPanelBase + config.server.frontendUrls.forgotPasswordPage;
+        //     await MailHelper.sendMail(mailObj);
+        //     Logger.log.info('Reset Password link:', 'reset/' + user._id + '?token=' + token);
+        //     res.status(200).send({
+        //         message: 'If user exists then mail with reset password link will be sent.',
+        //     });
+        // }
     } catch (e) {
         Logger.log.error('error occurred.', e.message || e);
         res.status(500).send({message: e.message || 'Something went wrong, please try again later.'});
     }
 
+});
+
+/**
+ * Verify OTP
+ */
+router.post('/verify-otp', async (req, res) => {
+    if (!req.body.verificationOtp || !mongoose.isValidObjectId(req.body._id)) {
+        return res.status(400).json({
+            status: "MISSING_REQUIRED_FIELDS",
+            message: 'Something went wrong, please try the process from beginning.',
+        });
+    }
+    try {
+        let user = await User.findById(mongoose.Types.ObjectId(req.body._id));
+        if (!user) {
+            return res.status(400).json({
+                status: "USER_NOT_EXIST",
+                message: "User not found"
+            })
+        }
+        let verificationOtp = req.body.verificationOtp;
+        if (!user.otpExpireTime || user.otpExpireTime.getTime() < new Date().getTime()) {
+            return res.status(400).json({
+                status: "OTP_EXPIRED",
+                message: "otp expired"
+            })
+        } else if (!user.verificationOtp || user.verificationOtp.toString() !== verificationOtp.toString()) {
+            return res.status(400).json({
+                status: "WRONG_OTP",
+                message: "Wrong otp"
+            });
+        }
+        await User.removeOtp(user);
+        let token = jwt.sign(JSON.stringify({
+            _id: user._id,
+            expiredTime: 5 * 60 * 1000 + Date.now()
+        }), config.jwt.secret);
+        res.status(200).json({
+            id: user._id,
+            token: token,
+            status: "SUCCESS"
+        });
+    } catch (e) {
+        Logger.log.error('Error in verify-otp API call', e.message || e);
+        res.status(500).json({
+            status: "ERROR",
+            message: e.message
+        });
+    }
 });
 
 /**
@@ -150,8 +223,7 @@ router.post('/:id/reset-password', async (req, res) => {
             Logger.log.warn('JWT - Authentication failed. Error in decoding token.');
             return res.status(401).send({message: 'Authentication failed. Error in decoding token.'});
         } else {
-            let validTime = decoded.timeStamp + 30 * 60 * 1000;
-            if (validTime < Date.now()) {
+            if (decoded.expiredTime < Date.now()) {
                 res.status(401).send({
                     message:
                         'The link to reset password has expired, please repeat the process by clicking on Forget Password from login page.',
@@ -167,6 +239,7 @@ router.post('/:id/reset-password', async (req, res) => {
                         return res.status(400).send({message: 'No user for the given mail id found'});
                     } else {
                         user.password = req.body.password;
+                        user.jwtToken = [];
                         await user.save();
                         Logger.log.info('User password updated id:' + user._id);
                         res.status(200).send({message: 'Password changed successfully'});

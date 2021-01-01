@@ -27,6 +27,8 @@ const userSchema = new Schema({
         password: Schema.Types.String,
         signUpToken: Schema.Types.String,
         contactNumber: Schema.Types.String,
+        verificationOtp: Schema.Types.Number,
+        otpExpireTime: Schema.Types.Date,
         profilePicture: Schema.Types.String,
         jwtToken: [Schema.Types.String],
         role: {
@@ -138,6 +140,19 @@ userSchema.methods.comparePassword = function (oldPassword) {
             return resolve(isMatch);
         });
     });
+};
+
+userSchema.statics.generateOtp = async (user) => {
+    const verificationOtp = Math.floor(Math.random() * 899999 + 100000);
+    const otpExpireTime = new Date(new Date().getTime() + 5 * 60 * 1000);
+    user.verificationOtp = verificationOtp;
+    user.otpExpireTime = otpExpireTime;
+    return await user.save();
+};
+userSchema.statics.removeOtp = async (user) => {
+    user.verificationOtp = null;
+    user.otpExpireTime = null;
+    return await user.save();
 };
 
 userSchema.plugin(pagination);

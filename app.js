@@ -63,7 +63,7 @@ const superAdminMiddleWare = require('./middlewares/authenticate').superAdminMid
  * Import and Register Routes
  */
 let index = require('./routes/index');
-let auth = require('./routes/auth.route');
+let auth = require('./routes/adminAuth.route');
 let organization = require('./routes/organization.route');
 let user = require('./routes/user.route');
 
