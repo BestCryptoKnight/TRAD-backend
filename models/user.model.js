@@ -31,8 +31,8 @@ const userSchema = new Schema({
         jwtToken: [Schema.Types.String],
         role: {
             type: Schema.Types.String,
-            enum: ['admin', 'user', 'superAdmin'],
-            default: 'admin',
+            enum: ['riskAnalyst', 'serviceManager', 'superAdmin'],
+            default: 'superAdmin',
         },
         moduleAccess: [{
             name: {type: Schema.Types.String},
