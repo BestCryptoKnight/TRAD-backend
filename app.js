@@ -66,11 +66,12 @@ let index = require('./routes/index');
 let auth = require('./routes/adminAuth.route');
 let organization = require('./routes/organization.route');
 let user = require('./routes/user.route');
-
+const clientAuth = require('./routes/clientAuth.route');
 
 
 app.use('/', index);
 app.use('/auth', auth);
+app.use('/client-auth',clientAuth);
 app.use('/organization', authenticate, superAdminMiddleWare, organization);
 app.use('/user', authenticate, user);
 

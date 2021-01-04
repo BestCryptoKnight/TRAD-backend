@@ -3,6 +3,7 @@
 * */
 const mongoose = require('mongoose');
 const User = mongoose.model('user');
+const ClientUser = mongoose.model('client-user');
 
 /*
 * Local Imports
@@ -63,8 +64,35 @@ let adminMiddleWare = (req, res, next) => {
     }
 };
 
+const clientAuthMiddleWare = async (req, res, next) => {
+    if (req.method === 'OPTIONS') {
+        return res.status(200).send();
+    }
+    let token = req.header('authorization');
+    if (token) {
+        try {
+            let user = await ClientUser.findByToken(token);
+            if (user) {
+                req.user = user;
+                req.token = token;
+                Logger.log.info('AUTH - user id:' + user._id);
+                next();
+            } else {
+                res.status(401).send('Auth-Token is not valid');
+            }
+        } catch (e) {
+            Logger.log.error('Error occurred.', e.message || e);
+            res.status(401).send('Auth-Token is not valid');
+        }
+    } else {
+        Logger.log.warn('JWT - Auth-Token not set in header');
+        res.status(401).unauthorized('Auth-Token not set in header');
+    }
+};
+
 module.exports = {
     authMiddleWare,
     adminMiddleWare,
     superAdminMiddleWare,
+    clientAuthMiddleWare
 };
