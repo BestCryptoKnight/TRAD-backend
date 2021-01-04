@@ -35,6 +35,7 @@ module.exports = {
     },
     superAdmin: {
         email: process.env.SUPER_ADMIN_EMAIL,
+        password:process.env.SUPER_ADMIN_PASSWORD
     },
     organization: {
         name: 'Trade Credit Risk',

@@ -142,6 +142,15 @@ userSchema.methods.comparePassword = function (oldPassword) {
     });
 };
 
+userSchema.methods.removeToken = function(token) {
+    const user = this;
+    return user.update({
+        $pull: {
+            jwtToken: token,
+        },
+    });
+};
+
 userSchema.statics.generateOtp = async (user) => {
     const verificationOtp = Math.floor(Math.random() * 899999 + 100000);
     const otpExpireTime = new Date(new Date().getTime() + 5 * 60 * 1000);

@@ -16,7 +16,7 @@ let authMiddleWare = async (req, res, next) => {
     let token = req.header('authorization');
     if (token) {
         try {
-            let user = await User.findByToken(token)
+            let user = await User.findByToken(token);
             if (user) {
                 req.user = user;
                 req.token = token;

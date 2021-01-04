@@ -303,6 +303,21 @@ router.post('/:id/set-password', async (req, res) => {
 });
 
 /**
+ * Call for Logout
+ */
+router.delete('/logout', authenticate, async (req, res) => {
+    try {
+        await req.user.removeToken(req.headers.authorization);
+        res.status(200).json({
+            message: 'User logout successfully',
+        });
+    } catch (e) {
+        Logger.log.error('Error in logout API call ', e.message || e);
+        res.status(500).send({message: e.message || 'Something went wrong, please try again later.'});
+    }
+});
+
+/**
  * Helper Functions
  */
 function getProfileImagePath() {
