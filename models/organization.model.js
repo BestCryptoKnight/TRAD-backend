@@ -15,11 +15,7 @@ const organizationSchema = new Schema(
         email: Schema.Types.String,
         website: Schema.Types.String,
         contactNumber: Schema.Types.String,
-        address: Schema.Types.String,
-        modules: [{
-            name: {type: Schema.Types.String},
-            accessTypes: [{type: Schema.Types.String, enum: ['read', 'write', 'full-access']}]
-        }]
+        address: Schema.Types.String
     },
     {timestamps: true},
 );
