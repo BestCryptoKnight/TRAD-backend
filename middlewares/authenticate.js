@@ -23,48 +23,69 @@ let authMiddleWare = async (req, res, next) => {
                 Logger.log.info('AUTH - user id:' + user._id);
                 next();
             } else {
-                res.status(401).send('Auth-Token is not valid');
+                return res.status(401).send('Auth-Token is not valid');
             }
         } catch (e) {
             Logger.log.error('Error occurred.', e.message || e);
-            res.status(401).send('Auth-Token is not valid');
+            return res.status(401).send('Auth-Token is not valid');
         }
     } else {
         Logger.log.warn('JWT - Auth-Token not set in header');
-        res.status(401).unauthorized('Auth-Token not set in header');
+        return res.status(401).unauthorized('Auth-Token not set in header');
     }
 };
 
-let superAdminMiddleWare = (req, res, next) => {
-    if (req.user) {
-        if (req.user.role === 'superAdmin') {
-            next();
-        } else {
-            Logger.log.warn(`User is ${req.user.role} and trying to access SuperAdmin routes`);
-            res.status(401).send('You are unauthorized to access this page.');
+let checkModuleAccess = (req, res, next) => {
+    try {
+        if (!req.user) {
+            Logger.log.warn('User not found, please login again.');
+            return res.status(401).send({status: 'ERROR', message: 'User not found, please login again.'});
         }
-    } else {
-        Logger.log.warn('User not found, please login again.');
-        res.status(400).send('User not found, please login again.');
-    }
-};
-
-let adminMiddleWare = (req, res, next) => {
-    if (req.user) {
-        if (req.user.role === 'admin' || req.user.role === 'superAdmin') {
-            next();
-        } else {
-            Logger.log.warn(`User is ${req.user.role} and trying to access Admin routes`);
-            res.status(401).send('You are unauthorized to access this page.');
+        if (!req.user.moduleAccess || req.user.moduleAccess.length === 0) {
+            Logger.log.warn('User not found, please login again.');
+            return res.status(403).send({status: 'ERROR', message: 'Contact Admin to provide rights.'});
         }
-    } else {
-        Logger.log.warn('User not found, please login again.');
-        res.status(400).send('User not found, please login again.');
+        let urlParameters = req.url.split('?').shift();
+        urlParameters = urlParameters.split('/');
+        let moduleName = urlParameters[0] !== '' ? urlParameters[0] : urlParameters[1];
+        let userModule = req.user.moduleAccess.filter(userModule => userModule.name === moduleName).shift();
+        console.log(userModule);
+        if (userModule) {
+            req.accessTypes = userModule.accessTypes;
+            let allowRequest = false;
+            switch (req.method) {
+                case 'GET':
+                    if (req.accessTypes.indexOf('read') !== -1 || req.accessTypes.indexOf('full-access') !== -1) {
+                        allowRequest = true;
+                    }
+                    break;
+                case 'POST':
+                case 'PUT':
+                case 'DELETE':
+                    if (req.accessTypes.indexOf('write') !== -1 || req.accessTypes.indexOf('full-access') !== -1) {
+                        allowRequest = true;
+                    }
+                    break;
+            }
+            if (allowRequest) {
+                next();
+            } else {
+                Logger.log.warn(`User with id ${req.user._id} is forbidden cannot make ${req.method} request`);
+                return res.status(403).send({status: 'ERROR', message: `You're forbidden to perform ${req.method} operation.`});
+                //TODO add Audit log
+            }
+        } else {
+            Logger.log.warn(`User with id ${req.user._id} is forbidden to access module ${moduleName}`);
+            return res.status(403).send({status: 'ERROR', message: 'You\'re forbidden to access this module'});
+            //TODO add Audit log
+        }
+    } catch (e) {
+        Logger.log.error('Error in checking user right middleware', e.message);
+        return res.status(401).send({status: 'ERROR', message: 'Something went wrong, please try again later.'});
     }
 };
 
 module.exports = {
     authMiddleWare,
-    adminMiddleWare,
-    superAdminMiddleWare,
+    checkModuleAccess
 };
