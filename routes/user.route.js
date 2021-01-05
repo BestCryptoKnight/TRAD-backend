@@ -188,10 +188,6 @@ router.post('/', async function (req, res) {
         Logger.log.error('Email not present for new user');
         return res.status(400).send({message: 'Please enter email for new user.'});
     }
-    if (!req.body.role || (req.body.role !== 'user' && req.body.role !== 'admin')) {
-        Logger.log.error('Role not present for new user');
-        return res.status(400).send({message: 'Please enter role for new user.'});
-    }
     try {
         // TODO add basic/default modules for the right
         let objToSave = req.body;
