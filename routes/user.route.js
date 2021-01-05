@@ -155,10 +155,10 @@ router.get('/', async function (req, res) {
             page: parseInt(req.query.page) || 1,
             limit: parseInt(req.query.limit) || 5,
         };
-        option.select = {name: 1, email: 1, role: 1, createdAt: 1, contactNumber: 1, signUpToken: 1};
+        option.select = {name: 1, email: 1, role: 1, createdAt: 1, contactNumber: 1, signUpToken: 1, moduleAccess: 1};
         option.sort = {createdAt: 'desc'};
-        let results = await User.paginate(queryFilter, option);
-        let responseObj = JSON.parse(JSON.stringify(results));
+        option.lean = true;
+        let responseObj = await User.paginate(queryFilter, option);
         if (responseObj && responseObj.docs && responseObj.docs.length !== 0) {
             responseObj.docs.forEach(user => {
                 if (!user.signUpToken)
@@ -188,11 +188,8 @@ router.post('/', async function (req, res) {
         Logger.log.error('Email not present for new user');
         return res.status(400).send({message: 'Please enter email for new user.'});
     }
-    if (!req.body.role || (req.body.role !== 'user' && req.body.role !== 'admin')) {
-        Logger.log.error('Role not present for new user');
-        return res.status(400).send({message: 'Please enter role for new user.'});
-    }
     try {
+        // TODO add basic/default modules for the right
         let objToSave = req.body;
         objToSave.createdBy = req.user._id;
         objToSave.organizationId = req.user.organizationId;
@@ -262,7 +259,8 @@ router.put('/:userId/', async function (req, res) {
         if (req.body.name) updateObj.name = req.body.name;
         if (req.body.contactNumber) updateObj.contactNumber = req.body.contactNumber;
         if (req.body.role) updateObj.role = req.body.role;
-        await User.findByIdAndUpdate(userId, updateObj, {new: true});
+        if (req.body.moduleAccess) updateObj.moduleAccess = req.body.moduleAccess;
+        await User.updateOne({_id: userId}, updateObj, {new: true});
         Logger.log.info('User Updated successfully.');
         res.status(200).send({message: 'User updated successfully.'});
     } catch (e) {

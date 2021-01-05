@@ -1,0 +1,9 @@
+{
+  "modules": [{
+    "name": "organization",
+    "accessTypes": ["read", "write", "full-access"]
+  }, {
+    "name": "user",
+    "accessTypes": ["read", "write", "full-access"]
+  }]
+}

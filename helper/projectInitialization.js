@@ -12,6 +12,7 @@ const Organization = mongoose.model('organization');
 const config = require('../config');
 const MailHelper = require('./../helper/mailer.helper');
 const Logger = require('../services/logger');
+const StaticFile = require('./../static-files/systemModules');
 
 let createSuperAdmin = () => {
     return new Promise(async (resolve, reject) => {
@@ -35,6 +36,7 @@ let createSuperAdmin = () => {
             let signUpToken = jwt.sign(JSON.stringify({_id: user._id}), config.jwt.secret);
             user.signUpToken = signUpToken;
             user.organizationId = organization._id;
+            user.moduleAccess = StaticFile.modules;
             await user.save();
             let mailObj = {
                 toAddress: [user.email],
