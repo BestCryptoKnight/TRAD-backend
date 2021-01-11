@@ -5,5 +5,8 @@
   }, {
     "name": "user",
     "accessTypes": ["read", "write", "full-access"]
+  }, {
+    "name": "client-risk",
+    "accessTypes": ["read", "write", "full-access"]
   }]
 }

@@ -31,7 +31,7 @@ let authMiddleWare = async (req, res, next) => {
         }
     } else {
         Logger.log.warn('JWT - Auth-Token not set in header');
-        return res.status(401).unauthorized('Auth-Token not set in header');
+        return res.status(401).send({status: 'ERROR', message: 'Auth-Token not set in header'});
     }
 };
 

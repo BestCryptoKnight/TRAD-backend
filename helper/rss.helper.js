@@ -98,9 +98,25 @@ let getClientById = ({clientId}) => {
                     Authorization: 'Bearer ' + organization.integration.rss.accessToken,
                 },
             };
-            // console.log('options::', JSON.stringify(options, null, 2));
             let {data} = await axios(options);
-            let client = data.record;
+            let client = {
+                crmClientId: data.record['id'],
+                name: data.record['name'],
+                address: {
+                    addressLine: data.record['addressline'],
+                    city: data.record['addresscity'],
+                    state: data.record['addresscounty/state'],
+                    country: data.record['addresscountry'],
+                    zipCode: data.record['addresspostcode/zip'],
+                },
+                crmNote: data.record['notes'],
+                contactNumber: data.record['phone'],
+                website: data.record['website'],
+                abn: data.record['abn'],
+                acn: data.record['acn'],
+                sector: data.record['sector'],
+                salesPerson: data.record['salesperson'],
+            };
             console.log('client::', JSON.stringify(client, null, 2));
             Logger.log.info("Successfully retrieved client from RSS");
             return resolve(client);
@@ -150,10 +166,22 @@ let getClientContacts = ({clientId}) => {
                     Authorization: 'Bearer ' + organization.integration.rss.accessToken,
                 },
             };
-            // console.log('options::', JSON.stringify(options, null, 2));
             let {data} = await axios(options);
-            let contacts = data.list.map(contact => contact.record);
-            console.log('DATA::', JSON.stringify(contacts, null, 3));
+            let contacts = [];
+            data.list.forEach(crmContact => {
+                let contact = {
+                    firstName: crmContact.record['first'],
+                    lastName: crmContact.record['last'],
+                    jobTitle: crmContact.record['jobtitle'],
+                    crmContactId: crmContact.record['id'],
+                    email: crmContact.record['email'],
+                    contactNumber: crmContact.record['phone'] ? crmContact.record['phone']: (crmContact.record['mobile'] ? crmContact.record['mobile'] :crmContact.record['direct'] ),
+                    department: crmContact.record['department'],
+                    hasLeftCompany: crmContact.record['leftcompany'],
+                    isDecisionMaker: crmContact.record['decisionmaker'],
+                };
+                contacts.push(contact);
+            });
             Logger.log.info("Successfully retrieved contacts from RSS");
             return resolve(contacts);
         } catch (err) {
