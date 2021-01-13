@@ -176,7 +176,7 @@ router.get('/:clientId', async function (req, res) {
 /**
  * Delete Client
  */
-router.put('/:clientId', async function (req, res) {
+router.delete('/:clientId', async function (req, res) {
     try {
         if (!req.params.clientId) {
             Logger.log.error('No clientId passed.');
