@@ -95,6 +95,46 @@ router.post('/:crmId', async function (req, res) {
 });
 
 /**
+ * List Clients from RSS
+ */
+router.get('/', async function (req, res) {
+    try {
+        let queryFilter = {
+            isDeleted: false
+        };
+        let option = {
+            page: parseInt(req.query.page) || 1,
+            limit: parseInt(req.query.limit) || 5,
+        };
+        option.sort = {createdAt: 'desc'};
+        option.lean = true;
+        let clients = await Client.paginate(queryFilter, option);
+        res.status(200).send({status: 'SUCCESS', data: clients});
+    } catch (e) {
+        Logger.log.error('Error occurred in listing clients.', e.message || e);
+        res.status(500).send({status: 'ERROR', message: e.message || 'Something went wrong, please try again later.'});
+    }
+});
+
+/**
+ * List Clients from RSS
+ */
+router.get('/:clientId', async function (req, res) {
+    try {
+        if (!req.params.clientId) {
+            Logger.log.error('No clientId passed.');
+            return res.status(400).send({status: 'ERROR', message: 'Please pass client\'s id.'});
+        }
+        let client = await Client.findOne({_id: req.params.clientId});
+        res.status(200).send({status: 'SUCCESS', data: client});
+    } catch (e) {
+        Logger.log.error('Error occurred in listing clients.', e.message || e);
+        res.status(500).send({status: 'ERROR', message: e.message || 'Something went wrong, please try again later.'});
+    }
+});
+
+
+/**
  * Updates a User
  */
 // router.put('/:userId/', async function (req, res) {
