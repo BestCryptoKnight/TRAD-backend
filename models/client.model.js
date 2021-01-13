@@ -15,7 +15,7 @@ const clientSchema = new Schema(
         serviceManagerId: {type: Schema.Types.ObjectId, ref: 'user'},
         insurerId: {type: Schema.Types.ObjectId, ref: 'insurer'},
         isDeleted: {type: Schema.Types.Boolean, default: false},
-        crmClientId: {type: Schema.Types.String, unique: true},
+        crmClientId: {type: Schema.Types.String},
         address: {
             addressLine: Schema.Types.String,
             city: Schema.Types.String,

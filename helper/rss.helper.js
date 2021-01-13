@@ -38,7 +38,7 @@ let getClients = ({searchKeyword}) => {
             // console.log('options::', JSON.stringify(options, null, 2));
             let {data} = await axios(options);
             let clients = data.list.map(client => client.record);
-            console.log('DATA::', JSON.stringify(clients, null, 3));
+            // console.log('DATA::', JSON.stringify(clients, null, 3));
             Logger.log.info("Successfully retrieved clients from RSS");
             return resolve(clients);
         } catch (err) {

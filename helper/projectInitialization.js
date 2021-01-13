@@ -55,7 +55,7 @@ let createSuperAdmin = () => {
                         '?token=' +
                         signUpToken,
                 },
-                mailFor: 'newUser',
+                mailFor: 'newAdminUser',
             };
             await MailHelper.sendMail(mailObj);
             Logger.log.info('SuperAdmin created successfully.');

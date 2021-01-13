@@ -18,7 +18,7 @@ const clientUserSchema = new Schema(
         hasPortalAccess: {type: Schema.Types.Boolean},
         hasLeftCompany: {type: Schema.Types.Boolean},
         isDecisionMaker: {type: Schema.Types.Boolean},
-        crmContactId: {type: Schema.Types.String, unique: true},
+        crmContactId: {type: Schema.Types.String},
         email: {
             type: Schema.Types.String,
             unique: true

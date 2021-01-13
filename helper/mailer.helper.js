@@ -8,6 +8,9 @@ const nodemailer = require('nodemailer');
 * */
 const config = require('../config');
 const Logger = require('./../services/logger');
+const forgotPasswordAdminTemplate = require('./../static-files/forgotPassword.risk.template');
+const newAdminTemplate = require('./../static-files/newUser.risk.template');
+const newClientTemplate = require('./../static-files/newUser.client.template');
 
 const transporter = nodemailer.createTransport({
     host: 'smtp.sendgrid.net',
@@ -18,20 +21,52 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-const sendMail = ({ toAddress, subject, text, html, mailFor }) => {
+const sendMail = ({toAddress, subject, text, html, mailFor}) => {
     return new Promise((resolve, reject) => {
         let toAddressStr = '';
         toAddress.forEach((toAddr) => {
             toAddressStr += toAddr + ', ';
         });
         toAddressStr.substr(0, toAddressStr.lastIndexOf(','));
+        switch (mailFor) {
+            case 'newAdminUser':
+                html = newAdminTemplate({name: text.name, setPasswordLink: text.setPasswordLink});
+                break;
+            case 'adminForgotPassword':
+                html = forgotPasswordAdminTemplate({
+                    name: text.name,
+                    resetPasswordLink: text.resetPasswordLink,
+                    forgotPasswordLink: text.forgotPasswordLink,
+                });
+                break;
+            case 'newClientUser':
+                html = newClientTemplate({name: text.name, setPasswordLink: text.setPasswordLink});
+                break;
+            case 'clientForgotPassword':
+                // html = forgotPasswordTemplate({
+                //     name: text.name,
+                //     resetPasswordLink: text.resetPasswordLink,
+                //     forgotPasswordLink: text.forgotPasswordLink,
+                // });
+                break;
+            case 'profileUpdate':
+                // html = profileUpdateTemplate({
+                //     name: text.name,
+                //     updateFields: text.updateFields,
+                //     updatedBy: text.updatedBy,
+                // });
+                break;
+        }
         const mailBody = {
             from: config.mailer.fromAddress,
             to: toAddressStr,
             subject: subject,
-            text: JSON.stringify(text, null, 2),
-            //html: html <-- Can assign the HTML template here
         };
+        if (html) {
+            mailBody.html = html;
+        } else {
+            mailBody.text = text;
+        }
         if (config.mailer.send === 'true') {
             transporter.sendMail(mailBody, (err, info) => {
                 if (err) {

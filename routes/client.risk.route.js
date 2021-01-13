@@ -3,6 +3,7 @@
 * */
 const express = require('express');
 const router = express.Router();
+const jwt = require('jsonwebtoken');
 let mongoose = require('mongoose');
 let Organization = mongoose.model('organization');
 const Client = mongoose.model('client');
@@ -13,6 +14,7 @@ const ClientUser = mongoose.model('client-user');
 * */
 const config = require('../config');
 const Logger = require('./../services/logger');
+const MailHelper = require('./../helper/mailer.helper');
 const RssHelper = require('./../helper/rss.helper');
 
 /**
@@ -20,13 +22,21 @@ const RssHelper = require('./../helper/rss.helper');
  */
 router.get('/search-from-crm', async function (req, res) {
     try {
-        if (!req.query.searchKeyword) {
-            Logger.log.error('No text passed to perform search.');
-            return res.status(400).send({status: 'ERROR', message: 'Pass some text to perform search.'});
-        }
+        // if (!req.query.searchKeyword) {
+        //     Logger.log.error('No text passed to perform search.');
+        //     return res.status(400).send({status: 'ERROR', message: 'Pass some text to perform search.'});
+        // }
         let searchKeyword = req.query.searchKeyword;
         let clients = await RssHelper.getClients({searchKeyword});
-        let responseArr = clients.map(({name, id}) => ({name, id}));
+        let clientIds = clients.map(client => client.id);
+        let dbClients = await Client.find({isDeleted: false, crmClientId: {$in: clientIds}}).select({crmClientId: 1});
+        let responseArr = [];
+        dbClients = dbClients.map(dbClient => dbClient.crmClientId);
+        for (let i = 0; i < clients.length; i++) {
+            if (dbClients.indexOf(clients[i].id.toString()) === -1) {
+                responseArr.push({crmId: clients[i].id, name: clients[i].name});
+            }
+        }
         res.status(200).send({status: 'SUCCESS', data: responseArr});
     } catch (e) {
         Logger.log.error('Error occurred in getting client list for search.', e.message || e);
@@ -43,15 +53,37 @@ router.post('/:crmId', async function (req, res) {
             Logger.log.error('No clientId passed.');
             return res.status(400).send({status: 'ERROR', message: 'Please pass client\'s id.'});
         }
+        let client = await Client.findOne({isDeleted: false, crmClientId: req.params.crmId});
+        if(client){
+            Logger.log.error('Client already exists in the system', req.params.crmId);
+            return res.status(400).send({status: 'ERROR', message: 'Client already exists in the system.'});
+        }
         let clientDataFromCrm = await RssHelper.getClientById({clientId: req.params.crmId});
-        let client = new Client(clientDataFromCrm);
+        client = new Client(clientDataFromCrm);
         let contactsFromCrm = await RssHelper.getClientContacts({clientId: req.params.crmId});
         let promiseArr = [];
         contactsFromCrm.forEach(crmContact => {
-            let contact = new ClientUser(crmContact);
-            contact.clientId = client._id;
-            promiseArr.push(contact.save());
-            //TODO Send INVITATION Mail to all the USERS
+            let clientUser = new ClientUser(crmContact);
+            clientUser.clientId = client._id;
+            let signUpToken = jwt.sign(JSON.stringify({_id: clientUser._id}), config.jwt.secret);
+            clientUser.signUpToken = signUpToken;
+            promiseArr.push(clientUser.save());
+            const userName = (clientUser.firstName ? clientUser.firstName + ' ' : '') + (clientUser.lastName ? clientUser.lastName : '')
+            let mailObj = {
+                toAddress: [clientUser.email],
+                subject: 'Welcome to TRAD CLIENT PORTAL',
+                text: {
+                    name: userName,
+                    setPasswordLink:
+                        config.server.frontendUrls.clientPanelBase +
+                        config.server.frontendUrls.setPasswordPage +
+                        clientUser._id +
+                        '?token=' +
+                        signUpToken,
+                },
+                mailFor: 'newClientUser',
+            };
+            promiseArr.push(MailHelper.sendMail(mailObj));
         });
         promiseArr.push(client.save());
         await Promise.all(promiseArr);
