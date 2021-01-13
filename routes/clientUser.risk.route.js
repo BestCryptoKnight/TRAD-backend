@@ -61,31 +61,50 @@ router.get('/details/:clientUserId', async function (req, res) {
     }
 });
 
+/**
+ * Sync Client Users from RSS - Update
+ */
+router.put('/sync-from-crm/:clientId', async function (req, res) {
+    try {
+        if (!req.params.clientId) {
+            Logger.log.error('No clientId passed.');
+            return res.status(400).send({status: 'ERROR', message: 'Please pass client\'s id.'});
+        }
+        let client = await Client.findOne({_id: req.params.clientId});
+        if(!client){
+            Logger.log.error('No Client found', req.params.crmId);
+            return res.status(400).send({status: 'ERROR', message: 'Client not found.'});
+        }
+        let contactsFromCrm = await RssHelper.getClientContacts({clientId: client.crmClientId});
+        let promiseArr = [];
+        contactsFromCrm.forEach(crmContact => {
+            promiseArr.push(ClientUser.findOneAndUpdate({crmContactId: crmContact.crmContactId, isDeleted: false}, crmContact, {upsert: true}));
+        });
+        await Promise.all(promiseArr);
+        res.status(200).send({status: 'SUCCESS', message: 'Client Contacts synced successfully'});
+    } catch (e) {
+        Logger.log.error('Error occurred in getting client list for search.', e.message || e);
+        res.status(500).send({status: 'ERROR', message: e.message || 'Something went wrong, please try again later.'});
+    }
+});
 
 /**
- * Updates a User
+ * Update Client User
  */
-// router.put('/:userId/', async function (req, res) {
-//     Logger.log.info('In user update call');
-//     if (!req.params.userId || !mongoose.Types.ObjectId.isValid(req.params.userId)) {
-//         Logger.log.error('User id not found in request query params.');
-//         return res.status(400).send({message: 'Something went wrong, please try again.'});
-//     }
-//     let userId = req.params.userId;
-//     try {
-//         let updateObj = {};
-//         if (req.body.name) updateObj.name = req.body.name;
-//         if (req.body.contactNumber) updateObj.contactNumber = req.body.contactNumber;
-//         if (req.body.role) updateObj.role = req.body.role;
-//         if (req.body.moduleAccess) updateObj.moduleAccess = req.body.moduleAccess;
-//         await User.updateOne({_id: userId}, updateObj, {new: true});
-//         Logger.log.info('User Updated successfully.');
-//         res.status(200).send({message: 'User updated successfully.'});
-//     } catch (e) {
-//         Logger.log.error('Error occurred.', e.message || e);
-//         res.status(500).send(e.message || 'Something went wrong, please try again later.');
-//     }
-// });
+router.put('/:clientUserId', async function (req, res) {
+    try {
+        if (!req.params.clientUserId) {
+            Logger.log.error('No clientUserId passed.');
+            return res.status(400).send({status: 'ERROR', message: 'Please pass client user\'s id.'});
+        }
+        await ClientUser.updateOne({_id: req.params.clientUserId}, req.body);
+        res.status(200).send({status: 'SUCCESS', message: 'Client User updated successfully'});
+    } catch (e) {
+        Logger.log.error('Error occurred in getting client list for search.', e.message || e);
+        res.status(500).send({status: 'ERROR', message: e.message || 'Something went wrong, please try again later.'});
+    }
+});
+
 
 /**
  * Export Router

@@ -95,7 +95,47 @@ router.post('/:crmId', async function (req, res) {
 });
 
 /**
- * List Clients from RSS
+ * Sync Client from RSS - Update
+ */
+router.put('/sync-from-crm/:clientId', async function (req, res) {
+    try {
+        if (!req.params.clientId) {
+            Logger.log.error('No clientId passed.');
+            return res.status(400).send({status: 'ERROR', message: 'Please pass client\'s id.'});
+        }
+        let client = await Client.findOne({_id: req.params.clientId});
+        if(!client){
+            Logger.log.error('No Client found', req.params.crmId);
+            return res.status(400).send({status: 'ERROR', message: 'Client not found.'});
+        }
+        let clientDataFromCrm = await RssHelper.getClientById({clientId: client.crmClientId});
+        await Client.updateOne({_id: req.params.clientId}, clientDataFromCrm);
+        res.status(200).send({status: 'SUCCESS', message: 'Client synced successfully'});
+    } catch (e) {
+        Logger.log.error('Error occurred in getting client list for search.', e.message || e);
+        res.status(500).send({status: 'ERROR', message: e.message || 'Something went wrong, please try again later.'});
+    }
+});
+
+/**
+ * Update Client
+ */
+router.put('/:clientId', async function (req, res) {
+    try {
+        if (!req.params.clientId) {
+            Logger.log.error('No clientId passed.');
+            return res.status(400).send({status: 'ERROR', message: 'Please pass client\'s id.'});
+        }
+        await Client.updateOne({_id: req.params.clientId}, req.body);
+        res.status(200).send({status: 'SUCCESS', message: 'Client updated successfully'});
+    } catch (e) {
+        Logger.log.error('Error occurred in getting client list for search.', e.message || e);
+        res.status(500).send({status: 'ERROR', message: e.message || 'Something went wrong, please try again later.'});
+    }
+});
+
+/**
+ * List Clients
  */
 router.get('/', async function (req, res) {
     try {
@@ -117,7 +157,7 @@ router.get('/', async function (req, res) {
 });
 
 /**
- * List Clients from RSS
+ * Get Client
  */
 router.get('/:clientId', async function (req, res) {
     try {
