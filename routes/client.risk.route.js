@@ -173,6 +173,26 @@ router.get('/:clientId', async function (req, res) {
     }
 });
 
+/**
+ * Delete Client
+ */
+router.put('/:clientId', async function (req, res) {
+    try {
+        if (!req.params.clientId) {
+            Logger.log.error('No clientId passed.');
+            return res.status(400).send({status: 'ERROR', message: 'Please pass client\'s id.'});
+        }
+        let promiseArr = [];
+        promiseArr.push(Client.updateOne({_id: req.params.clientId}, {isDeleted: true}));
+        promiseArr.push(ClientUser.updateMany({clientId: req.params.clientId}, {isDeleted: true}));
+        await Promise.all(promiseArr);
+        res.status(200).send({status: 'SUCCESS', message: 'Client deleted successfully'});
+    } catch (e) {
+        Logger.log.error('Error occurred in getting client list for search.', e.message || e);
+        res.status(500).send({status: 'ERROR', message: e.message || 'Something went wrong, please try again later.'});
+    }
+});
+
 
 /**
  * Updates a User
