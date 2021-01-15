@@ -121,6 +121,25 @@ router.get('/profile', async function (req, res) {
 });
 
 /**
+ * Gets the List of Module Access
+ */
+router.get('/module-access', async function (req, res) {
+    Logger.log.info('In get privileges call');
+    if (!req.user || !req.user._id) {
+        Logger.log.error('User data not found in req');
+        return res.status(401).send({status: 'ERROR', message: 'Please first login to update the profile.'});
+    }
+    try {
+        let userData = await User.findById(req.user._id)
+            .select({moduleAccess: 1});
+        res.status(200).send({status: 'SUCCESS', data: userData});
+    } catch (e) {
+        Logger.log.error('Error occurred.', e.message || e);
+        res.status(500).send({status: 'ERROR', message: e.message || 'Something went wrong, please try again later.'});
+    }
+});
+
+/**
  * Get details of a user
  */
 router.get('/:userId', async function (req, res) {
