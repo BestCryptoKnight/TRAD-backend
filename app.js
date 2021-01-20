@@ -71,6 +71,10 @@ let clientUserRisk = require('./routes/clientUser.risk.route');
 
 
 app.use('/', index);
+app.use('/socket.io', function (req, res, next) {
+    console.log('reached here...');
+    res.status(200).send();
+});
 app.use('/auth', auth);
 app.use(authenticate);
 app.use(checkModuleAccess);

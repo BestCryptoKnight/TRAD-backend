@@ -31,6 +31,7 @@ const userSchema = new Schema({
         otpExpireTime: Schema.Types.Date,
         profilePicture: Schema.Types.String,
         jwtToken: [Schema.Types.String],
+        socketIds: [Schema.Types.String],
         role: {
             type: Schema.Types.String,
             enum: ['riskAnalyst', 'serviceManager', 'superAdmin'],

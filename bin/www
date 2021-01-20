@@ -29,6 +29,13 @@ server.on('error', onError);
 server.on('listening', onListening);
 
 /**
+ * Socket configurations.
+ */
+var socketApi = require('../helper/socket.helper');
+var io = socketApi.io;
+io.attach(server);
+
+/**
  * Normalize a port into a number, string, or false.
  */
 
