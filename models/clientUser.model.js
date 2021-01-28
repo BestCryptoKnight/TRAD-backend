@@ -43,7 +43,7 @@ clientUserSchema.statics.findByCredentials = async function (email, password) {
         clientUser = await clientUser.findOne({email, isDeleted: false});
         if (!clientUser) {
             return Promise.reject({
-                status: 'USER_NOT_FOUND',
+                status: 'ERROR',
                 message: 'Incorrect email or password.',
             });
         }
@@ -54,7 +54,7 @@ clientUserSchema.statics.findByCredentials = async function (email, password) {
                 } else {
                     Logger.log.warn('Wrong Password for email:', clientUser.email);
                     return reject({
-                        status: 'USER_NOT_FOUND',
+                        status: 'ERROR',
                         message: 'Incorrect email or password.',
                     });
                 }
@@ -116,7 +116,6 @@ clientUserSchema.pre('save', function (next) {
 
 clientUserSchema.methods.comparePassword = function (oldPassword) {
     return new Promise((resolve, reject) => {
-        console.log(this,'-------------',oldPassword, this.password)
         bcrypt.compare(oldPassword, this.password, function (err, isMatch) {
             if (err) {
                 console.log('err:: ',err);
