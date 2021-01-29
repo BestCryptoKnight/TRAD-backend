@@ -65,6 +65,8 @@ let index = require('./routes/index');
 let auth = require('./routes/adminAuth.route');
 let organization = require('./routes/organization.route');
 let user = require('./routes/user.route');
+let clientRisk = require('./routes/client.risk.route');
+let clientUserRisk = require('./routes/clientUser.risk.route');
 
 
 
@@ -74,6 +76,8 @@ app.use(authenticate);
 app.use(checkModuleAccess);
 app.use('/organization', organization);
 app.use('/user', user);
+app.use('/client-risk', clientRisk);
+app.use('/client-user-risk', clientUserRisk);
 
 /**
  * Catch 404 routes

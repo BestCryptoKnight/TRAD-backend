@@ -38,13 +38,13 @@ router.post('/upload/profile-picture', upload.single('profile-picture'), async (
     if (!userId) {
         Logger.log.error('User id not found in the logged in user');
         return res.status(400).send({
-            status: 'USER_NOT_FOUND',
+            status: 'ERROR',
             message: 'User not found, please try by logging in again.',
         });
     }
     try {
         await User.findByIdAndUpdate(userId, {profilePicture: req.file.filename}, {new: true})
-        res.status(200).send(getProfileUrl(getProfileUrl(req.file.filename)));
+        res.status(200).send({status: 'success', data: getProfileUrl(getProfileUrl(req.file.filename))});
         if (req.query.oldImageName) {
             Logger.log.info('Old image name:', req.query.oldImageName);
             let imagePath = path.resolve(__dirname + '/../upload/' + getProfileImagePath() + req.query.oldImageName);
@@ -59,7 +59,7 @@ router.post('/upload/profile-picture', upload.single('profile-picture'), async (
         }
     } catch (e) {
         Logger.log.error('Error occurred.', e.message || e);
-        res.status(500).send(e.message || 'Something went wrong, please try again later.');
+        res.status(500).send({status: 'ERROR', message: e.message || 'Something went wrong, please try again later.'});
     }
 });
 
@@ -71,14 +71,14 @@ router.delete('/profile-picture', async (req, res) => {
     if (!userId) {
         Logger.log.error('User id not found in the logged in user');
         return res.status(400).send({
-            status: 'USER_NOT_FOUND',
+            status: 'ERROR',
             message: 'User not found, please try by logging in again.',
         });
     }
     if (!req.query.oldImageName) {
         Logger.log.error('In delete profile picture call, old image name not present for the user:', userId);
         return res.status(400).send({
-            status: 'IMAGE_NAME_NOT_FOUND',
+            status: 'ERROR',
             message: 'Image name not found, unable to remove old profile picture.',
         });
     }
@@ -90,11 +90,11 @@ router.delete('/profile-picture', async (req, res) => {
                 `Error deleting profile picture with name: ${req.query.oldImageName} by user ${req.user._id}`,
             );
             Logger.log.warn(err.message || err);
-            return res.status(500).send('Error removing profile picture.');
+            return res.status(500).send({status: 'ERROR', message: 'Error removing profile picture.'});
         } else {
             Logger.log.info('Successfully deleted old profile picture.');
             await User.findByIdAndUpdate(userId, {profilePicture: null}, {new: true})
-            res.status(200).send({mesage: 'Profile Picture deleted successfully.'});
+            res.status(200).send({status: 'SUCCESS', message: 'Profile Picture deleted successfully.'});
         }
     });
 });
@@ -106,17 +106,36 @@ router.get('/profile', async function (req, res) {
     Logger.log.info('In get profile call');
     if (!req.user || !req.user._id) {
         Logger.log.error('User data not found in req');
-        return res.status(401).send({message: 'Please first login to update the profile.'});
+        return res.status(401).send({status: 'ERROR', message: 'Please first login to update the profile.'});
     }
     try {
         let userData = await User.findById(req.user._id)
             .select({name: 1, role: 1, email: 1, contactNumber: 1, profilePicture: 1});
         userData.profilePicture = getProfileUrl(userData.profilePicture);
         Logger.log.info('Fetched user details');
-        res.status(200).send(userData);
+        res.status(200).send({status: 'SUCCESS', data: userData});
     } catch (e) {
         Logger.log.error('Error occurred.', e.message || e);
-        res.status(500).send(e.message || 'Something went wrong, please try again later.');
+        res.status(500).send({status: 'ERROR', message: e.message || 'Something went wrong, please try again later.'});
+    }
+});
+
+/**
+ * Gets the List of Module Access
+ */
+router.get('/module-access', async function (req, res) {
+    Logger.log.info('In get privileges call');
+    if (!req.user || !req.user._id) {
+        Logger.log.error('User data not found in req');
+        return res.status(401).send({status: 'ERROR', message: 'Please first login to update the profile.'});
+    }
+    try {
+        let userData = await User.findById(req.user._id)
+            .select({moduleAccess: 1});
+        res.status(200).send({status: 'SUCCESS', data: userData});
+    } catch (e) {
+        Logger.log.error('Error occurred.', e.message || e);
+        res.status(500).send({status: 'ERROR', message: e.message || 'Something went wrong, please try again later.'});
     }
 });
 
@@ -127,17 +146,17 @@ router.get('/:userId', async function (req, res) {
     Logger.log.info('In get user details call');
     if (!req.params.userId || !mongoose.Types.ObjectId.isValid(req.params.userId)) {
         Logger.log.error('User id not found in query params.');
-        return res.status(400).send({message: 'Something went wrong, please try again.'});
+        return res.status(400).send({status: 'ERROR', message: 'Something went wrong, please try again.'});
     }
     let userId = req.params.userId;
     try {
         let userData = await User.findById(userId)
             .select({name: 1, email: 1, contactNumber: 1, role: 1});
         Logger.log.info('Fetched details of user successfully.');
-        res.status(200).send(userData);
+        res.status(200).send({status: 'SUCCESS', data: userData});
     } catch (e) {
         Logger.log.error('Error occurred.', e.message || e);
-        res.status(500).send(e.message || 'Something went wrong, please try again later.');
+        res.status(500).send({status: 'ERROR', message: e.message || 'Something went wrong, please try again later.'});
     }
 });
 
@@ -168,10 +187,10 @@ router.get('/', async function (req, res) {
                 delete user.signUpToken;
             })
         }
-        res.status(200).send(responseObj);
+        res.status(200).send({status: 'SUCCESS', data: responseObj});
     } catch (e) {
         Logger.log.error('Error occurred.', e.message || e);
-        res.status(500).send(e.message || 'Something went wrong, please try again later.');
+        res.status(500).send({status: 'ERROR', message: e.message || 'Something went wrong, please try again later.'});
     }
 });
 
@@ -182,11 +201,11 @@ router.post('/', async function (req, res) {
     Logger.log.info('In create user call');
     if (!req.user || !req.user._id) {
         Logger.log.error('You must login first to create a new user.');
-        return res.status(401).send({message: 'You must login first to create a new user.'});
+        return res.status(401).send({status: 'ERROR', message: 'You must login first to create a new user.'});
     }
     if (!req.body.email) {
         Logger.log.error('Email not present for new user');
-        return res.status(400).send({message: 'Please enter email for new user.'});
+        return res.status(400).send({status: 'ERROR', message: 'Please enter email for new user.'});
     }
     try {
         // TODO add basic/default modules for the right
@@ -213,12 +232,12 @@ router.post('/', async function (req, res) {
             mailFor: 'newUser',
         };
         Logger.log.info('User created successfully.');
-        res.status(200).send({message: 'User created successfully.'});
+        res.status(200).send({status: 'SUCCESS', message: 'User created successfully.'});
         await MailHelper.sendMail(mailObj);
         Logger.log.info('Mail sent to new user successfully.');
     } catch (e) {
         Logger.log.error('Error occurred.', e.message || e);
-        res.status(500).send(e.message || 'Something went wrong, please try again later.');
+        res.status(500).send({status: 'ERROR', message: e.message || 'Something went wrong, please try again later.'});
     }
 });
 
@@ -229,7 +248,7 @@ router.put('/profile', async function (req, res) {
     Logger.log.info('In user update profile call');
     if (!req.user || !req.user._id) {
         Logger.log.error('User data not found in req');
-        return res.status(401).send({message: 'Please first login to update the profile.'});
+        return res.status(401).send({status: 'ERROR', message: 'Please first login to update the profile.'});
     }
     let updateObj = {};
     if (req.body.name) updateObj.name = req.body.name;
@@ -237,10 +256,10 @@ router.put('/profile', async function (req, res) {
     try {
         await User.findByIdAndUpdate(req.user._id, updateObj, {new: true});
         Logger.log.info('Updated user profile.');
-        res.status(200).send({message: 'User profile updated successfully.'});
+        res.status(200).send({status: 'SUCCESS', message: 'User profile updated successfully.'});
     } catch (e) {
         Logger.log.error('Error occurred.', e.message || e);
-        res.status(500).send(e.message || 'Something went wrong, please try again later.');
+        res.status(500).send({status: 'ERROR', message: e.message || 'Something went wrong, please try again later.'});
     }
 });
 
@@ -251,7 +270,7 @@ router.put('/:userId/', async function (req, res) {
     Logger.log.info('In user update call');
     if (!req.params.userId || !mongoose.Types.ObjectId.isValid(req.params.userId)) {
         Logger.log.error('User id not found in request query params.');
-        return res.status(400).send({message: 'Something went wrong, please try again.'});
+        return res.status(400).send({status: 'ERROR', message: 'Something went wrong, please try again.'});
     }
     let userId = req.params.userId;
     try {
@@ -262,10 +281,10 @@ router.put('/:userId/', async function (req, res) {
         if (req.body.moduleAccess) updateObj.moduleAccess = req.body.moduleAccess;
         await User.updateOne({_id: userId}, updateObj, {new: true});
         Logger.log.info('User Updated successfully.');
-        res.status(200).send({message: 'User updated successfully.'});
+        res.status(200).send({status: 'SUCCESS', message: 'User updated successfully.'});
     } catch (e) {
         Logger.log.error('Error occurred.', e.message || e);
-        res.status(500).send(e.message || 'Something went wrong, please try again later.');
+        res.status(500).send({status: 'ERROR', message: e.message || 'Something went wrong, please try again later.'});
     }
 });
 
@@ -276,15 +295,15 @@ router.delete('/:userId', async function (req, res) {
     Logger.log.info('In delete user call');
     if (!req.params.userId || !mongoose.Types.ObjectId.isValid(req.params.userId)) {
         Logger.log.error('User id not found.');
-        return res.status(400).send({message: 'Something went wrong, please try again.'});
+        return res.status(400).send({status: 'ERROR', message: 'Something went wrong, please try again.'});
     }
     try {
         let userId = req.params.userId;
         await User.updateOne({_id: userId}, {isDeleted: true});
-        res.status(200).send({message: 'User deleted successfully.'});
+        res.status(200).send({status: 'SUCCESS', message: 'User deleted successfully.'});
     } catch (e) {
         Logger.log.error('Error occurred.', e.message || e);
-        res.status(500).send(e.message || 'Something went wrong, please try again later.');
+        res.status(500).send({status: 'ERROR', message: e.message || 'Something went wrong, please try again later.'});
     }
 });
 

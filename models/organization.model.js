@@ -15,7 +15,12 @@ const organizationSchema = new Schema(
         email: Schema.Types.String,
         website: Schema.Types.String,
         contactNumber: Schema.Types.String,
-        address: Schema.Types.String
+        address: Schema.Types.String,
+        integration: {
+            rss: {
+                accessToken: Schema.Types.String
+            }
+        }
     },
     {timestamps: true},
 );
