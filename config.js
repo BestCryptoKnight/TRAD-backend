@@ -6,8 +6,8 @@ let uploadLocations = {
 };
 
 let frontendUrls = {
-    superAdminPanelBase: process.env.FRONTEND_ADMIN_URL || 'http://192.168.1.202:4600/',
-    adminPanelBase: process.env.FRONTEND_CLIENT_URL || 'http://192.168.1.202:4600/',
+    adminPanelBase: process.env.FRONTEND_ADMIN_URL || 'http://192.168.1.202:4600/',
+    clientPanelBase: process.env.FRONTEND_CLIENT_URL || 'http://192.168.1.202:4600/',
     setPasswordPage: 'set/',
     resetPasswordPage: 'reset/',
     forgotPasswordPage: 'forgot/',

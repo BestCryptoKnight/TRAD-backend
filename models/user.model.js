@@ -82,7 +82,6 @@ userSchema.statics.findByToken = async function (token) {
     let adminData;
     try {
         decoded = jwt.verify(token, jwtSecret);
-        console.log(decoded);
         adminData = await admin
             .findOne({
                 _id: decoded._id,

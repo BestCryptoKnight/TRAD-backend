@@ -10,8 +10,10 @@ const Organization = mongoose.model('organization');
 * Local Imports
 * */
 const config = require('../config');
-const MailHelper = require('./../helper/mailer.helper');
+const MailHelper = require('./mailer.helper');
+const RssHelper = require('./rss.helper');
 const Logger = require('../services/logger');
+const StaticFile = require('./../static-files/systemModules');
 
 let createSuperAdmin = () => {
     return new Promise(async (resolve, reject) => {
@@ -28,13 +30,18 @@ let createSuperAdmin = () => {
                 password: config.superAdmin.password,
                 profilePicture: null,
             });
-            let organization = new Organization({
-                name: config.organization.name
-            });
+            let organization = await Organization.findOne({isDeleted: false});
+            if (!organization) {
+                organization = new Organization({
+
+                    name: config.organization.name
+                });
+            }
             await organization.save();
             let signUpToken = jwt.sign(JSON.stringify({_id: user._id}), config.jwt.secret);
             user.signUpToken = signUpToken;
             user.organizationId = organization._id;
+            user.moduleAccess = StaticFile.modules;
             await user.save();
             let mailObj = {
                 toAddress: [user.email],
@@ -48,7 +55,7 @@ let createSuperAdmin = () => {
                         '?token=' +
                         signUpToken,
                 },
-                mailFor: 'newUser',
+                mailFor: 'newAdminUser',
             };
             await MailHelper.sendMail(mailObj);
             Logger.log.info('SuperAdmin created successfully.');

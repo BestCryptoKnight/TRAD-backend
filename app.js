@@ -58,6 +58,7 @@ app.use(express.static(path.join(__dirname, 'upload')));
 const authenticate = require('./middlewares/authenticate').authMiddleWare;
 const adminMiddleware = require('./middlewares/authenticate').adminMiddleWare;
 const superAdminMiddleWare = require('./middlewares/authenticate').superAdminMiddleWare;
+const checkModuleAccess = require('./middlewares/authenticate').checkModuleAccess;
 
 /**
  * Import and Register Routes
@@ -67,6 +68,9 @@ let auth = require('./routes/adminAuth.route');
 let organization = require('./routes/organization.route');
 let user = require('./routes/user.route');
 const clientAuth = require('./routes/clientAuth.route');
+let clientRisk = require('./routes/client.risk.route');
+let clientUserRisk = require('./routes/clientUser.risk.route');
+
 
 
 app.use('/', index);
@@ -74,6 +78,12 @@ app.use('/auth', auth);
 app.use('/client-auth',clientAuth);
 app.use('/organization', authenticate, superAdminMiddleWare, organization);
 app.use('/user', authenticate, user);
+app.use(authenticate);
+app.use(checkModuleAccess);
+app.use('/organization', organization);
+app.use('/user', user);
+app.use('/client-risk', clientRisk);
+app.use('/client-user-risk', clientUserRisk);
 
 /**
  * Catch 404 routes
