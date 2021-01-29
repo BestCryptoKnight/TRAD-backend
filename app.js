@@ -28,7 +28,6 @@ fs.readdirSync(models)
     .forEach(file => require(path.join(models, file)));
 
 
-
 /**
  * Bootstrap App
  */
@@ -56,8 +55,6 @@ app.use(express.static(path.join(__dirname, 'upload')));
  * Import Middlewares
  */
 const authenticate = require('./middlewares/authenticate').authMiddleWare;
-const adminMiddleware = require('./middlewares/authenticate').adminMiddleWare;
-const superAdminMiddleWare = require('./middlewares/authenticate').superAdminMiddleWare;
 const checkModuleAccess = require('./middlewares/authenticate').checkModuleAccess;
 
 /**
@@ -72,18 +69,13 @@ let clientRisk = require('./routes/client.risk.route');
 let clientUserRisk = require('./routes/clientUser.risk.route');
 
 
-
 app.use('/', index);
 app.use('/auth', auth);
-app.use('/client-auth',clientAuth);
-app.use('/organization', authenticate, superAdminMiddleWare, organization);
-app.use('/user', authenticate, user);
-app.use(authenticate);
-app.use(checkModuleAccess);
-app.use('/organization', organization);
-app.use('/user', user);
-app.use('/client-risk', clientRisk);
-app.use('/client-user-risk', clientUserRisk);
+app.use('/client-auth', clientAuth);
+app.use('/organization', authenticate, checkModuleAccess, organization);
+app.use('/user', authenticate, checkModuleAccess, user);
+app.use('/client-risk', authenticate, checkModuleAccess, clientRisk);
+app.use('/client-user-risk', authenticate, checkModuleAccess, clientUserRisk);
 
 /**
  * Catch 404 routes

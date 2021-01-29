@@ -72,7 +72,10 @@ let checkModuleAccess = (req, res, next) => {
                 next();
             } else {
                 Logger.log.warn(`User with id ${req.user._id} is forbidden cannot make ${req.method} request`);
-                return res.status(403).send({status: 'ERROR', message: `You're forbidden to perform ${req.method} operation.`});
+                return res.status(403).send({
+                    status: 'ERROR',
+                    message: `You're forbidden to perform ${req.method} operation.`
+                });
                 //TODO add Audit log
             }
         } else {
@@ -100,22 +103,20 @@ const clientAuthMiddleWare = async (req, res, next) => {
                 Logger.log.info('AUTH - user id:' + user._id);
                 next();
             } else {
-                res.status(401).send('Auth-Token is not valid');
+                res.status(401).send({status: 'ERROR', message: 'Auth-Token is not valid'});
             }
         } catch (e) {
             Logger.log.error('Error occurred.', e.message || e);
-            res.status(401).send('Auth-Token is not valid');
+            res.status(401).send({status: 'ERROR', message: 'Auth-Token is not valid'});
         }
     } else {
         Logger.log.warn('JWT - Auth-Token not set in header');
-        res.status(401).unauthorized('Auth-Token not set in header');
+        res.status(401).send({status: 'ERROR', message: 'Auth-Token not set in header'});
     }
 };
 
 module.exports = {
     authMiddleWare,
-    checkModuleAccess
-    adminMiddleWare,
-    superAdminMiddleWare,
+    checkModuleAccess,
     clientAuthMiddleWare
 };

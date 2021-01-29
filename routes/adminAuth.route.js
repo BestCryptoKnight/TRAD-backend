@@ -32,19 +32,21 @@ router.post('/login', async function (req, res) {
             user.jwtToken.push(token);
             user.profilePicture = getProfileUrl(user.profilePicture);
             await user.save();
-            res.send({
-                name: user.name,
-                email: user.email,
-                contactNumber: user.contactNumber,
-                organizationId: user.organizationId,
-                profilePicture: user.profilePicture,
-                _id: user._id,
-                role: user.role,
-                token: token,
+            res.status(200).send({
+                status: 'SUCCESS', data: {
+                    name: user.name,
+                    email: user.email,
+                    contactNumber: user.contactNumber,
+                    organizationId: user.organizationId,
+                    profilePicture: user.profilePicture,
+                    _id: user._id,
+                    role: user.role,
+                    token: token,
+                }
             });
         } else {
-            res.send({
-                status: 'USER_NOT_FOUND',
+            res.status(400).send({
+                status: 'ERROR',
                 message: 'Incorrect email or password.',
             });
         }
@@ -205,9 +207,9 @@ router.post('/verify-otp', async (req, res) => {
             expiredTime: 5 * 60 * 1000 + Date.now()
         }), config.jwt.secret);
         res.status(200).send({
+            status: "SUCCESS",
             id: user._id,
-            token: token,
-            status: "SUCCESS"
+            token: token
         });
     } catch (e) {
         Logger.log.error('Error in verify-otp API call', e.message || e);
@@ -289,9 +291,7 @@ router.post('/:id/set-password', async (req, res) => {
                             'AUTH - Invalid signUp token or signUpToken not present in DB for user id:' +
                             req.params.id,
                         );
-                        return res
-                            .status(401)
-                            .send({message: 'Invalid request, please repeat process from beginning.'});
+                        return res.status(401).send({status: 'ERROR', message: 'Invalid request, please repeat process from beginning.'});
                     } else {
                         user.password = req.body.password;
                         user.signUpToken = null;
@@ -314,12 +314,13 @@ router.post('/:id/set-password', async (req, res) => {
 router.delete('/logout', authenticate, async (req, res) => {
     try {
         await req.user.removeToken(req.headers.authorization);
-        res.status(200).json({
+        res.status(200).send({
+            status:'SUCCESS',
             message: 'User logout successfully',
         });
     } catch (e) {
         Logger.log.error('Error in logout API call ', e.message || e);
-        res.status(500).send({message: e.message || 'Something went wrong, please try again later.'});
+        res.status(500).send({status:'ERROR',message: e.message || 'Something went wrong, please try again later.'});
     }
 });
 
