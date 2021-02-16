@@ -374,9 +374,9 @@ router.post('/', async function (req, res) {
             objToSave.manageColumns = manageColumns;
             let user = new User(objToSave);
             Logger.log.info('New user created successfully.');
-            if(req.body.hasOwnProperty('clientId') && req.body.clientId.length !== 0){
+            if(req.body.hasOwnProperty('clientIds') && req.body.clientIds.length !== 0){
                 const update = objToSave.role === 'riskAnalyst' ? {riskAnalystId:user._id}: {serviceManagerId:user._id};
-                await Client.update({_id:req.body.clientId},{$set:update},{multi:true});
+                await Client.update({_id:req.body.clientIds},{$set:update},{multi:true});
             }
             let signUpToken = jwt.sign(JSON.stringify({_id: user._id}), config.jwt.secret);
             user.signUpToken = signUpToken;
