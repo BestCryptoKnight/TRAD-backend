@@ -3,6 +3,18 @@ let uploadLocations = {
         base: 'user-data/',
         profile: 'profile-picture/',
     },
+    client:{
+        base:'documents/',
+        document:'client'
+    },
+    debtor:{
+        base:'documents/',
+        document:'debtor'
+    },
+    application:{
+        base:'documents/',
+        document:'application'
+    }
 };
 
 let frontendUrls = {

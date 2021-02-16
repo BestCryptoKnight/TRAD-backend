@@ -10,10 +10,13 @@ const Schema = mongoose.Schema;
  */
 const noteSchema = new Schema(
     {
-        noteFor: {type: Schema.Types.String, enum: ['client', 'client-debtor', 'debtor', 'application']},
+        noteFor: {type: Schema.Types.String, enum: ['client', 'debtor', 'application','claim','overdue']},
         entityId: {type: Schema.Types.ObjectId},
         description: {type: Schema.Types.String},
         isDeleted: {type: Schema.Types.Boolean, default: false},
+        isPublic: {type: Schema.Types.Boolean, default: false},
+        createdByType : {type:Schema.Types.String, enum: ['client-user','user']},
+        createdById: {type:Schema.Types.ObjectId}
     },
     {timestamps: true},
 );

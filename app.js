@@ -61,26 +61,16 @@ const checkModuleAccess = require('./middlewares/authenticate').checkModuleAcces
  * Import and Register Routes
  */
 let index = require('./routes/index');
-let auth = require('./routes/adminAuth.route');
-let organization = require('./routes/organization.route');
-let user = require('./routes/user.route');
-const clientAuth = require('./routes/clientAuth.route');
-let clientRisk = require('./routes/client.risk.route');
-let clientUserRisk = require('./routes/clientUser.risk.route');
-let settingsRisk = require('./routes/settings.risk.route');
+let clientIndex = require('./routes/clientIndex');
+let riskIndex = require('./routes/riskIndex');
 
 app.use('/', index);
 app.use('/socket.io', function (req, res, next) {
     console.log('reached here...');
     res.status(200).send();
 });
-app.use('/auth', auth);
-app.use('/client-auth', clientAuth);
-app.use('/organization', authenticate, checkModuleAccess, organization);
-app.use('/user', authenticate, checkModuleAccess, user);
-app.use('/client-risk', authenticate, checkModuleAccess, clientRisk);
-app.use('/client-user-risk', authenticate, checkModuleAccess, clientUserRisk);
-app.use('/settings', authenticate, checkModuleAccess, settingsRisk);
+app.use('/cp', clientIndex);
+app.use('/rp', riskIndex);
 
 /**
  * Catch 404 routes

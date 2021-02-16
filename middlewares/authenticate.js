@@ -24,15 +24,15 @@ let authMiddleWare = async (req, res, next) => {
                 Logger.log.info('AUTH - user id:' + user._id);
                 next();
             } else {
-                return res.status(401).send({status: 'ERROR', message: 'Auth-Token is not valid'});
+                return res.status(401).send({status: 'ERROR',messageCode:'UNAUTHORIZED', message: 'Auth-Token is not valid'});
             }
         } catch (e) {
             Logger.log.error('Error occurred.', e.message || e);
-            return res.status(401).send({status: 'ERROR', message: 'Auth-Token is not valid'});
+            return res.status(401).send({status: 'ERROR', messageCode:'UNAUTHORIZED',message: 'Auth-Token is not valid'});
         }
     } else {
         Logger.log.warn('JWT - Auth-Token not set in header');
-        return res.status(401).send({status: 'ERROR', message: 'Auth-Token not set in header'});
+        return res.status(401).send({status: 'ERROR', messageCode:'TOKEN_NOT_FOUND', message: 'Auth-Token not set in header'});
     }
 };
 
@@ -40,11 +40,11 @@ let checkModuleAccess = (req, res, next) => {
     try {
         if (!req.user) {
             Logger.log.warn('User not found, please login again.');
-            return res.status(401).send({status: 'ERROR', message: 'User not found, please login again.'});
+            return res.status(401).send({status: 'ERROR', messageCode:'USER_NOT_FOUND',message: 'User not found, please login again.'});
         }
         if (!req.user.moduleAccess || req.user.moduleAccess.length === 0) {
             Logger.log.warn('User not found, please login again.');
-            return res.status(403).send({status: 'ERROR', message: 'Contact Admin to provide rights.'});
+            return res.status(403).send({status: 'ERROR',messageCode:'INSUFFICIENT_RIGHTS', message: 'Contact Admin to provide rights.'});
         }
         let urlParameters = req.url.split('?').shift();
         urlParameters = urlParameters.split('/');
@@ -74,13 +74,14 @@ let checkModuleAccess = (req, res, next) => {
                 Logger.log.warn(`User with id ${req.user._id} is forbidden cannot make ${req.method} request`);
                 return res.status(403).send({
                     status: 'ERROR',
+                    messageCode:'FORBIDDEN_ACCESS',
                     message: `You're forbidden to perform ${req.method} operation.`
                 });
                 //TODO add Audit log
             }
         } else {
             Logger.log.warn(`User with id ${req.user._id} is forbidden to access module ${moduleName}`);
-            return res.status(403).send({status: 'ERROR', message: 'You\'re forbidden to access this module'});
+            return res.status(403).send({status: 'ERROR', messageCode:'FORBIDDEN_ACCESS', message: 'You\'re forbidden to access this module'});
             //TODO add Audit log
         }
     } catch (e) {
@@ -103,15 +104,15 @@ const clientAuthMiddleWare = async (req, res, next) => {
                 Logger.log.info('AUTH - user id:' + user._id);
                 next();
             } else {
-                res.status(401).send({status: 'ERROR', message: 'Auth-Token is not valid'});
+                res.status(401).send({status: 'ERROR',messageCode:'UNAUTHORIZED', message: 'Auth-Token is not valid'});
             }
         } catch (e) {
             Logger.log.error('Error occurred.', e.message || e);
-            res.status(401).send({status: 'ERROR', message: 'Auth-Token is not valid'});
+            res.status(401).send({status: 'ERROR',messageCode:'UNAUTHORIZED', message: 'Auth-Token is not valid'});
         }
     } else {
         Logger.log.warn('JWT - Auth-Token not set in header');
-        res.status(401).send({status: 'ERROR', message: 'Auth-Token not set in header'});
+        res.status(401).send({status: 'ERROR', messageCode:'TOKEN_NOT_FOUND',message: 'Auth-Token not set in header'});
     }
 };
 

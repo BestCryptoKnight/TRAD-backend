@@ -23,4 +23,6 @@ npm-debug.log
 package-lock.json
 
 #Static Files
-upload/**/*
+upload/**
+!upload/**/
+!upload/fonts/*

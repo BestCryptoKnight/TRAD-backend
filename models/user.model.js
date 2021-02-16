@@ -20,8 +20,7 @@ const userSchema = new Schema({
         name: Schema.Types.String,
         email: {
             type: Schema.Types.String,
-            required: true,
-            unique: true
+            required: true
         },
         isDeleted: { type: Schema.Types.Boolean, default: false },
         password: Schema.Types.String,
@@ -39,9 +38,15 @@ const userSchema = new Schema({
         },
         moduleAccess: [{
             name: {type: Schema.Types.String},
-            accessTypes: [{type: Schema.Types.String, enum: ['read', 'write', 'full-access']}]
+            accessTypes: [{type: Schema.Types.String, enum: ['read', 'write', 'full-access']}],
+            _id:false
         }],
         organizationId: {type: Schema.Types.ObjectId, ref: 'organization'},
+        manageColumns:[{
+            moduleName: {type: Schema.Types.String},
+            columns: [{type: Schema.Types.String}],
+            _id:false
+        }],
     },
     {timestamps: true},
 );
@@ -131,11 +136,11 @@ userSchema.pre('save', function (next) {
     }
 });
 
-userSchema.methods.comparePassword = function (oldPassword) {
+userSchema.methods.comparePassword = function (oldPassword,encryptedPassword) {
     return new Promise((resolve, reject) => {
-        bcrypt.compare(oldPassword, this.password, function (err, isMatch) {
+        bcrypt.compare(oldPassword, encryptedPassword, function (err, isMatch) {
             if (err) {
-                return cb(err);
+                return reject(err);
             }
             return resolve(isMatch);
         });

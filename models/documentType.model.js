@@ -10,7 +10,7 @@ const Schema = mongoose.Schema;
  */
 const documentTypeSchema = new Schema(
     {
-        documentFor: {type: Schema.Types.String, enum: ['client', 'client-debtor', 'debtor', 'application']},
+        documentFor: {type: Schema.Types.String, enum: ['client', 'debtor', 'application']},
         documentTitle: {type: Schema.Types.String},
         isDeleted: {type: Schema.Types.Boolean, default: false},
     },

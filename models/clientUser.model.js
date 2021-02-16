@@ -36,7 +36,12 @@ const clientUserSchema = new Schema(
         profilePicture: Schema.Types.String,
         jwtToken: [Schema.Types.String],
         isDeleted: {type: Schema.Types.Boolean, default: false},
-
+        manageColumns:[{
+            moduleName: {type: Schema.Types.String},
+            columns: [{type: Schema.Types.String}],
+        }],
+        verificationOtp: Schema.Types.Number,
+        otpExpireTime: Schema.Types.Date,
     },
     {timestamps: true},
 );
@@ -47,7 +52,7 @@ clientUserSchema.statics.findByCredentials = async function (email, password) {
         clientUser = await clientUser.findOne({email, isDeleted: false});
         if (!clientUser) {
             return Promise.reject({
-                status: 'ERROR',
+                status: 'USER_NOT_FOUND',
                 message: 'Incorrect email or password.',
             });
         }
@@ -118,12 +123,12 @@ clientUserSchema.pre('save', function (next) {
     }
 });
 
-clientUserSchema.methods.comparePassword = function (oldPassword) {
+clientUserSchema.methods.comparePassword = function (oldPassword,encryptedPassword) {
     return new Promise((resolve, reject) => {
-        bcrypt.compare(oldPassword, this.password, function (err, isMatch) {
+        bcrypt.compare(oldPassword, encryptedPassword, function (err, isMatch) {
             if (err) {
                 console.log('err:: ',err);
-                return cb(err);
+                return reject(err);
             }
             return resolve(isMatch);
         });

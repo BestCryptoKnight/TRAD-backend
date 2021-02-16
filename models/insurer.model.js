@@ -11,9 +11,16 @@ const Schema = mongoose.Schema;
 const insurerSchema = new Schema(
     {
         name: {type: Schema.Types.String},
-        contactPerson: {type: Schema.Types.String},
+        crmInsurerId: {type: Schema.Types.String},
+        // contactPerson: {type: Schema.Types.String},
         contactNumber: {type: Schema.Types.String},
-        address: {type: Schema.Types.String},
+        address: {
+                addressLine: Schema.Types.String,
+                city: Schema.Types.String,
+                state: Schema.Types.String,
+                country: Schema.Types.String,
+                zipCode: Schema.Types.String,
+        },
         email: {type: Schema.Types.String},
         website: {type: Schema.Types.String},
         isDeleted: {type: Schema.Types.Boolean, default: false},

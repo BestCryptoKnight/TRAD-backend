@@ -19,9 +19,12 @@ const StaticFile = require('./../static-files/systemModules');
 /**
  * Get the List of Modules
  */
-router.get('/module/', async function (req, res) {
+router.get('/module', async function (req, res) {
     try {
         let modules = StaticFile.modules;
+        modules.forEach(i => {
+            i.accessTypes = []
+        });
         res.status(200).send({status: 'SUCCESS', data: modules});
     } catch (e) {
         Logger.log.error('Error occurred.', e.message || e);
@@ -120,7 +123,7 @@ router.get('/', async function (req, res) {
     }
     let organizationId = req.user.organizationId;
     try {
-        let organization = await Organization.findOne({_id: organizationId})
+        let organization = await Organization.findOne({_id: organizationId});
         res.status(200).send({
             status: 'SUCCESS',
             data: organization

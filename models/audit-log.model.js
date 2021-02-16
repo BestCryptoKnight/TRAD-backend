@@ -10,11 +10,11 @@ const Schema = mongoose.Schema;
  */
 const auditLogSchema = new Schema(
     {
-        entities: [{
-            entityType: {type: Schema.Types.String, enum: ['user', 'client']},
-            entityRefId: {type: Schema.Types.ObjectId},
-
-        }],
+        entityType:{type:Schema.Types.String},
+        entityRefId:{type:Schema.Types.ObjectId},
+        userType:{type:Schema.Types.String, enum: ['user', 'client-user', 'system']},
+        userRefId:{type:Schema.Types.ObjectId},
+        actionType:{type:Schema.Types.String, enum: ['add', 'edit', 'delete', 'sync']},
         logDescription: {type: Schema.Types.String},
     },
     {timestamps: true},

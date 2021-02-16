@@ -20,7 +20,6 @@ const transporter = nodemailer.createTransport({
         pass: config.mailer.sendgridApiKey,
     },
 });
-
 const sendMail = ({toAddress, subject, text, html, mailFor}) => {
     return new Promise((resolve, reject) => {
         let toAddressStr = '';
@@ -65,7 +64,7 @@ const sendMail = ({toAddress, subject, text, html, mailFor}) => {
         if (html) {
             mailBody.html = html;
         } else {
-            mailBody.text = text;
+            mailBody.text = 'Name : '+text.name+'\nOTP : '+text.otp;
         }
         if (config.mailer.send === 'true') {
             transporter.sendMail(mailBody, (err, info) => {

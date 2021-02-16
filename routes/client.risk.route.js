@@ -5,9 +5,10 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 let mongoose = require('mongoose');
-let Organization = mongoose.model('organization');
+let User = mongoose.model('user');
 const Client = mongoose.model('client');
 const ClientUser = mongoose.model('client-user');
+const AuditLog = mongoose.model('audit-log');
 
 /*
 * Local Imports
@@ -16,7 +17,9 @@ const config = require('../config');
 const Logger = require('./../services/logger');
 const MailHelper = require('./../helper/mailer.helper');
 const RssHelper = require('./../helper/rss.helper');
+const StaticFile = require('./../static-files/moduleColumn');
 
+//client
 /**
  * Search Client from RSS
  */
@@ -45,6 +48,140 @@ router.get('/search-from-crm', async function (req, res) {
 });
 
 /**
+ * Get Column Names
+ */
+router.get('/user/column-name',async function (req,res) {
+    try {
+        const module = StaticFile.modules.find(i => i.name === 'client-user');
+        const clientUserColumn = req.user.manageColumns.find(i => i.moduleName === 'client-user');
+        let columnList = [];
+        for (let i = 0; i < module.manageColumns.length; i++) {
+            if(clientUserColumn.columns.includes(module.manageColumns[i])){
+                columnList.push({name:module.manageColumns[i],isChecked:true});
+            } else {
+                columnList.push({name:module.manageColumns[i],isChecked:false});
+            }
+        }
+        res.status(200).send({status: 'SUCCESS', data: columnList});
+    } catch (e) {
+        Logger.log.error('Error occurred in get client-user column names', e.message || e);
+        res.status(500).send({status: 'ERROR', message: e.message || 'Something went wrong, please try again later.'});
+    }
+});
+
+/**
+ * List Client User details
+ */
+router.get('/user/:clientId', async function (req, res) {
+    try {
+        if (!req.params.clientId) {
+            Logger.log.error('No clientId passed.');
+            return res.status(400).send({status: 'ERROR', message: 'Please pass client\'s id.'});
+        }
+        const clientColumn = req.user.manageColumns.find(i => i.moduleName === 'client-user');
+        let queryFilter = {
+            isDeleted: false,
+            clientId: req.params.clientId
+        };
+        let option = {
+            page: parseInt(req.query.page) || 1,
+            limit: parseInt(req.query.limit) || 5,
+        };
+        option.select = clientColumn.columns.toString().replace(/,/g,' ');
+        option.sort = {createdAt: 'desc'};
+        option.lean = true;
+        let clientUsers = await ClientUser.paginate(queryFilter, option);
+        res.status(200).send({status: 'SUCCESS', data: clientUsers});
+    } catch (e) {
+        Logger.log.error('Error occurred in listing clients.', e.message || e);
+        res.status(500).send({status: 'ERROR', message: e.message || 'Something went wrong, please try again later.'});
+    }
+});
+
+/**
+ * Get Client User details
+ */
+router.get('/user-details/:clientUserId', async function (req, res) {
+    try {
+        if (!req.params.clientUserId) {
+            Logger.log.error('No clientId passed.');
+            return res.status(400).send({status: 'ERROR', message: 'Please pass client\'s id.'});
+        }
+        let clientUser = await ClientUser.findOne({_id: req.params.clientUserId});
+        res.status(200).send({status: 'SUCCESS', data: clientUser});
+    } catch (e) {
+        Logger.log.error('Error occurred in listing clients.', e.message || e);
+        res.status(500).send({status: 'ERROR', message: e.message || 'Something went wrong, please try again later.'});
+    }
+});
+
+/**
+ * Get Column Names
+ */
+router.get('/column-name',async function (req,res) {
+    try {
+        const module = StaticFile.modules.find(i => i.name === 'client');
+        const clientColumn = req.user.manageColumns.find(i => i.moduleName === 'client');
+        let columnList = [];
+        for (let i = 0; i < module.manageColumns.length; i++) {
+            if(clientColumn.columns.includes(module.manageColumns[i])){
+                columnList.push({name:module.manageColumns[i],isChecked:true});
+            } else {
+                columnList.push({name:module.manageColumns[i],isChecked:false});
+            }
+        }
+        res.status(200).send({status: 'SUCCESS', data: columnList});
+    } catch (e) {
+        Logger.log.error('Error occurred in get column names', e.message || e);
+        res.status(500).send({status: 'ERROR', message: e.message || 'Something went wrong, please try again later.'});
+    }
+});
+
+//client
+/**
+ * List Clients
+ */
+router.get('/', async function (req, res) {
+    try {
+        const clientColumn = req.user.manageColumns.find(i => i.moduleName === 'client');
+        let queryFilter = {
+            isDeleted: false
+        };
+        let option = {
+            page: parseInt(req.query.page) || 1,
+            limit: parseInt(req.query.limit) || 5,
+        };
+        option.select = clientColumn.columns.toString().replace(/,/g,' ');
+        option.sort = {createdAt: 'desc'};
+        option.lean = true;
+        let clients = await Client.paginate(queryFilter, option);
+        res.status(200).send({status: 'SUCCESS', data: clients});
+    } catch (e) {
+        Logger.log.error('Error occurred in listing clients.', e.message || e);
+        res.status(500).send({status: 'ERROR', message: e.message || 'Something went wrong, please try again later.'});
+    }
+});
+
+//client
+/**
+ * Get Client
+ */
+router.get('/:clientId', async function (req, res) {
+    try {
+        if (!req.params.clientId) {
+            Logger.log.error('No clientId passed.');
+            return res.status(400).send({status: 'ERROR', message: 'Please pass client\'s id.'});
+        }
+        let client = await Client.findOne({_id: req.params.clientId});
+        res.status(200).send({status: 'SUCCESS', data: client});
+    } catch (e) {
+        Logger.log.error('Error occurred in listing clients.', e.message || e);
+        res.status(500).send({status: 'ERROR', message: e.message || 'Something went wrong, please try again later.'});
+    }
+});
+
+//client
+/**
  * Add Client from RSS
  */
 router.post('/:crmId', async function (req, res) {
@@ -60,6 +197,7 @@ router.post('/:crmId', async function (req, res) {
         }
         let clientDataFromCrm = await RssHelper.getClientById({clientId: req.params.crmId});
         client = new Client(clientDataFromCrm);
+        await RssHelper.fetchInsurerDetails({underwriterName:clientDataFromCrm.underWriter,crmClientId:clientDataFromCrm.crmClientId,clientId:client._id});
         let contactsFromCrm = await RssHelper.getClientContacts({clientId: req.params.crmId});
         let promiseArr = [];
         contactsFromCrm.forEach(crmContact => {
@@ -68,7 +206,7 @@ router.post('/:crmId', async function (req, res) {
             let signUpToken = jwt.sign(JSON.stringify({_id: clientUser._id}), config.jwt.secret);
             clientUser.signUpToken = signUpToken;
             promiseArr.push(clientUser.save());
-            const userName = (clientUser.firstName ? clientUser.firstName + ' ' : '') + (clientUser.lastName ? clientUser.lastName : '')
+            const userName = (clientUser.firstName ? clientUser.firstName + ' ' : '') + (clientUser.lastName ? clientUser.lastName : '');
             let mailObj = {
                 toAddress: [clientUser.email],
                 subject: 'Welcome to TRAD CLIENT PORTAL',
@@ -94,6 +232,7 @@ router.post('/:crmId', async function (req, res) {
     }
 });
 
+//client
 /**
  * Sync Client from RSS - Update
  */
@@ -118,6 +257,107 @@ router.put('/sync-from-crm/:clientId', async function (req, res) {
 });
 
 /**
+ * Sync Client Users from RSS - Update
+ */
+router.put('/user/sync-from-crm/:clientId', async function (req, res) {
+    try {
+        if (!req.params.clientId) {
+            Logger.log.error('No clientId passed.');
+            return res.status(400).send({status: 'ERROR', message: 'Please pass client\'s id.'});
+        }
+        let client = await Client.findOne({_id: req.params.clientId});
+        if(!client){
+            Logger.log.error('No Client found', req.params.crmId);
+            return res.status(400).send({status: 'ERROR', message: 'Client not found.'});
+        }
+        let contactsFromCrm = await RssHelper.getClientContacts({clientId: client.crmClientId});
+        let promiseArr = [];
+        contactsFromCrm.forEach(crmContact => {
+            promiseArr.push(ClientUser.findOneAndUpdate({crmContactId: crmContact.crmContactId, isDeleted: false}, crmContact, {upsert: true}));
+        });
+        await Promise.all(promiseArr);
+        res.status(200).send({status: 'SUCCESS', message: 'Client Contacts synced successfully'});
+    } catch (e) {
+        Logger.log.error('Error occurred in getting client list for search.', e.message || e);
+        res.status(500).send({status: 'ERROR', message: e.message || 'Something went wrong, please try again later.'});
+    }
+});
+
+/**
+ * Update Column Names
+ */
+router.put('/user/column-name',async function (req,res) {
+    if (!req.user || !req.user._id) {
+        Logger.log.error('User data not found in req');
+        return res.status(401).send({status: 'ERROR', message: 'Please first login to update the profile.'});
+    }
+    if ( !req.body.hasOwnProperty('isReset') || !req.body.columns || req.body.columns.length === 0) {
+        Logger.log.error('Require fields are missing');
+        return res.status(400).send({status: 'ERROR', message: 'Something went wrong, please try again.'});
+    }
+    try {
+        let updateColumns = [];
+        if(req.body.isReset){
+            const module = StaticFile.modules.find(i => i.name === 'client-user');
+            updateColumns = module.defaultColumns;
+        } else {
+            updateColumns = req.body.columns;
+        }
+        await User.updateOne({_id:req.user._id,'manageColumns.moduleName':'client-user'},{$set:{'manageColumns.$.columns':updateColumns}});
+        res.status(200).send({status: 'SUCCESS', message:'Columns updated successfully'});
+    } catch (e) {
+        Logger.log.error('Error occurred in update column names', e.message || e);
+        res.status(500).send({status: 'ERROR', message: e.message || 'Something went wrong, please try again later.'});
+    }
+});
+
+/**
+ * Update Client User
+ */
+router.put('/user/:clientUserId', async function (req, res) {
+    try {
+        if (!req.params.clientUserId) {
+            Logger.log.error('No clientUserId passed.');
+            return res.status(400).send({status: 'ERROR', message: 'Please pass client user\'s id.'});
+        }
+        await ClientUser.updateOne({_id: req.params.clientUserId}, req.body);
+        res.status(200).send({status: 'SUCCESS', message: 'Client User updated successfully'});
+    } catch (e) {
+        Logger.log.error('Error occurred in getting client list for search.', e.message || e);
+        res.status(500).send({status: 'ERROR', message: e.message || 'Something went wrong, please try again later.'});
+    }
+});
+
+/**
+ * Update Column Names
+ */
+router.put('/column-name',async function (req,res) {
+    if (!req.user || !req.user._id) {
+        Logger.log.error('User data not found in req');
+        return res.status(401).send({status: 'ERROR', message: 'Please first login to update the profile.'});
+    }
+    if ( !req.body.hasOwnProperty('isReset') || !req.body.columns || req.body.columns.length === 0) {
+        Logger.log.error('Require fields are missing');
+        return res.status(400).send({status: 'ERROR', message: 'Something went wrong, please try again.'});
+    }
+    try {
+        let updateColumns = [];
+        if(req.body.isReset){
+            const module = StaticFile.modules.find(i => i.name === 'client');
+            updateColumns = module.defaultColumns;
+        } else {
+            updateColumns = req.body.columns;
+        }
+        await User.updateOne({_id:req.user._id,'manageColumns.moduleName':'client'},{'manageColumns.$.columns':updateColumns});
+        res.status(200).send({status: 'SUCCESS', message:'Columns updated successfully'});
+    } catch (e) {
+        Logger.log.error('Error occurred in update column names', e.message || e);
+        res.status(500).send({status: 'ERROR', message: e.message || 'Something went wrong, please try again later.'});
+    }
+});
+
+//client
+/**
  * Update Client
  */
 router.put('/:clientId', async function (req, res) {
@@ -134,45 +374,7 @@ router.put('/:clientId', async function (req, res) {
     }
 });
 
-/**
- * List Clients
- */
-router.get('/', async function (req, res) {
-    try {
-        let queryFilter = {
-            isDeleted: false
-        };
-        let option = {
-            page: parseInt(req.query.page) || 1,
-            limit: parseInt(req.query.limit) || 5,
-        };
-        option.sort = {createdAt: 'desc'};
-        option.lean = true;
-        let clients = await Client.paginate(queryFilter, option);
-        res.status(200).send({status: 'SUCCESS', data: clients});
-    } catch (e) {
-        Logger.log.error('Error occurred in listing clients.', e.message || e);
-        res.status(500).send({status: 'ERROR', message: e.message || 'Something went wrong, please try again later.'});
-    }
-});
-
-/**
- * Get Client
- */
-router.get('/:clientId', async function (req, res) {
-    try {
-        if (!req.params.clientId) {
-            Logger.log.error('No clientId passed.');
-            return res.status(400).send({status: 'ERROR', message: 'Please pass client\'s id.'});
-        }
-        let client = await Client.findOne({_id: req.params.clientId});
-        res.status(200).send({status: 'SUCCESS', data: client});
-    } catch (e) {
-        Logger.log.error('Error occurred in listing clients.', e.message || e);
-        res.status(500).send({status: 'ERROR', message: e.message || 'Something went wrong, please try again later.'});
-    }
-});
-
+//client
 /**
  * Delete Client
  */
@@ -192,7 +394,6 @@ router.delete('/:clientId', async function (req, res) {
         res.status(500).send({status: 'ERROR', message: e.message || 'Something went wrong, please try again later.'});
     }
 });
-
 
 /**
  * Updates a User
