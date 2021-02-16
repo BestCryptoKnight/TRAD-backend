@@ -147,6 +147,12 @@ router.get('/', async function (req, res) {
         let queryFilter = {
             isDeleted: false
         };
+        if(req.accessTypes && req.accessTypes.indexOf('full-access') === -1){
+            queryFilter = {
+                isDeleted: false,
+                $or: [{riskAnalystId: req.user._id}, {serviceManagerId: req.user._id}]
+            }
+        }
         let option = {
             page: parseInt(req.query.page) || 1,
             limit: parseInt(req.query.limit) || 5,
@@ -225,6 +231,15 @@ router.post('/:crmId', async function (req, res) {
         });
         promiseArr.push(client.save());
         await Promise.all(promiseArr);
+        //TODO confirm for add logs of insurer, insurer-contacts, polices & contacts
+        await AuditLog.create({
+            entityType: 'client',
+            entityRefId: client._id,
+            userType: 'user',
+            userRefId: req.user._id,
+            actionType: 'add',
+            logDescription: 'Client added successfully.'
+        });
         res.status(200).send({status: 'SUCCESS', data: client});
     } catch (e) {
         Logger.log.error('Error occurred in getting client list for search.', e.message || e);

@@ -7,6 +7,7 @@ const mongoose = require('mongoose');
 const User = mongoose.model('user');
 const Policy = mongoose.model('policy');
 const Client = mongoose.model('client');
+const AuditLog = mongoose.model('audit-log');
 const {getClientPolicies} = require('./../helper/rss.helper');
 
 /*
@@ -288,6 +289,14 @@ router.put('/sync-from-crm/:insurerId', async function (req, res) {
             });
         }
         await Promise.all(promiseArr);
+        await AuditLog.create({
+            entityType: 'policy',
+            entityRefId: req.params.insurerId,
+            userType: 'user',
+            userRefId: req.user._id,
+            actionType: 'sync',
+            logDescription: req.query.columnFor === 'insurer-policy' ? 'Insurer policies synced successfully.': 'Insurer matrix synced successfully.'
+        });
         res.status(200).send({status: 'SUCCESS', message: 'Policies synced successfully'});
     } catch (e) {
         Logger.log.error('Error occurred in sync insurer policies ', e.message || e);
@@ -329,6 +338,14 @@ router.put('/client/sync-from-crm/:clientId', async function (req, res) {
             });
         }
         await Promise.all(promiseArr);
+        await AuditLog.create({
+            entityType: 'policy',
+            entityRefId: req.params.clientId,
+            userType: 'user',
+            userRefId: req.user._id,
+            actionType: 'sync',
+            logDescription: 'Client policies synced successfully.'
+        });
         res.status(200).send({status: 'SUCCESS', message: 'Policies synced successfully'});
     } catch (e) {
         Logger.log.error('Error occurred in sync insurer contacts ', e.message || e);

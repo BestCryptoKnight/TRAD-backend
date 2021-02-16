@@ -293,11 +293,23 @@ router.get('/', async function (req, res) {
         let queryFilter = {
             isDeleted: false
         };
+        if(req.accessTypes && req.accessTypes.indexOf('full-access') === -1){
+            queryFilter = {
+                isDeleted: false,
+                _id:req.user._id
+            }
+        }
         let sortingOptions = {};
         if(req.query.sortBy && req.query.sortOrder){
             sortingOptions[req.query.sortBy] = req.query.sortOrder
         }
         if (req.query.search) queryFilter.name = {$regex: req.query.search, $options: 'i'};
+        if (req.query.role){
+            queryFilter.role = req.query.role
+        }
+        if (req.query.startDate && req.query.endDate){
+            queryFilter.createdAt={$gte:req.query.startDate ,$lt:req.query.endDate}
+        }
         let option = {
             page: parseInt(req.query.page) || 1,
             limit: parseInt(req.query.limit) || 5,
@@ -525,8 +537,10 @@ router.delete('/:userId', async function (req, res) {
         return res.status(400).send({status: 'ERROR', messageCode:'REQUIRE_FIELD_MISSING', message: 'Something went wrong, please try again.'});
     }
     try {
-        let userId = req.params.userId;
-        await User.updateOne({_id: userId}, {isDeleted: true});
+        if(req.user._id.toString() === req.params.userId){
+            return res.status(400).send({status: 'ERROR', messageCode:'BAD_REQUEST', message: 'User can\'t remove yourself'});
+        }
+        await User.updateOne({_id: req.params.userId}, {isDeleted: true});
         await AuditLog.create({entityType:'user',entityRefId:req.params.userId,userType:'user',userRefId:req.user._id,actionType:'delete',logDescription:'User deleted successfully.'});
         res.status(200).send({status: 'SUCCESS', message: 'User deleted successfully.'});
     } catch (e) {

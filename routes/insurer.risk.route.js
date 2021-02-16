@@ -7,6 +7,7 @@ const mongoose = require('mongoose');
 const User = mongoose.model('user');
 const Insurer = mongoose.model('insurer');
 const InsurerUser = mongoose.model('insurer-user');
+const AuditLog = mongoose.model('audit-log');
 const {getInsurerContacts} = require('./../helper/rss.helper');
 
 /*
@@ -247,7 +248,7 @@ router.put('/column-name',async function (req,res) {
 });
 
 /**
- * Sync Client Users from RSS - Update
+ * Sync Insurer Users from RSS - Update
  */
 router.put('/user/sync-from-crm/:insurerId', async function (req, res) {
     try {
@@ -264,6 +265,14 @@ router.put('/user/sync-from-crm/:insurerId', async function (req, res) {
         let promiseArr = [];
         contactsFromCrm.forEach(crmContact => {
             promiseArr.push(InsurerUser.updateOne({crmContactId: crmContact.crmContactId, isDeleted: false}, crmContact, {upsert: true}));
+        });
+        await AuditLog.create({
+            entityType: 'insurer',
+            entityRefId: req.params.insurerId,
+            userType: 'user',
+            userRefId: req.user._id,
+            actionType: 'sync',
+            logDescription: 'Insurer contacts synced successfully.'
         });
         await Promise.all(promiseArr);
         res.status(200).send({status: 'SUCCESS', message: 'Insurer Contacts synced successfully'});
