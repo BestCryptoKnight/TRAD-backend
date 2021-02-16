@@ -26,3 +26,4 @@ package-lock.json
 upload/**
 !upload/**/
 !upload/fonts/*
+!upload/mail-images/*
