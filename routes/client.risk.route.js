@@ -8,7 +8,6 @@ let mongoose = require('mongoose');
 let User = mongoose.model('user');
 const Client = mongoose.model('client');
 const ClientUser = mongoose.model('client-user');
-const AuditLog = mongoose.model('audit-log');
 
 /*
 * Local Imports
@@ -18,6 +17,7 @@ const Logger = require('./../services/logger');
 const MailHelper = require('./../helper/mailer.helper');
 const RssHelper = require('./../helper/rss.helper');
 const StaticFile = require('./../static-files/moduleColumn');
+const {addAuditLog} = require('./../helper/audit-log.helper');
 
 //client
 /**
@@ -232,7 +232,7 @@ router.post('/:crmId', async function (req, res) {
         promiseArr.push(client.save());
         await Promise.all(promiseArr);
         //TODO confirm for add logs of insurer, insurer-contacts, polices & contacts
-        await AuditLog.create({
+        await addAuditLog({
             entityType: 'client',
             entityRefId: client._id,
             userType: 'user',
@@ -264,6 +264,14 @@ router.put('/sync-from-crm/:clientId', async function (req, res) {
         }
         let clientDataFromCrm = await RssHelper.getClientById({clientId: client.crmClientId});
         await Client.updateOne({_id: req.params.clientId}, clientDataFromCrm);
+        await addAuditLog({
+            entityType: 'client',
+            entityRefId: req.params.clientId,
+            userType: 'user',
+            userRefId: req.user._id,
+            actionType: 'sync',
+            logDescription: 'Client synced successfully.'
+        });
         res.status(200).send({status: 'SUCCESS', message: 'Client synced successfully'});
     } catch (e) {
         Logger.log.error('Error occurred in getting client list for search.', e.message || e);
@@ -291,6 +299,14 @@ router.put('/user/sync-from-crm/:clientId', async function (req, res) {
             promiseArr.push(ClientUser.findOneAndUpdate({crmContactId: crmContact.crmContactId, isDeleted: false}, crmContact, {upsert: true}));
         });
         await Promise.all(promiseArr);
+        await addAuditLog({
+            entityType: 'client',
+            entityRefId: req.params.clientId,
+            userType: 'user',
+            userRefId: req.user._id,
+            actionType: 'sync',
+            logDescription: 'Client contacts synced successfully.'
+        });
         res.status(200).send({status: 'SUCCESS', message: 'Client Contacts synced successfully'});
     } catch (e) {
         Logger.log.error('Error occurred in getting client list for search.', e.message || e);
@@ -336,6 +352,14 @@ router.put('/user/:clientUserId', async function (req, res) {
             return res.status(400).send({status: 'ERROR', message: 'Please pass client user\'s id.'});
         }
         await ClientUser.updateOne({_id: req.params.clientUserId}, req.body);
+        await addAuditLog({
+            entityType: 'client',
+            entityRefId: req.params.clientUserId,
+            userType: 'user',
+            userRefId: req.user._id,
+            actionType: 'edit',
+            logDescription: 'Client user updated successfully.'
+        });
         res.status(200).send({status: 'SUCCESS', message: 'Client User updated successfully'});
     } catch (e) {
         Logger.log.error('Error occurred in getting client list for search.', e.message || e);
@@ -403,6 +427,14 @@ router.delete('/:clientId', async function (req, res) {
         promiseArr.push(Client.updateOne({_id: req.params.clientId}, {isDeleted: true}));
         promiseArr.push(ClientUser.updateMany({clientId: req.params.clientId}, {isDeleted: true}));
         await Promise.all(promiseArr);
+        await addAuditLog({
+            entityType: 'client',
+            entityRefId: req.params.clientId,
+            userType: 'user',
+            userRefId: req.user._id,
+            actionType: 'delete',
+            logDescription: 'Client removed successfully.'
+        });
         res.status(200).send({status: 'SUCCESS', message: 'Client deleted successfully'});
     } catch (e) {
         Logger.log.error('Error occurred in getting client list for search.', e.message || e);

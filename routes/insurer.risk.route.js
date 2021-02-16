@@ -7,14 +7,14 @@ const mongoose = require('mongoose');
 const User = mongoose.model('user');
 const Insurer = mongoose.model('insurer');
 const InsurerUser = mongoose.model('insurer-user');
-const AuditLog = mongoose.model('audit-log');
-const {getInsurerContacts} = require('./../helper/rss.helper');
 
 /*
 * Local Imports
 * */
 const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
+const {getInsurerContacts} = require('./../helper/rss.helper');
+const {addAuditLog} = require('./../helper/audit-log.helper');
 
 /**
  * Get Column Names
@@ -266,7 +266,7 @@ router.put('/user/sync-from-crm/:insurerId', async function (req, res) {
         contactsFromCrm.forEach(crmContact => {
             promiseArr.push(InsurerUser.updateOne({crmContactId: crmContact.crmContactId, isDeleted: false}, crmContact, {upsert: true}));
         });
-        await AuditLog.create({
+        await addAuditLog({
             entityType: 'insurer',
             entityRefId: req.params.insurerId,
             userType: 'user',

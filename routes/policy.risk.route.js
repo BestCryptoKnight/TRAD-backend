@@ -6,15 +6,14 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const User = mongoose.model('user');
 const Policy = mongoose.model('policy');
-const Client = mongoose.model('client');
-const AuditLog = mongoose.model('audit-log');
-const {getClientPolicies} = require('./../helper/rss.helper');
 
 /*
 * Local Imports
 * */
 const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
+const {getClientPolicies} = require('./../helper/rss.helper');
+const {addAuditLog} = require('./../helper/audit-log.helper');
 
 /**
  * Get Column Names
@@ -289,7 +288,7 @@ router.put('/sync-from-crm/:insurerId', async function (req, res) {
             });
         }
         await Promise.all(promiseArr);
-        await AuditLog.create({
+        await addAuditLog({
             entityType: 'policy',
             entityRefId: req.params.insurerId,
             userType: 'user',
@@ -338,7 +337,7 @@ router.put('/client/sync-from-crm/:clientId', async function (req, res) {
             });
         }
         await Promise.all(promiseArr);
-        await AuditLog.create({
+        await addAuditLog({
             entityType: 'policy',
             entityRefId: req.params.clientId,
             userType: 'user',

@@ -10,7 +10,6 @@ const jwt = require('jsonwebtoken');
 let mongoose = require('mongoose');
 const User = mongoose.model('user');
 const Client = mongoose.model('client');
-const AuditLog = mongoose.model('audit-log');
 
 /*
 * Local Imports
@@ -19,6 +18,7 @@ const config = require('../config');
 const MailHelper = require('./../helper/mailer.helper');
 const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
+const {addAuditLog} = require('./../helper/audit-log.helper');
 
 const uploadProfilePath = path.resolve(__dirname, '../upload/' + getProfileImagePath());
 // Custom Multer storage engine
@@ -293,12 +293,6 @@ router.get('/', async function (req, res) {
         let queryFilter = {
             isDeleted: false
         };
-        if(req.accessTypes && req.accessTypes.indexOf('full-access') === -1){
-            queryFilter = {
-                isDeleted: false,
-                _id:req.user._id
-            }
-        }
         let sortingOptions = {};
         if(req.query.sortBy && req.query.sortOrder){
             sortingOptions[req.query.sortBy] = req.query.sortOrder
@@ -401,7 +395,14 @@ router.post('/', async function (req, res) {
                 },
                 mailFor: 'newAdminUser',
             };
-            await AuditLog.create({entityType:'user',entityRefId:user._id,userType:'user',userRefId:req.user._id,actionType:'add',logDescription:'User created successfully.'});
+            await addAuditLog({
+                entityType: 'user',
+                entityRefId: user._id,
+                userType: 'user',
+                userRefId: req.user._id,
+                actionType: 'add',
+                logDescription: 'User created successfully.'
+            });
             Logger.log.info('User created successfully.');
             res.status(200).send({status: 'SUCCESS', message: 'User created successfully.'});
             await MailHelper.sendMail(mailObj);
@@ -509,7 +510,7 @@ router.put('/:userId', async function (req, res) {
                 }
             }
             await User.updateOne({_id: userId}, updateObj, {new: true});
-            await AuditLog.create({
+            await addAuditLog({
                 entityType: 'user',
                 entityRefId: req.params.userId,
                 userType: 'user',
@@ -541,7 +542,14 @@ router.delete('/:userId', async function (req, res) {
             return res.status(400).send({status: 'ERROR', messageCode:'BAD_REQUEST', message: 'User can\'t remove yourself'});
         }
         await User.updateOne({_id: req.params.userId}, {isDeleted: true});
-        await AuditLog.create({entityType:'user',entityRefId:req.params.userId,userType:'user',userRefId:req.user._id,actionType:'delete',logDescription:'User deleted successfully.'});
+        await addAuditLog({
+            entityType: 'user',
+            entityRefId: req.params.userId,
+            userType: 'user',
+            userRefId: req.user._id,
+            actionType: 'delete',
+            logDescription: 'User deleted successfully.'
+        });
         res.status(200).send({status: 'SUCCESS', message: 'User deleted successfully.'});
     } catch (e) {
         Logger.log.error('Error occurred.', e.message || e);
