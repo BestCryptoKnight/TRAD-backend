@@ -4,7 +4,7 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
-const User = mongoose.model('user');
+const ClientUser = mongoose.model('client-user');
 const Task = mongoose.model('task');
 
 /*
@@ -14,10 +14,9 @@ const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
 const {
   createTask,
-  getClientList,
-  getUserList,
   getDebtorList,
   aggregationQuery,
+  getUserClientList,
   getApplicationList,
 } = require('./../helper/task.helper');
 const { addAuditLog } = require('./../helper/audit-log.helper');
@@ -100,12 +99,8 @@ router.get('/column-name', async function (req, res) {
  */
 router.get('/user-list', async function (req, res) {
   try {
-    const hasFullAccess = !!(
-      req.accessTypes && req.accessTypes.indexOf('full-access') !== -1
-    );
-    const users = await getUserList({
-      userId: req.user._id,
-      hasFullAccess: hasFullAccess,
+    const users = await getUserClientList({
+      clientId: req.user.clientId,
     });
     res.status(200).send({ status: 'SUCCESS', data: users });
   } catch (e) {
@@ -130,34 +125,24 @@ router.get('/entity-list', async function (req, res) {
   }
   try {
     let entityList;
-    const hasFullAccess = !!(
-      req.accessTypes && req.accessTypes.indexOf('full-access') !== -1
-    );
     switch (req.query.entityName.toLowerCase()) {
-      case 'user':
-        entityList = await getUserList({
-          userId: req.user._id,
-          hasFullAccess: hasFullAccess,
-        });
-        break;
-      case 'client':
-        entityList = await getClientList({
-          userId: req.user._id,
-          hasFullAccess: hasFullAccess,
+      case 'client-user':
+        entityList = await getUserClientList({
+          clientId: req.user.clientId,
+          isForAssignee: false,
         });
         break;
       case 'debtor':
         entityList = await getDebtorList({
-          userId: req.user._id,
-          hasFullAccess: hasFullAccess,
-          isForRisk: true,
+          userId: req.user.clientId,
+          isForRisk: false,
         });
         break;
       case 'application':
         entityList = await getApplicationList({
           userId: req.user.clientId,
-          hasFullAccess: hasFullAccess,
-          isForRisk: true,
+          hasFullAccess: false,
+          isForRisk: false,
         });
         break;
       default:
@@ -186,16 +171,12 @@ router.get('/', async function (req, res) {
     const taskColumn = req.user.manageColumns.find(
       (i) => i.moduleName === 'task',
     );
-    let hasFullAccess = false;
-    if (req.accessTypes && req.accessTypes.indexOf('full-access') !== -1) {
-      hasFullAccess = true;
-    }
     const { query, queryFilter } = await aggregationQuery({
       taskColumn: taskColumn.columns,
       requestedQuery: req.query,
+      isForRisk: false,
+      hasFullAccess: false,
       userId: req.user._id,
-      isForRisk: true,
-      hasFullAccess: hasFullAccess,
     });
     const [tasks, total] = await Promise.all([
       Task.aggregate(query).allowDiskUse(true),
@@ -205,15 +186,14 @@ router.get('/', async function (req, res) {
     for (let i = 0; i < module.manageColumns.length; i++) {
       if (taskColumn.columns.includes(module.manageColumns[i].name)) {
         if (module.manageColumns[i].name === 'entityId') {
+          //TODO change url
           module.manageColumns[i].request = {
             method: 'GET',
-            user: 'rp/user',
-            client: 'rp/client',
-            'client-user': 'rp/client/user-details',
-            debtor: 'rp/debtor',
-            application: 'rp/application',
-            claim: 'rp/claim',
-            overdue: 'rp/overdue',
+            'client-user': 'cp/client/user-details',
+            debtor: 'cp/debtor',
+            application: 'cp/application',
+            claim: 'cp/claim',
+            overdue: 'cp/overdue',
           };
         }
         headers.push(module.manageColumns[i]);
@@ -285,10 +265,10 @@ router.post('/', async function (req, res) {
       title: req.body.title,
       description: req.body.description,
       entityType: req.body.entityType.toLowerCase(),
-      entityId: req.body.entityId,
-      createdByType: 'user',
+      entityId: req.body.entityId.split('|')[1],
+      createdByType: 'client-user',
       createdById: req.user._id,
-      assigneeType: 'user',
+      assigneeType: req.body.entityId.split('|')[0],
       assigneeId: req.body.assigneeId,
       dueDate: req.body.dueDate,
     });
@@ -324,8 +304,6 @@ router.put('/column-name', async function (req, res) {
     let updateColumns = [];
     let module;
     switch (req.body.columnFor) {
-      case 'task':
-      case 'client-task':
       case 'debtor-task':
       case 'application-task':
       case 'claim-task':
@@ -346,7 +324,7 @@ router.put('/column-name', async function (req, res) {
           message: 'Please pass correct fields',
         });
     }
-    await User.updateOne(
+    await ClientUser.updateOne(
       { _id: req.user._id, 'manageColumns.moduleName': req.body.columnFor },
       { $set: { 'manageColumns.$.columns': updateColumns } },
     );

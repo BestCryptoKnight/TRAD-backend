@@ -2,67 +2,416 @@
   "modules": [
     {
       "name": "audit-logs",
-      "manageColumns": [{"name": "entityType","label": "Module","type": "string"},{"name": "logDescription","label": "Log Description","type": "string"},{"name": "userType","label": "User Type","type": "string"},{"name": "userRefId","label": "User Id","type": "string"},{"name": "entityRefId","label": "Module Id","type": "string"},{"name": "actionType","label": "Action Type","type": "string"},{"name": "createdAt","label": "Created Date","type": "date"},{"name": "updatedAt","label": "Modified Date","type": "date"}],
+      "manageColumns": [
+        { "name": "entityType", "label": "Module", "type": "string" },
+        {
+          "name": "logDescription",
+          "label": "Log Description",
+          "type": "string"
+        },
+        { "name": "userType", "label": "User Type", "type": "string" },
+        { "name": "userRefId", "label": "User Name", "type": "string" },
+        { "name": "entityRefId", "label": "Module Id", "type": "string" },
+        { "name": "actionType", "label": "Action Type", "type": "string" },
+        { "name": "createdAt", "label": "Created Date", "type": "date" },
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+      ],
       "defaultColumns": ["entityType", "logDescription", "userType"]
     },
     {
       "name": "application",
-      "manageColumns": ["clientId","debtorId","updatedAt", "createdAt"],
-      "defaultColumns": ["debtorId"]
+      "manageColumns": [
+        { "name": "clientId", "label": "Client Name", "type": "string" },
+        { "name": "debtorId", "label": "Debtor Name", "type": "string" },
+        { "name": "entityType", "label": "Entity Type", "type": "string" },
+        { "name": "clientDebtorId", "label": "Credit Limit", "type": "number" },
+        {
+          "name": "extendedPaymentTermsDetails",
+          "label": "Extended Payment Terms Details",
+          "type": "string"
+        },
+        {
+          "name": "passedOverdueDetails",
+          "label": "Passed Overdue Details",
+          "type": "string"
+        },
+        { "name": "createdAt", "label": "Created Date", "type": "date" },
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+      ],
+      "defaultColumns": ["entityType", "clientId"]
+    },
+    {
+      "name": "application-task",
+      "manageColumns": [
+        { "name": "priority", "label": "Priority", "type": "string" },
+        { "name": "title", "label": "Title", "type": "string" },
+        { "name": "description", "label": "Description", "type": "string" },
+        { "name": "entityType", "label": "Entity Type", "type": "string" },
+        { "name": "entityId", "label": "Entity Name", "type": "modal" },
+        { "name": "createdById", "label": "Created By", "type": "string" },
+        { "name": "assigneeId", "label": "Assignee", "type": "string" },
+        { "name": "dueDate", "label": "Due Date", "type": "date" },
+        { "name": "createdAt", "label": "Created Date", "type": "date" },
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+      ],
+      "defaultColumns": ["priority", "title", "description", "entityType"]
     },
     {
       "name": "client",
-      "manageColumns": ["name", "riskAnalystId", "serviceManagerId","insurerId", "crmClientId", "address.addressLine", "address.city", "address.state","address.country","address.zipCode", "crmNote", "contactNumber","website", "abn","acn", "sector","salesPerson","updatedAt","createdAt"],
-      "defaultColumns": ["name","contactNumber","website", "abn","acn"]
+      "manageColumns": [
+        { "name": "name", "label": "Name", "type": "string" },
+        {
+          "name": "contactNumber",
+          "label": "Contact Number",
+          "type": "string"
+        },
+        {
+          "name": "riskAnalystId",
+          "label": "RiskAnalyst Name",
+          "type": "string"
+        },
+        {
+          "name": "serviceManagerId",
+          "label": "ServiceManager Name",
+          "type": "string"
+        },
+        { "name": "insurerId", "label": "Insurer Name", "type": "string" },
+        { "name": "crmClientId", "label": "Accountant Id", "type": "string" },
+        { "name": "fullAddress", "label": "Full Address", "type": "string" },
+        { "name": "addressLine", "label": "Address Line", "type": "string" },
+        { "name": "city", "label": "City", "type": "string" },
+        { "name": "state", "label": "Country/State", "type": "string" },
+        { "name": "country", "label": "Country", "type": "string" },
+        { "name": "zipCode", "label": "Postcode/Zip", "type": "string" },
+        { "name": "website", "label": "Website", "type": "string" },
+        { "name": "sector", "label": "Sector", "type": "string" },
+        { "name": "abn", "label": "ABN", "type": "string" },
+        { "name": "acn", "label": "ACN", "type": "string" },
+        { "name": "salesPerson", "label": "Sales Person", "type": "string" },
+        { "name": "referredBy", "label": "Referred By", "type": "string" },
+        { "name": "inceptionDate", "label": "Inception Date", "type": "date" },
+        { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
+        { "name": "createdAt", "label": "Created Date", "type": "date" },
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+      ],
+      "defaultColumns": ["name", "contactNumber", "website", "abn", "acn"]
     },
     {
       "name": "client-user",
-      "manageColumns": ["clientId","firstName","lastName","contactNumber", "department", "hasPortalAccess", "hasLeftCompany", "isDecisionMaker", "crmContactId","email", "profilePicture","manageColumns","updatedAt", "createdAt"],
-      "defaultColumns": ["firstName","lastName","contactNumber", "department"]
+      "manageColumns": [
+        {
+          "name": "name",
+          "label": "Name",
+          "type": "modal",
+          "request": { "method": "GET", "url": "rp/client/user-details" }
+        },
+        {
+          "name": "contactNumber",
+          "label": "Contact Number",
+          "type": "string"
+        },
+        { "name": "department", "label": "Department", "type": "string" },
+        {
+          "name": "hasPortalAccess",
+          "label": "Portal Access",
+          "type": "boolean",
+          "isDisabled": false,
+          "request": { "method": "PUT", "url": "rp/client/user" }
+        },
+        {
+          "name": "hasLeftCompany",
+          "label": "Left Company",
+          "type": "string"
+        },
+        {
+          "name": "isDecisionMaker",
+          "label": "Decision Maker",
+          "type": "string"
+        },
+        { "name": "email", "label": "Email", "type": "string" },
+        { "name": "createdAt", "label": "Created Date", "type": "date" },
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+      ],
+      "defaultColumns": ["name", "contactNumber", "department"]
+    },
+    {
+      "name": "client-application",
+      "manageColumns": [
+        { "name": "debtorId", "label": "Debtor Name", "type": "string" },
+        { "name": "entityType", "label": "Entity Type", "type": "string" },
+        { "name": "clientDebtorId", "label": "Credit Limit", "type": "number" },
+        {
+          "name": "extendedPaymentTermsDetails",
+          "label": "Extended Payment Terms Details",
+          "type": "string"
+        },
+        {
+          "name": "passedOverdueDetails",
+          "label": "Passed Overdue Details",
+          "type": "string"
+        },
+        { "name": "createdAt", "label": "Created Date", "type": "date" },
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+      ],
+      "defaultColumns": ["entityType", "debtorId"]
+    },
+    {
+      "name": "client-overdue",
+      "manageColumns": [
+        { "name": "debtorId", "label": "Debtor Name", "type": "string" },
+        { "name": "createdAt", "label": "Created Date", "type": "date" },
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+      ],
+      "defaultColumns": ["debtorId", "updatedAt"]
+    },
+    {
+      "name": "client-claim",
+      "manageColumns": [
+        { "name": "debtorId", "label": "Debtor Name", "type": "string" },
+        { "name": "createdAt", "label": "Created Date", "type": "date" },
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+      ],
+      "defaultColumns": ["debtorId", "updatedAt"]
     },
     {
       "name": "client-policy",
-      "manageColumns": [{"name": "insurerId","label": "Insurer Id","type": "string"},{"name": "clientId","label": "Client Id","type": "string"},{"name": "product","label": "Product","type": "string"},{"name": "policyPeriod","label": "Policy Period","type": "string"},{"name": "policyCurrency","label": "Policy Currency","type": "string"},{"name": "inceptionDate","label": "Inception Date","type": "date"},{"name": "expiryDate","label": "Expiry Date","type": "date"},{"name": "createdAt","label": "Created Date","type": "date"},{"name": "updatedAt","label": "Modified Date","type": "date"}],
+      "manageColumns": [
+        { "name": "insurerId", "label": "Insurer Id", "type": "string" },
+        { "name": "clientId", "label": "Client Id", "type": "string" },
+        { "name": "product", "label": "Product", "type": "string" },
+        { "name": "policyPeriod", "label": "Policy Period", "type": "string" },
+        {
+          "name": "policyCurrency",
+          "label": "Policy Currency",
+          "type": "string"
+        },
+        { "name": "inceptionDate", "label": "Inception Date", "type": "date" },
+        { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
+        { "name": "createdAt", "label": "Created Date", "type": "date" },
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+      ],
       "defaultColumns": ["insurerId", "clientId", "product"]
     },
     {
+      "name": "client-task",
+      "manageColumns": [
+        { "name": "priority", "label": "Priority", "type": "string" },
+        { "name": "title", "label": "Title", "type": "string" },
+        { "name": "description", "label": "Description", "type": "string" },
+        { "name": "entityType", "label": "Entity Type", "type": "string" },
+        { "name": "entityId", "label": "Entity Name", "type": "modal" },
+        { "name": "createdById", "label": "Created By", "type": "string" },
+        { "name": "assigneeId", "label": "Assignee", "type": "string" },
+        { "name": "dueDate", "label": "Due Date", "type": "date" },
+        { "name": "createdAt", "label": "Created Date", "type": "date" },
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+      ],
+      "defaultColumns": ["priority", "title", "description", "entityType"]
+    },
+    {
       "name": "credit-limit",
-      "manageColumns": ["clientId", "debtorId","creditLimit","updatedAt","createdAt"],
-      "defaultColumns": ["clientId", "debtorId","creditLimit"]
+      "manageColumns": [
+        "clientId",
+        "debtorId",
+        "creditLimit",
+        "updatedAt",
+        "createdAt"
+      ],
+      "defaultColumns": ["clientId", "debtorId", "creditLimit"]
     },
     {
       "name": "claim",
-      "manageColumns": ["clientId", "debtorId", "applicationId", "updatedAt", "createdAt"],
-      "defaultColumns": ["clientId", "debtorId", "applicationId"]
+      "manageColumns": [
+        { "name": "clientId", "label": "Client Name", "type": "string" },
+        { "name": "debtorId", "label": "Debtor Name", "type": "string" },
+        { "name": "createdAt", "label": "Created Date", "type": "date" },
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+      ],
+      "defaultColumns": ["clientId", "debtorId", "updatedAt"]
+    },
+    {
+      "name": "claim-task",
+      "manageColumns": [
+        { "name": "priority", "label": "Priority", "type": "string" },
+        { "name": "title", "label": "Title", "type": "string" },
+        { "name": "description", "label": "Description", "type": "string" },
+        { "name": "entityType", "label": "Entity Type", "type": "string" },
+        { "name": "entityId", "label": "Entity Name", "type": "modal" },
+        { "name": "createdById", "label": "Created By", "type": "string" },
+        { "name": "assigneeId", "label": "Assignee", "type": "string" },
+        { "name": "dueDate", "label": "Due Date", "type": "date" },
+        { "name": "createdAt", "label": "Created Date", "type": "date" },
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+      ],
+      "defaultColumns": ["priority", "title", "description", "entityType"]
     },
     {
       "name": "debtor",
-      "manageColumns": ["clientId", "debtorId","creditLimit","updatedAt","createdAt"],
-      "defaultColumns": ["clientId", "debtorId","creditLimit"]
+      "manageColumns": [
+        { "name": "abn", "label": "ABN", "type": "string" },
+        { "name": "acn", "label": "ACN", "type": "string" },
+        { "name": "entityName", "label": "Name", "type": "string" },
+        { "name": "entityType", "label": "Entity Type", "type": "string" },
+        {
+          "name": "contactNumber",
+          "label": "Contact Number",
+          "type": "string"
+        },
+        { "name": "creditLimit", "label": "Credit Limit", "type": "number" },
+        { "name": "createdAt", "label": "Created Date", "type": "date" },
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+      ],
+      "defaultColumns": ["abn", "entityName", "creditLimit"]
+    },
+    {
+      "name": "debtor-application",
+      "manageColumns": [
+        { "name": "clientId", "label": "Client Name", "type": "string" },
+        { "name": "entityType", "label": "Entity Type", "type": "string" },
+        { "name": "clientDebtorId", "label": "Credit Limit", "type": "number" },
+        {
+          "name": "extendedPaymentTermsDetails",
+          "label": "Extended Payment Terms Details",
+          "type": "string"
+        },
+        {
+          "name": "passedOverdueDetails",
+          "label": "Passed Overdue Details",
+          "type": "string"
+        },
+        { "name": "createdAt", "label": "Created Date", "type": "date" },
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+      ],
+      "defaultColumns": ["entityType", "clientId"]
+    },
+    {
+      "name": "debtor-overdue",
+      "manageColumns": [
+        { "name": "clientId", "label": "Client Name", "type": "string" },
+        { "name": "createdAt", "label": "Created Date", "type": "date" },
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+      ],
+      "defaultColumns": ["clientId", "updatedAt"]
+    },
+    {
+      "name": "debtor-claim",
+      "manageColumns": [
+        { "name": "clientId", "label": "Client Name", "type": "string" },
+        { "name": "createdAt", "label": "Created Date", "type": "date" },
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+      ],
+      "defaultColumns": ["clientId", "updatedAt"]
+    },
+    {
+      "name": "debtor-task",
+      "manageColumns": [
+        { "name": "priority", "label": "Priority", "type": "string" },
+        { "name": "title", "label": "Title", "type": "string" },
+        { "name": "description", "label": "Description", "type": "string" },
+        { "name": "entityType", "label": "Entity Type", "type": "string" },
+        { "name": "entityId", "label": "Entity Name", "type": "modal" },
+        { "name": "createdById", "label": "Created By", "type": "string" },
+        { "name": "assigneeId", "label": "Assignee", "type": "string" },
+        { "name": "dueDate", "label": "Due Date", "type": "date" },
+        { "name": "createdAt", "label": "Created Date", "type": "date" },
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+      ],
+      "defaultColumns": ["priority", "title", "description", "entityType"]
     },
     {
       "name": "document",
-      "manageColumns": [{"name": "documentTypeId","label": "Document Type","type": "string"},{"name": "description","label": "Description","type": "string"},{"name": "fileName","label": "File Name","type": "string"},{"name": "uploadById","label": "Upload By","type": "string"},{"name": "entityType","label": "Entity Type","type": "string"},{"name": "entityRefId","label": "Entity Ref","type": "string"},{"name": "createdAt","label": "Created Date","type": "date"},{"name": "updatedAt","label": "Modified Date","type": "date"}],
+      "manageColumns": [
+        {
+          "name": "documentTypeId",
+          "label": "Document Type",
+          "type": "string"
+        },
+        { "name": "description", "label": "Description", "type": "string" },
+        { "name": "fileName", "label": "File Name", "type": "string" },
+        { "name": "uploadById", "label": "Upload By", "type": "string" },
+        { "name": "entityType", "label": "Entity Type", "type": "string" },
+        { "name": "entityRefId", "label": "Entity Ref", "type": "string" },
+        { "name": "createdAt", "label": "Created Date", "type": "date" },
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+      ],
       "defaultColumns": ["description", "fileName", "updatedAt"]
     },
     {
       "name": "insurer",
-      "manageColumns": [{"name": "name","label": "Name","type": "string"},{"name": "email","label": "Email","type": "string"},{"name": "contactNumber","label": "Contact Number","type": "string"},{"name": "address.fullAddress","label": "Full Address","type": "string"},{"name": "address.addressLine","label": "Address Line","type": "string"},{"name": "address.city","label": "City","type": "string"},{"name": "address.state","label": "Country/State","type": "string"},{"name": "address.country","label": "Country","type": "string"},{"name": "address.zipCode","label": "Postcode/Zip","type": "string"},{"name": "website","label": "Website","type": "string"},{"name": "createdAt","label": "Created Date","type": "date"},{"name": "updatedAt","label": "Modified Date","type": "date"}],
+      "manageColumns": [
+        { "name": "name", "label": "Name", "type": "string" },
+        { "name": "email", "label": "Email", "type": "string" },
+        {
+          "name": "contactNumber",
+          "label": "Contact Number",
+          "type": "string"
+        },
+        { "name": "fullAddress", "label": "Full Address", "type": "string" },
+        { "name": "addressLine", "label": "Address Line", "type": "string" },
+        { "name": "city", "label": "City", "type": "string" },
+        { "name": "state", "label": "Country/State", "type": "string" },
+        { "name": "country", "label": "Country", "type": "string" },
+        { "name": "zipCode", "label": "Postcode/Zip", "type": "string" },
+        { "name": "website", "label": "Website", "type": "string" },
+        { "name": "createdAt", "label": "Created Date", "type": "date" },
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+      ],
       "defaultColumns": ["name", "contactNumber", "address"]
     },
     {
       "name": "insurer-user",
-      "manageColumns": [{"name": "firstName","label": "First Name","type": "string"},{"name": "lastName","label": "Last Name","type": "string"},{"name": "email","label": "Email","type": "string"},{"name": "contactNumber","label": "Contact Number","type": "string"},{"name": "direct","label": "Direct","type": "string"},{"name": "jobTitle","label": "Job Title","type": "string"},{"name": "createdAt","label": "Created Date","type": "date"},{"name": "updatedAt","label": "Modified Date","type": "date"}],
-      "defaultColumns": ["firstName","lastName","jobTitle"]
+      "manageColumns": [
+        { "name": "firstName", "label": "First Name", "type": "string" },
+        { "name": "lastName", "label": "Last Name", "type": "string" },
+        { "name": "email", "label": "Email", "type": "string" },
+        {
+          "name": "contactNumber",
+          "label": "Contact Number",
+          "type": "string"
+        },
+        { "name": "direct", "label": "Direct", "type": "string" },
+        { "name": "jobTitle", "label": "Job Title", "type": "string" },
+        { "name": "createdAt", "label": "Created Date", "type": "date" },
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+      ],
+      "defaultColumns": ["firstName", "lastName", "jobTitle"]
     },
     {
       "name": "insurer-policy",
-      "manageColumns": [{"name": "insurerId","label": "Insurer Id","type": "string"},{"name": "clientId","label": "Client Id","type": "string"},{"name": "product","label": "Product","type": "string"},{"name": "policyPeriod","label": "Policy Period","type": "string"},{"name": "policyCurrency","label": "Policy Currency","type": "string"},{"name": "inceptionDate","label": "Inception Date","type": "date"},{"name": "expiryDate","label": "Expiry Date","type": "date"},{"name": "createdAt","label": "Created Date","type": "date"},{"name": "updatedAt","label": "Modified Date","type": "date"}],
+      "manageColumns": [
+        { "name": "insurerId", "label": "Insurer Id", "type": "string" },
+        { "name": "clientId", "label": "Client Id", "type": "string" },
+        { "name": "product", "label": "Product", "type": "string" },
+        { "name": "policyPeriod", "label": "Policy Period", "type": "string" },
+        {
+          "name": "policyCurrency",
+          "label": "Policy Currency",
+          "type": "string"
+        },
+        { "name": "inceptionDate", "label": "Inception Date", "type": "date" },
+        { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
+        { "name": "createdAt", "label": "Created Date", "type": "date" },
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+      ],
       "defaultColumns": ["insurerId", "clientId", "product"]
     },
     {
       "name": "insurer-matrix",
-      "manageColumns": [{"name": "insurerId","label": "Insurer Id","type": "string"},{"name": "clientId","label": "Client Id","type": "string"},{"name": "product","label": "Product","type": "string"},{"name": "policyPeriod","label": "Policy Period","type": "string"},{"name": "policyCurrency","label": "Policy Currency","type": "string"},{"name": "inceptionDate","label": "Inception Date","type": "date"},{"name": "expiryDate","label": "Expiry Date","type": "date"},{"name": "createdAt","label": "Created Date","type": "date"},{"name": "updatedAt","label": "Modified Date","type": "date"}],
+      "manageColumns": [
+        { "name": "insurerId", "label": "Insurer Id", "type": "string" },
+        { "name": "clientId", "label": "Client Id", "type": "string" },
+        { "name": "product", "label": "Product", "type": "string" },
+        { "name": "policyPeriod", "label": "Policy Period", "type": "string" },
+        {
+          "name": "policyCurrency",
+          "label": "Policy Currency",
+          "type": "string"
+        },
+        { "name": "inceptionDate", "label": "Inception Date", "type": "date" },
+        { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
+        { "name": "createdAt", "label": "Created Date", "type": "date" },
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+      ],
       "defaultColumns": ["insurerId", "clientId", "product"]
     },
     {
@@ -72,8 +421,29 @@
     },
     {
       "name": "overdue",
-      "manageColumns": ["clientId", "debtorId", "applicationId", "updatedAt", "createdAt"],
-      "defaultColumns": ["clientId", "debtorId", "applicationId"]
+      "manageColumns": [
+        { "name": "clientId", "label": "Client Name", "type": "string" },
+        { "name": "debtorId", "label": "Debtor Name", "type": "string" },
+        { "name": "createdAt", "label": "Created Date", "type": "date" },
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+      ],
+      "defaultColumns": ["clientId", "debtorId"]
+    },
+    {
+      "name": "overdue-task",
+      "manageColumns": [
+        { "name": "priority", "label": "Priority", "type": "string" },
+        { "name": "title", "label": "Title", "type": "string" },
+        { "name": "description", "label": "Description", "type": "string" },
+        { "name": "entityType", "label": "Entity Type", "type": "string" },
+        { "name": "entityId", "label": "Entity Name", "type": "modal" },
+        { "name": "createdById", "label": "Created By", "type": "string" },
+        { "name": "assigneeId", "label": "Assignee", "type": "string" },
+        { "name": "dueDate", "label": "Due Date", "type": "date" },
+        { "name": "createdAt", "label": "Created Date", "type": "date" },
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+      ],
+      "defaultColumns": ["priority", "title", "description", "entityType"]
     },
     {
       "name": "report",
@@ -82,13 +452,36 @@
     },
     {
       "name": "task",
-      "manageColumns": ["title","description","entityType","entityId","createdByType","createdById", "assigneeType", "assigneeId", "dueDate","isCompleted","updatedAt",  "createdAt"],
-      "defaultColumns": ["title","description","entityType"]
+      "manageColumns": [
+        { "name": "priority", "label": "Priority", "type": "string" },
+        { "name": "title", "label": "Title", "type": "string" },
+        { "name": "description", "label": "Description", "type": "string" },
+        { "name": "entityType", "label": "Entity Type", "type": "string" },
+        { "name": "entityId", "label": "Entity Name", "type": "modal" },
+        { "name": "createdById", "label": "Created By", "type": "string" },
+        { "name": "assigneeId", "label": "Assignee", "type": "string" },
+        { "name": "dueDate", "label": "Due Date", "type": "date" },
+        { "name": "createdAt", "label": "Created Date", "type": "date" },
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+      ],
+      "defaultColumns": ["priority", "title", "description", "entityType"]
     },
     {
       "name": "user",
-      "manageColumns": [{"name": "name","label": "Name","type": "string"},{"name": "email","label": "Email","type": "string"},{"name": "contactNumber","label": "Contact Number","type": "string"},{"name": "role","label": "Role","type": "string"},{"name": "status","label": "Status","type": "string"},{"name": "createdAt","label": "Created Date","type": "date"},{"name": "updatedAt","label": "Modified Date","type": "date"}],
-      "defaultColumns": ["name", "email","contactNumber"]
+      "manageColumns": [
+        { "name": "name", "label": "Name", "type": "string" },
+        { "name": "email", "label": "Email", "type": "string" },
+        {
+          "name": "contactNumber",
+          "label": "Contact Number",
+          "type": "string"
+        },
+        { "name": "role", "label": "Role", "type": "string" },
+        { "name": "status", "label": "Status", "type": "string" },
+        { "name": "createdAt", "label": "Created Date", "type": "date" },
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+      ],
+      "defaultColumns": ["name", "email", "contactNumber"]
     }
   ]
 }

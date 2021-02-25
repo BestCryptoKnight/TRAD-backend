@@ -1,6 +1,6 @@
 /*
-* Module Imports
-* */
+ * Module Imports
+ * */
 const express = require('express');
 const router = express.Router();
 
@@ -8,7 +8,8 @@ const router = express.Router();
  * Import Middlewares
  */
 const authenticate = require('./../middlewares/authenticate').authMiddleWare;
-const checkModuleAccess = require('./../middlewares/authenticate').checkModuleAccess;
+const checkModuleAccess = require('./../middlewares/authenticate')
+  .checkModuleAccess;
 
 /**
  * Import and Register Routes
@@ -24,11 +25,13 @@ const note = require('./note.risk.route');
 const organization = require('./organization.route');
 const overdue = require('./overdue.risk.route');
 const policy = require('./policy.risk.route');
+const privilege = require('./privilege.risk.route');
 const settings = require('./settings.risk.route');
 const task = require('./task.risk.route');
 const user = require('./user.route');
 
-router.use('/auth',auth);
+router.use('/auth', auth);
+router.use('/privilege', privilege);
 router.use(authenticate);
 router.use(checkModuleAccess);
 router.use('/application', application);
@@ -44,7 +47,6 @@ router.use('/policy', policy);
 router.use('/settings', settings);
 router.use('/task', task);
 router.use('/user', user);
-
 
 /**
  * Export Router
