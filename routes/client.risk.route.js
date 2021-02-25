@@ -241,6 +241,7 @@ router.get('/user-details/:clientUserId', async function (req, res) {
         'name contactNumber department hasPortalAccess hasLeftCompany isDecisionMaker email createdAt updatedAt',
       )
       .lean();
+    let response = [];
     module.manageColumns.forEach((i) => {
       if (clientUser.hasOwnProperty(i.name)) {
         if (
@@ -250,13 +251,14 @@ router.get('/user-details/:clientUserId', async function (req, res) {
         ) {
           clientUser[i.name] = clientUser[i.name] ? 'Yes' : 'No';
         }
-        i.value = clientUser[i.name];
+        response.push({
+          label: i.label,
+          name: clientUser[i.name] || '-',
+          type: i.type,
+        });
       }
-      delete i.name;
-      delete i.request;
-      delete i.isDisabled;
     });
-    res.status(200).send({ status: 'SUCCESS', data: module.manageColumns });
+    res.status(200).send({ status: 'SUCCESS', data: response });
   } catch (e) {
     Logger.log.error('Error occurred in listing clients.', e.message || e);
     res.status(500).send({
