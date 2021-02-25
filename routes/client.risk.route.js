@@ -183,8 +183,8 @@ router.get('/user/:clientId', async function (req, res) {
       clientUsers.forEach((user) => {
         if (user.name && user.name.length !== 0) {
           user.name = {
-            value: user.name,
             id: user._id,
+            value: user.name,
           };
         }
         if (user.hasPortalAccess && user.hasPortalAccess.length !== 0) {
@@ -253,7 +253,7 @@ router.get('/user-details/:clientUserId', async function (req, res) {
         }
         response.push({
           label: i.label,
-          name: clientUser[i.name] || '-',
+          value: clientUser[i.name] || '-',
           type: i.type,
         });
       }

@@ -178,7 +178,15 @@
       "manageColumns": [
         { "name": "insurerId", "label": "Insurer Id", "type": "string" },
         { "name": "clientId", "label": "Client Id", "type": "string" },
-        { "name": "product", "label": "Product", "type": "string" },
+        {
+          "name": "product",
+          "label": "Product",
+          "type": "modal",
+          "request": {
+            "method": "GET",
+            "url": "rp/policy/client/policy-details"
+          }
+        },
         { "name": "policyPeriod", "label": "Policy Period", "type": "string" },
         {
           "name": "policyCurrency",
