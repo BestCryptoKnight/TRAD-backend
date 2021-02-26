@@ -384,7 +384,7 @@ router.get('/', async function (req, res) {
 
     let aggregationQuery = [];
     if (
-      req.query.serviceManager ||
+      req.query.serviceManagerId ||
       clientColumn.columns.includes('serviceManagerId')
     ) {
       aggregationQuery.push({
@@ -396,8 +396,15 @@ router.get('/', async function (req, res) {
         },
       });
     }
+    if (req.query.serviceManagerId) {
+      aggregationQuery.push({
+        $match: {
+          'serviceManagerId.name': req.query.serviceManagerId,
+        },
+      });
+    }
     if (
-      req.query.riskAnalyst ||
+      req.query.riskAnalystId ||
       clientColumn.columns.includes('riskAnalystId')
     ) {
       aggregationQuery.push({
@@ -406,6 +413,13 @@ router.get('/', async function (req, res) {
           localField: 'riskAnalystId',
           foreignField: '_id',
           as: 'riskAnalystId',
+        },
+      });
+    }
+    if (req.query.riskAnalystId) {
+      aggregationQuery.push({
+        $match: {
+          'riskAnalystId.name': req.query.riskAnalystId,
         },
       });
     }
