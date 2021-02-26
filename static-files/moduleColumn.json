@@ -389,7 +389,15 @@
       "manageColumns": [
         { "name": "insurerId", "label": "Insurer Id", "type": "string" },
         { "name": "clientId", "label": "Client Id", "type": "string" },
-        { "name": "product", "label": "Product", "type": "string" },
+        {
+          "name": "product",
+          "label": "Product",
+          "type": "modal",
+          "request": {
+            "method": "GET",
+            "url": "rp/policy/ci-details"
+          }
+        },
         { "name": "policyPeriod", "label": "Policy Period", "type": "string" },
         {
           "name": "policyCurrency",
@@ -408,7 +416,15 @@
       "manageColumns": [
         { "name": "insurerId", "label": "Insurer Id", "type": "string" },
         { "name": "clientId", "label": "Client Id", "type": "string" },
-        { "name": "product", "label": "Product", "type": "string" },
+        {
+          "name": "product",
+          "label": "Product",
+          "type": "modal",
+          "request": {
+            "method": "GET",
+            "url": "rp/policy/rmp-details"
+          }
+        },
         { "name": "policyPeriod", "label": "Policy Period", "type": "string" },
         {
           "name": "policyCurrency",

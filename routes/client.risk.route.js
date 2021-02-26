@@ -187,10 +187,10 @@ router.get('/user/:clientId', async function (req, res) {
             value: user.name,
           };
         }
-        if (user.hasPortalAccess && user.hasPortalAccess.length !== 0) {
+        if (user.hasOwnProperty('hasPortalAccess')) {
           user.hasPortalAccess = {
-            value: user.hasPortalAccess,
             id: user._id,
+            value: user.hasPortalAccess,
           };
         }
         if (user.isDecisionMaker && user.isDecisionMaker.length !== 0) {

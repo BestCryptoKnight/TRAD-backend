@@ -99,16 +99,45 @@ router.get('/column-name', async function (req, res) {
 });
 
 /**
+ * Get Details of Client Policy
+ */
+router.get('/client/policy-details/:policyId', async function (req, res) {
+  if (!req.params.policyId) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing',
+    });
+  }
+  try {
+    const module = StaticFile.modules.find((i) => i.name === 'client-policy');
+    const policyData = await Policy.findById(req.params.policyId)
+      .select({ __v: 0 })
+      .lean();
+    let response = [];
+    module.manageColumns.forEach((i) => {
+      if (policyData.hasOwnProperty(i.name)) {
+        response.push({
+          label: i.label,
+          value: policyData[i.name] || '-',
+          type: i.type,
+        });
+      }
+    });
+    res.status(200).send({ status: 'SUCCESS', data: response });
+  } catch (e) {
+    Logger.log.error('Error occurred in get policy details ', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
  * List Client Policies
  */
 router.get('/client/:clientId', async function (req, res) {
-  if (!req.user || !req.user._id) {
-    return res.status(401).send({
-      status: 'ERROR',
-      messageCode: 'UNAUTHORIZED',
-      message: 'Please first login to get list.',
-    });
-  }
   if (!req.params.clientId) {
     Logger.log.error('Client id not found.');
     return res.status(400).send({
@@ -165,9 +194,9 @@ router.get('/client/:clientId', async function (req, res) {
 });
 
 /**
- * List Details Policy
+ * Get Details of CI Policy
  */
-router.get('/client/policy-details/:policyId', async function (req, res) {
+router.get('/ci-details/:policyId', async function (req, res) {
   if (!req.params.policyId) {
     return res.status(400).send({
       status: 'ERROR',
@@ -176,7 +205,7 @@ router.get('/client/policy-details/:policyId', async function (req, res) {
     });
   }
   try {
-    const module = StaticFile.modules.find((i) => i.name === 'client-policy');
+    const module = StaticFile.modules.find((i) => i.name === 'insurer-policy');
     const policyData = await Policy.findById(req.params.policyId)
       .select({ __v: 0 })
       .lean();
@@ -201,50 +230,34 @@ router.get('/client/policy-details/:policyId', async function (req, res) {
 });
 
 /**
- * List RMP Policies
+ * Get Details of RMP Policy
  */
-router.get('/rmp/:insurerId', async function (req, res) {
-  if (!req.params.insurerId) {
-    Logger.log.error('Insurer id not found.');
+router.get('/rmp-details/:policyId', async function (req, res) {
+  if (!req.params.policyId) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Please pass insurer id.',
+      message: 'Require fields are missing',
     });
   }
   try {
-    const module = StaticFile.modules.find((i) => i.name === 'policy');
-    const policyColumn = req.user.manageColumns.find(
-      (i) => i.moduleName === 'policy',
-    );
-    let queryFilter = {
-      isDeleted: false,
-      product: { $regex: '.*Risk Management Package.*' },
-      insurerId: req.params.insurerId,
-    };
-    let sortingOptions = {};
-    if (req.query.sortBy && req.query.sortOrder) {
-      sortingOptions[req.query.sortBy] = req.query.sortOrder;
-    }
-    if (req.query.search)
-      queryFilter.name = { $regex: req.query.search, $options: 'i' };
-    let option = {
-      page: parseInt(req.query.page) || 1,
-      limit: parseInt(req.query.limit) || 5,
-    };
-    option.select = policyColumn.columns.toString().replace(/,/g, ' ');
-    option.sort = sortingOptions;
-    option.lean = true;
-    let responseObj = await Policy.paginate(queryFilter, option);
-    responseObj.headers = [];
-    for (let i = 0; i < module.manageColumns.length; i++) {
-      if (policyColumn.columns.includes(module.manageColumns[i].name)) {
-        responseObj.headers.push(module.manageColumns[i]);
+    const module = StaticFile.modules.find((i) => i.name === 'insurer-matrix');
+    const policyData = await Policy.findById(req.params.policyId)
+      .select({ __v: 0 })
+      .lean();
+    let response = [];
+    module.manageColumns.forEach((i) => {
+      if (policyData.hasOwnProperty(i.name)) {
+        response.push({
+          label: i.label,
+          value: policyData[i.name] || '-',
+          type: i.type,
+        });
       }
-    }
-    res.status(200).send({ status: 'SUCCESS', data: responseObj });
+    });
+    res.status(200).send({ status: 'SUCCESS', data: response });
   } catch (e) {
-    Logger.log.error('Error occurred in get insurer list ', e.message || e);
+    Logger.log.error('Error occurred in get policy details ', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -253,28 +266,31 @@ router.get('/rmp/:insurerId', async function (req, res) {
 });
 
 /**
- * List CI Policies
+ * List Insurer Policies
  */
-router.get('/:insurerId', async function (req, res) {
-  if (!req.params.insurerId) {
-    Logger.log.error('Insurer id not found.');
+router.get('/:entityId', async function (req, res) {
+  if (!req.params.entityId || !req.query.listFor) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Please pass insurer id.',
+      message: 'Require fields are missing',
     });
   }
   try {
     let queryFilter = {
       isDeleted: false,
-      insurerId: req.params.insurerId,
     };
-    switch (req.query.columnFor) {
+    switch (req.query.listFor) {
       case 'insurer-policy':
+        queryFilter.insurerId = req.params.entityId;
         queryFilter.product = { $regex: '.*Credit Insurance.*' };
         break;
       case 'insurer-matrix':
+        queryFilter.insurerId = req.params.entityId;
         queryFilter.product = { $regex: '.*Risk Management Package.*' };
+        break;
+      case 'client-policy':
+        queryFilter.clientId = req.params.entityId;
         break;
       default:
         return res.status(400).send({
@@ -283,11 +299,9 @@ router.get('/:insurerId', async function (req, res) {
           message: 'Please pass correct fields',
         });
     }
-    const module = StaticFile.modules.find(
-      (i) => i.name === req.query.columnFor,
-    );
+    const module = StaticFile.modules.find((i) => i.name === req.query.listFor);
     const policyColumn = req.user.manageColumns.find(
-      (i) => i.moduleName === req.query.columnFor,
+      (i) => i.moduleName === req.query.listFor,
     );
     let sortingOptions = {};
     if (req.query.sortBy && req.query.sortOrder) {
@@ -309,6 +323,14 @@ router.get('/:insurerId', async function (req, res) {
         responseObj.headers.push(module.manageColumns[i]);
       }
     }
+    responseObj.docs.forEach((data) => {
+      if (data.product) {
+        data.product = {
+          id: data._id,
+          value: data.product,
+        };
+      }
+    });
     res.status(200).send({ status: 'SUCCESS', data: responseObj });
   } catch (e) {
     Logger.log.error('Error occurred in get insurer list ', e.message || e);
@@ -387,7 +409,6 @@ router.put('/column-name', async function (req, res) {
  */
 router.put('/sync-from-crm/:insurerId', async function (req, res) {
   if (!req.params.insurerId || !req.query.columnFor) {
-    Logger.log.error('Insurer id not found.');
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -491,7 +512,7 @@ router.put('/client/sync-from-crm/:clientId', async function (req, res) {
       return res.status(400).send({
         status: 'ERROR',
         messageCode: 'REQUIRE_FIELD_MISSING',
-        message: 'Please pass client id.',
+        message: 'Require fields are missing',
       });
     }
     const policies = await Policy.aggregate([
