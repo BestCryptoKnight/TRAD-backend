@@ -19,13 +19,11 @@ const StaticFile = require('./../static-files/moduleColumn');
  */
 router.get('/column-name', async function (req, res) {
   if (!req.user || !req.user._id) {
-    return res
-      .status(401)
-      .send({
-        status: 'ERROR',
-        messageCode: 'UNAUTHORIZED',
-        message: 'Please first login to get columns.',
-      });
+    return res.status(401).send({
+      status: 'ERROR',
+      messageCode: 'UNAUTHORIZED',
+      message: 'Please first login to get columns.',
+    });
   }
   try {
     const module = StaticFile.modules.find((i) => i.name === 'audit-logs');
@@ -76,30 +74,268 @@ router.get('/column-name', async function (req, res) {
       'Error occurred in get audit-logs column names',
       e.message || e,
     );
-    res
-      .status(500)
-      .send({
-        status: 'ERROR',
-        message: e.message || 'Something went wrong, please try again later.',
-      });
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
   }
 });
 
+//TODO add condition for claims and overdue
 /**
  * Get Audit Logs
  */
 router.get('/audit-logs', async function (req, res) {
   try {
-    const logs = await AuditLog.find({}).lean();
-    res.status(200).send({ status: 'SUCCESS', data: logs });
+    const module = StaticFile.modules.find((i) => i.name === 'audit-logs');
+    const auditLogsColumn = req.user.manageColumns.find(
+      (i) => i.moduleName === 'audit-logs',
+    );
+    let queryFilter = {};
+    let sortingOptions = {};
+    req.query.sortBy = req.query.sortBy || '_id';
+    req.query.sortOrder = req.query.sortOrder || 'desc';
+    sortingOptions[req.query.sortBy] = req.query.sortOrder === 'desc' ? -1 : 1;
+
+    if (req.accessTypes && req.accessTypes.indexOf('full-access') !== -1) {
+      queryFilter.userRefId = mongoose.Types.ObjectId(req.user._id);
+    }
+    if (req.query.actionType) {
+      queryFilter.actionType = req.query.actionType.toLowerCase();
+    }
+    if (req.query.startDate && req.query.endDate) {
+      queryFilter.createdAt = {
+        $gte: req.query.startDate,
+        $lt: req.query.endDate,
+      };
+    }
+    let query = [];
+    if (
+      auditLogsColumn.columns.includes('entityRefId') ||
+      req.query.entityRefId
+    ) {
+      query.push(
+        {
+          $addFields: {
+            userId: {
+              $cond: [{ $eq: ['$entityType', 'user'] }, '$entityRefId', null],
+            },
+            clientId: {
+              $cond: [{ $eq: ['$entityType', 'client'] }, '$entityRefId', null],
+            },
+            clientUserId: {
+              $cond: [
+                { $eq: ['$entityType', 'client-user'] },
+                '$entityRefId',
+                null,
+              ],
+            },
+            debtorId: {
+              $cond: [{ $eq: ['$entityType', 'debtor'] }, '$entityRefId', null],
+            },
+            applicationId: {
+              $cond: [
+                { $eq: ['$entityType', 'application'] },
+                '$entityRefId',
+                null,
+              ],
+            },
+          },
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'userId',
+            foreignField: '_id',
+            as: 'userId',
+          },
+        },
+        {
+          $lookup: {
+            from: 'clients',
+            localField: 'clientId',
+            foreignField: '_id',
+            as: 'clientId',
+          },
+        },
+        {
+          $lookup: {
+            from: 'client-users',
+            localField: 'clientUserId',
+            foreignField: '_id',
+            as: 'clientUserId',
+          },
+        },
+        {
+          $lookup: {
+            from: 'client-debtors',
+            localField: 'debtorId',
+            foreignField: '_id',
+            as: 'debtorId',
+          },
+        },
+        {
+          $lookup: {
+            from: 'debtors',
+            localField: 'debtorId.debtorId',
+            foreignField: '_id',
+            as: 'debtorId',
+          },
+        },
+        {
+          $lookup: {
+            from: 'applications',
+            localField: 'applicationId',
+            foreignField: '_id',
+            as: 'applicationId',
+          },
+        },
+        {
+          $addFields: {
+            entityRefId: {
+              $cond: [
+                { $eq: ['$entityType', 'client'] },
+                '$clientId.name',
+                {
+                  $cond: [
+                    { $eq: ['$entityType', 'debtor'] },
+                    '$debtorId.entityName',
+                    {
+                      $cond: [
+                        { $eq: ['$entityType', 'application'] },
+                        '$applicationId.applicationId',
+                        {
+                          $cond: [
+                            { $eq: ['$entityType', 'client-user'] },
+                            '$clientUserId.name',
+                            {
+                              $cond: [
+                                { $eq: ['$entityType', 'user'] },
+                                '$userId.name',
+                                null,
+                              ],
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+        },
+      );
+    }
+
+    if (auditLogsColumn.columns.includes('userRefId') || req.query.userRefId) {
+      query.push(
+        {
+          $addFields: {
+            clientUserId: {
+              $cond: [
+                { $eq: ['$userType', 'client-user'] },
+                '$userRefId',
+                null,
+              ],
+            },
+            userId: {
+              $cond: [{ $eq: ['$userType', 'user'] }, '$userRefId', null],
+            },
+          },
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'userId',
+            foreignField: '_id',
+            as: 'userId',
+          },
+        },
+        {
+          $lookup: {
+            from: 'client-users',
+            localField: 'clientUserId',
+            foreignField: '_id',
+            as: 'clientUserId',
+          },
+        },
+        {
+          $addFields: {
+            userRefId: {
+              $cond: [
+                { $eq: ['$userType', 'client-user'] },
+                '$clientUserId.name',
+                '$userId.name',
+              ],
+            },
+          },
+        },
+      );
+    }
+    if (req.query.userRefId) {
+      query.push({
+        $match: {
+          'userRefId.name': req.query.userRefId,
+        },
+      });
+    }
+
+    const fields = auditLogsColumn.columns.map((i) => [i, 1]);
+    query.push({
+      $project: fields.reduce((obj, [key, val]) => {
+        obj[key] = val;
+        return obj;
+      }, {}),
+    });
+    query.push({ $sort: sortingOptions });
+
+    query.push({
+      $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
+    });
+    query.push({ $limit: parseInt(req.query.limit) });
+    query.unshift({ $match: queryFilter });
+
+    const [auditLogs, total] = await Promise.all([
+      AuditLog.aggregate(query).allowDiskUse(true),
+      AuditLog.countDocuments(queryFilter).lean(),
+    ]);
+    const headers = [];
+    for (let i = 0; i < module.manageColumns.length; i++) {
+      if (auditLogsColumn.columns.includes(module.manageColumns[i].name)) {
+        headers.push(module.manageColumns[i]);
+      }
+    }
+    if (auditLogs && auditLogs.length !== 0) {
+      auditLogs.forEach((log) => {
+        if (auditLogsColumn.columns.includes('entityRefId')) {
+          log.entityRefId = log.entityRefId[0] ? log.entityRefId[0] : '';
+        }
+        if (auditLogsColumn.columns.includes('userRefId')) {
+          log.userRefId = log.userRefId[0] ? log.userRefId[0] : '';
+        }
+        /*if(log.actionType){
+          log.actionType = log.actionType.charAt(0).toUpperCase() + log.actionType.slice(1);
+        }*/
+      });
+    }
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: {
+        docs: auditLogs,
+        headers,
+        total,
+        page: parseInt(req.query.page),
+        limit: parseInt(req.query.limit),
+        pages: Math.ceil(total / parseInt(req.query.limit)),
+      },
+    });
   } catch (e) {
     Logger.log.error('Error occurred in get audit-logs ', e.message || e);
-    res
-      .status(500)
-      .send({
-        status: 'ERROR',
-        message: e.message || 'Something went wrong, please try again later.',
-      });
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
   }
 });
 
@@ -121,18 +357,43 @@ router.get('/document-type', async function (req, res) {
       page: parseInt(req.query.page) || 1,
       limit: parseInt(req.query.limit) || 5,
     };
+    option.select = '_id documentFor documentTitle updatedAt';
     option.sort = sortingOptions;
     option.lean = true;
     const documentTypes = await DocumentType.paginate(queryFilter, option);
+    documentTypes.headers = [
+      {
+        name: 'documentTitle',
+        label: 'Document Type',
+        type: 'string',
+      },
+      {
+        name: 'documentFor',
+        label: 'Document For',
+        type: 'string',
+      },
+      {
+        name: 'updatedAt',
+        label: 'Modified Date',
+        type: 'Date',
+      },
+    ];
+    if (
+      documentTypes &&
+      documentTypes.docs &&
+      documentTypes.docs.length !== 0
+    ) {
+      documentTypes.docs.forEach((document) => {
+        delete document.id;
+      });
+    }
     res.status(200).send({ status: 'SUCCESS', data: documentTypes });
   } catch (e) {
     Logger.log.error('Error occurred in get document types ', e.message || e);
-    res
-      .status(500)
-      .send({
-        status: 'ERROR',
-        message: e.message || 'Something went wrong, please try again later.',
-      });
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
   }
 });
 
@@ -144,19 +405,19 @@ router.get('/api-integration', async function (req, res) {
     const organization = await Organization.findOne({
       isDeleted: false,
       _id: req.user.organizationId,
-    }).select({ integration: 1 });
+    })
+      .select({ integration: 1 })
+      .lean();
     res.status(200).send({ status: 'SUCCESS', data: organization });
   } catch (e) {
     Logger.log.error(
       'Error occurred in getting api integration ',
       e.message || e,
     );
-    res
-      .status(500)
-      .send({
-        status: 'ERROR',
-        message: e.message || 'Something went wrong, please try again later.',
-      });
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
   }
 });
 
@@ -168,19 +429,19 @@ router.get('/origination-details', async function (req, res) {
     const organization = await Organization.findOne({
       isDeleted: false,
       _id: req.user.organizationId,
-    }).select({ name: 1, website: 1, contactNumber: 1, address: 1 });
+    })
+      .select({ name: 1, website: 1, contactNumber: 1, address: 1, email: 1 })
+      .lean();
     res.status(200).send({ status: 'SUCCESS', data: organization });
   } catch (e) {
     Logger.log.error(
       'Error occurred in getting organization details ',
       e.message || e,
     );
-    res
-      .status(500)
-      .send({
-        status: 'ERROR',
-        message: e.message || 'Something went wrong, please try again later.',
-      });
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
   }
 });
 
@@ -189,13 +450,11 @@ router.get('/origination-details', async function (req, res) {
  */
 router.post('/document-type', async function (req, res) {
   if (!req.body.documentTitle || !req.body.documentFor) {
-    return res
-      .status(400)
-      .send({
-        status: 'ERROR',
-        messageCode: 'REQUIRE_FIELD_MISSING',
-        message: 'Require fields are missing.',
-      });
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
   }
   try {
     let document = await DocumentType.findOne({
@@ -204,13 +463,11 @@ router.post('/document-type', async function (req, res) {
       documentTitle: req.body.documentTitle,
     }).lean();
     if (document) {
-      return res
-        .status(400)
-        .send({
-          status: 'ERROR',
-          messageCode: 'DOCUMENT_TYPE_ALREADY_EXISTS',
-          message: 'Document type already exists',
-        });
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'DOCUMENT_TYPE_ALREADY_EXISTS',
+        message: 'Document type already exists',
+      });
     } else {
       document = new DocumentType({
         documentFor: req.body.documentFor,
@@ -221,12 +478,10 @@ router.post('/document-type', async function (req, res) {
     }
   } catch (e) {
     Logger.log.error('Error occurred in add document types ', e.message || e);
-    res
-      .status(500)
-      .send({
-        status: 'ERROR',
-        message: e.message || 'Something went wrong, please try again later.',
-      });
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
   }
 });
 
@@ -240,13 +495,11 @@ router.put('/document-type/:documentId', async function (req, res) {
     !req.body.documentTitle ||
     !req.body.documentFor
   ) {
-    return res
-      .status(400)
-      .send({
-        status: 'ERROR',
-        messageCode: 'REQUIRE_FIELD_MISSING',
-        message: 'Require fields are missing.',
-      });
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
   }
   try {
     const document = await DocumentType.findOne({
@@ -255,13 +508,11 @@ router.put('/document-type/:documentId', async function (req, res) {
       documentTitle: req.body.documentTitle,
     }).lean();
     if (document && document._id !== req.params.documentId) {
-      return res
-        .status(400)
-        .send({
-          status: 'ERROR',
-          messageCode: 'DOCUMENT_TYPE_ALREADY_EXISTS',
-          message: 'Document type already exists',
-        });
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'DOCUMENT_TYPE_ALREADY_EXISTS',
+        message: 'Document type already exists',
+      });
     } else {
       await DocumentType.updateOne(
         { _id: req.params.documentId },
@@ -270,24 +521,20 @@ router.put('/document-type/:documentId', async function (req, res) {
           documentTitle: req.body.documentTitle,
         },
       );
-      res
-        .status(200)
-        .send({
-          status: 'SUCCESS',
-          message: 'Document type updated successfully',
-        });
+      res.status(200).send({
+        status: 'SUCCESS',
+        message: 'Document type updated successfully',
+      });
     }
   } catch (e) {
     Logger.log.error(
       'Error occurred in update document types ',
       e.message || e,
     );
-    res
-      .status(500)
-      .send({
-        status: 'ERROR',
-        message: e.message || 'Something went wrong, please try again later.',
-      });
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
   }
 });
 
@@ -295,7 +542,7 @@ router.put('/document-type/:documentId', async function (req, res) {
  * Update API Integration
  */
 router.put('/api-integration', async function (req, res) {
-  if (!req.body.value || !req.body.apiName) {
+  if (!req.body.apiName) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -306,23 +553,47 @@ router.put('/api-integration', async function (req, res) {
     let update;
     switch (req.body.apiName) {
       case 'rss':
-        update = { 'integration.rss.accessToken': req.body.value };
+        if (!req.body.accessToken) {
+          return res.status(400).send({
+            status: 'ERROR',
+            messageCode: 'REQUIRE_FIELD_MISSING',
+            message: 'Require fields are missing.',
+          });
+        }
+        update = { 'integration.rss.accessToken': req.body.accessToken };
         break;
       case 'abn':
-        update = { 'integration.abn.guid': req.body.value };
+        if (!req.body.guid) {
+          return res.status(400).send({
+            status: 'ERROR',
+            messageCode: 'REQUIRE_FIELD_MISSING',
+            message: 'Require fields are missing.',
+          });
+        }
+        update = { 'integration.abn.guid': req.body.guid };
         break;
       case 'equifax':
         break;
       case 'illion':
+        if (!req.body.userId || !req.body.password || !req.body.subscriberId) {
+          return res.status(400).send({
+            status: 'ERROR',
+            messageCode: 'REQUIRE_FIELD_MISSING',
+            message: 'Require fields are missing.',
+          });
+        }
+        update = {
+          'integration.illion.userId': req.body.userId,
+          'integration.illion.password': req.body.password,
+          'integration.illion.subscriberId': req.body.subscriberId,
+        };
         break;
       default:
-        return res
-          .status(400)
-          .send({
-            status: 'ERROR',
-            messageCode: 'BAD_REQUEST',
-            message: 'Please pass correct fields',
-          });
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'BAD_REQUEST',
+          message: 'Please pass correct fields',
+        });
     }
     await Organization.updateOne(
       { isDeleted: false, _id: req.user.organizationId },
@@ -338,12 +609,10 @@ router.put('/api-integration', async function (req, res) {
       'Error occurred in updating api integration ',
       e.message || e,
     );
-    res
-      .status(500)
-      .send({
-        status: 'ERROR',
-        message: e.message || 'Something went wrong, please try again later.',
-      });
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
   }
 });
 
@@ -382,12 +651,10 @@ router.put('/origination-details', async function (req, res) {
       'Error occurred in updating api integration ',
       e.message || e,
     );
-    res
-      .status(500)
-      .send({
-        status: 'ERROR',
-        message: e.message || 'Something went wrong, please try again later.',
-      });
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
   }
 });
 
@@ -396,36 +663,30 @@ router.put('/origination-details', async function (req, res) {
  */
 router.put('/document-type/:documentId', async function (req, res) {
   if (!req.params.documentId) {
-    return res
-      .status(400)
-      .send({
-        status: 'ERROR',
-        messageCode: 'REQUIRE_FIELD_MISSING',
-        message: 'Require fields are missing.',
-      });
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
   }
   try {
     await DocumentType.updateOne(
       { _id: req.params.documentId },
       { isDeleted: true },
     );
-    res
-      .status(200)
-      .send({
-        status: 'SUCCESS',
-        message: 'Document type deleted successfully',
-      });
+    res.status(200).send({
+      status: 'SUCCESS',
+      message: 'Document type deleted successfully',
+    });
   } catch (e) {
     Logger.log.error(
       'Error occurred in update document types ',
       e.message || e,
     );
-    res
-      .status(500)
-      .send({
-        status: 'ERROR',
-        message: e.message || 'Something went wrong, please try again later.',
-      });
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
   }
 });
 

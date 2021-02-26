@@ -23,6 +23,11 @@ const organizationSchema = new Schema(
       abn: {
         guid: Schema.Types.String,
       },
+      illion: {
+        userId: Schema.Types.String,
+        password: Schema.Types.String,
+        subscriberId: Schema.Types.String,
+      },
     },
   },
   { timestamps: true },

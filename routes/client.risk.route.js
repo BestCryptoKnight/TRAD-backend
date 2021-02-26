@@ -18,6 +18,7 @@ const MailHelper = require('./../helper/mailer.helper');
 const RssHelper = require('./../helper/rss.helper');
 const StaticFile = require('./../static-files/moduleColumn');
 const { addAuditLog } = require('./../helper/audit-log.helper');
+const { getUserList } = require('./../helper/user.helper');
 
 //client
 /**
@@ -113,6 +114,25 @@ router.get('/user/column-name', async function (req, res) {
       'Error occurred in get client-user column names',
       e.message || e,
     );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Get User List
+ */
+router.get('/user-list', async function (req, res) {
+  try {
+    const { riskAnalystList, serviceManagerList } = await getUserList();
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: { riskAnalystList, serviceManagerList },
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in get user list ', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -514,10 +534,7 @@ router.get('/:clientId', async function (req, res) {
     const client = await Client.findOne({ _id: req.params.clientId })
       .populate({ path: 'riskAnalystId serviceManagerId', select: 'name' })
       .lean();
-    const [riskAnalystList, serviceManagerList] = await Promise.all([
-      User.find({ role: 'riskAnalyst' }).select({ name: 1, _id: 1 }).lean(),
-      User.find({ role: 'serviceManager' }).select({ name: 1, _id: 1 }).lean(),
-    ]);
+    const { riskAnalystList, serviceManagerList } = await getUserList();
     client.riskAnalystList = riskAnalystList;
     client.serviceManagerList = serviceManagerList;
     res.status(200).send({ status: 'SUCCESS', data: client });

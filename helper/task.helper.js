@@ -163,6 +163,7 @@ const getApplicationList = async ({
   }
 };
 
+//TODO add condition for claims and overdue
 const aggregationQuery = async ({
   taskColumn,
   requestedQuery,
