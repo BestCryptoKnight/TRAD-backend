@@ -162,6 +162,9 @@ router.get('/user/:clientId', async function (req, res) {
       isDeleted: false,
       clientId: mongoose.Types.ObjectId(req.params.clientId),
     };
+    if (req.query.search) {
+      queryFilter.name = { $regex: `${req.query.search}` };
+    }
     let sortingOptions = {};
     let aggregationQuery = [
       { $match: queryFilter },

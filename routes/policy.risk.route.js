@@ -308,7 +308,7 @@ router.get('/:entityId', async function (req, res) {
       sortingOptions[req.query.sortBy] = req.query.sortOrder;
     }
     if (req.query.search)
-      queryFilter.name = { $regex: req.query.search, $options: 'i' };
+      queryFilter.product = { $regex: req.query.search, $options: 'i' };
     let option = {
       page: parseInt(req.query.page) || 1,
       limit: parseInt(req.query.limit) || 5,

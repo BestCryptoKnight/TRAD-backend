@@ -215,7 +215,7 @@ router.get('/:entityId', async function (req, res) {
       };
     }
 
-    let option = {
+    const option = {
       page: parseInt(req.query.page) || 1,
       limit: parseInt(req.query.limit) || 5,
     };

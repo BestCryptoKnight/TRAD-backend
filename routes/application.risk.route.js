@@ -113,6 +113,9 @@ router.get('/', async function (req, res) {
     let queryFilter = {
       isDeleted: false,
     };
+    if (req.query.search) {
+      queryFilter.applicationId = { $regex: `${req.query.search}` };
+    }
     if (req.accessTypes && req.accessTypes.indexOf('full-access') === -1) {
       queryFilter = {
         isDeleted: false,

@@ -179,6 +179,9 @@ const aggregationQuery = async ({
     const listCreatedBy = requestedQuery.listCreatedBy
       ? requestedQuery.listCreatedBy
       : false;
+    if (requestedQuery.search) {
+      queryFilter.title = { $regex: `${requestedQuery.search}` };
+    }
     if (requestedQuery.requestedEntityId) {
       queryFilter.entityId = mongoose.Types.ObjectId(
         requestedQuery.requestedEntityId,

@@ -334,8 +334,13 @@
           "label": "Document Type",
           "type": "string"
         },
+        {
+          "name": "documentTypeId",
+          "label": "Document Type",
+          "type": "string"
+        },
         { "name": "description", "label": "Description", "type": "string" },
-        { "name": "fileName", "label": "File Name", "type": "string" },
+        { "name": "originalFileName", "label": "File Name", "type": "string" },
         { "name": "uploadById", "label": "Upload By", "type": "string" },
         { "name": "entityType", "label": "Entity Type", "type": "string" },
         { "name": "entityRefId", "label": "Entity Ref", "type": "string" },

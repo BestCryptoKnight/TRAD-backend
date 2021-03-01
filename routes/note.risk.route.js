@@ -37,6 +37,14 @@ router.get('/:entityId', async function (req, res) {
   }
   try {
     let query;
+    let aggregationQuery = [];
+    let sortingOptions = {};
+    req.query.sortBy = req.query.sortBy || '_id';
+    req.query.sortOrder = req.query.sortOrder || 'desc';
+    req.query.limit = req.query.limit || 5;
+    req.query.page = req.query.page || 1;
+    sortingOptions[req.query.sortBy] = req.query.sortOrder === 'desc' ? -1 : 1;
+
     if (req.query.noteFor === 'application') {
       const application = await Application.findOne({
         _id: req.params.entityId,
@@ -45,16 +53,19 @@ router.get('/:entityId', async function (req, res) {
         $and: [
           {
             noteFor: req.query.noteFor,
-            entityId: req.params.entityId,
+            entityId: mongoose.Types.ObjectId(req.params.entityId),
           },
           {
             $or: [
               {
                 createdByType: 'client-user',
-                createdById: application.clientId,
+                createdById: mongoose.Types.ObjectId(application.clientId),
               },
               { createdByType: 'user', isPublic: true },
-              { createdByType: 'user', createdById: req.user._id },
+              {
+                createdByType: 'user',
+                createdById: mongoose.Types.ObjectId(req.user._id),
+              },
             ],
           },
         ],
@@ -65,14 +76,11 @@ router.get('/:entityId', async function (req, res) {
         ClientDebtor.findOne({ _id: req.params.entityId }).lean(),
       ]);
       const applicationIds = applications.map((i) => i._id);
-      console.log('applicationIds : ', applicationIds);
-      // const applications = await Application.find({debtorId:req.params.entityId}).lean();
-      // const debtor = await ClientDebtor.findOne({_id:req.params.entityId});
       query = {
         $and: [
           {
             noteFor: req.query.noteFor,
-            entityId: req.params.entityId,
+            entityId: mongoose.Types.ObjectId(req.params.entityId),
           },
           {
             noteFor: 'application',
@@ -80,9 +88,15 @@ router.get('/:entityId', async function (req, res) {
           },
           {
             $or: [
-              { createdByType: 'client-user', createdById: debtor.clientId },
+              {
+                createdByType: 'client-user',
+                createdById: mongoose.Types.ObjectId(debtor.clientId),
+              },
               { createdByType: 'user', isPublic: true },
-              { createdByType: 'user', createdById: req.user._id },
+              {
+                createdByType: 'user',
+                createdById: mongoose.Types.ObjectId(req.user._id),
+              },
             ],
           },
         ],
@@ -92,21 +106,129 @@ router.get('/:entityId', async function (req, res) {
         $and: [
           {
             noteFor: req.query.noteFor,
-            entityId: req.params.entityId,
+            entityId: mongoose.Types.ObjectId(req.params.entityId),
           },
           {
             $or: [
               { createdByType: 'user', isPublic: true },
-              { createdByType: 'user', createdById: req.user._id },
+              {
+                createdByType: 'user',
+                createdById: mongoose.Types.ObjectId(req.user._id),
+              },
             ],
           },
         ],
       };
     }
-    const notes = await Note.find(query);
-    res.status(200).send({ status: 'SUCCESS', data: notes });
+
+    aggregationQuery.push(
+      {
+        $addFields: {
+          clientUserId: {
+            $cond: [
+              { $eq: ['$createdByType', 'client-user'] },
+              '$createdById',
+              null,
+            ],
+          },
+          userId: {
+            $cond: [{ $eq: ['$createdByType', 'user'] }, '$createdById', null],
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'userId',
+        },
+      },
+      {
+        $lookup: {
+          from: 'clients',
+          localField: 'clientUserId',
+          foreignField: '_id',
+          as: 'clientUserId',
+        },
+      },
+      {
+        $addFields: {
+          createdById: {
+            $cond: [
+              { $eq: ['$createdByType', 'client-user'] },
+              '$clientUserId.name',
+              '$userId.name',
+            ],
+          },
+        },
+      },
+    );
+
+    aggregationQuery.push({
+      $project: {
+        _id: 1,
+        description: 1,
+        createdAt: 1,
+        updatedAt: 1,
+        createdById: 1,
+      },
+    });
+    aggregationQuery.push({ $sort: sortingOptions });
+
+    aggregationQuery.push({
+      $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
+    });
+    aggregationQuery.push({ $limit: parseInt(req.query.limit) });
+
+    if (req.query.search) {
+      query.description = { $regex: `${req.query.search}` };
+    }
+    aggregationQuery.unshift({ $match: query });
+
+    const [notes, total] = await Promise.all([
+      Note.aggregate(aggregationQuery).allowDiskUse(true),
+      Note.countDocuments(query).lean(),
+    ]);
+    const headers = [
+      {
+        name: 'description',
+        label: 'Description',
+        type: 'string',
+      },
+      {
+        name: 'createdAt',
+        label: 'Created Date',
+        type: 'Date',
+      },
+      {
+        name: 'updatedAt',
+        label: 'Modified Date',
+        type: 'Date',
+      },
+      {
+        name: 'createdById',
+        label: 'CreatedBy',
+        type: 'string',
+      },
+    ];
+    notes.forEach((note) => {
+      note.createdById =
+        note.createdById && note.createdById[0] ? note.createdById[0] : '';
+    });
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: {
+        docs: notes,
+        headers,
+        total,
+        page: parseInt(req.query.page),
+        limit: parseInt(req.query.limit),
+        pages: Math.ceil(total / parseInt(req.query.limit)),
+      },
+    });
   } catch (e) {
-    Logger.log.error('Error occurred in get note list ', e.message || e);
+    Logger.log.error('Error occurred in get note list ', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
