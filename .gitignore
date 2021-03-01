@@ -27,3 +27,6 @@ upload/**
 !upload/**/
 !upload/fonts/*
 !upload/mail-images/*
+
+#Key Files
+keys/**

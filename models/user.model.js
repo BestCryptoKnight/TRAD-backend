@@ -29,7 +29,8 @@ const userSchema = new Schema(
     contactNumber: Schema.Types.String,
     verificationOtp: Schema.Types.Number,
     otpExpireTime: Schema.Types.Date,
-    profilePicture: Schema.Types.String,
+    // profilePicture: Schema.Types.String,
+    profileKeyPath: Schema.Types.String,
     jwtToken: [Schema.Types.String],
     socketIds: [Schema.Types.String],
     role: {

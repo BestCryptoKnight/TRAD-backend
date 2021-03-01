@@ -18,13 +18,11 @@ const Logger = require('./../services/logger');
  */
 router.get('/:entityId', async function (req, res) {
   if (!req.user || !req.user._id) {
-    return res
-      .status(401)
-      .send({
-        status: 'ERROR',
-        messageCode: 'UNAUTHORIZED',
-        message: 'Please first login to get list.',
-      });
+    return res.status(401).send({
+      status: 'ERROR',
+      messageCode: 'UNAUTHORIZED',
+      message: 'Please first login to get list.',
+    });
   }
   if (
     !req.query.noteFor ||
@@ -109,12 +107,10 @@ router.get('/:entityId', async function (req, res) {
     res.status(200).send({ status: 'SUCCESS', data: notes });
   } catch (e) {
     Logger.log.error('Error occurred in get note list ', e.message || e);
-    res
-      .status(500)
-      .send({
-        status: 'ERROR',
-        message: e.message || 'Something went wrong, please try again later.',
-      });
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
   }
 });
 
@@ -149,12 +145,10 @@ router.post('/', async function (req, res) {
       .send({ status: 'SUCCESS', message: 'Note created successfully' });
   } catch (e) {
     Logger.log.error('Error occurred in create note ', e.message || e);
-    res
-      .status(500)
-      .send({
-        status: 'ERROR',
-        message: e.message || 'Something went wrong, please try again later.',
-      });
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
   }
 });
 
@@ -184,12 +178,10 @@ router.put('/:noteId', async function (req, res) {
       .send({ status: 'SUCCESS', message: 'Note updated successfully' });
   } catch (e) {
     Logger.log.error('Error occurred in updating note ', e.message || e);
-    res
-      .status(500)
-      .send({
-        status: 'ERROR',
-        message: e.message || 'Something went wrong, please try again later.',
-      });
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
   }
 });
 
@@ -214,12 +206,10 @@ router.delete('/:noteId', async function (req, res) {
       .send({ status: 'SUCCESS', message: 'Note deleted successfully' });
   } catch (e) {
     Logger.log.error('Error occurred while deleting note ', e.message || e);
-    res
-      .status(500)
-      .send({
-        status: 'ERROR',
-        message: e.message || 'Something went wrong, please try again later.',
-      });
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
   }
 });
 

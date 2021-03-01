@@ -16,32 +16,15 @@ const Application = mongoose.model('application');
 const Logger = require('./../services/logger');
 const config = require('./../config');
 const StaticFile = require('./../static-files/moduleColumn');
-const { deleteImage } = require('./../helper/document.helper');
+const { uploadDocument } = require('./../helper/document.helper');
+const {
+  deleteFile,
+  getPreSignedUrl,
+} = require('./../helper/static-file.helper');
 
 const uploadPath = path.resolve(__dirname, '../upload/');
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(
-      null,
-      uploadPath + '/' + getImagePath({ documentFor: req.query.documentFor }),
-    );
-  },
-  filename: function (req, file, cb) {
-    cb(
-      null,
-      req.query.documentFor +
-        '-' +
-        file.fieldname +
-        '-' +
-        Date.now() +
-        file.originalname.substr(
-          file.originalname.lastIndexOf('.'),
-          file.originalname.length,
-        ),
-    );
-  },
-});
-const upload = multer({ dest: uploadPath, storage: storage });
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 /**
  * Get Column Names
@@ -103,6 +86,44 @@ router.get('/column-name', async function (req, res) {
       'Error occurred in get document column names',
       e.message || e,
     );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Download documents
+ */
+router.get('/download', async function (req, res) {
+  if (!req.query.documentIds) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const documentIds = req.query.documentIds.split(',');
+    const documentData = await Document.find({ _id: { $in: documentIds } })
+      .select('_id keyPath')
+      .lean();
+    let promises = [];
+    for (let i = 0; i < documentData.length; i++) {
+      if (documentData[i].keyPath) {
+        promises.push(
+          getPreSignedUrl({
+            filePath: documentData[i].keyPath,
+            getCloudFrontUrl: config.staticServing.isCloudFrontEnabled,
+          }),
+        );
+      }
+    }
+    const response = await Promise.all(promises);
+    res.status(200).send({ status: 'SUCCESS', data: response });
+  } catch (e) {
+    Logger.log.error('Error occurred in download document ', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -223,7 +244,14 @@ router.get('/:entityId', async function (req, res) {
  * Upload Document
  */
 router.post('/upload', upload.single('document'), async function (req, res) {
-  if (!req.query.documentFor) {
+  req.body = JSON.parse(JSON.stringify(req.body));
+  if (
+    !req.body.documentFor ||
+    !req.body.description ||
+    !req.body.documentType ||
+    !req.body.entityId ||
+    !req.body.hasOwnProperty('isPublic')
+  ) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -231,30 +259,32 @@ router.post('/upload', upload.single('document'), async function (req, res) {
     });
   }
   try {
-    console.log('REQ : ', req.file);
-    res.status(200).send({
-      status: 'SUCCESS',
-      data: {
-        message: 'Document uploaded successfully.',
-        filename: getImageUrl({
-          imageName: req.file.filename,
-          documentFor: req.query.documentFor,
-        }),
-        originalName: req.file.originalname,
-      },
-    });
-    if (req.query.oldFileName) {
-      Logger.log.info('Old image name:', req.query.oldFileName);
-      await deleteImage({
-        fileName: req.query.oldFileName,
-        filePath:
-          uploadPath +
-          '/' +
-          getImagePath({ documentFor: req.query.documentFor }),
+    const documentTypes = ['client', 'debtor', 'application'];
+    if (!documentTypes.includes(req.body.documentFor.toLowerCase())) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'BAD_REQUEST',
+        message: 'Please pass correct fields',
       });
     }
+    await uploadDocument({
+      entityType: req.body.documentFor.toLowerCase(),
+      description: req.body.description,
+      isPublic: req.body.isPublic,
+      entityRefId: req.body.entityId,
+      documentTypeId: req.body.documentType,
+      originalFileName: req.file.originalname,
+      bufferData: req.file.buffer,
+      mimetype: req.file.mimetype,
+      uploadById: req.user._id,
+      uploadByType: 'user',
+    });
+    res.status(200).send({
+      status: 'SUCCESS',
+      message: 'Document uploaded successfully',
+    });
   } catch (e) {
-    Logger.log.error('Error occurred in upload document ', e.message || e);
+    Logger.log.error('Error occurred in upload document ', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -262,6 +292,7 @@ router.post('/upload', upload.single('document'), async function (req, res) {
   }
 });
 
+//TODO Remove
 /**
  * Create Document
  */
@@ -382,15 +413,11 @@ router.post('/:documentId', async function (req, res) {
   }
 });
 
-//TODO change for multiple delete
 /**
  * Delete Document
  */
 router.delete('/:documentId', async function (req, res) {
-  if (
-    !req.params.documentId ||
-    !mongoose.Types.ObjectId.isValid(req.params.documentId)
-  ) {
+  if (!req.params.documentId) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -398,18 +425,10 @@ router.delete('/:documentId', async function (req, res) {
     });
   }
   try {
-    const document = await Document.findById(req.params.documentId).populate({
-      path: 'documentTypeId',
-      match: { isDeleted: false },
-      select: { documentFor: 1 },
-    });
-    await deleteImage({
-      fileName: document.fileName,
-      filePath:
-        uploadPath +
-        '/' +
-        getImagePath({ documentFor: document.documentTypeId.documentFor }),
-    });
+    const document = await Document.findOne({ _id: req.params.documentId })
+      .select('keyPath')
+      .lean();
+    await deleteFile({ filePath: document.keyPath });
     await Document.updateOne(
       { _id: req.params.documentId },
       { isDeleted: true },
@@ -425,34 +444,6 @@ router.delete('/:documentId', async function (req, res) {
     });
   }
 });
-
-/**
- * Helper Functions
- */
-function getImagePath({ documentFor }) {
-  return (
-    config.uploadLocations[documentFor]['base'] +
-    config.uploadLocations[documentFor]['document']
-  );
-}
-
-function getImageUrl({ imageName, documentFor }) {
-  if (imageName)
-    if (
-      imageName.indexOf(
-        config.server.backendServerUrl + getImagePath({ documentFor }),
-      ) !== -1
-    )
-      return imageName;
-    else
-      return (
-        config.server.backendServerUrl +
-        getImagePath({ documentFor }) +
-        '/' +
-        imageName
-      );
-  return '';
-}
 
 /**
  * Export Router

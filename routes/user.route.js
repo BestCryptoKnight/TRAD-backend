@@ -18,6 +18,7 @@ const config = require('../config');
 const MailHelper = require('./../helper/mailer.helper');
 const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
+const StaticFileHelper = require('./../helper/static-file.helper');
 const { addAuditLog } = require('./../helper/audit-log.helper');
 
 const uploadProfilePath = path.resolve(
@@ -25,15 +26,16 @@ const uploadProfilePath = path.resolve(
   '../upload/' + getProfileImagePath(),
 );
 // Custom Multer storage engine
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadProfilePath);
-  },
-  filename: function (req, file, cb) {
-    cb(null, file.fieldname + '-' + Date.now() + '-' + file.originalname);
-  },
-});
-const upload = multer({ dest: uploadProfilePath, storage: storage });
+// const storage = multer.diskStorage({
+//     destination: function (req, file, cb) {
+//         cb(null, uploadProfilePath);
+//     },
+//     filename: function (req, file, cb) {
+//         cb(null, file.fieldname + '-' + Date.now() + '-' + file.originalname);
+//     },
+// });
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 /**
  * Upload for profile-picture of User.
@@ -42,42 +44,30 @@ router.post(
   '/upload/profile-picture',
   upload.single('profile-picture'),
   async (req, res) => {
-    let userId = req.user._id;
-    if (!userId) {
-      Logger.log.error('User id not found in the logged in user');
-      return res.status(400).send({
-        status: 'ERROR',
-        messageCode: 'USER_NOT_FOUND',
-        message: 'User not found, please try by logging in again.',
-      });
-    }
     try {
-      await User.findByIdAndUpdate(
-        userId,
-        { profilePicture: req.file.filename },
-        { new: true },
-      );
-      res.status(200).send({
-        status: 'success',
-        data: getProfileUrl(getProfileUrl(req.file.filename)),
-      });
-      if (req.query.oldImageName) {
-        Logger.log.info('Old image name:', req.query.oldImageName);
-        let imagePath = path.resolve(
-          __dirname +
-            '/../upload/' +
-            getProfileImagePath() +
-            req.query.oldImageName,
-        );
-        fs.unlink(imagePath, (err) => {
-          if (err) {
-            Logger.log.warn(
-              `Error deleting profile picture with name: ${req.query.oldImageName} by user ${req.user._id}`,
-            );
-            Logger.log.warn(err.message || err);
-          } else Logger.log.info('Successfully deleted old profile picture.');
+      if (!req.user._id) {
+        Logger.log.error('User id not found in the logged in user');
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'USER_NOT_FOUND',
+          message: 'User not found, please try by logging in again.',
         });
       }
+      let s3Response = await StaticFileHelper.uploadFile({
+        file: req.file.buffer,
+        filePath:
+          'users/profile-picture/' + Date.now() + '-' + req.file.originalname,
+        fileType: req.file.mimetype,
+      });
+      await User.updateOne(
+        { _id: req.user._id },
+        { profileKeyPath: s3Response.key },
+      );
+      let profileUrl = await StaticFileHelper.getPreSignedUrl({
+        filePath: s3Response.key,
+        getCloudFrontUrl: false,
+      });
+      res.status(200).send({ status: 'success', data: profileUrl });
     } catch (e) {
       Logger.log.error('Error occurred.', e.message || e);
       res.status(500).send({
@@ -113,30 +103,12 @@ router.delete('/profile-picture', async (req, res) => {
     });
   }
   Logger.log.info('Old image name:', req.query.oldImageName);
-  let imagePath = path.resolve(
-    __dirname + '/../upload/' + getProfileImagePath() + req.query.oldImageName,
-  );
-  fs.unlink(imagePath, async (err) => {
-    if (err) {
-      Logger.log.warn(
-        `Error deleting profile picture with name: ${req.query.oldImageName} by user ${req.user._id}`,
-      );
-      Logger.log.warn(err.message || err);
-      return res
-        .status(500)
-        .send({ status: 'ERROR', message: 'Error removing profile picture.' });
-    } else {
-      Logger.log.info('Successfully deleted old profile picture.');
-      await User.findByIdAndUpdate(
-        userId,
-        { profilePicture: null },
-        { new: true },
-      );
-      res.status(200).send({
-        status: 'SUCCESS',
-        message: 'Profile Picture deleted successfully.',
-      });
-    }
+  await StaticFileHelper.deleteFile({ filePath: req.query.oldImageName });
+  Logger.log.info('Successfully deleted old profile picture.');
+  await User.updateOne({ _id: userId }, { profileKeyPath: null });
+  res.status(200).send({
+    status: 'SUCCESS',
+    message: 'Profile Picture deleted successfully.',
   });
 });
 
@@ -154,14 +126,20 @@ router.get('/profile', async function (req, res) {
     });
   }
   try {
-    let userData = await User.findById(req.user._id).select({
-      name: 1,
-      role: 1,
-      email: 1,
-      contactNumber: 1,
-      profilePicture: 1,
+    let userData = await User.findById(req.user._id)
+      .select({
+        name: 1,
+        role: 1,
+        email: 1,
+        contactNumber: 1,
+        profileKeyPath: 1,
+      })
+      .lean();
+    userData.profilePictureUrl = await StaticFileHelper.getPreSignedUrl({
+      filePath: userData.profileKeyPath,
+      getCloudFrontUrl: false,
     });
-    userData.profilePicture = getProfileUrl(userData.profilePicture);
+    // userData.profilePictureUrl = StaticFileHelper.getPreSignedUrl({filePath: userData.profileKeyPath, getCloudFrontUrl: false});
     Logger.log.info('Fetched user details');
     res.status(200).send({ status: 'SUCCESS', data: userData });
   } catch (e) {
