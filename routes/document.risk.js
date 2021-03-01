@@ -147,16 +147,22 @@ router.get('/:entityId', async function (req, res) {
     });
   }
   try {
-    const module = StaticFile.modules.find((i) => i.name === 'document');
+    const module = StaticFile.modules.find(
+      (i) => i.name === req.query.documentFor + '-document',
+    );
     const documentColumn = req.user.manageColumns.find(
-      (i) => i.moduleName === 'document',
+      (i) => i.moduleName === req.query.documentFor + '-document',
     );
 
     let query;
+    let aggregationQuery = [];
     let sortingOptions = {};
-    if (req.query.sortBy && req.query.sortOrder) {
-      sortingOptions[req.query.sortBy] = req.query.sortOrder;
-    }
+    req.query.sortBy = req.query.sortBy || '_id';
+    req.query.sortOrder = req.query.sortOrder || 'desc';
+    req.query.limit = req.query.limit || 5;
+    req.query.page = req.query.page || 1;
+    sortingOptions[req.query.sortBy] = req.query.sortOrder === 'desc' ? -1 : 1;
+
     if (req.query.documentFor === 'application') {
       const application = await Application.findOne({
         _id: req.params.entityId,
@@ -164,13 +170,19 @@ router.get('/:entityId', async function (req, res) {
       query = {
         $and: [
           {
-            entityRefId: req.params.entityId,
+            entityRefId: mongoose.Types.ObjectId(req.params.entityId),
           },
           {
             $or: [
-              { uploadByType: 'client-user', uploadById: application.clientId },
+              {
+                uploadByType: 'client-user',
+                uploadById: mongoose.Types.ObjectId(application.clientId),
+              },
               { uploadByType: 'user', isPublic: true },
-              { uploadByType: 'user', uploadById: req.user._id },
+              {
+                uploadByType: 'user',
+                uploadById: mongoose.Types.ObjectId(req.user._id),
+              },
             ],
           },
         ],
@@ -185,16 +197,22 @@ router.get('/:entityId', async function (req, res) {
       query = {
         $and: [
           {
-            entityRefId: req.params.entityId,
+            entityRefId: mongoose.Types.ObjectId(req.params.entityId),
           },
           {
             entityRefId: { $in: applicationIds },
           },
           {
             $or: [
-              { uploadByType: 'client-user', uploadById: debtor.clientId },
+              {
+                uploadByType: 'client-user',
+                uploadById: mongoose.Types.ObjectId(debtor.clientId),
+              },
               { uploadByType: 'user', isPublic: true },
-              { uploadByType: 'user', uploadById: req.user._id },
+              {
+                uploadByType: 'user',
+                uploadById: mongoose.Types.ObjectId(req.user._id),
+              },
             ],
           },
         ],
@@ -203,34 +221,146 @@ router.get('/:entityId', async function (req, res) {
       query = {
         $and: [
           {
-            entityRefId: req.params.entityId,
+            entityRefId: mongoose.Types.ObjectId(req.params.entityId),
           },
           {
             $or: [
               { uploadByType: 'user', isPublic: true },
-              { uploadByType: 'user', uploadById: req.user._id },
+              {
+                uploadByType: 'user',
+                uploadById: mongoose.Types.ObjectId(req.user._id),
+              },
             ],
           },
         ],
       };
     }
 
-    const option = {
-      page: parseInt(req.query.page) || 1,
-      limit: parseInt(req.query.limit) || 5,
-    };
-    option.select = documentColumn.columns.toString().replace(/,/g, ' ');
-    option.sort = sortingOptions;
-    option.lean = true;
+    if (documentColumn.columns.includes('uploadById')) {
+      aggregationQuery.push(
+        {
+          $addFields: {
+            clientUserId: {
+              $cond: [
+                { $eq: ['$uploadByType', 'client-user'] },
+                '$uploadById',
+                null,
+              ],
+            },
+            userId: {
+              $cond: [{ $eq: ['$uploadByType', 'user'] }, '$uploadById', null],
+            },
+          },
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'userId',
+            foreignField: '_id',
+            as: 'userId',
+          },
+        },
+        {
+          $lookup: {
+            from: 'client-users',
+            localField: 'clientUserId',
+            foreignField: '_id',
+            as: 'clientUserId',
+          },
+        },
+        {
+          $addFields: {
+            uploadById: {
+              $cond: [
+                { $eq: ['$createdByType', 'client-user'] },
+                '$clientUserId.name',
+                '$userId.name',
+              ],
+            },
+          },
+        },
+      );
+    }
 
-    const documents = await Document.paginate(query, option);
-    documents.headers = [];
+    if (documentColumn.columns.includes('documentTypeId') || req.query.search) {
+      aggregationQuery.push(
+        {
+          $lookup: {
+            from: 'document-types',
+            localField: 'documentTypeId',
+            foreignField: '_id',
+            as: 'documentTypeId',
+          },
+        },
+        {
+          $unwind: {
+            path: '$documentTypeId',
+          },
+        },
+      );
+    }
+
+    if (req.query.search) {
+      aggregationQuery.push({
+        $match: {
+          'documentTypeId.documentTitle': {
+            $regex: `${req.query.search}`,
+            $options: 'i',
+          },
+        },
+      });
+    }
+
+    const fields = documentColumn.columns.map((i) => {
+      if (i === 'documentTypeId') {
+        i = i + '.documentTitle';
+      }
+      return [i, 1];
+    });
+    aggregationQuery.push({
+      $project: fields.reduce((obj, [key, val]) => {
+        obj[key] = val;
+        return obj;
+      }, {}),
+    });
+    aggregationQuery.push({ $sort: sortingOptions });
+
+    aggregationQuery.push({
+      $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
+    });
+    aggregationQuery.push({ $limit: parseInt(req.query.limit) });
+
+    aggregationQuery.unshift({ $match: query });
+
+    const [documents, total] = await Promise.all([
+      Document.aggregate(aggregationQuery).allowDiskUse(true),
+      Document.countDocuments(query).lean(),
+    ]);
+    const headers = [];
     for (let i = 0; i < module.manageColumns.length; i++) {
       if (documentColumn.columns.includes(module.manageColumns[i].name)) {
-        documents.headers.push(module.manageColumns[i]);
+        headers.push(module.manageColumns[i]);
       }
     }
-    res.status(200).send({ status: 'SUCCESS', data: documents });
+    documents.forEach((document) => {
+      if (documentColumn.columns.includes('documentTypeId')) {
+        document.documentTypeId = document.documentTypeId.documentTitle || '';
+      }
+      if (documentColumn.columns.includes('uploadById')) {
+        document.uploadById = document.uploadById[0] || '';
+      }
+    });
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: {
+        docs: documents,
+        headers,
+        total,
+        page: parseInt(req.query.page),
+        limit: parseInt(req.query.limit),
+        pages: Math.ceil(total / parseInt(req.query.limit)),
+      },
+    });
   } catch (e) {
     Logger.log.error('Error occurred in get document list ', e);
     res.status(500).send({

@@ -192,7 +192,9 @@ router.get('/', async function (req, res) {
 
     if (
       req.query.clientDebtorId ||
-      applicationColumn.columns.includes('clientDebtorId')
+      applicationColumn.columns.includes('clientDebtorId') ||
+      req.query.debtorId ||
+      applicationColumn.columns.includes('debtorId')
     ) {
       aggregationQuery.push(
         {
@@ -220,20 +222,20 @@ router.get('/', async function (req, res) {
     }
 
     const fields = applicationColumn.columns.map((i) => {
-      if (i === 'clientId') {
+      /*if (i === 'clientId') {
         i = i + '.name';
-      }
+      }*/
       if (i === 'debtorId') {
         i = i + '.entityName';
-      }
-      if (i === 'clientDebtorId') {
-        i = i + '.creditLimit';
       }
       if (i === 'entityType') {
         i = 'debtorId.' + i;
       }
       return [i, 1];
     });
+    if (!applicationColumn.columns.includes('clientDebtorId')) {
+      fields.push(['clientDebtorId', 1]);
+    }
     aggregationQuery.push({
       $project: fields.reduce((obj, [key, val]) => {
         obj[key] = val;
@@ -281,13 +283,22 @@ router.get('/', async function (req, res) {
           application.entityType = application.debtorId.entityType;
         }
         if (applicationColumn.columns.includes('clientId')) {
-          application.clientId = application.clientId.name;
+          application.clientId = {
+            id: application.clientId._id,
+            value: application.clientId.name,
+          };
         }
         if (applicationColumn.columns.includes('debtorId')) {
-          application.debtorId = application.debtorId.entityName;
+          application.debtorId = {
+            id: application.clientDebtorId._id,
+            value: application.debtorId.entityName,
+          };
         }
         if (applicationColumn.columns.includes('clientDebtorId')) {
           application.clientDebtorId = application.clientDebtorId.creditLimit;
+        }
+        if (!applicationColumn.columns.includes('clientDebtorId')) {
+          delete application.clientDebtorId;
         }
       });
     }

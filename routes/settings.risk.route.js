@@ -347,6 +347,9 @@ router.get('/document-type', async function (req, res) {
     const queryFilter = {
       isDeleted: false,
     };
+    if (req.query.listFor) {
+      queryFilter.documentFor = req.query.listFor.toLowerCase();
+    }
     const sortingOptions = {};
     if (req.query.sortBy && req.query.sortOrder) {
       sortingOptions[req.query.sortBy] = req.query.sortOrder;

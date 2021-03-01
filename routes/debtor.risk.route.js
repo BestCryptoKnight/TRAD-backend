@@ -125,7 +125,8 @@ router.get('/', async function (req, res) {
         i === 'acn' ||
         i === 'entityName' ||
         i === 'entityType' ||
-        i === 'contactNumber'
+        i === 'contactNumber' ||
+        i === 'tradingName'
       ) {
         i = 'debtorId.' + i;
       }
@@ -178,6 +179,9 @@ router.get('/', async function (req, res) {
         if (debtorColumn.columns.includes('entityName')) {
           debtor.entityName = debtor.debtorId.entityName;
         }
+        if (debtorColumn.columns.includes('tradingName')) {
+          debtor.tradingName = debtor.debtorId.tradingName;
+        }
         if (debtorColumn.columns.includes('entityType')) {
           debtor.entityType = debtor.debtorId.entityType;
         }
@@ -200,6 +204,57 @@ router.get('/', async function (req, res) {
     });
   } catch (e) {
     Logger.log.error('Error occurred in get debtor list ', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Get Debtor Modal details
+ */
+router.get('/details/:debtorId', async function (req, res) {
+  if (!req.params.debtorId) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing',
+    });
+  }
+  try {
+    const module = StaticFile.modules.find((i) => i.name === 'debtor');
+    const debtor = await ClientDebtor.findOne({
+      _id: req.params.debtorId,
+    })
+      .populate({
+        path: 'debtorId',
+        select: { _id: 0, isDeleted: 0, createdAt: 0, updatedAt: 0 },
+      })
+      .select({ _id: 0, isDeleted: 0, clientId: 0, __v: 0 })
+      .lean();
+    let response = [];
+    console.log(debtor);
+    let value = '';
+    module.manageColumns.forEach((i) => {
+      value =
+        i.name === 'creditLimit' ||
+        i.name === 'createdAt' ||
+        i.name === 'updatedAt'
+          ? debtor[i.name]
+          : debtor['debtorId'][i.name];
+      response.push({
+        label: i.label,
+        value: value || '-',
+        type: i.type,
+      });
+    });
+    res.status(200).send({ status: 'SUCCESS', data: response });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in get debtor modal details ',
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

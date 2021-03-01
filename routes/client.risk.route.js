@@ -292,6 +292,67 @@ router.get('/user-details/:clientUserId', async function (req, res) {
 });
 
 /**
+ * Get Client Modal details
+ */
+router.get('/details/:clientId', async function (req, res) {
+  if (!req.params.clientId) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing',
+    });
+  }
+  try {
+    const module = StaticFile.modules.find((i) => i.name === 'client');
+    const client = await Client.findOne({
+      _id: req.params.clientId,
+    })
+      .populate({ path: 'riskAnalystId serviceManagerId', select: 'name' })
+      .select({ isDeleted: 0, crmClientId: 0, __v: 0 })
+      .lean();
+    console.log('client ', client);
+    let response = [];
+    module.manageColumns.forEach((i) => {
+      if (
+        i.name === 'addressLine' ||
+        i.name === 'city' ||
+        i.name === 'state' ||
+        i.name === 'country' ||
+        i.name === 'zipCode'
+      ) {
+        response.push({
+          label: i.label,
+          value: client['address'][i.name] || '-',
+          type: i.type,
+        });
+      }
+      if (client.hasOwnProperty(i.name)) {
+        response.push({
+          label: i.label,
+          value:
+            i.name === 'riskAnalystId' || i.name === 'serviceManagerId'
+              ? client[i.name]
+                ? client[i.name]['name']
+                : '-'
+              : client[i.name] || '-',
+          type: i.type,
+        });
+      }
+    });
+    res.status(200).send({ status: 'SUCCESS', data: response });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in get client modal details ',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
  * Get Column Names
  */
 router.get('/column-name', async function (req, res) {
