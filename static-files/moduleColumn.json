@@ -395,8 +395,7 @@
     {
       "name": "insurer-user",
       "manageColumns": [
-        { "name": "firstName", "label": "First Name", "type": "string" },
-        { "name": "lastName", "label": "Last Name", "type": "string" },
+        { "name": "name", "label": "Last Name", "type": "string" },
         { "name": "email", "label": "Email", "type": "string" },
         {
           "name": "contactNumber",
@@ -408,7 +407,7 @@
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
-      "defaultColumns": ["firstName", "lastName", "jobTitle"]
+      "defaultColumns": ["name", "email", "jobTitle"]
     },
     {
       "name": "insurer-policy",

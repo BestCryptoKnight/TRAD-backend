@@ -459,23 +459,29 @@ router.put('/user/sync-from-crm/:insurerId', async function (req, res) {
       contacts: [],
     });
     let promiseArr = [];
-    contactsFromCrm.forEach((crmContact) => {
+    for (let i = 0; i < contactsFromCrm.length; i++) {
       promiseArr.push(
         InsurerUser.updateOne(
-          { crmContactId: crmContact.crmContactId, isDeleted: false },
-          crmContact,
+          { crmContactId: contactsFromCrm[i].crmContactId, isDeleted: false },
+          contactsFromCrm[i],
           { upsert: true },
         ),
       );
-    });
-    await addAuditLog({
-      entityType: 'insurer',
-      entityRefId: req.params.insurerId,
-      userType: 'user',
-      userRefId: req.user._id,
-      actionType: 'sync',
-      logDescription: 'Insurer contacts synced successfully.',
-    });
+      const insurerUser = await InsurerUser.findOne({
+        crmContactId: contactsFromCrm[i].crmContactId,
+        isDeleted: false,
+      }).lean();
+      promiseArr.push(
+        addAuditLog({
+          entityType: 'insurer-user',
+          entityRefId: insurerUser._id,
+          userType: 'user',
+          userRefId: req.user._id,
+          actionType: 'sync',
+          logDescription: `Insurer contact ${insurerUser.name} synced successfully.`,
+        }),
+      );
+    }
     await Promise.all(promiseArr);
     res.status(200).send({
       status: 'SUCCESS',

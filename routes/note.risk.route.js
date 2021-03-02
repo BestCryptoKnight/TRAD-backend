@@ -12,6 +12,7 @@ const Application = mongoose.model('application');
  * Local Imports
  * */
 const Logger = require('./../services/logger');
+const { addAuditLog } = require('./../helper/audit-log.helper');
 
 /**
  * Get Note List
@@ -262,6 +263,14 @@ router.post('/', async function (req, res) {
       createdById: req.user._id,
     });
     await note.save();
+    await addAuditLog({
+      entityType: 'note',
+      entityRefId: note._id,
+      actionType: 'add',
+      userType: 'user',
+      userRefId: req.user._id,
+      logDescription: 'Note created successfully',
+    });
     res
       .status(200)
       .send({ status: 'SUCCESS', message: 'Note created successfully' });
@@ -295,6 +304,14 @@ router.put('/:noteId', async function (req, res) {
     if (req.body.hasOwnProperty('isPublic'))
       updateObj.isPublic = req.body.isPublic;
     await Note.updateOne({ _id: req.params.noteId }, updateObj);
+    await addAuditLog({
+      entityType: 'note',
+      entityRefId: req.params.noteId,
+      actionType: 'edit',
+      userType: 'user',
+      userRefId: req.user._id,
+      logDescription: 'Note updated successfully',
+    });
     res
       .status(200)
       .send({ status: 'SUCCESS', message: 'Note updated successfully' });
@@ -323,6 +340,14 @@ router.delete('/:noteId', async function (req, res) {
   }
   try {
     await Note.updateOne({ _id: req.params.noteId }, { isDeleted: true });
+    await addAuditLog({
+      entityType: 'note',
+      entityRefId: req.params.noteId,
+      actionType: 'delete',
+      userType: 'user',
+      userRefId: req.user._id,
+      logDescription: 'Note deleted successfully',
+    });
     res
       .status(200)
       .send({ status: 'SUCCESS', message: 'Note deleted successfully' });

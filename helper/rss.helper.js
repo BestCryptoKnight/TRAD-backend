@@ -12,6 +12,7 @@ const InsurerUser = mongoose.model('insurer-user');
  * Local Imports
  * */
 const Logger = require('../services/logger');
+const { addAuditLog } = require('./audit-log.helper');
 
 let getClients = ({ searchKeyword }) => {
   return new Promise(async (resolve, reject) => {
@@ -141,11 +142,13 @@ let getInsurers = ({ searchKeyword }) => {
 let getClientById = ({ clientId }) => {
   return new Promise(async (resolve, reject) => {
     try {
-      let url = 'https://apiv4.reallysimplesystems.com/accounts/' + clientId;
-      let organization = await Organization.findOne({
+      const url = 'https://apiv4.reallysimplesystems.com/accounts/' + clientId;
+      const organization = await Organization.findOne({
         isDeleted: false,
-      }).select({ 'integration.rss': 1 });
-      let options = {
+      })
+        .select({ 'integration.rss': 1 })
+        .lean();
+      const options = {
         method: 'GET',
         url: url,
         headers: {
@@ -153,7 +156,7 @@ let getClientById = ({ clientId }) => {
         },
       };
       let { data } = await axios(options);
-      let client = {
+      const client = {
         crmClientId: data.record['id'],
         name: data.record['name'],
         address: {
@@ -360,8 +363,7 @@ let getInsurerContacts = ({
       data.list.forEach((crmContact) => {
         let contact = {
           insurerId: insurerId,
-          firstName: crmContact.record['first'],
-          lastName: crmContact.record['last'],
+          name: crmContact.record['first'] + ' ' + crmContact.record['last'],
           jobTitle: crmContact.record['jobtitle'],
           crmContactId: crmContact.record['id'],
           email: crmContact.record['email'],
@@ -390,12 +392,17 @@ let getInsurerContacts = ({
   });
 };
 
-let fetchInsurerDetails = ({ underwriterName, crmClientId, clientId }) => {
+let fetchInsurerDetails = ({
+  underwriterName,
+  crmClientId,
+  clientId,
+  auditLog = {},
+}) => {
   return new Promise(async (resolve, reject) => {
     try {
       let insurer = await Insurer.findOne({ name: underwriterName });
       if (insurer) {
-        //TODO get client policies
+        //TODO sync insurer + client policies
         const policies = await Policy.find({ clientId: clientId }).lean();
         if (policies && policies.length !== 0) {
           return resolve(insurer);
@@ -409,6 +416,16 @@ let fetchInsurerDetails = ({ underwriterName, crmClientId, clientId }) => {
           clientPolicies.forEach((policy) => {
             const clientPolicy = new Policy(policy);
             promiseArr.push(clientPolicy.save());
+            promiseArr.push(
+              addAuditLog({
+                entityType: 'policy',
+                entityRefId: clientPolicy._id,
+                userType: auditLog.userType,
+                userRefId: auditLog.userRefId,
+                actionType: 'add',
+                logDescription: `Client policy ${clientPolicy.product} added successfully.`,
+              }),
+            );
           });
           await Promise.all(promiseArr);
         }
@@ -430,15 +447,35 @@ let fetchInsurerDetails = ({ underwriterName, crmClientId, clientId }) => {
         };
         insurer = new Insurer(insurerData);
         await insurer.save();
+        let promiseArr = [];
+        promiseArr.push(
+          addAuditLog({
+            entityType: 'insurer',
+            entityRefId: insurer._id,
+            userType: auditLog.userType,
+            userRefId: auditLog.userRefId,
+            actionType: 'add',
+            logDescription: `Insurer ${name} added successfully.`,
+          }),
+        );
         const clientPolicies = await getClientPolicies({
           insurerId: insurer._id,
           crmClientId,
           clientId,
         });
-        let promiseArr = [];
         clientPolicies.forEach((policy) => {
           const clientPolicy = new Policy(policy);
           promiseArr.push(clientPolicy.save());
+          promiseArr.push(
+            addAuditLog({
+              entityType: 'policy',
+              entityRefId: clientPolicy._id,
+              userType: auditLog.userType,
+              userRefId: auditLog.userRefId,
+              actionType: 'add',
+              logDescription: `Client policy ${clientPolicy.product} added successfully.`,
+            }),
+          );
         });
         const insurerContacts = await getInsurerContacts({
           crmInsurerId: insurer.crmInsurerId,
@@ -451,6 +488,16 @@ let fetchInsurerDetails = ({ underwriterName, crmClientId, clientId }) => {
         insurerContacts.forEach((contact) => {
           const insurerContact = new InsurerUser(contact);
           promises.push(insurerContact.save());
+          promises.push(
+            addAuditLog({
+              entityType: 'insurer-user',
+              entityRefId: insurerContact._id,
+              userType: auditLog.userType,
+              userRefId: auditLog.userRefId,
+              actionType: 'add',
+              logDescription: `Insurer contact ${insurerContact.name} added successfully.`,
+            }),
+          );
         });
         await Promise.all(promiseArr);
         await Promise.all(promises);
@@ -463,8 +510,6 @@ let fetchInsurerDetails = ({ underwriterName, crmClientId, clientId }) => {
     }
   });
 };
-
-// getClientContacts({clientId: 9});
 
 module.exports = {
   getClients,

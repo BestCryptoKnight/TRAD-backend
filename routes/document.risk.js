@@ -4,7 +4,6 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const path = require('path');
 const mongoose = require('mongoose');
 const Document = mongoose.model('document');
 const ClientDebtor = mongoose.model('client-debtor');
@@ -21,8 +20,8 @@ const {
   deleteFile,
   getPreSignedUrl,
 } = require('./../helper/static-file.helper');
+const { addAuditLog } = require('./../helper/audit-log.helper');
 
-const uploadPath = path.resolve(__dirname, '../upload/');
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
@@ -397,7 +396,7 @@ router.post('/upload', upload.single('document'), async function (req, res) {
         message: 'Please pass correct fields',
       });
     }
-    await uploadDocument({
+    const document = await uploadDocument({
       entityType: req.body.documentFor.toLowerCase(),
       description: req.body.description,
       isPublic: req.body.isPublic,
@@ -409,56 +408,20 @@ router.post('/upload', upload.single('document'), async function (req, res) {
       uploadById: req.user._id,
       uploadByType: 'user',
     });
+    await addAuditLog({
+      entityType: 'document',
+      entityRefId: document._id,
+      userType: 'user',
+      userRefId: req.user._id,
+      actionType: 'add',
+      logDescription: 'Document uploaded successfully',
+    });
     res.status(200).send({
       status: 'SUCCESS',
       message: 'Document uploaded successfully',
     });
   } catch (e) {
     Logger.log.error('Error occurred in upload document ', e);
-    res.status(500).send({
-      status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
-    });
-  }
-});
-
-//TODO Remove
-/**
- * Create Document
- */
-router.post('/', async function (req, res) {
-  if (
-    !req.body.documentType ||
-    !req.body.description ||
-    !req.body.originalName ||
-    !req.body.fileName ||
-    !req.body.entityType ||
-    !req.body.entityId ||
-    !req.body.hasOwnProperty('isPublic')
-  ) {
-    return res.status(400).send({
-      status: 'ERROR',
-      messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Require fields are missing.',
-    });
-  }
-  try {
-    await Document.create({
-      documentTypeId: req.body.documentType,
-      description: req.body.description,
-      originalFileName: req.body.originalName,
-      fileName: req.body.fileName,
-      uploadByType: 'user',
-      uploadById: req.user._id,
-      entityType: req.body.entityType,
-      entityRefId: req.body.entityId,
-      isPublic: req.body.isPublic,
-    });
-    res
-      .status(200)
-      .send({ status: 'SUCCESS', message: 'Document added successfully.' });
-  } catch (e) {
-    Logger.log.error('Error occurred in add document ', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -511,39 +474,6 @@ router.put('/column-name', async function (req, res) {
 });
 
 /**
- * Update Document
- */
-router.post('/:documentId', async function (req, res) {
-  if (
-    !req.body.documentType ||
-    !req.body.description ||
-    !req.body.originalName ||
-    !req.body.fileName ||
-    !req.body.entityType ||
-    !req.body.entityId ||
-    !req.body.hasOwnProperty('isPublic')
-  ) {
-    return res.status(400).send({
-      status: 'ERROR',
-      messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Require fields are missing.',
-    });
-  }
-  try {
-    await Document.updateOne({ _id: req.params.documentId }, req.body);
-    res
-      .status(200)
-      .send({ status: 'SUCCESS', message: 'Document updated successfully.' });
-  } catch (e) {
-    Logger.log.error('Error occurred in add document ', e.message || e);
-    res.status(500).send({
-      status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
-    });
-  }
-});
-
-/**
  * Delete Document
  */
 router.delete('/:documentId', async function (req, res) {
@@ -563,6 +493,14 @@ router.delete('/:documentId', async function (req, res) {
       { _id: req.params.documentId },
       { isDeleted: true },
     );
+    await addAuditLog({
+      entityType: 'document',
+      entityRefId: req.params.documentId,
+      userType: 'user',
+      userRefId: req.user._id,
+      actionType: 'delete',
+      logDescription: 'Document deleted successfully',
+    });
     res
       .status(200)
       .send({ status: 'SUCCESS', message: 'Document deleted successfully.' });

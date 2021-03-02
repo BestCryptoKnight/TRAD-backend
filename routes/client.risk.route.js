@@ -144,8 +144,10 @@ router.get('/user-list', async function (req, res) {
  * List Client User details
  */
 router.get('/user/:clientId', async function (req, res) {
-  if (!req.params.clientId) {
-    Logger.log.error('No clientId passed.');
+  if (
+    !req.params.clientId ||
+    !mongoose.Types.ObjectId.isValid(req.params.clientId)
+  ) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -162,6 +164,10 @@ router.get('/user/:clientId', async function (req, res) {
       isDeleted: false,
       clientId: mongoose.Types.ObjectId(req.params.clientId),
     };
+    req.query.sortBy = req.query.sortBy || '_id';
+    req.query.sortOrder = req.query.sortOrder || 'desc';
+    req.query.limit = req.query.limit || 5;
+    req.query.page = req.query.page || 1;
     if (req.query.search) {
       queryFilter.name = { $regex: `${req.query.search}` };
     }
@@ -181,14 +187,23 @@ router.get('/user/:clientId', async function (req, res) {
       aggregationQuery.push({ $sort: sortingOptions });
     }
     aggregationQuery.push({
-      $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
+      $facet: {
+        paginatedResult: [
+          {
+            $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
+          },
+          { $limit: parseInt(req.query.limit) },
+        ],
+        totalCount: [
+          {
+            $count: 'count',
+          },
+        ],
+      },
     });
-    aggregationQuery.push({ $limit: parseInt(req.query.limit) });
-    const [clientUsers, total] = await Promise.all([
-      ClientUser.aggregate(aggregationQuery).allowDiskUse(true),
-      ClientUser.countDocuments(queryFilter).lean(),
-    ]);
-
+    const clientUsers = await ClientUser.aggregate(
+      aggregationQuery,
+    ).allowDiskUse(true);
     const headers = [];
     let checkForLink = false;
     for (let i = 0; i < module.manageColumns.length; i++) {
@@ -203,7 +218,7 @@ router.get('/user/:clientId', async function (req, res) {
       }
     }
     if (checkForLink && clientUsers.length !== 0) {
-      clientUsers.forEach((user) => {
+      clientUsers[0]['paginatedResult'].forEach((user) => {
         if (user.name && user.name.length !== 0) {
           user.name = {
             id: user._id,
@@ -224,10 +239,14 @@ router.get('/user/:clientId', async function (req, res) {
         }
       });
     }
+    const total =
+      clientUsers[0]['totalCount'].length !== 0
+        ? clientUsers[0]['totalCount'][0]['count']
+        : 0;
     res.status(200).send({
       status: 'SUCCESS',
       data: {
-        docs: clientUsers,
+        docs: clientUsers[0].paginatedResult,
         headers,
         total,
         page: parseInt(req.query.page),
@@ -429,6 +448,10 @@ router.get('/', async function (req, res) {
         ],
       };
     }
+    req.query.sortBy = req.query.sortBy || '_id';
+    req.query.sortOrder = req.query.sortOrder || 'desc';
+    req.query.limit = req.query.limit || 5;
+    req.query.page = req.query.page || 1;
     if (req.query.sector) {
       queryFilter.sector = req.query.sector;
     }
@@ -516,16 +539,28 @@ router.get('/', async function (req, res) {
         req.query.sortOrder === 'desc' ? -1 : 1;
       aggregationQuery.push({ $sort: sortingOptions });
     }
-    aggregationQuery.push({
+    /*aggregationQuery.push({
       $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
     });
-    aggregationQuery.push({ $limit: parseInt(req.query.limit) });
+    aggregationQuery.push({ $limit: parseInt(req.query.limit) });*/
+    aggregationQuery.push({
+      $facet: {
+        paginatedResult: [
+          {
+            $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
+          },
+          { $limit: parseInt(req.query.limit) },
+        ],
+        totalCount: [
+          {
+            $count: 'count',
+          },
+        ],
+      },
+    });
     aggregationQuery.unshift({ $match: queryFilter });
 
-    const [clients, total] = await Promise.all([
-      Client.aggregate(aggregationQuery).allowDiskUse(true),
-      Client.countDocuments(queryFilter).lean(),
-    ]);
+    const clients = await Client.aggregate(aggregationQuery).allowDiskUse(true);
 
     const headers = [];
     for (let i = 0; i < module.manageColumns.length; i++) {
@@ -534,7 +569,7 @@ router.get('/', async function (req, res) {
       }
     }
     if (clients && clients.length !== 0) {
-      clients.forEach((user) => {
+      clients[0].paginatedResult.forEach((user) => {
         if (
           clientColumn.columns.includes('riskAnalystId') &&
           user.riskAnalystId
@@ -575,10 +610,14 @@ router.get('/', async function (req, res) {
       });
     }
 
+    const total =
+      clients[0]['totalCount'].length !== 0
+        ? clients[0]['totalCount'][0]['count']
+        : 0;
     res.status(200).send({
       status: 'SUCCESS',
       data: {
-        docs: clients,
+        docs: clients[0].paginatedResult,
         headers,
         total,
         page: parseInt(req.query.page),
@@ -668,6 +707,7 @@ router.post('/', async function (req, res) {
         underwriterName: clientData[i].underWriter,
         crmClientId: clientData[i].crmClientId,
         clientId: client._id,
+        auditLog: { userType: 'user', userRefId: req.user._id },
       });
       const contactsFromCrm = await RssHelper.getClientContacts({
         clientId: clientData[i].crmClientId,
@@ -675,13 +715,23 @@ router.post('/', async function (req, res) {
       contactsFromCrm.forEach((crmContact) => {
         let clientUser = new ClientUser(crmContact);
         clientUser.clientId = client._id;
-        let signUpToken = jwt.sign(
+        /* let signUpToken = jwt.sign(
           JSON.stringify({ _id: clientUser._id }),
           config.jwt.secret,
         );
-        clientUser.signUpToken = signUpToken;
+        clientUser.signUpToken = signUpToken;*/
         promiseArr.push(clientUser.save());
-        const userName =
+        promiseArr.push(
+          addAuditLog({
+            entityType: 'client-user',
+            entityRefId: clientUser._id,
+            userType: 'user',
+            userRefId: req.user._id,
+            actionType: 'add',
+            logDescription: `Client contact ${clientUser.name} added successfully.`,
+          }),
+        );
+        /*const userName =
           (clientUser.firstName ? clientUser.firstName + ' ' : '') +
           (clientUser.lastName ? clientUser.lastName : '');
         let mailObj = {
@@ -698,24 +748,30 @@ router.post('/', async function (req, res) {
           },
           mailFor: 'newClientUser',
         };
-        promiseArr.push(MailHelper.sendMail(mailObj));
+        promiseArr.push(MailHelper.sendMail(mailObj));*/
       });
       promiseArr.push(client.save());
+      promiseArr.push(
+        addAuditLog({
+          entityType: 'client',
+          entityRefId: client._id,
+          userType: 'user',
+          userRefId: req.user._id,
+          actionType: 'add',
+          logDescription: `Client ${client.name} added successfully.`,
+        }),
+      );
     }
     await Promise.all(promiseArr);
-    /*await addAuditLog({
-      entityType: 'client',
-      entityRefId: client._id,
-      userType: 'user',
-      userRefId: req.user._id,
-      actionType: 'add',
-      logDescription: 'Client added successfully.',
-    });*/
     res
       .status(200)
       .send({ status: 'SUCCESS', message: 'client data synced successfully' });
   } catch (e) {
-    console.log('ERROR ::: ', e);
+    Logger.log.error('Error occurred in add clients from CRM ', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
   }
 });
 
@@ -740,7 +796,7 @@ router.put('/sync-from-crm/:clientId', async function (req, res) {
         .status(400)
         .send({ status: 'ERROR', message: 'Client not found.' });
     }
-    let clientDataFromCrm = await RssHelper.getClientById({
+    const clientDataFromCrm = await RssHelper.getClientById({
       clientId: client.crmClientId,
     });
     await Client.updateOne({ _id: req.params.clientId }, clientDataFromCrm);
@@ -750,7 +806,7 @@ router.put('/sync-from-crm/:clientId', async function (req, res) {
       userType: 'user',
       userRefId: req.user._id,
       actionType: 'sync',
-      logDescription: 'Client synced successfully.',
+      logDescription: `Client ${clientDataFromCrm.name} synced successfully.`,
     });
     res
       .status(200)
@@ -791,31 +847,37 @@ router.put('/user/sync-from-crm/:clientId', async function (req, res) {
       clientId: client.crmClientId,
     });
     let promiseArr = [];
-    contactsFromCrm.forEach((crmContact) => {
+    for (let i = 0; i < contactsFromCrm.length; i++) {
       promiseArr.push(
-        ClientUser.findOneAndUpdate(
-          { crmContactId: crmContact.crmContactId, isDeleted: false },
-          crmContact,
+        ClientUser.updateOne(
+          { crmContactId: contactsFromCrm[i].crmContactId, isDeleted: false },
+          contactsFromCrm[i],
           { upsert: true },
         ),
       );
-    });
+      const clientUser = await ClientUser.findOne({
+        crmContactId: contactsFromCrm[i].crmContactId,
+        isDeleted: false,
+      }).lean();
+      promiseArr.push(
+        addAuditLog({
+          entityType: 'client-user',
+          entityRefId: clientUser._id,
+          userType: 'user',
+          userRefId: req.user._id,
+          actionType: 'sync',
+          logDescription: `Client contact ${contactsFromCrm[i].name} synced successfully.`,
+        }),
+      );
+    }
     await Promise.all(promiseArr);
-    await addAuditLog({
-      entityType: 'client',
-      entityRefId: req.params.clientId,
-      userType: 'user',
-      userRefId: req.user._id,
-      actionType: 'sync',
-      logDescription: 'Client contacts synced successfully.',
-    });
     res.status(200).send({
       status: 'SUCCESS',
       message: 'Client Contacts synced successfully',
     });
   } catch (e) {
     Logger.log.error(
-      'Error occurred in getting client list for search.',
+      'Error occurred in sync client contacts .',
       e.message || e,
     );
     res.status(500).send({
@@ -871,25 +933,61 @@ router.put('/user/column-name', async function (req, res) {
  * Update Client User
  */
 router.put('/user/:clientUserId', async function (req, res) {
-  try {
-    if (!req.params.clientUserId) {
-      Logger.log.error('No clientUserId passed.');
-      return res.status(400).send({
-        status: 'ERROR',
-        messageCode: 'REQUIRE_FIELD_MISSING',
-        message: 'Require fields are missing',
-      });
-    }
-    //TODO send mail on Portal-Access
-    await ClientUser.updateOne({ _id: req.params.clientUserId }, req.body);
-    await addAuditLog({
-      entityType: 'client',
-      entityRefId: req.params.clientUserId,
-      userType: 'user',
-      userRefId: req.user._id,
-      actionType: 'edit',
-      logDescription: 'Client user updated successfully.',
+  if (
+    !req.params.clientUserId ||
+    !mongoose.Types.ObjectId.isValid(req.params.clientUserId) ||
+    !req.body.hasOwnProperty('hasPortalAccess')
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing',
     });
+  }
+  try {
+    //TODO send mail on Portal-Access
+    let updateObj = {};
+    let promises = [];
+    const clientUser = await ClientUser.findOne({
+      _id: req.params.clientUserId,
+    }).lean();
+    if (req.body.hasPortalAccess) {
+      const signUpToken = jwt.sign(
+        JSON.stringify({ _id: req.params.clientUserId }),
+        config.jwt.secret,
+      );
+      updateObj = {
+        hasPortalAccess: req.body.hasPortalAccess,
+        signUpToken: signUpToken,
+      };
+      let mailObj = {
+        toAddress: [clientUser.email],
+        subject: 'Welcome to TRAD CLIENT PORTAL',
+        text: {
+          name: clientUser.name,
+          setPasswordLink:
+            config.server.frontendUrls.clientPanelBase +
+            config.server.frontendUrls.setPasswordPage +
+            clientUser._id +
+            '?token=' +
+            signUpToken,
+        },
+        mailFor: 'newClientUser',
+      };
+      promises.push(MailHelper.sendMail(mailObj));
+    }
+    await ClientUser.updateOne({ _id: req.params.clientUserId }, updateObj);
+    promises.push(
+      addAuditLog({
+        entityType: 'client',
+        entityRefId: req.params.clientUserId,
+        userType: 'user',
+        userRefId: req.user._id,
+        actionType: 'edit',
+        logDescription: `Client user ${clientUser.name} updated successfully.`,
+      }),
+    );
+    await Promise.all(promises);
     res
       .status(200)
       .send({ status: 'SUCCESS', message: 'Client User updated successfully' });
@@ -947,10 +1045,10 @@ router.put('/column-name', async function (req, res) {
   }
 });
 
-//client
 /**
  * Update Client
  */
+/*
 router.put('/:clientId', async function (req, res) {
   try {
     if (!req.params.clientId) {
@@ -976,6 +1074,7 @@ router.put('/:clientId', async function (req, res) {
     });
   }
 });
+*/
 
 //client
 /**
