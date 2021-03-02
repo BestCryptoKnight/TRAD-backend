@@ -200,12 +200,12 @@ router.get('/:entityId', async function (req, res) {
       {
         name: 'createdAt',
         label: 'Created Date',
-        type: 'Date',
+        type: 'date',
       },
       {
         name: 'updatedAt',
         label: 'Modified Date',
-        type: 'Date',
+        type: 'date',
       },
       {
         name: 'createdById',

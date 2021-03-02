@@ -378,7 +378,7 @@ router.get('/document-type', async function (req, res) {
       {
         name: 'updatedAt',
         label: 'Modified Date',
-        type: 'Date',
+        type: 'date',
       },
     ];
     if (

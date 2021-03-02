@@ -505,11 +505,27 @@ const aggregationQuery = async ({
     }
 
     query.push({
+      $facet: {
+        paginatedResult: [
+          {
+            $skip:
+              (parseInt(requestedQuery.page) - 1) *
+              parseInt(requestedQuery.limit),
+          },
+          { $limit: parseInt(requestedQuery.limit) },
+        ],
+        totalCount: [
+          {
+            $count: 'count',
+          },
+        ],
+      },
+    });
+    /*query.push({
       $skip:
         (parseInt(requestedQuery.page) - 1) * parseInt(requestedQuery.limit),
     });
-    query.push({ $limit: parseInt(requestedQuery.limit) });
-
+    query.push({ $limit: parseInt(requestedQuery.limit) });*/
     query.unshift({ $match: queryFilter });
 
     console.log('query : ', query);

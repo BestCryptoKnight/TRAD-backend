@@ -197,10 +197,7 @@ router.get('/', async function (req, res) {
       isForRisk: true,
       hasFullAccess: hasFullAccess,
     });
-    const [tasks, total] = await Promise.all([
-      Task.aggregate(query).allowDiskUse(true),
-      Task.countDocuments(queryFilter).lean(),
-    ]);
+    const tasks = await Task.aggregate(query).allowDiskUse(true);
     const headers = [];
     for (let i = 0; i < module.manageColumns.length; i++) {
       if (taskColumn.columns.includes(module.manageColumns[i].name)) {
@@ -220,7 +217,7 @@ router.get('/', async function (req, res) {
       }
     }
     if (tasks && tasks.length !== 0) {
-      tasks.forEach((task) => {
+      tasks[0]['paginatedResult'].forEach((task) => {
         if (taskColumn.columns.includes('assigneeId')) {
           task.assigneeId = task.assigneeId[0] ? task.assigneeId[0] : '';
         }
@@ -239,10 +236,14 @@ router.get('/', async function (req, res) {
         }
       });
     }
+    const total =
+      tasks[0]['totalCount'].length !== 0
+        ? tasks[0]['totalCount'][0]['count']
+        : 0;
     res.status(200).send({
       status: 'SUCCESS',
       data: {
-        docs: tasks,
+        docs: tasks[0].paginatedResult,
         headers,
         total,
         page: parseInt(req.query.page),
