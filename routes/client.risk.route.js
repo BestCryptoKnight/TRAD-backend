@@ -1048,7 +1048,6 @@ router.put('/column-name', async function (req, res) {
 /**
  * Update Client
  */
-/*
 router.put('/:clientId', async function (req, res) {
   try {
     if (!req.params.clientId) {
@@ -1074,7 +1073,6 @@ router.put('/:clientId', async function (req, res) {
     });
   }
 });
-*/
 
 //client
 /**
