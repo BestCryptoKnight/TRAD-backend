@@ -4,17 +4,14 @@
 const express = require('express');
 const router = express.Router();
 let mongoose = require('mongoose');
-let User = mongoose.model('user');
 const Client = mongoose.model('client');
 const ClientUser = mongoose.model('client-user');
 
 /*
  * Local Imports
  * */
-const config = require('../config');
 const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
-const { getUserList } = require('./../helper/user.helper');
 
 /**
  * Get Column Names
@@ -79,15 +76,12 @@ router.get('/user/column-name', async function (req, res) {
 /**
  * List Client User details
  */
-router.get('/user/:clientId', async function (req, res) {
-  if (
-    !req.params.clientId ||
-    !mongoose.Types.ObjectId.isValid(req.params.clientId)
-  ) {
-    return res.status(400).send({
+router.get('/user', async function (req, res) {
+  if (!req.user || !req.user.clientId) {
+    return res.status(401).send({
       status: 'ERROR',
-      messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Require fields are missing',
+      messageCode: 'UNAUTHORIZED',
+      message: 'Please first login to get employee list.',
     });
   }
   try {
@@ -98,7 +92,7 @@ router.get('/user/:clientId', async function (req, res) {
     const fields = clientColumn.columns.map((i) => [i, 1]);
     let queryFilter = {
       isDeleted: false,
-      clientId: mongoose.Types.ObjectId(req.params.clientId),
+      clientId: mongoose.Types.ObjectId(req.user.clientId),
     };
     req.query.sortBy = req.query.sortBy || '_id';
     req.query.sortOrder = req.query.sortOrder || 'desc';
@@ -141,36 +135,24 @@ router.get('/user/:clientId', async function (req, res) {
       aggregationQuery,
     ).allowDiskUse(true);
     const headers = [];
-    let checkForLink = false;
     for (let i = 0; i < module.manageColumns.length; i++) {
       if (clientColumn.columns.includes(module.manageColumns[i].name)) {
-        if (
-          module.manageColumns[i].name === 'name' ||
-          module.manageColumns[i].name === 'hasPortalAccess'
-        ) {
-          checkForLink = true;
-        }
+        if (module.manageColumns[i].name === 'name')
+          module.manageColumns[i].type = 'string';
+        delete module.manageColumns[i].request;
+        delete module.manageColumns[i].isDisabled;
         headers.push(module.manageColumns[i]);
       }
     }
-    if (checkForLink && clientUsers.length !== 0) {
+    if (clientUsers.length !== 0) {
       clientUsers[0]['paginatedResult'].forEach((user) => {
-        if (user.name && user.name.length !== 0) {
-          user.name = {
-            id: user._id,
-            value: user.name,
-          };
-        }
         if (user.hasOwnProperty('hasPortalAccess')) {
-          user.hasPortalAccess = {
-            id: user._id,
-            value: user.hasPortalAccess,
-          };
+          user.hasPortalAccess = user.hasPortalAccess ? 'Yes' : 'No';
         }
-        if (user.isDecisionMaker && user.isDecisionMaker.length !== 0) {
+        if (user.hasOwnProperty('isDecisionMaker')) {
           user.isDecisionMaker = user.isDecisionMaker ? 'Yes' : 'No';
         }
-        if (user.hasLeftCompany && user.hasLeftCompany.length !== 0) {
+        if (user.hasOwnProperty('hasLeftCompany')) {
           user.hasLeftCompany = user.hasLeftCompany ? 'Yes' : 'No';
         }
       });
@@ -214,9 +196,6 @@ router.get('/', async function (req, res) {
     const client = await Client.findOne({ _id: req.user.clientId })
       .populate({ path: 'riskAnalystId serviceManagerId', select: 'name' })
       .lean();
-    const { riskAnalystList, serviceManagerList } = await getUserList();
-    client.riskAnalystList = riskAnalystList;
-    client.serviceManagerList = serviceManagerList;
     res.status(200).send({ status: 'SUCCESS', data: client });
   } catch (e) {
     Logger.log.error('Error occurred in get client details ', e.message || e);
@@ -239,9 +218,9 @@ router.put('/user/column-name', async function (req, res) {
     });
   }
   if (!req.body.hasOwnProperty('isReset') || !req.body.columns) {
-    Logger.log.error('Require fields are missing');
     return res.status(400).send({
       status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
       message: 'Something went wrong, please try again.',
     });
   }
@@ -253,7 +232,7 @@ router.put('/user/column-name', async function (req, res) {
     } else {
       updateColumns = req.body.columns;
     }
-    await User.updateOne(
+    await ClientUser.updateOne(
       { _id: req.user._id, 'manageColumns.moduleName': 'client-user' },
       { $set: { 'manageColumns.$.columns': updateColumns } },
     );

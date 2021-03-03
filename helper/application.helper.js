@@ -57,6 +57,7 @@ const getEntityDetailsByACN = ({ searchString }) => {
   });
 };
 
+//TODO add filter for expiry-date + credit-limit
 const getApplicationList = async ({
   applicationColumn,
   requestedQuery,
@@ -64,6 +65,7 @@ const getApplicationList = async ({
   hasFullAccess = false,
   queryFilter = {},
   clientIds = [],
+  moduleColumn,
 }) => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -134,7 +136,7 @@ const getApplicationList = async ({
       if (requestedQuery.debtorId) {
         query.push({
           $match: {
-            'debtorId.name': requestedQuery.debtorId,
+            'debtorId.entityName': requestedQuery.debtorId,
           },
         });
       }
@@ -235,7 +237,7 @@ const getApplicationList = async ({
         },
       });
       query.unshift({ $match: queryFilter });
-
+      console.log('query : ', query);
       const applications = await Application.aggregate(query).allowDiskUse(
         true,
       );
@@ -269,8 +271,16 @@ const getApplicationList = async ({
           ? applications[0]['totalCount'][0]['count']
           : 0;
 
+      const headers = [];
+      for (let i = 0; i < moduleColumn.length; i++) {
+        if (applicationColumn.includes(moduleColumn[i].name)) {
+          headers.push(moduleColumn[i]);
+        }
+      }
+
       return resolve({
         docs: applications[0].paginatedResult,
+        headers,
         total,
         page: parseInt(requestedQuery.page),
         limit: parseInt(requestedQuery.limit),

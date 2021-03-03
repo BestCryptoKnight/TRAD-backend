@@ -4,8 +4,7 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
-const User = mongoose.model('user');
-const Client = mongoose.model('client');
+const ClientUser = mongoose.model('client-user');
 const Application = mongoose.model('application');
 
 /*
@@ -13,11 +12,7 @@ const Application = mongoose.model('application');
  * */
 const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
-const {
-  getEntityDetailsByABN,
-  getEntityDetailsByACN,
-  getApplicationList,
-} = require('./../helper/application.helper');
+const { getApplicationList } = require('./../helper/application.helper');
 
 /**
  * Get Column Names
@@ -101,30 +96,14 @@ router.get('/', async function (req, res) {
     const applicationColumn = req.user.manageColumns.find(
       (i) => i.moduleName === 'application',
     );
-    let clientIds;
-    let hasFullAccess = true;
-
-    if (req.accessTypes && req.accessTypes.indexOf('full-access') === -1) {
-      hasFullAccess = false;
-      const clients = await Client.find({
-        isDeleted: false,
-        $or: [
-          { riskAnalystId: req.user._id },
-          { serviceManagerId: req.user._id },
-        ],
-      })
-        .select({ _id: 1 })
-        .lean();
-      clientIds = clients.map((i) => i._id);
-    }
 
     const response = await getApplicationList({
-      hasFullAccess: hasFullAccess,
+      hasFullAccess: false,
       applicationColumn: applicationColumn.columns,
-      isForRisk: true,
+      isForRisk: false,
       requestedQuery: req.query,
-      clientIds: clientIds,
       moduleColumn: module.manageColumns,
+      queryFilter: { clientId: mongoose.Types.ObjectId(req.user.clientId) },
     });
 
     res.status(200).send({
@@ -160,9 +139,6 @@ router.get('/:entityId', async function (req, res) {
       isDeleted: false,
     };
     switch (req.query.listFor) {
-      case 'client-application':
-        queryFilter.clientId = mongoose.Types.ObjectId(req.params.entityId);
-        break;
       case 'debtor-application':
         queryFilter.debtorId = mongoose.Types.ObjectId(req.params.entityId);
         break;
@@ -177,14 +153,16 @@ router.get('/:entityId', async function (req, res) {
     const applicationColumn = req.user.manageColumns.find(
       (i) => i.moduleName === req.query.listFor,
     );
+
     const response = await getApplicationList({
       hasFullAccess: false,
       applicationColumn: applicationColumn.columns,
-      isForRisk: true,
+      isForRisk: false,
       requestedQuery: req.query,
       queryFilter: queryFilter,
       moduleColumn: module.manageColumns,
     });
+
     res.status(200).send({
       status: 'SUCCESS',
       data: response,
@@ -194,105 +172,6 @@ router.get('/:entityId', async function (req, res) {
       'Error occurred while getting specific entity applications ',
       e.message || e,
     );
-    res.status(500).send({
-      status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
-    });
-  }
-});
-
-/**
- * Search from ABN/ACN Number
- */
-router.get('/search-entity/:searchString', async function (req, res) {
-  if (!req.params.searchString) {
-    return res.status(400).send({
-      status: 'ERROR',
-      messageCode: 'SEARCH_STRING_NOT_FOUND',
-      message: 'Please enter search string.',
-    });
-  }
-  try {
-    let entityData;
-    if (req.params.searchString.length < 10) {
-      console.log('Get entity details from ACN number :: ');
-      entityData = await getEntityDetailsByACN({
-        searchString: req.params.searchString,
-      });
-    } else {
-      entityData = await getEntityDetailsByABN({
-        searchString: req.params.searchString,
-      });
-    }
-    let response = [];
-    entityData[0].elements.forEach((data) => {
-      console.log('Data : ', data);
-      if (data.name === 'response') {
-        data.elements.forEach((i) => {
-          if (
-            i.name === 'businessEntity202001' ||
-            i.name === 'businessEntity201408'
-          ) {
-            let data = {};
-            i.elements.forEach((j) => {
-              if (j.name === 'ABN') {
-                j.elements.forEach((k) => {
-                  if (k.name === 'identifierValue') {
-                    data['abnNumber'] = k.elements[0]['text'];
-                  }
-                });
-              } else if (j.name === 'entityStatus') {
-                j.elements.forEach((k) => {
-                  if (k.name === 'entityStatusCode') {
-                    data['status'] = k.elements[0]['text'];
-                  }
-                });
-              } else if (j.name === 'ASICNumber') {
-                data['acnNumber'] = j.elements[0]['text'];
-              } else if (j.name === 'entityType') {
-                j.elements.forEach((k) => {
-                  if (k.name === 'entityDescription') {
-                    data['entityType'] = k.elements[0]['text'];
-                  }
-                });
-              } else if (j.name === 'goodsAndServicesTax') {
-                j.elements.forEach((k) => {
-                  if (k.name === 'effectiveFrom') {
-                    data['gstStatus'] = k.elements[0]['text'];
-                  }
-                });
-              } else if (j.name === 'mainName') {
-                j.elements.forEach((k) => {
-                  if (k.name === 'organisationName') {
-                    data['companyName'] = k.elements[0]['text'];
-                  } else if (k.name === 'effectiveFrom') {
-                    data['registeredDate'] = k.elements[0]['text'];
-                  }
-                });
-              } else if (j.name === 'mainTradingName') {
-                j.elements.forEach((k) => {
-                  if (k.name === 'organisationName') {
-                    data['tradingName'] = k.elements[0]['text'];
-                  }
-                });
-              } else if (j.name === 'mainBusinessPhysicalAddress') {
-                j.elements.forEach((k) => {
-                  if (k.name === 'stateCode') {
-                    data['state'] = k.elements[0]['text'];
-                  } else if (k.name === 'postcode') {
-                    data['postcode'] = k.elements[0]['text'];
-                  }
-                });
-              }
-            });
-            response.push(data);
-          }
-        });
-      }
-    });
-    res.status(200).send({ status: 'SUCCESS', data: response });
-  } catch (e) {
-    Logger.log.error('Error occurred in search by ABN number  ', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -328,7 +207,6 @@ router.put('/column-name', async function (req, res) {
     let module;
     switch (req.body.columnFor) {
       case 'application':
-      case 'client-application':
       case 'debtor-application':
         if (req.body.isReset) {
           module = StaticFile.modules.find(
@@ -346,7 +224,7 @@ router.put('/column-name', async function (req, res) {
           message: 'Please pass correct fields',
         });
     }
-    await User.updateOne(
+    await ClientUser.updateOne(
       { _id: req.user._id, 'manageColumns.moduleName': req.body.columnFor },
       { $set: { 'manageColumns.$.columns': updateColumns } },
     );
