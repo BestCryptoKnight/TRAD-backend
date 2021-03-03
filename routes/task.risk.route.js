@@ -204,13 +204,13 @@ router.get('/', async function (req, res) {
         if (module.manageColumns[i].name === 'entityId') {
           module.manageColumns[i].request = {
             method: 'GET',
-            user: 'rp/user',
-            client: 'rp/client',
-            'client-user': 'rp/client/user-details',
-            debtor: 'rp/debtor',
-            application: 'rp/application',
-            claim: 'rp/claim',
-            overdue: 'rp/overdue',
+            user: 'user',
+            client: 'client',
+            'client-user': 'client/user-details',
+            debtor: 'debtor',
+            application: 'application',
+            claim: 'claim',
+            overdue: 'overdue',
           };
         }
         headers.push(module.manageColumns[i]);

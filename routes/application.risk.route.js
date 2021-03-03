@@ -16,6 +16,7 @@ const StaticFile = require('./../static-files/moduleColumn');
 const {
   getEntityDetailsByABN,
   getEntityDetailsByACN,
+  getApplicationList,
 } = require('./../helper/application.helper');
 
 /**
@@ -100,221 +101,44 @@ router.get('/', async function (req, res) {
     const applicationColumn = req.user.manageColumns.find(
       (i) => i.moduleName === 'application',
     );
-    const clients = await Client.find({
-      isDeleted: false,
-      $or: [
-        { riskAnalystId: req.user._id },
-        { serviceManagerId: req.user._id },
-      ],
-    })
-      .select({ _id: 1 })
-      .lean();
-    const clientIds = clients.map((i) => i._id);
-    let queryFilter = {
-      isDeleted: false,
-    };
-    if (req.query.search) {
-      queryFilter.applicationId = { $regex: `${req.query.search}` };
-    }
+    let clientIds;
+    let hasFullAccess = true;
+
     if (req.accessTypes && req.accessTypes.indexOf('full-access') === -1) {
-      queryFilter = {
+      hasFullAccess = false;
+      const clients = await Client.find({
         isDeleted: false,
-        clientId: { $in: clientIds },
-      };
-    }
-    if (req.query.status) {
-      queryFilter.status = req.query.status;
-    }
-
-    let aggregationQuery = [];
-    let sortingOptions = {};
-    if (req.query.clientId || applicationColumn.columns.includes('clientId')) {
-      aggregationQuery.push(
-        {
-          $lookup: {
-            from: 'clients',
-            localField: 'clientId',
-            foreignField: '_id',
-            as: 'clientId',
-          },
-        },
-        {
-          $unwind: {
-            path: '$clientId',
-          },
-        },
-      );
-    }
-    if (req.query.clientId) {
-      aggregationQuery.push({
-        $match: {
-          'clientId.name': req.query.clientId,
-        },
-      });
-    }
-    if (
-      req.query.debtorId ||
-      applicationColumn.columns.includes('debtorId') ||
-      applicationColumn.columns.includes('entityType') ||
-      req.query.entityType
-    ) {
-      aggregationQuery.push(
-        {
-          $lookup: {
-            from: 'debtors',
-            localField: 'debtorId',
-            foreignField: '_id',
-            as: 'debtorId',
-          },
-        },
-        {
-          $unwind: {
-            path: '$debtorId',
-          },
-        },
-      );
+        $or: [
+          { riskAnalystId: req.user._id },
+          { serviceManagerId: req.user._id },
+        ],
+      })
+        .select({ _id: 1 })
+        .lean();
+      clientIds = clients.map((i) => i._id);
     }
 
-    if (req.query.debtorId) {
-      aggregationQuery.push({
-        $match: {
-          'debtorId.name': req.query.debtorId,
-        },
-      });
-    }
-    if (req.query.entityType) {
-      aggregationQuery.push({
-        $match: {
-          'debtorId.entityType': req.query.entityType,
-        },
-      });
-    }
-
-    if (
-      req.query.clientDebtorId ||
-      applicationColumn.columns.includes('clientDebtorId') ||
-      req.query.debtorId ||
-      applicationColumn.columns.includes('debtorId')
-    ) {
-      aggregationQuery.push(
-        {
-          $lookup: {
-            from: 'client-debtors',
-            localField: 'clientDebtorId',
-            foreignField: '_id',
-            as: 'clientDebtorId',
-          },
-        },
-        {
-          $unwind: {
-            path: '$clientDebtorId',
-          },
-        },
-      );
-    }
-
-    if (req.query.clientDebtorId) {
-      aggregationQuery.push({
-        $match: {
-          'clientDebtorId.creditLimit': req.query.clientDebtorId,
-        },
-      });
-    }
-
-    const fields = applicationColumn.columns.map((i) => {
-      /*if (i === 'clientId') {
-        i = i + '.name';
-      }*/
-      if (i === 'debtorId') {
-        i = i + '.entityName';
-      }
-      if (i === 'entityType') {
-        i = 'debtorId.' + i;
-      }
-      return [i, 1];
+    const response = await getApplicationList({
+      hasFullAccess: hasFullAccess,
+      applicationColumn: applicationColumn.columns,
+      isForRisk: true,
+      requestedQuery: req.query,
+      clientIds: clientIds,
     });
-    if (!applicationColumn.columns.includes('clientDebtorId')) {
-      fields.push(['clientDebtorId', 1]);
-    }
-    aggregationQuery.push({
-      $project: fields.reduce((obj, [key, val]) => {
-        obj[key] = val;
-        return obj;
-      }, {}),
-    });
-    if (req.query.sortBy && req.query.sortOrder) {
-      if (req.query.sortBy === 'clientId') {
-        req.query.sortBy = req.query.sortBy + '.name';
-      }
-      if (req.query.sortBy === 'debtorId') {
-        req.query.sortBy = req.query.sortBy + '.entityName';
-      }
-      if (req.query.sortBy === 'clientDebtorId') {
-        req.query.sortBy = req.query.sortBy + '.creditLimit';
-      }
-      if (req.query.sortBy === 'entityType') {
-        req.query.sortBy = 'debtorId.' + req.query.sortBy;
-      }
-      sortingOptions[req.query.sortBy] =
-        req.query.sortOrder === 'desc' ? -1 : 1;
-      aggregationQuery.push({ $sort: sortingOptions });
-    }
 
-    aggregationQuery.push({
-      $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
-    });
-    aggregationQuery.push({ $limit: parseInt(req.query.limit) });
-
-    aggregationQuery.unshift({ $match: queryFilter });
-
-    const [applications, total] = await Promise.all([
-      Application.aggregate(aggregationQuery).allowDiskUse(true),
-      Application.countDocuments(queryFilter).lean(),
-    ]);
-    const headers = [];
+    response.headers = [];
     for (let i = 0; i < module.manageColumns.length; i++) {
       if (applicationColumn.columns.includes(module.manageColumns[i].name)) {
-        headers.push(module.manageColumns[i]);
+        response.headers.push(module.manageColumns[i]);
       }
     }
-    if (applications && applications.length !== 0) {
-      applications.forEach((application) => {
-        if (applicationColumn.columns.includes('entityType')) {
-          application.entityType = application.debtorId.entityType;
-        }
-        if (applicationColumn.columns.includes('clientId')) {
-          application.clientId = {
-            id: application.clientId._id,
-            value: application.clientId.name,
-          };
-        }
-        if (applicationColumn.columns.includes('debtorId')) {
-          application.debtorId = {
-            id: application.clientDebtorId._id,
-            value: application.debtorId.entityName,
-          };
-        }
-        if (applicationColumn.columns.includes('clientDebtorId')) {
-          application.clientDebtorId = application.clientDebtorId.creditLimit;
-        }
-        if (!applicationColumn.columns.includes('clientDebtorId')) {
-          delete application.clientDebtorId;
-        }
-      });
-    }
+
     res.status(200).send({
       status: 'SUCCESS',
-      data: {
-        docs: applications,
-        headers,
-        total,
-        page: parseInt(req.query.page),
-        limit: parseInt(req.query.limit),
-        pages: Math.ceil(total / parseInt(req.query.limit)),
-      },
+      data: response,
     });
   } catch (e) {
-    Logger.log.error('Error occurred in get application list ', e.message || e);
+    Logger.log.error('Error occurred in get application list ', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -359,149 +183,25 @@ router.get('/:entityId', async function (req, res) {
     const applicationColumn = req.user.manageColumns.find(
       (i) => i.moduleName === req.query.listFor,
     );
-    let aggregationQuery = [];
-    let sortingOptions = {};
-    if (applicationColumn.columns.includes('clientId')) {
-      aggregationQuery.push(
-        {
-          $lookup: {
-            from: 'clients',
-            localField: 'clientId',
-            foreignField: '_id',
-            as: 'clientId',
-          },
-        },
-        {
-          $unwind: {
-            path: '$clientId',
-          },
-        },
-      );
-    }
-    if (
-      applicationColumn.columns.includes('debtorId') ||
-      applicationColumn.columns.includes('entityType')
-    ) {
-      aggregationQuery.push(
-        {
-          $lookup: {
-            from: 'debtors',
-            localField: 'debtorId',
-            foreignField: '_id',
-            as: 'debtorId',
-          },
-        },
-        {
-          $unwind: {
-            path: '$debtorId',
-          },
-        },
-      );
-    }
-    if (applicationColumn.columns.includes('clientDebtorId')) {
-      aggregationQuery.push(
-        {
-          $lookup: {
-            from: 'client-debtors',
-            localField: 'clientDebtorId',
-            foreignField: '_id',
-            as: 'clientDebtorId',
-          },
-        },
-        {
-          $unwind: {
-            path: '$clientDebtorId',
-          },
-        },
-      );
-    }
 
-    const fields = applicationColumn.columns.map((i) => {
-      if (i === 'clientId') {
-        i = i + '.name';
-      }
-      if (i === 'debtorId') {
-        i = i + '.entityName';
-      }
-      if (i === 'clientDebtorId') {
-        i = i + '.creditLimit';
-      }
-      if (i === 'entityType') {
-        i = 'debtorId.' + i;
-      }
-      return [i, 1];
+    const response = await getApplicationList({
+      hasFullAccess: false,
+      applicationColumn: applicationColumn.columns,
+      isForRisk: true,
+      requestedQuery: req.query,
+      queryFilter: queryFilter,
     });
-    aggregationQuery.push({
-      $project: fields.reduce((obj, [key, val]) => {
-        obj[key] = val;
-        return obj;
-      }, {}),
-    });
-    if (req.query.sortBy && req.query.sortOrder) {
-      if (req.query.sortBy === 'clientId') {
-        req.query.sortBy = req.query.sortBy + '.name';
-      }
-      if (req.query.sortBy === 'debtorId') {
-        req.query.sortBy = req.query.sortBy + '.entityName';
-      }
-      if (req.query.sortBy === 'clientDebtorId') {
-        req.query.sortBy = req.query.sortBy + '.creditLimit';
-      }
-      if (req.query.sortBy === 'entityType') {
-        req.query.sortBy = 'debtorId.' + req.query.sortBy;
-      }
-      sortingOptions[req.query.sortBy] =
-        req.query.sortOrder === 'desc' ? -1 : 1;
-      aggregationQuery.push({ $sort: sortingOptions });
-    }
 
-    aggregationQuery.push({
-      $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
-    });
-    aggregationQuery.push({ $limit: parseInt(req.query.limit) });
-
-    aggregationQuery.unshift({ $match: queryFilter });
-
-    console.log('aggregationQuery : ', aggregationQuery);
-
-    const [applications, total] = await Promise.all([
-      Application.aggregate(aggregationQuery).allowDiskUse(true),
-      Application.countDocuments(queryFilter).lean(),
-    ]);
-
-    console.log('applications : ', applications);
-    const headers = [];
+    response.headers = [];
     for (let i = 0; i < module.manageColumns.length; i++) {
       if (applicationColumn.columns.includes(module.manageColumns[i].name)) {
-        headers.push(module.manageColumns[i]);
+        response.headers.push(module.manageColumns[i]);
       }
     }
-    if (applications && applications.length !== 0) {
-      applications.forEach((application) => {
-        if (applicationColumn.columns.includes('entityType')) {
-          application.entityType = application.debtorId.entityType;
-        }
-        if (applicationColumn.columns.includes('clientId')) {
-          application.clientId = application.clientId.name;
-        }
-        if (applicationColumn.columns.includes('debtorId')) {
-          application.debtorId = application.debtorId.entityName;
-        }
-        if (applicationColumn.columns.includes('clientDebtorId')) {
-          application.clientDebtorId = application.clientDebtorId.creditLimit;
-        }
-      });
-    }
+
     res.status(200).send({
       status: 'SUCCESS',
-      data: {
-        docs: applications,
-        headers,
-        total,
-        page: parseInt(req.query.page),
-        limit: parseInt(req.query.limit),
-        pages: Math.ceil(total / parseInt(req.query.limit)),
-      },
+      data: response,
     });
   } catch (e) {
     Logger.log.error(

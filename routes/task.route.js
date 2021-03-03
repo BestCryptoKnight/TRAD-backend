@@ -189,11 +189,11 @@ router.get('/', async function (req, res) {
           //TODO change url
           module.manageColumns[i].request = {
             method: 'GET',
-            'client-user': 'cp/client/user-details',
-            debtor: 'cp/debtor',
-            application: 'cp/application',
-            claim: 'cp/claim',
-            overdue: 'cp/overdue',
+            'client-user': 'client/user-details',
+            debtor: 'debtor',
+            application: 'application',
+            claim: 'claim',
+            overdue: 'overdue',
           };
         }
         headers.push(module.manageColumns[i]);

@@ -455,7 +455,7 @@ let fetchInsurerDetails = ({
             userType: auditLog.userType,
             userRefId: auditLog.userRefId,
             actionType: 'add',
-            logDescription: `Insurer ${name} added successfully.`,
+            logDescription: `Insurer ${insurer.name} added successfully.`,
           }),
         );
         const clientPolicies = await getClientPolicies({

@@ -25,13 +25,13 @@
           "name": "clientId",
           "label": "Client Name",
           "type": "modal",
-          "request": { "method": "GET", "url": "rp/client/details" }
+          "request": { "method": "GET", "url": "client/details" }
         },
         {
           "name": "debtorId",
           "label": "Debtor Name",
           "type": "modal",
-          "request": { "method": "GET", "url": "rp/debtor/details" }
+          "request": { "method": "GET", "url": "debtor/details" }
         },
         { "name": "entityType", "label": "Entity Type", "type": "string" },
         { "name": "clientDebtorId", "label": "Credit Limit", "type": "number" },
@@ -113,7 +113,7 @@
           "name": "name",
           "label": "Name",
           "type": "modal",
-          "request": { "method": "GET", "url": "rp/client/user-details" }
+          "request": { "method": "GET", "url": "client/user-details" }
         },
         {
           "name": "contactNumber",
@@ -126,7 +126,7 @@
           "label": "Portal Access",
           "type": "boolean",
           "isDisabled": false,
-          "request": { "method": "PUT", "url": "rp/client/user" }
+          "request": { "method": "PUT", "url": "client/user" }
         },
         {
           "name": "hasLeftCompany",
@@ -147,7 +147,12 @@
     {
       "name": "client-application",
       "manageColumns": [
-        { "name": "debtorId", "label": "Debtor Name", "type": "string" },
+        {
+          "name": "debtorId",
+          "label": "Debtor Name",
+          "type": "modal",
+          "request": { "method": "GET", "url": "debtor/details" }
+        },
         { "name": "entityType", "label": "Entity Type", "type": "string" },
         { "name": "clientDebtorId", "label": "Credit Limit", "type": "number" },
         {
@@ -194,7 +199,7 @@
           "type": "modal",
           "request": {
             "method": "GET",
-            "url": "rp/policy/client/policy-details"
+            "url": "policy/client/policy-details"
           }
         },
         { "name": "policyPeriod", "label": "Policy Period", "type": "string" },
@@ -302,7 +307,12 @@
     {
       "name": "debtor-application",
       "manageColumns": [
-        { "name": "clientId", "label": "Client Name", "type": "string" },
+        {
+          "name": "clientId",
+          "label": "Client Name",
+          "type": "modal",
+          "request": { "method": "GET", "url": "client/details" }
+        },
         { "name": "entityType", "label": "Entity Type", "type": "string" },
         { "name": "clientDebtorId", "label": "Credit Limit", "type": "number" },
         {
@@ -420,7 +430,7 @@
           "type": "modal",
           "request": {
             "method": "GET",
-            "url": "rp/policy/ci-details"
+            "url": "policy/ci-details"
           }
         },
         { "name": "policyPeriod", "label": "Policy Period", "type": "string" },
@@ -447,7 +457,7 @@
           "type": "modal",
           "request": {
             "method": "GET",
-            "url": "rp/policy/rmp-details"
+            "url": "policy/rmp-details"
           }
         },
         { "name": "policyPeriod", "label": "Policy Period", "type": "string" },
