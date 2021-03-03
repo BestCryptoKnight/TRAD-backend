@@ -94,7 +94,7 @@ let getClientsById = ({ crmIds }) => {
       return resolve(clients);
     } catch (err) {
       Logger.log.error('Error in getting clients from RSS');
-      Logger.log.error(err.message || err);
+      Logger.log.error(err);
       return reject(err);
     }
   });
@@ -125,7 +125,7 @@ let getInsurers = ({ searchKeyword }) => {
           limit: 100,
         },
       };
-      // console.log('options::', JSON.stringify(options, null, 2));
+      console.log('options::', JSON.stringify(options, null, 2));
       let { data } = await axios(options);
       let insurers = data.list.map((insurer) => insurer.record);
       console.log('DATA::', JSON.stringify(insurers, null, 3));
@@ -287,13 +287,24 @@ let getClientContacts = ({ clientId }) => {
   });
 };
 
-let getClientPolicies = ({ clientId, insurerId, crmClientId, query = {} }) => {
+let getClientPolicies = ({
+  clientId,
+  insurerId = null,
+  crmClientId,
+  query = {},
+  policies = [],
+  page,
+  limit,
+}) => {
   return new Promise(async (resolve, reject) => {
     try {
       const url =
         'https://apiv4.reallysimplesystems.com/accounts/' +
         crmClientId +
-        '/policies';
+        '/policies?limit=' +
+        limit +
+        '&page=' +
+        page;
       const organization = await Organization.findOne({
         isDeleted: false,
       }).select({ 'integration.rss': 1 });
@@ -310,9 +321,8 @@ let getClientPolicies = ({ clientId, insurerId, crmClientId, query = {} }) => {
         };
       }
       const { data } = await axios(options);
-      let clientPolicies = [];
       data.list.forEach((crmPolicy) => {
-        clientPolicies.push({
+        policies.push({
           insurerId: insurerId,
           clientId: clientId,
           crmPolicyId: crmPolicy.record['id'],
@@ -323,8 +333,19 @@ let getClientPolicies = ({ clientId, insurerId, crmClientId, query = {} }) => {
           policyCurrency: crmPolicy.record['policycurrency'],
         });
       });
+      if (data.metadata['has_more']) {
+        await getClientPolicies({
+          clientId,
+          insurerId,
+          crmClientId,
+          page: page + 1,
+          limit,
+          query,
+          policies,
+        });
+      }
       Logger.log.info('Successfully retrieved policies from RSS');
-      return resolve(clientPolicies);
+      return resolve(policies);
     } catch (err) {
       Logger.log.error('Error in getting policies from RSS');
       Logger.log.error(err);
@@ -411,6 +432,8 @@ let fetchInsurerDetails = ({
             insurerId: insurer._id,
             crmClientId,
             clientId,
+            page: 1,
+            limit: 50,
           });
           let promiseArr = [];
           clientPolicies.forEach((policy) => {
@@ -432,36 +455,61 @@ let fetchInsurerDetails = ({
         return resolve(insurer);
       } else {
         const data = await getInsurers({ searchKeyword: underwriterName });
-        const insurerData = {
-          crmInsurerId: data[0]['id'],
-          name: data[0]['name'],
-          address: {
-            addressLine: data[0]['addressline'],
-            city: data[0]['addresscity'],
-            state: data[0]['addresscounty/state'],
-            country: data[0]['addresscountry'],
-            zipCode: data[0]['addresspostcode/zip'],
-          },
-          contactNumber: data[0]['phone'],
-          website: data[0]['website'],
-        };
-        insurer = new Insurer(insurerData);
-        await insurer.save();
         let promiseArr = [];
-        promiseArr.push(
-          addAuditLog({
-            entityType: 'insurer',
-            entityRefId: insurer._id,
-            userType: auditLog.userType,
-            userRefId: auditLog.userRefId,
-            actionType: 'add',
-            logDescription: `Insurer ${insurer.name} added successfully.`,
-          }),
-        );
+        if (data && data.length !== 0) {
+          const insurerData = {
+            crmInsurerId: data[0]['id'],
+            name: data[0]['name'],
+            address: {
+              addressLine: data[0]['addressline'],
+              city: data[0]['addresscity'],
+              state: data[0]['addresscounty/state'],
+              country: data[0]['addresscountry'],
+              zipCode: data[0]['addresspostcode/zip'],
+            },
+            contactNumber: data[0]['phone'],
+            website: data[0]['website'],
+          };
+          insurer = new Insurer(insurerData);
+          await insurer.save();
+          promiseArr.push(
+            addAuditLog({
+              entityType: 'insurer',
+              entityRefId: insurer._id,
+              userType: auditLog.userType,
+              userRefId: auditLog.userRefId,
+              actionType: 'add',
+              logDescription: `Insurer ${insurer.name} added successfully.`,
+            }),
+          );
+          const insurerContacts = await getInsurerContacts({
+            crmInsurerId: insurer.crmInsurerId,
+            insurerId: insurer._id,
+            contacts: [],
+            page: 1,
+            limit: 50,
+          });
+          insurerContacts.forEach((contact) => {
+            const insurerContact = new InsurerUser(contact);
+            promiseArr.push(insurerContact.save());
+            promiseArr.push(
+              addAuditLog({
+                entityType: 'insurer-user',
+                entityRefId: insurerContact._id,
+                userType: auditLog.userType,
+                userRefId: auditLog.userRefId,
+                actionType: 'add',
+                logDescription: `Insurer contact ${insurerContact.name} added successfully.`,
+              }),
+            );
+          });
+        }
         const clientPolicies = await getClientPolicies({
-          insurerId: insurer._id,
+          insurerId: insurer && insurer._id ? insurer._id : null,
           crmClientId,
           clientId,
+          limit: 50,
+          page: 1,
         });
         clientPolicies.forEach((policy) => {
           const clientPolicy = new Policy(policy);
@@ -477,30 +525,8 @@ let fetchInsurerDetails = ({
             }),
           );
         });
-        const insurerContacts = await getInsurerContacts({
-          crmInsurerId: insurer.crmInsurerId,
-          insurerId: insurer._id,
-          contacts: [],
-          page: 1,
-          limit: 50,
-        });
-        let promises = [];
-        insurerContacts.forEach((contact) => {
-          const insurerContact = new InsurerUser(contact);
-          promises.push(insurerContact.save());
-          promises.push(
-            addAuditLog({
-              entityType: 'insurer-user',
-              entityRefId: insurerContact._id,
-              userType: auditLog.userType,
-              userRefId: auditLog.userRefId,
-              actionType: 'add',
-              logDescription: `Insurer contact ${insurerContact.name} added successfully.`,
-            }),
-          );
-        });
         await Promise.all(promiseArr);
-        await Promise.all(promises);
+
         return resolve(insurer);
       }
     } catch (err) {

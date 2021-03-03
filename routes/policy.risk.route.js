@@ -473,6 +473,8 @@ router.put('/sync-from-crm/:insurerId', async function (req, res) {
         crmClientId: policies[i].crmClientId[0],
         insurerId: req.params.insurerId,
         query: query,
+        page: 1,
+        limit: 50,
       });
       for (let j = 0; j < policiesFromCrm.length; j++) {
         promiseArr.push(
@@ -581,6 +583,8 @@ router.put('/client/sync-from-crm/:clientId', async function (req, res) {
         clientId: policies[i]._id,
         crmClientId: policies[i].crmClientId[0],
         insurerId: req.params.insurerId,
+        limit: 50,
+        page: 1,
       });
       for (let j = 0; j < policiesFromCrm.length; j++) {
         promiseArr.push(
