@@ -108,14 +108,23 @@ router.get('/user/:insurerId', async function (req, res) {
       aggregationQuery.push({ $sort: sortingOptions });
     }
     aggregationQuery.push({
-      $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
+      $facet: {
+        paginatedResult: [
+          {
+            $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
+          },
+          { $limit: parseInt(req.query.limit) },
+        ],
+        totalCount: [
+          {
+            $count: 'count',
+          },
+        ],
+      },
     });
-    aggregationQuery.push({ $limit: parseInt(req.query.limit) });
-    const [insurerUser, total] = await Promise.all([
-      InsurerUser.aggregate(aggregationQuery).allowDiskUse(true),
-      InsurerUser.countDocuments(queryFilter).lean(),
-    ]);
-    console.log('insurerUser : ', insurerUser.length);
+    const insurerUser = await InsurerUser.aggregate(
+      aggregationQuery,
+    ).allowDiskUse(true);
 
     const headers = [];
     for (let i = 0; i < module.manageColumns.length; i++) {
@@ -123,10 +132,15 @@ router.get('/user/:insurerId', async function (req, res) {
         headers.push(module.manageColumns[i]);
       }
     }
+    const total =
+      insurerUser[0]['totalCount'].length !== 0
+        ? insurerUser[0]['totalCount'][0]['count']
+        : 0;
+
     res.status(200).send({
       status: 'SUCCESS',
       data: {
-        docs: insurerUser,
+        docs: insurerUser[0].paginatedResult,
         headers,
         total,
         page: parseInt(req.query.page),
@@ -253,15 +267,23 @@ router.get('/', async function (req, res) {
       aggregationQuery.push({ $sort: sortingOptions });
     }
     aggregationQuery.push({
-      $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
+      $facet: {
+        paginatedResult: [
+          {
+            $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
+          },
+          { $limit: parseInt(req.query.limit) },
+        ],
+        totalCount: [
+          {
+            $count: 'count',
+          },
+        ],
+      },
     });
-    aggregationQuery.push({ $limit: parseInt(req.query.limit) });
-    const [insurers, total] = await Promise.all([
-      Insurer.aggregate(aggregationQuery).allowDiskUse(true),
-      Insurer.countDocuments(queryFilter).lean(),
-    ]);
-    console.log('insurers : ', insurers);
-    console.log('insurers : ', insurers.length);
+    const insurers = await Insurer.aggregate(aggregationQuery).allowDiskUse(
+      true,
+    );
 
     const headers = [];
     for (let i = 0; i < module.manageColumns.length; i++) {
@@ -270,7 +292,7 @@ router.get('/', async function (req, res) {
       }
     }
     if (insurers && insurers.length !== 0) {
-      insurers.forEach((user) => {
+      insurers[0].paginatedResult.forEach((user) => {
         if (insurerColumn.columns.includes('fullAddress')) {
           user.fullAddress = Object.values(user.address)
             .toString()
@@ -294,11 +316,15 @@ router.get('/', async function (req, res) {
         delete user.address;
       });
     }
+    const total =
+      insurers[0]['totalCount'].length !== 0
+        ? insurers[0]['totalCount'][0]['count']
+        : 0;
 
     res.status(200).send({
       status: 'SUCCESS',
       data: {
-        docs: insurers,
+        docs: insurers[0].paginatedResult,
         headers,
         total,
         page: parseInt(req.query.page),

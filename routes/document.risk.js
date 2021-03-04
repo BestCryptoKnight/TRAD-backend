@@ -325,34 +325,51 @@ router.get('/:entityId', async function (req, res) {
     aggregationQuery.push({ $sort: sortingOptions });
 
     aggregationQuery.push({
-      $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
+      $facet: {
+        paginatedResult: [
+          {
+            $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
+          },
+          { $limit: parseInt(req.query.limit) },
+        ],
+        totalCount: [
+          {
+            $count: 'count',
+          },
+        ],
+      },
     });
-    aggregationQuery.push({ $limit: parseInt(req.query.limit) });
 
     aggregationQuery.unshift({ $match: query });
 
-    const [documents, total] = await Promise.all([
-      Document.aggregate(aggregationQuery).allowDiskUse(true),
-      Document.countDocuments(query).lean(),
-    ]);
+    const documents = await Document.aggregate(aggregationQuery).allowDiskUse(
+      true,
+    );
     const headers = [];
     for (let i = 0; i < module.manageColumns.length; i++) {
       if (documentColumn.columns.includes(module.manageColumns[i].name)) {
         headers.push(module.manageColumns[i]);
       }
     }
-    documents.forEach((document) => {
-      if (documentColumn.columns.includes('documentTypeId')) {
-        document.documentTypeId = document.documentTypeId.documentTitle || '';
-      }
-      if (documentColumn.columns.includes('uploadById')) {
-        document.uploadById = document.uploadById[0] || '';
-      }
-    });
+    if (documents && documents.length !== 0) {
+      documents[0].paginatedResult.forEach((document) => {
+        if (documentColumn.columns.includes('documentTypeId')) {
+          document.documentTypeId = document.documentTypeId.documentTitle || '';
+        }
+        if (documentColumn.columns.includes('uploadById')) {
+          document.uploadById = document.uploadById[0] || '';
+        }
+      });
+    }
+    const total =
+      documents[0]['totalCount'].length !== 0
+        ? documents[0]['totalCount'][0]['count']
+        : 0;
+
     res.status(200).send({
       status: 'SUCCESS',
       data: {
-        docs: documents,
+        docs: documents[0].paginatedResult,
         headers,
         total,
         page: parseInt(req.query.page),

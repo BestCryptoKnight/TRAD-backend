@@ -178,19 +178,27 @@ router.get('/:entityId', async function (req, res) {
     aggregationQuery.push({ $sort: sortingOptions });
 
     aggregationQuery.push({
-      $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
+      $facet: {
+        paginatedResult: [
+          {
+            $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
+          },
+          { $limit: parseInt(req.query.limit) },
+        ],
+        totalCount: [
+          {
+            $count: 'count',
+          },
+        ],
+      },
     });
-    aggregationQuery.push({ $limit: parseInt(req.query.limit) });
 
     if (req.query.search) {
       query.description = { $regex: `${req.query.search}` };
     }
     aggregationQuery.unshift({ $match: query });
 
-    const [notes, total] = await Promise.all([
-      Note.aggregate(aggregationQuery).allowDiskUse(true),
-      Note.countDocuments(query).lean(),
-    ]);
+    const notes = await Note.aggregate(aggregationQuery).allowDiskUse(true);
     const headers = [
       {
         name: 'description',
@@ -213,14 +221,21 @@ router.get('/:entityId', async function (req, res) {
         type: 'string',
       },
     ];
-    notes.forEach((note) => {
-      note.createdById =
-        note.createdById && note.createdById[0] ? note.createdById[0] : '';
-    });
+    if (notes && notes.length !== 0) {
+      notes[0].paginatedResult.forEach((note) => {
+        note.createdById =
+          note.createdById && note.createdById[0] ? note.createdById[0] : '';
+      });
+    }
+    const total =
+      notes[0]['totalCount'].length !== 0
+        ? notes[0]['totalCount'][0]['count']
+        : 0;
+
     res.status(200).send({
       status: 'SUCCESS',
       data: {
-        docs: notes,
+        docs: notes[0].paginatedResult,
         headers,
         total,
         page: parseInt(req.query.page),

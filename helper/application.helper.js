@@ -149,8 +149,8 @@ const getApplicationList = async ({
       }
 
       if (
-        requestedQuery.clientDebtorId ||
         applicationColumn.includes('clientDebtorId') ||
+        (requestedQuery.minCreditLimit && requestedQuery.maxCreditLimit) ||
         requestedQuery.debtorId ||
         applicationColumn.includes('debtorId')
       ) {
@@ -171,10 +171,13 @@ const getApplicationList = async ({
         );
       }
 
-      if (requestedQuery.clientDebtorId) {
+      if (requestedQuery.minCreditLimit && requestedQuery.maxCreditLimit) {
         query.push({
           $match: {
-            'clientDebtorId.creditLimit': requestedQuery.clientDebtorId,
+            'clientDebtorId.creditLimit': {
+              $gte: parseInt(requestedQuery.minCreditLimit),
+              $lt: parseInt(requestedQuery.maxCreditLimit),
+            },
           },
         });
       }
@@ -237,7 +240,7 @@ const getApplicationList = async ({
         },
       });
       query.unshift({ $match: queryFilter });
-      console.log('query : ', query);
+
       const applications = await Application.aggregate(query).allowDiskUse(
         true,
       );

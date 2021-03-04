@@ -291,15 +291,24 @@ router.get('/audit-logs', async function (req, res) {
     query.push({ $sort: sortingOptions });
 
     query.push({
-      $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
+      $facet: {
+        paginatedResult: [
+          {
+            $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
+          },
+          { $limit: parseInt(req.query.limit) },
+        ],
+        totalCount: [
+          {
+            $count: 'count',
+          },
+        ],
+      },
     });
-    query.push({ $limit: parseInt(req.query.limit) });
     query.unshift({ $match: queryFilter });
 
-    const [auditLogs, total] = await Promise.all([
-      AuditLog.aggregate(query).allowDiskUse(true),
-      AuditLog.countDocuments(queryFilter).lean(),
-    ]);
+    const auditLogs = await AuditLog.aggregate(query).allowDiskUse(true);
+
     const headers = [];
     for (let i = 0; i < module.manageColumns.length; i++) {
       if (auditLogsColumn.columns.includes(module.manageColumns[i].name)) {
@@ -307,7 +316,7 @@ router.get('/audit-logs', async function (req, res) {
       }
     }
     if (auditLogs && auditLogs.length !== 0) {
-      auditLogs.forEach((log) => {
+      auditLogs[0].paginatedResult.forEach((log) => {
         if (auditLogsColumn.columns.includes('entityRefId')) {
           log.entityRefId = log.entityRefId[0] ? log.entityRefId[0] : '';
         }
@@ -319,10 +328,15 @@ router.get('/audit-logs', async function (req, res) {
         }*/
       });
     }
+    const total =
+      auditLogs[0]['totalCount'].length !== 0
+        ? auditLogs[0]['totalCount'][0]['count']
+        : 0;
+
     res.status(200).send({
       status: 'SUCCESS',
       data: {
-        docs: auditLogs,
+        docs: auditLogs[0].paginatedResult,
         headers,
         total,
         page: parseInt(req.query.page),

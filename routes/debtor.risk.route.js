@@ -151,14 +151,24 @@ router.get('/', async function (req, res) {
     }
 
     aggregationQuery.push({
-      $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
+      $facet: {
+        paginatedResult: [
+          {
+            $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
+          },
+          { $limit: parseInt(req.query.limit) },
+        ],
+        totalCount: [
+          {
+            $count: 'count',
+          },
+        ],
+      },
     });
-    aggregationQuery.push({ $limit: parseInt(req.query.limit) });
 
-    const [debtors, total] = await Promise.all([
-      ClientDebtor.aggregate(aggregationQuery).allowDiskUse(true),
-      ClientDebtor.countDocuments(queryFilter).lean(),
-    ]);
+    const debtors = await ClientDebtor.aggregate(aggregationQuery).allowDiskUse(
+      true,
+    );
     const headers = [];
     for (let i = 0; i < module.manageColumns.length; i++) {
       if (debtorColumn.columns.includes(module.manageColumns[i].name)) {
@@ -166,7 +176,7 @@ router.get('/', async function (req, res) {
       }
     }
     if (debtors && debtors.length !== 0) {
-      debtors.forEach((debtor) => {
+      debtors[0].paginatedResult.forEach((debtor) => {
         if (debtorColumn.columns.includes('clientId')) {
           debtor.clientId = debtor.clientId.name;
         }
@@ -191,10 +201,14 @@ router.get('/', async function (req, res) {
         delete debtor.debtorId;
       });
     }
+    const total =
+      debtors[0]['totalCount'].length !== 0
+        ? debtors[0]['totalCount'][0]['count']
+        : 0;
     res.status(200).send({
       status: 'SUCCESS',
       data: {
-        docs: debtors,
+        docs: debtors[0].paginatedResult,
         headers,
         total,
         page: parseInt(req.query.page),
