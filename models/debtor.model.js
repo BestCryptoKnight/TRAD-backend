@@ -11,6 +11,7 @@ const Schema = mongoose.Schema;
 const debtorSchema = new Schema(
   {
     abn: { type: Schema.Types.String, unique: true },
+    acn: { type: Schema.Types.String, unique: true },
     entityName: { type: Schema.Types.String },
     tradingName: { type: Schema.Types.String },
     entityType: {
