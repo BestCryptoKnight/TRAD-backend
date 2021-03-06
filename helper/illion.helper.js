@@ -12,9 +12,9 @@ let config = require('./../config');
 let fetchCreditReport = ({ productCode, searchField, searchValue }) => {
   return new Promise(async (resolve, reject) => {
     try {
-      productCode = 'UEBV';
-      searchField = 'ABN';
-      searchValue = '38881083819';
+      // productCode = 'UEBV';
+      // searchField = 'ABN';
+      // searchValue = '38881083819';
       const organization = await Organization.findOne({
         isDeleted: false,
       })
@@ -62,11 +62,14 @@ let fetchCreditReport = ({ productCode, searchField, searchValue }) => {
           'Content-Type': 'text/soap+xml;charset=utf-8',
         },
       };
-      console.log(url, xmlBody, options);
+      Logger.log.info('Making a request to illion at', new Date());
+      // console.log(url, xmlBody, options);
       let { data } = await axios.post(url, xmlBody, options);
       const jsonData = convert.xml2js(data);
+      Logger.log.info('Successfully received report at', new Date());
+
       // console.log('converted JSON::', JSON.stringify(jsonData, null, 3));
-      fs.writeFileSync('uebv.json', JSON.stringify(jsonData));
+      // fs.writeFileSync('uebv.json', JSON.stringify(jsonData));
       return resolve(jsonData);
     } catch (e) {
       console.log('Error in getting entity details from ABN');

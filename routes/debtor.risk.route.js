@@ -7,14 +7,11 @@ const mongoose = require('mongoose');
 const User = mongoose.model('user');
 const Client = mongoose.model('client');
 const ClientDebtor = mongoose.model('client-debtor');
-const Debtor = mongoose.model('debtor');
-const CreditReport = mongoose.model('credit-report');
 
 /*
  * Local Imports
  * */
 const Logger = require('./../services/logger');
-const IllionHelper = require('./../helper/illion.helper');
 const StaticFile = require('./../static-files/moduleColumn');
 
 /**
@@ -280,63 +277,6 @@ router.get('/details/:debtorId', async function (req, res) {
 });
 
 /**
- * Get Credit Report
- */
-router.get('/get-credit-reports', async function (req, res) {
-  try {
-    if (!req.body.debtorId) {
-      return res.status(400).send({
-        status: 'ERROR',
-        messageCode: 'REQUIRE_FIELD_MISSING',
-        message: 'Require fields are missing.',
-      });
-    }
-    const module = StaticFile.modules.find((i) => i.name === req.query.listFor);
-    const policyColumn = req.user.manageColumns.find(
-      (i) => i.moduleName === req.query.listFor,
-    );
-    let sortingOptions = {};
-    if (req.query.sortBy && req.query.sortOrder) {
-      sortingOptions[req.query.sortBy] = req.query.sortOrder;
-    }
-    if (req.query.search)
-      queryFilter.product = { $regex: req.query.search, $options: 'i' };
-    let option = {
-      page: parseInt(req.query.page) || 1,
-      limit: parseInt(req.query.limit) || 5,
-    };
-    option.select = policyColumn.columns.toString().replace(/,/g, ' ');
-    option.sort = sortingOptions;
-    option.lean = true;
-    let responseObj = await Policy.paginate(queryFilter, option);
-    responseObj.headers = [];
-    for (let i = 0; i < module.manageColumns.length; i++) {
-      if (policyColumn.columns.includes(module.manageColumns[i].name)) {
-        responseObj.headers.push(module.manageColumns[i]);
-      }
-    }
-    responseObj.docs.forEach((data) => {
-      if (data.product) {
-        data.product = {
-          id: data._id,
-          value: data.product,
-        };
-      }
-    });
-    res.status(200).send({ status: 'SUCCESS', data: responseObj });
-  } catch (e) {
-    Logger.log.error(
-      'Error occurred in generating Credit Report',
-      e.message || e,
-    );
-    res.status(500).send({
-      status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
-    });
-  }
-});
-
-/**
  * Get Debtor Details
  */
 router.get('/:debtorId', async function (req, res) {
@@ -403,66 +343,6 @@ router.put('/column-name', async function (req, res) {
       .send({ status: 'SUCCESS', message: 'Columns updated successfully' });
   } catch (e) {
     Logger.log.error('Error occurred in update column names', e.message || e);
-    res.status(500).send({
-      status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
-    });
-  }
-});
-
-/**
- * Generate Credit Report
- */
-router.put('/generate-credit-report', async function (req, res) {
-  try {
-    if (
-      !req.body.debtorId ||
-      !req.body.reportProvider ||
-      !req.body.productCode
-    ) {
-      return res.status(400).send({
-        status: 'ERROR',
-        messageCode: 'REQUIRE_FIELD_MISSING',
-        message: 'Require fields are missing.',
-      });
-    }
-    let debtor = await Debtor.findOne({ _id: req.body.debtorId }).select({
-      abn: 1,
-      acn: 1,
-    });
-    if (!debtor.abn && !debtor.acn) {
-      return res.status(400).send({
-        status: 'ERROR',
-        messageCode: 'ABN_AND_ACN_NOT_PRESENT',
-        message: 'Require fields are missing.',
-      });
-    }
-    if (req.body.reportProvider === 'illion') {
-      const searchField = debtor.abn ? 'ABN' : 'ACN';
-      const searchValue = debtor.abn ? debtor.abn : debtor.acn;
-      let illionCreditReport = await IllionHelper.fetchCreditReport({
-        productCode: req.body.productCode,
-        searchField,
-        searchValue,
-      });
-      let creditReport = new CreditReport({
-        debtorId: req.body.debtorId,
-        productCode: req.body.productCode,
-        reportProvider: req.body.reportProvider,
-        creditReport: illionCreditReport,
-      });
-      await creditReport.save();
-      // TODO Generate Credit Report HTML
-      res.status(200).send({
-        status: 'SUCCESS',
-        data: creditReport,
-      });
-    }
-  } catch (e) {
-    Logger.log.error(
-      'Error occurred in generating Credit Report',
-      e.message || e,
-    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
