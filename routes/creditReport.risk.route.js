@@ -26,13 +26,19 @@ router.get('/', async function (req, res) {
         message: 'Require fields are missing.',
       });
     }
-    let queryFilter = {
-      isDeleted: false,
-    };
     const module = StaticFile.modules.find((i) => i.name === 'credit-report');
     const reportColumn = req.user.manageColumns.find(
       (i) => i.moduleName === 'credit-report',
     );
+    let queryFilter = {
+      isDeleted: false,
+    };
+    if (req.query.startDate && req.query.endDate) {
+      queryFilter.createdAt = {
+        $gte: req.query.startDate,
+        $lt: req.query.endDate,
+      };
+    }
     let sortingOptions = {};
     if (req.query.sortBy && req.query.sortOrder) {
       sortingOptions[req.query.sortBy] = req.query.sortOrder;
