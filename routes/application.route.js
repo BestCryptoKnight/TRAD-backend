@@ -183,14 +183,6 @@ router.get('/:entityId', async function (req, res) {
  * Update Column Names
  */
 router.put('/column-name', async function (req, res) {
-  if (!req.user || !req.user._id) {
-    Logger.log.error('User data not found in req');
-    return res.status(401).send({
-      status: 'ERROR',
-      messageCode: 'UNAUTHORIZED',
-      message: 'Please first login to update the profile.',
-    });
-  }
   if (
     !req.body.hasOwnProperty('isReset') ||
     !req.body.columns ||

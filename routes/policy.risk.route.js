@@ -20,13 +20,6 @@ const { addAuditLog } = require('./../helper/audit-log.helper');
  * Get Column Names
  */
 router.get('/column-name', async function (req, res) {
-  if (!req.user || !req.user._id) {
-    return res.status(401).send({
-      status: 'ERROR',
-      messageCode: 'UNAUTHORIZED',
-      message: 'Please first login to get columns.',
-    });
-  }
   if (!req.query.columnFor) {
     return res.status(400).send({
       status: 'ERROR',
@@ -346,14 +339,6 @@ router.get('/:entityId', async function (req, res) {
  * Update Column Names
  */
 router.put('/column-name', async function (req, res) {
-  if (!req.user || !req.user._id) {
-    Logger.log.error('User data not found in req');
-    return res.status(401).send({
-      status: 'ERROR',
-      messageCode: 'UNAUTHORIZED',
-      message: 'Please first login to update columns.',
-    });
-  }
   if (
     !req.body.hasOwnProperty('isReset') ||
     !req.body.columns ||

@@ -14,12 +14,12 @@ const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
 const {
   createTask,
-  getClientList,
-  getUserList,
   getDebtorList,
   aggregationQuery,
   getApplicationList,
 } = require('./../helper/task.helper');
+const { getClientList } = require('./../helper/client.helper');
+const { getAccessBaseUserList } = require('./../helper/user.helper');
 const { addAuditLog } = require('./../helper/audit-log.helper');
 
 /**
@@ -103,7 +103,7 @@ router.get('/user-list', async function (req, res) {
     const hasFullAccess = !!(
       req.accessTypes && req.accessTypes.indexOf('full-access') !== -1
     );
-    const users = await getUserList({
+    const users = await getAccessBaseUserList({
       userId: req.user._id,
       hasFullAccess: hasFullAccess,
     });
@@ -135,7 +135,7 @@ router.get('/entity-list', async function (req, res) {
     );
     switch (req.query.entityName.toLowerCase()) {
       case 'user':
-        entityList = await getUserList({
+        entityList = await getAccessBaseUserList({
           userId: req.user._id,
           hasFullAccess: hasFullAccess,
         });

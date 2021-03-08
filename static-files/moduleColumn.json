@@ -36,7 +36,7 @@
           "name": "debtorId",
           "label": "Debtor Name",
           "type": "modal",
-          "request": { "method": "GET", "url": "debtor/details" }
+          "request": { "method": "GET", "url": "debtor/drawer-details" }
         },
         { "name": "entityType", "label": "Entity Type", "type": "string" },
         { "name": "clientDebtorId", "label": "Credit Limit", "type": "number" },
@@ -156,7 +156,7 @@
           "name": "debtorId",
           "label": "Debtor Name",
           "type": "modal",
-          "request": { "method": "GET", "url": "debtor/details" }
+          "request": { "method": "GET", "url": "debtor/drawer-details" }
         },
         { "name": "entityType", "label": "Entity Type", "type": "string" },
         { "name": "clientDebtorId", "label": "Credit Limit", "type": "number" },
@@ -255,13 +255,37 @@
     {
       "name": "credit-limit",
       "manageColumns": [
-        "clientId",
-        "debtorId",
-        "creditLimit",
-        "updatedAt",
-        "createdAt"
+        {
+          "name": "entityName",
+          "label": "Name",
+          "type": "modal",
+          "request": { "method": "GET", "url": "debtor/drawer-details" }
+        },
+        { "name": "entityType", "label": "Entity Type", "type": "string" },
+        { "name": "abn", "label": "ABN", "type": "string" },
+        { "name": "acn", "label": "ACN", "type": "string" },
+        { "name": "creditLimit", "label": "Credit Limit", "type": "string" },
+        {
+          "name": "contactNumber",
+          "label": "Contact Number",
+          "type": "string"
+        },
+        { "name": "isActive", "label": "IsActive", "type": "string" },
+        { "name": "fullAddress", "label": "Full Address", "type": "string" },
+        { "name": "property", "label": "Property", "type": "string" },
+        { "name": "unitNumber", "label": "Unit Number", "type": "string" },
+        { "name": "streetNumber", "label": "Street Number", "type": "string" },
+        { "name": "streetName", "label": "Street Name", "type": "string" },
+        { "name": "streetType", "label": "Street Type", "type": "string" },
+        { "name": "suburb", "label": "Suburb", "type": "string" },
+        { "name": "state", "label": "Country/State", "type": "string" },
+        { "name": "country", "label": "Country", "type": "string" },
+        { "name": "postCode", "label": "Postcode/Zip", "type": "string" },
+
+        { "name": "createdAt", "label": "Created Date", "type": "date" },
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
-      "defaultColumns": ["clientId", "debtorId", "creditLimit"]
+      "defaultColumns": ["debtorId", "creditLimit"]
     },
     {
       "name": "claim",
@@ -297,17 +321,26 @@
         { "name": "entityName", "label": "Entity Name", "type": "string" },
         { "name": "tradingName", "label": "Trading Name", "type": "string" },
         { "name": "entityType", "label": "Entity Type", "type": "string" },
-        { "name": "address", "label": "Address", "type": "string" },
+        { "name": "fullAddress", "label": "Full Address", "type": "string" },
+        { "name": "property", "label": "Property", "type": "string" },
+        { "name": "unitNumber", "label": "Unit Number", "type": "string" },
+        { "name": "streetNumber", "label": "Street Number", "type": "string" },
+        { "name": "streetName", "label": "Street Name", "type": "string" },
+        { "name": "streetType", "label": "Street Type", "type": "string" },
+        { "name": "suburb", "label": "Suburb", "type": "string" },
+        { "name": "state", "label": "Country/State", "type": "string" },
+        { "name": "country", "label": "Country", "type": "string" },
+        { "name": "postCode", "label": "Postcode/Zip", "type": "string" },
         {
           "name": "contactNumber",
           "label": "Contact Number",
           "type": "string"
         },
-        { "name": "creditLimit", "label": "Credit Limit", "type": "number" },
+        { "name": "isActive", "label": "Active", "type": "boolean" },
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
-      "defaultColumns": ["abn", "entityName", "creditLimit"]
+      "defaultColumns": ["abn", "entityName", "entityType"]
     },
     {
       "name": "debtor-application",

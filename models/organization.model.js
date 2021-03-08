@@ -29,6 +29,11 @@ const organizationSchema = new Schema(
         subscriberId: Schema.Types.String,
       },
     },
+    entityCount: {
+      client: { type: Schema.Types.Number, default: 0 },
+      debtor: { type: Schema.Types.Number, default: 0 },
+      application: { type: Schema.Types.Number, default: 0 },
+    },
   },
   { timestamps: true },
 );

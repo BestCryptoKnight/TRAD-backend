@@ -6,6 +6,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const User = mongoose.model('user');
 const Client = mongoose.model('client');
+const Debtor = mongoose.model('debtor');
 const Application = mongoose.model('application');
 
 /*
@@ -17,7 +18,13 @@ const {
   getEntityDetailsByABN,
   getEntityDetailsByACN,
   getApplicationList,
+  storeCompanyDetails,
+  storePartnerDetails,
+  storeCreditLimitDetails,
 } = require('./../helper/application.helper');
+const { getClientList } = require('./../helper/client.helper');
+const { getDebtorList } = require('./../helper/debtor.helper');
+const StaticData = require('./../static-files/staticData.json');
 
 /**
  * Get Column Names
@@ -93,6 +100,38 @@ router.get('/column-name', async function (req, res) {
 });
 
 /**
+ * Get Entity List
+ * */
+router.get('/entity-list', async function (req, res) {
+  try {
+    let hasFullAccess = true;
+    if (req.accessTypes && req.accessTypes.indexOf('full-access') === -1) {
+      hasFullAccess = false;
+    }
+    const [clients, debtors] = await Promise.all([
+      getClientList({ hasFullAccess: hasFullAccess, userId: req.user._id }),
+      getDebtorList(),
+    ]);
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: {
+        clients: { field: 'client', data: clients },
+        debtors: { field: 'debtor', data: debtors },
+        streetType: { field: 'streetType', data: StaticData.streetType },
+        australianStates: { field: 'state', data: StaticData.australianStates },
+        entityType: { field: 'entityType', data: StaticData.entityType },
+      },
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in get entity list', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
  * Get List
  */
 router.get('/', async function (req, res) {
@@ -103,7 +142,6 @@ router.get('/', async function (req, res) {
     );
     let clientIds;
     let hasFullAccess = true;
-
     if (req.accessTypes && req.accessTypes.indexOf('full-access') === -1) {
       hasFullAccess = false;
       const clients = await Client.find({
@@ -205,14 +243,33 @@ router.get('/:entityId', async function (req, res) {
  * Search from ABN/ACN Number
  */
 router.get('/search-entity/:searchString', async function (req, res) {
-  if (!req.params.searchString) {
+  if (!req.params.searchString || !req.query.clientId) {
     return res.status(400).send({
       status: 'ERROR',
-      messageCode: 'SEARCH_STRING_NOT_FOUND',
-      message: 'Please enter search string.',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
     });
   }
   try {
+    const debtor = await Debtor.findOne({
+      $or: [{ abn: req.params.searchString }, { acn: req.params.searchString }],
+    }).lean();
+    if (debtor) {
+      const application = await Application.findOne({
+        clientId: req.query.clientId,
+        debtorId: debtor._id,
+        status: {
+          $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED', 'DRAFT'],
+        },
+      }).lean();
+      if (application) {
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'APPLICATION_ALREADY_EXISTS',
+          message: 'Application already exists.',
+        });
+      }
+    }
     let entityData;
     if (req.params.searchString.length < 10) {
       console.log('Get entity details from ACN number :: ');
@@ -238,17 +295,17 @@ router.get('/search-entity/:searchString', async function (req, res) {
               if (j.name === 'ABN') {
                 j.elements.forEach((k) => {
                   if (k.name === 'identifierValue') {
-                    data['abnNumber'] = k.elements[0]['text'];
+                    data['abn'] = k.elements[0]['text'];
                   }
                 });
               } else if (j.name === 'entityStatus') {
                 j.elements.forEach((k) => {
                   if (k.name === 'entityStatusCode') {
-                    data['status'] = k.elements[0]['text'];
+                    data['isActive'] = k.elements[0]['text'];
                   }
                 });
               } else if (j.name === 'ASICNumber') {
-                data['acnNumber'] = j.elements[0]['text'];
+                data['acn'] = j.elements[0]['text'];
               } else if (j.name === 'entityType') {
                 j.elements.forEach((k) => {
                   if (k.name === 'entityDescription') {
@@ -264,7 +321,7 @@ router.get('/search-entity/:searchString', async function (req, res) {
               } else if (j.name === 'mainName') {
                 j.elements.forEach((k) => {
                   if (k.name === 'organisationName') {
-                    data['companyName'] = k.elements[0]['text'];
+                    data['entityName'] = k.elements[0]['text'];
                   } else if (k.name === 'effectiveFrom') {
                     data['registeredDate'] = k.elements[0]['text'];
                   }
@@ -280,7 +337,7 @@ router.get('/search-entity/:searchString', async function (req, res) {
                   if (k.name === 'stateCode') {
                     data['state'] = k.elements[0]['text'];
                   } else if (k.name === 'postcode') {
-                    data['postcode'] = k.elements[0]['text'];
+                    data['postCode'] = k.elements[0]['text'];
                   }
                 });
               }
@@ -290,7 +347,10 @@ router.get('/search-entity/:searchString', async function (req, res) {
         });
       }
     });
-    res.status(200).send({ status: 'SUCCESS', data: response });
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: response.length !== 0 ? response[0] : {},
+    });
   } catch (e) {
     Logger.log.error('Error occurred in search by ABN number  ', e);
     res.status(500).send({
@@ -304,14 +364,6 @@ router.get('/search-entity/:searchString', async function (req, res) {
  * Update Column Names
  */
 router.put('/column-name', async function (req, res) {
-  if (!req.user || !req.user._id) {
-    Logger.log.error('User data not found in req');
-    return res.status(401).send({
-      status: 'ERROR',
-      messageCode: 'UNAUTHORIZED',
-      message: 'Please first login to update the profile.',
-    });
-  }
   if (
     !req.body.hasOwnProperty('isReset') ||
     !req.body.columns ||
@@ -358,6 +410,75 @@ router.put('/column-name', async function (req, res) {
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Generate Application
+ */
+router.put('/', async function (req, res) {
+  if (!req.body.stepper) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  if (
+    req.body.stepper !== 'company' &&
+    (!req.body.applicationId ||
+      !mongoose.Types.ObjectId.isValid(req.params.applicationId))
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    let response;
+    let message;
+    switch (req.body.stepper) {
+      case 'company':
+        response = await storeCompanyDetails({ requestBody: req.body });
+        break;
+      case 'person':
+        response = await storePartnerDetails({ requestBody: req.body });
+        break;
+      case 'credit-limit':
+        response = await storeCreditLimitDetails({ requestBody: req.body });
+        break;
+      case 'confirmation':
+        await Application.updateOne(
+          { _id: req.body.applicationId },
+          { $set: { status: 'SUBMITTED' } },
+        );
+        message = 'Application submitted successfully.';
+        break;
+      default:
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'BAD_REQUEST',
+          message: 'Please pass correct fields',
+        });
+    }
+    if (response && response.status && response.status === 'ERROR') {
+      return res.status(400).send(response);
+    }
+    res.status(200).send({
+      status: 'SUCCESS',
+      message: message,
+      data: response,
+    });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in generating application ',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e,
     });
   }
 });

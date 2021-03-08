@@ -10,7 +10,9 @@ const Schema = mongoose.Schema;
  */
 const debtorSchema = new Schema(
   {
+    debtorCode: Schema.Types.String,
     abn: { type: Schema.Types.String, unique: true },
+    acn: { type: Schema.Types.String, unique: true },
     entityName: { type: Schema.Types.String },
     tradingName: { type: Schema.Types.String },
     entityType: {
@@ -31,7 +33,18 @@ const debtorSchema = new Schema(
       ],
     },
     contactNumber: { type: Schema.Types.String },
-    address: { type: Schema.Types.String },
+    address: {
+      property: Schema.Types.String,
+      unitNumber: Schema.Types.String,
+      streetNumber: Schema.Types.String,
+      streetName: Schema.Types.String,
+      streetType: Schema.Types.String,
+      suburb: Schema.Types.String,
+      state: Schema.Types.String,
+      country: Schema.Types.String,
+      postCode: Schema.Types.String,
+    },
+    isActive: { type: Schema.Types.Boolean, default: false },
     isDeleted: { type: Schema.Types.Boolean, default: false },
   },
   { timestamps: true },

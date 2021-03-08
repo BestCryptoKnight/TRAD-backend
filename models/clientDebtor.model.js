@@ -15,6 +15,7 @@ const clientDebtorSchema = new Schema(
     isActive: { type: Schema.Types.Boolean, default: true },
     isDeleted: { type: Schema.Types.Boolean, default: false },
     creditLimit: { type: Schema.Types.Number },
+    activeApplicationId: { type: Schema.Types.ObjectId, ref: 'application' },
   },
   { timestamps: true },
 );

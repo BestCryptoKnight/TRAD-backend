@@ -18,13 +18,6 @@ const { addAuditLog } = require('./../helper/audit-log.helper');
  * Get Note List
  */
 router.get('/:entityId', async function (req, res) {
-  if (!req.user || !req.user._id) {
-    return res.status(401).send({
-      status: 'ERROR',
-      messageCode: 'UNAUTHORIZED',
-      message: 'Please first login to get list.',
-    });
-  }
   if (
     !req.query.noteFor ||
     !req.params.entityId ||
@@ -52,6 +45,7 @@ router.get('/:entityId', async function (req, res) {
       });
       query = {
         $and: [
+          { isDeleted: false },
           {
             noteFor: req.query.noteFor,
             entityId: mongoose.Types.ObjectId(req.params.entityId),
@@ -79,6 +73,7 @@ router.get('/:entityId', async function (req, res) {
       const applicationIds = applications.map((i) => i._id);
       query = {
         $and: [
+          { isDeleted: false },
           {
             noteFor: req.query.noteFor,
             entityId: mongoose.Types.ObjectId(req.params.entityId),
@@ -105,6 +100,7 @@ router.get('/:entityId', async function (req, res) {
     } else if (req.query.noteFor === 'client') {
       query = {
         $and: [
+          { isDeleted: false },
           {
             noteFor: req.query.noteFor,
             entityId: mongoose.Types.ObjectId(req.params.entityId),

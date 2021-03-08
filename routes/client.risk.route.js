@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 let mongoose = require('mongoose');
 let User = mongoose.model('user');
 const Client = mongoose.model('client');
+const ClientDebtor = mongoose.model('client-debtor');
 const ClientUser = mongoose.model('client-user');
 
 /*
@@ -421,6 +422,198 @@ router.get('/column-name', async function (req, res) {
       .send({ status: 'SUCCESS', data: { defaultFields, customFields } });
   } catch (e) {
     Logger.log.error('Error occurred in get column names', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Get Debtor Credit-Limit
+ */
+router.get('/credit-limit/:clientId', async function (req, res) {
+  if (
+    !req.params.clientId ||
+    !mongoose.Types.ObjectId.isValid(req.params.clientId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const module = StaticFile.modules.find((i) => i.name === 'credit-limit');
+    const debtorColumn = req.user.manageColumns.find(
+      (i) => i.moduleName === 'credit-limit',
+    );
+    let queryFilter = {
+      isActive: true,
+      clientId: mongoose.Types.ObjectId(req.params.clientId),
+    };
+    const aggregationQuery = [
+      {
+        $lookup: {
+          from: 'debtors',
+          localField: 'debtorId',
+          foreignField: '_id',
+          as: 'debtorId',
+        },
+      },
+      {
+        $unwind: {
+          path: '$debtorId',
+        },
+      },
+    ];
+
+    const fields = debtorColumn.columns.map((i) => {
+      const clientDebtorDetails = ['creditLimit', 'createdAt', 'updatedAt'];
+      i = clientDebtorDetails.includes(i) ? i : 'debtorId.' + i;
+      return [i, 1];
+    });
+    fields.push(['debtorId.address', 1]);
+    aggregationQuery.push({
+      $project: fields.reduce((obj, [key, val]) => {
+        obj[key] = val;
+        return obj;
+      }, {}),
+    });
+
+    if (req.query.search) {
+      aggregationQuery.push({
+        $match: {
+          'debtorId.entityName': { $regex: req.query.search, $options: 'i' },
+        },
+      });
+    }
+
+    const sortingOptions = {};
+    if (req.query.sortBy && req.query.sortOrder) {
+      const addressFields = [
+        'fullAddress',
+        'property',
+        'unitNumber',
+        'streetNumber',
+        'streetName',
+        'streetType',
+        'suburb',
+        'state',
+        'country',
+        'postCode',
+      ];
+      if (addressFields.includes(req.query.sortBy)) {
+        req.query.sortBy = 'debtorId.address.' + req.query.sortBy;
+      }
+      const clientDebtorDetails = ['creditLimit', 'createdAt', 'updatedAt'];
+      req.query.sortBy = clientDebtorDetails.includes(req.query.sortBy)
+        ? req.query.sortBy
+        : 'debtorId.' + req.query.sortBy;
+      sortingOptions[req.query.sortBy] =
+        req.query.sortOrder === 'desc' ? -1 : 1;
+      aggregationQuery.push({ $sort: sortingOptions });
+    }
+
+    aggregationQuery.push({
+      $facet: {
+        paginatedResult: [
+          {
+            $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
+          },
+          { $limit: parseInt(req.query.limit) },
+        ],
+        totalCount: [
+          {
+            $count: 'count',
+          },
+        ],
+      },
+    });
+    aggregationQuery.unshift({ $match: queryFilter });
+
+    const debtors = await ClientDebtor.aggregate(aggregationQuery).allowDiskUse(
+      true,
+    );
+    const headers = [];
+    for (let i = 0; i < module.manageColumns.length; i++) {
+      if (debtorColumn.columns.includes(module.manageColumns[i].name)) {
+        headers.push(module.manageColumns[i]);
+      }
+    }
+    debtors[0].paginatedResult.forEach((debtor) => {
+      if (debtor.debtorId) {
+        for (let key in debtor.debtorId) {
+          debtor[key] = debtor.debtorId[key];
+        }
+        delete debtor.debtorId;
+      }
+      if (debtorColumn.columns.includes('fullAddress')) {
+        debtor.fullAddress = Object.values(debtor.address)
+          .toString()
+          .replace(/,,/g, ',');
+      }
+      if (debtorColumn.columns.includes('property')) {
+        debtor.property = debtor.address.property;
+      }
+      if (debtorColumn.columns.includes('unitNumber')) {
+        debtor.unitNumber = debtor.address.unitNumber;
+      }
+      if (debtorColumn.columns.includes('streetNumber')) {
+        debtor.streetNumber = debtor.address.streetNumber;
+      }
+      if (debtorColumn.columns.includes('streetName')) {
+        debtor.streetName = debtor.address.streetName;
+      }
+      if (debtorColumn.columns.includes('streetType')) {
+        debtor.streetType = debtor.address.streetType;
+      }
+      if (debtorColumn.columns.includes('suburb')) {
+        debtor.suburb = debtor.address.suburb;
+      }
+      if (debtorColumn.columns.includes('state')) {
+        debtor.state = debtor.address.state;
+      }
+      if (debtorColumn.columns.includes('country')) {
+        debtor.country = debtor.address.country;
+      }
+      if (debtorColumn.columns.includes('postCode')) {
+        debtor.postCode = debtor.address.postCode;
+      }
+      if (debtor.entityType) {
+        debtor.entityType = debtor.entityType
+          .replace(/_/g, ' ')
+          .replace(/\w\S*/g, function (txt) {
+            return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+          });
+      }
+      if (debtor.entityName) {
+        debtor.entityName = {
+          id: debtor._id,
+          value: debtor.entityName,
+        };
+      }
+      delete debtor.address;
+      delete debtor.id;
+    });
+
+    const total =
+      debtors[0]['totalCount'].length !== 0
+        ? debtors[0]['totalCount'][0]['count']
+        : 0;
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: {
+        docs: debtors[0].paginatedResult,
+        headers,
+        total,
+        page: parseInt(req.query.page),
+        limit: parseInt(req.query.limit),
+        pages: Math.ceil(total / parseInt(req.query.limit)),
+      },
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in get client-debtor details ', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

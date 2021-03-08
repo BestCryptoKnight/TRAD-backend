@@ -18,13 +18,6 @@ const StaticFile = require('./../static-files/moduleColumn');
  * Get Column Names
  */
 router.get('/column-name', async function (req, res) {
-  if (!req.user || !req.user._id) {
-    return res.status(401).send({
-      status: 'ERROR',
-      messageCode: 'UNAUTHORIZED',
-      message: 'Please first login to get columns.',
-    });
-  }
   try {
     const module = StaticFile.modules.find((i) => i.name === 'audit-logs');
     const auditLogsColumn = req.user.manageColumns.find(

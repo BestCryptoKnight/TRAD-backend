@@ -51,7 +51,7 @@ let getClientsById = ({ crmIds }) => {
       const url = 'https://apiv4.reallysimplesystems.com/accounts';
       const query = { type: 'Client', id: { $in: crmIds } };
       const organization = await Organization.findOne({ isDeleted: false })
-        .select({ 'integration.rss': 1 })
+        .select({ 'integration.rss': 1, 'entityCount.client': 1 })
         .lean();
       const options = {
         method: 'GET',
@@ -64,9 +64,13 @@ let getClientsById = ({ crmIds }) => {
         },
       };
       const { data } = await axios(options);
+      let clientCount = organization.entityCount.client;
       let clients = [];
       data.list.forEach((data) => {
         clients.push({
+          clientCode:
+            'C' +
+            (organization.entityCount.client++).toString().padStart(4, '0'),
           crmClientId: data.record['id'],
           name: data.record['name'],
           address: {
@@ -89,6 +93,10 @@ let getClientsById = ({ crmIds }) => {
           expiryDate: data.record['expirydate'],
         });
       });
+      await Organization.updateOne(
+        { isDeleted: false },
+        { $set: { 'entityCount.client': clientCount } },
+      );
       // console.log('clients::', JSON.stringify(data.list, null, 2));
       Logger.log.info('Successfully retrieved clients from RSS');
       return resolve(clients);

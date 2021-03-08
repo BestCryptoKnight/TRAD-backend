@@ -10,6 +10,7 @@ const Schema = mongoose.Schema;
  */
 const clientSchema = new Schema(
   {
+    clientCode: Schema.Types.String,
     name: Schema.Types.String,
     riskAnalystId: { type: Schema.Types.ObjectId, ref: 'user' },
     serviceManagerId: { type: Schema.Types.ObjectId, ref: 'user' },

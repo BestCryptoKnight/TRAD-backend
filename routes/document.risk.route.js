@@ -5,6 +5,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const mongoose = require('mongoose');
+const User = mongoose.model('user');
 const Document = mongoose.model('document');
 const ClientDebtor = mongoose.model('client-debtor');
 const Application = mongoose.model('application');
@@ -29,17 +30,19 @@ const upload = multer({ storage: storage });
  * Get Column Names
  */
 router.get('/column-name', async function (req, res) {
-  if (!req.user || !req.user._id) {
-    return res.status(401).send({
+  if (!req.query.columnFor) {
+    return res.status(400).send({
       status: 'ERROR',
-      messageCode: 'UNAUTHORIZED',
-      message: 'Please first login to get columns.',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require field is missing.',
     });
   }
   try {
-    const module = StaticFile.modules.find((i) => i.name === 'document');
+    const module = StaticFile.modules.find(
+      (i) => i.name === req.query.columnFor,
+    );
     const auditLogsColumn = req.user.manageColumns.find(
-      (i) => i.moduleName === 'document',
+      (i) => i.moduleName === req.query.columnFor,
     );
     let customFields = [];
     let defaultFields = [];
@@ -433,9 +436,17 @@ router.post('/upload', upload.single('document'), async function (req, res) {
       actionType: 'add',
       logDescription: 'Document uploaded successfully',
     });
+    const documentData = await Document.findById(document._id)
+      .populate({
+        path: 'documentTypeId',
+        select: { documentTitle: 1, _id: 0 },
+      })
+      .select('documentTypeId description originalFileName keyPath isPublic')
+      .lean();
     res.status(200).send({
       status: 'SUCCESS',
       message: 'Document uploaded successfully',
+      data: documentData,
     });
   } catch (e) {
     Logger.log.error('Error occurred in upload document ', e);
@@ -450,15 +461,11 @@ router.post('/upload', upload.single('document'), async function (req, res) {
  * Update Column Names
  */
 router.put('/column-name', async function (req, res) {
-  if (!req.user || !req.user._id) {
-    Logger.log.error('User data not found in req');
-    return res.status(401).send({
-      status: 'ERROR',
-      messageCode: 'UNAUTHORIZED',
-      message: 'Please first login to update the profile.',
-    });
-  }
-  if (!req.body.hasOwnProperty('isReset') || !req.body.columns) {
+  if (
+    !req.body.hasOwnProperty('isReset') ||
+    !req.body.columns ||
+    !req.body.columnFor
+  ) {
     Logger.log.error('Require fields are missing');
     return res.status(400).send({
       status: 'ERROR',
@@ -468,14 +475,27 @@ router.put('/column-name', async function (req, res) {
   }
   try {
     let updateColumns = [];
-    if (req.body.isReset) {
-      const module = StaticFile.modules.find((i) => i.name === 'document');
-      updateColumns = module.defaultColumns;
-    } else {
-      updateColumns = req.body.columns;
+    switch (req.body.columnFor) {
+      case 'client-document':
+      case 'debtor-document':
+        if (req.body.isReset) {
+          module = StaticFile.modules.find(
+            (i) => i.name === req.body.columnFor,
+          );
+          updateColumns = module.defaultColumns;
+        } else {
+          updateColumns = req.body.columns;
+        }
+        break;
+      default:
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'BAD_REQUEST',
+          message: 'Please pass correct fields',
+        });
     }
     await User.updateOne(
-      { _id: req.user._id, 'manageColumns.moduleName': 'document' },
+      { _id: req.user._id, 'manageColumns.moduleName': req.body.columnFor },
       { $set: { 'manageColumns.$.columns': updateColumns } },
     );
     res

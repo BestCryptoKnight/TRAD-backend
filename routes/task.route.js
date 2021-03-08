@@ -16,9 +16,9 @@ const {
   createTask,
   getDebtorList,
   aggregationQuery,
-  getUserClientList,
   getApplicationList,
 } = require('./../helper/task.helper');
+const { getUserClientList } = require('./../helper/client.helper');
 const { addAuditLog } = require('./../helper/audit-log.helper');
 
 /**

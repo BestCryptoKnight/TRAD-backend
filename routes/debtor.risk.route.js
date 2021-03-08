@@ -7,6 +7,8 @@ const mongoose = require('mongoose');
 const User = mongoose.model('user');
 const Client = mongoose.model('client');
 const ClientDebtor = mongoose.model('client-debtor');
+const Debtor = mongoose.model('debtor');
+const Application = mongoose.model('application');
 
 /*
  * Local Imports
@@ -80,141 +82,117 @@ router.get('/', async function (req, res) {
     const debtorColumn = req.user.manageColumns.find(
       (i) => i.moduleName === 'debtor',
     );
-    const clients = await Client.find({
-      isDeleted: false,
-      $or: [
-        { riskAnalystId: req.user._id },
-        { serviceManagerId: req.user._id },
-      ],
-    })
-      .select({ _id: 1 })
-      .lean();
-    const clientIds = clients.map((i) => i._id);
+    req.query.sortBy = req.query.sortBy || '_id';
+    req.query.sortOrder = req.query.sortOrder || 'desc';
     let queryFilter = {
-      isDeleted: false,
       isActive: true,
     };
     if (req.accessTypes && req.accessTypes.indexOf('full-access') === -1) {
+      const clients = await Client.find({
+        isDeleted: false,
+        $or: [
+          { riskAnalystId: req.user._id },
+          { serviceManagerId: req.user._id },
+        ],
+      })
+        .select({ _id: 1 })
+        .lean();
+      const clientIds = clients.map((i) => i._id);
+      const clientDebtor = await ClientDebtor.find({
+        clientId: { $in: clientIds },
+      })
+        .select('_id')
+        .lean();
+      const debtorIds = clientDebtor.map((i) => i._id);
       queryFilter = {
         isDeleted: false,
-        clientId: { $in: clientIds },
+        _id: { $in: debtorIds },
       };
     }
-    const aggregationQuery = [
-      {
-        $lookup: {
-          from: 'debtors',
-          localField: 'debtorId',
-          foreignField: '_id',
-          as: 'debtorId',
-        },
-      },
-      {
-        $unwind: {
-          path: '$debtorId',
-        },
-      },
-    ];
+
     let sortingOptions = {};
-    const fields = debtorColumn.columns.map((i) => {
-      if (i === 'clientId') {
-        i = i + '.name';
-      }
-      if (
-        i === 'abn' ||
-        i === 'acn' ||
-        i === 'entityName' ||
-        i === 'entityType' ||
-        i === 'contactNumber' ||
-        i === 'tradingName'
-      ) {
-        i = 'debtorId.' + i;
-      }
-      return [i, 1];
-    });
-    aggregationQuery.push({
-      $project: fields.reduce((obj, [key, val]) => {
-        obj[key] = val;
-        return obj;
-      }, {}),
-    });
     if (req.query.sortBy && req.query.sortOrder) {
-      if (req.query.sortBy === 'clientId') {
-        req.query.sortBy = req.query.sortBy + '.name';
-      }
-      if (req.query.sortBy === 'entityType') {
-        req.query.sortBy = 'debtorId.' + req.query.sortBy;
+      const addressFields = [
+        'fullAddress',
+        'property',
+        'unitNumber',
+        'streetNumber',
+        'streetName',
+        'streetType',
+        'suburb',
+        'state',
+        'country',
+        'postCode',
+      ];
+      if (addressFields.includes(req.query.sortBy)) {
+        req.query.sortBy = 'address.' + req.query.sortBy;
       }
       sortingOptions[req.query.sortBy] =
         req.query.sortOrder === 'desc' ? -1 : 1;
-      aggregationQuery.push({ $sort: sortingOptions });
     }
-
-    aggregationQuery.push({
-      $facet: {
-        paginatedResult: [
-          {
-            $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
-          },
-          { $limit: parseInt(req.query.limit) },
-        ],
-        totalCount: [
-          {
-            $count: 'count',
-          },
-        ],
-      },
-    });
-
-    const debtors = await ClientDebtor.aggregate(aggregationQuery).allowDiskUse(
-      true,
-    );
-    const headers = [];
+    if (req.query.search)
+      queryFilter.entityName = { $regex: req.query.search, $options: 'i' };
+    let option = {
+      page: parseInt(req.query.page) || 1,
+      limit: parseInt(req.query.limit) || 5,
+    };
+    option.select =
+      debtorColumn.columns.toString().replace(/,/g, ' ') + ' address';
+    option.sort = sortingOptions;
+    option.lean = true;
+    let responseObj = await Debtor.paginate(queryFilter, option);
+    responseObj.headers = [];
     for (let i = 0; i < module.manageColumns.length; i++) {
       if (debtorColumn.columns.includes(module.manageColumns[i].name)) {
-        headers.push(module.manageColumns[i]);
+        responseObj.headers.push(module.manageColumns[i]);
       }
     }
-    if (debtors && debtors.length !== 0) {
-      debtors[0].paginatedResult.forEach((debtor) => {
-        if (debtorColumn.columns.includes('clientId')) {
-          debtor.clientId = debtor.clientId.name;
-        }
-        if (debtorColumn.columns.includes('abn')) {
-          debtor.abn = debtor.debtorId.abn;
-        }
-        if (debtorColumn.columns.includes('acn')) {
-          debtor.acn = debtor.debtorId.acn;
-        }
-        if (debtorColumn.columns.includes('entityName')) {
-          debtor.entityName = debtor.debtorId.entityName;
-        }
-        if (debtorColumn.columns.includes('tradingName')) {
-          debtor.tradingName = debtor.debtorId.tradingName;
-        }
-        if (debtorColumn.columns.includes('entityType')) {
-          debtor.entityType = debtor.debtorId.entityType;
-        }
-        if (debtorColumn.columns.includes('contactNumber')) {
-          debtor.contactNumber = debtor.debtorId.contactNumber;
-        }
-        delete debtor.debtorId;
-      });
-    }
-    const total =
-      debtors[0]['totalCount'].length !== 0
-        ? debtors[0]['totalCount'][0]['count']
-        : 0;
+    responseObj.docs.forEach((debtor) => {
+      if (debtorColumn.columns.includes('fullAddress')) {
+        debtor.fullAddress = Object.values(debtor.address)
+          .toString()
+          .replace(/,,/g, ',');
+      }
+      if (debtorColumn.columns.includes('property')) {
+        debtor.property = debtor.address.property;
+      }
+      if (debtorColumn.columns.includes('unitNumber')) {
+        debtor.unitNumber = debtor.address.unitNumber;
+      }
+      if (debtorColumn.columns.includes('streetNumber')) {
+        debtor.streetNumber = debtor.address.streetNumber;
+      }
+      if (debtorColumn.columns.includes('streetName')) {
+        debtor.streetName = debtor.address.streetName;
+      }
+      if (debtorColumn.columns.includes('streetType')) {
+        debtor.streetType = debtor.address.streetType;
+      }
+      if (debtorColumn.columns.includes('suburb')) {
+        debtor.suburb = debtor.address.suburb;
+      }
+      if (debtorColumn.columns.includes('state')) {
+        debtor.state = debtor.address.state;
+      }
+      if (debtorColumn.columns.includes('country')) {
+        debtor.country = debtor.address.country;
+      }
+      if (debtorColumn.columns.includes('postCode')) {
+        debtor.postCode = debtor.address.postCode;
+      }
+      if (debtor.entityType) {
+        debtor.entityType = debtor.entityType
+          .replace(/_/g, ' ')
+          .replace(/\w\S*/g, function (txt) {
+            return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+          });
+      }
+      delete debtor.address;
+      delete debtor.id;
+    });
     res.status(200).send({
       status: 'SUCCESS',
-      data: {
-        docs: debtors[0].paginatedResult,
-        headers,
-        total,
-        page: parseInt(req.query.page),
-        limit: parseInt(req.query.limit),
-        pages: Math.ceil(total / parseInt(req.query.limit)),
-      },
+      data: responseObj,
     });
   } catch (e) {
     Logger.log.error('Error occurred in get debtor list ', e);
@@ -228,7 +206,7 @@ router.get('/', async function (req, res) {
 /**
  * Get Debtor Modal details
  */
-router.get('/details/:debtorId', async function (req, res) {
+router.get('/drawer-details/:debtorId', async function (req, res) {
   if (!req.params.debtorId) {
     return res.status(400).send({
       status: 'ERROR',
@@ -279,6 +257,206 @@ router.get('/details/:debtorId', async function (req, res) {
 /**
  * Get Debtor Details
  */
+router.get('/details/:debtorId', async function (req, res) {
+  if (!req.params.debtorId || !req.query.clientId) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const application = await Application.findOne({
+      debtorId: req.params.debtorId,
+      clientId: req.query.clientId,
+      status: { $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED'] },
+    }).lean();
+    if (application) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'APPLICATION_ALREADY_EXISTS',
+        message: 'Application already exists.',
+      });
+    }
+    const debtor = await Debtor.findById(req.params.debtorId)
+      .select({ isDeleted: 0, createdAt: 0, updatedAt: 0, __v: 0 })
+      .lean();
+    if (debtor && debtor.address) {
+      for (let key in debtor.address) {
+        debtor[key] = debtor.address[key];
+      }
+      delete debtor.address;
+    }
+    res.status(200).send({ status: 'SUCCESS', data: debtor });
+  } catch (e) {
+    Logger.log.error('Error occurred in get debtor details ', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Get Debtor Credit-Limit
+ */
+router.get('/credit-limit/:debtorId', async function (req, res) {
+  if (
+    !req.params.debtorId ||
+    !mongoose.Types.ObjectId.isValid(req.params.debtorId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    let queryFilter = {
+      isActive: true,
+      debtorId: mongoose.Types.ObjectId(req.params.debtorId),
+    };
+    if (req.accessTypes && req.accessTypes.indexOf('full-access') === -1) {
+      const clients = await Client.find({
+        isDeleted: false,
+        $or: [
+          { riskAnalystId: req.user._id },
+          { serviceManagerId: req.user._id },
+        ],
+      })
+        .select({ _id: 1 })
+        .lean();
+      const clientIds = clients.map((i) => i._id);
+      queryFilter.clientId = { $in: clientIds };
+    }
+    const aggregationQuery = [
+      {
+        $lookup: {
+          from: 'clients',
+          localField: 'clientId',
+          foreignField: '_id',
+          as: 'clientId',
+        },
+      },
+      {
+        $unwind: {
+          path: '$clientId',
+        },
+      },
+    ];
+    aggregationQuery.push({
+      $project: {
+        'clientId._id': 1,
+        'clientId.name': 1,
+        'clientId.contactNumber': 1,
+        'clientId.abn': 1,
+        'clientId.acn': 1,
+        'clientId.inceptionDate': 1,
+        'clientId.expiryDate': 1,
+        creditLimit: 1,
+      },
+    });
+    const sortingOptions = {};
+    if (req.query.sortBy && req.query.sortOrder) {
+      sortingOptions[req.query.sortBy] =
+        req.query.sortOrder === 'desc' ? -1 : 1;
+      aggregationQuery.push({ $sort: sortingOptions });
+    }
+    if (req.query.search) {
+      aggregationQuery.push({
+        $match: {
+          'clientId.name': { $regex: req.query.search, $options: 'i' },
+        },
+      });
+    }
+    aggregationQuery.push({
+      $facet: {
+        paginatedResult: [
+          {
+            $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
+          },
+          { $limit: parseInt(req.query.limit) },
+        ],
+        totalCount: [
+          {
+            $count: 'count',
+          },
+        ],
+      },
+    });
+    aggregationQuery.unshift({ $match: queryFilter });
+
+    const debtors = await ClientDebtor.aggregate(aggregationQuery).allowDiskUse(
+      true,
+    );
+    const headers = [
+      {
+        name: 'clientId',
+        label: 'Client Name',
+        type: 'modal',
+        request: { method: 'GET', url: 'client/details' },
+      },
+      { name: 'contactNumber', label: 'Contact Number', type: 'string' },
+      { name: 'abn', label: 'ABN', type: 'string' },
+      { name: 'acn', label: 'ACN', type: 'string' },
+      { name: 'inceptionDate', label: 'Inception Date', type: 'date' },
+      { name: 'expiryDate', label: 'Expiry Date', type: 'date' },
+      { name: 'creditLimit', label: 'Credit Limit', type: 'string' },
+    ];
+    debtors[0].paginatedResult.forEach((debtor) => {
+      if (debtor.clientId.name) {
+        debtor.name = {
+          id: debtor.clientId._id,
+          value: debtor.clientId.name,
+        };
+      }
+      if (debtor.clientId.contactNumber) {
+        debtor.contactNumber = debtor.clientId.contactNumber;
+      }
+      if (debtor.clientId.abn) {
+        debtor.abn = debtor.clientId.abn;
+      }
+      if (debtor.clientId.acn) {
+        debtor.acn = debtor.clientId.acn;
+      }
+      if (debtor.clientId.inceptionDate) {
+        debtor.inceptionDate = debtor.clientId.inceptionDate;
+      }
+      if (debtor.clientId.expiryDate) {
+        debtor.expiryDate = debtor.clientId.expiryDate;
+      }
+      delete debtor.clientId;
+    });
+    const total =
+      debtors[0]['totalCount'].length !== 0
+        ? debtors[0]['totalCount'][0]['count']
+        : 0;
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: {
+        docs: debtors[0].paginatedResult,
+        headers,
+        total,
+        page: parseInt(req.query.page),
+        limit: parseInt(req.query.limit),
+        pages: Math.ceil(total / parseInt(req.query.limit)),
+      },
+    });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in get client-debtor details ',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Get Client-Debtor Details
+ */
 router.get('/:debtorId', async function (req, res) {
   if (
     !req.params.debtorId ||
@@ -291,16 +469,25 @@ router.get('/:debtorId', async function (req, res) {
     });
   }
   try {
-    const debtor = await ClientDebtor.findById(req.params.debtorId)
-      .populate({ path: 'debtorId', select: { __v: 0, isDeleted: 0 } })
-      .select({ isDeleted: 0 })
+    const debtor = await Debtor.findById(req.params.debtorId)
+      .select({ isDeleted: 0, __v: 0 })
       .lean();
+    if (debtor && debtor.entityType) {
+      debtor.entityType = debtor.entityType
+        .replace(/_/g, ' ')
+        .replace(/\w\S*/g, function (txt) {
+          return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+        });
+    }
     res.status(200).send({
       status: 'SUCCESS',
       data: debtor,
     });
   } catch (e) {
-    Logger.log.error('Error occurred in get debtor details ', e.message || e);
+    Logger.log.error(
+      'Error occurred in get client-debtor details ',
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

@@ -185,14 +185,14 @@ router.get('/user', async function (req, res) {
  * Get Client
  */
 router.get('/', async function (req, res) {
+  if (!req.user.clientId) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'UNAUTHORIZED',
+      message: 'Please first login to get company profile',
+    });
+  }
   try {
-    if (!req.user.clientId) {
-      return res.status(400).send({
-        status: 'ERROR',
-        messageCode: 'UNAUTHORIZED',
-        message: 'Please first login to get company profile',
-      });
-    }
     const client = await Client.findOne({ _id: req.user.clientId })
       .populate({ path: 'riskAnalystId serviceManagerId', select: 'name' })
       .lean();

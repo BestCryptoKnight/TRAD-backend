@@ -4,8 +4,6 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const fs = require('fs');
-const path = require('path');
 const jwt = require('jsonwebtoken');
 let mongoose = require('mongoose');
 const User = mongoose.model('user');
@@ -21,19 +19,6 @@ const StaticFile = require('./../static-files/moduleColumn');
 const StaticFileHelper = require('./../helper/static-file.helper');
 const { addAuditLog } = require('./../helper/audit-log.helper');
 
-const uploadProfilePath = path.resolve(
-  __dirname,
-  '../upload/' + getProfileImagePath(),
-);
-// Custom Multer storage engine
-// const storage = multer.diskStorage({
-//     destination: function (req, file, cb) {
-//         cb(null, uploadProfilePath);
-//     },
-//     filename: function (req, file, cb) {
-//         cb(null, file.fieldname + '-' + Date.now() + '-' + file.originalname);
-//     },
-// });
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
@@ -116,15 +101,6 @@ router.delete('/profile-picture', async (req, res) => {
  * Gets the Profile
  */
 router.get('/profile', async function (req, res) {
-  Logger.log.info('In get profile call');
-  if (!req.user || !req.user._id) {
-    Logger.log.error('User data not found in req');
-    return res.status(401).send({
-      status: 'ERROR',
-      messageCode: 'UNAUTHORIZED',
-      message: 'Please first login to update the profile.',
-    });
-  }
   try {
     let userData = await User.findById(req.user._id)
       .select({
@@ -155,15 +131,6 @@ router.get('/profile', async function (req, res) {
  * Gets the List of Module Access
  */
 router.get('/module-access', async function (req, res) {
-  Logger.log.info('In get privileges call');
-  if (!req.user || !req.user._id) {
-    Logger.log.error('User data not found in req');
-    return res.status(401).send({
-      status: 'ERROR',
-      messageCode: 'UNAUTHORIZED',
-      message: 'Please first login to update the profile.',
-    });
-  }
   try {
     let userData = await User.findById(req.user._id).select({
       moduleAccess: 1,
@@ -225,74 +192,6 @@ router.get('/column-name', async function (req, res) {
       .send({ status: 'SUCCESS', data: { defaultFields, customFields } });
   } catch (e) {
     Logger.log.error('Error occurred in get column names', e.message || e);
-    res.status(500).send({
-      status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
-    });
-  }
-});
-
-//TODO remove
-/**
- * Filter User List
- */
-router.get('/filter', async function (req, res) {
-  try {
-    const module = StaticFile.modules.find((i) => i.name === 'user');
-    const userColumn = req.user.manageColumns.find(
-      (i) => i.moduleName === 'user',
-    );
-    const queryFilter = {
-      isDeleted: false,
-    };
-    if (req.query.role) {
-      queryFilter.role = req.query.role;
-    }
-    if (req.query.startDate && req.query.endDate) {
-      queryFilter.createdAt = {
-        $gte: req.query.startDate,
-        $lt: req.query.endDate,
-      };
-    }
-    const option = {
-      page: parseInt(req.query.page) || 1,
-      limit: parseInt(req.query.limit) || 5,
-    };
-    option.select =
-      userColumn.columns.toString().replace(/,/g, ' ') + ' signUpToken';
-    option.lean = true;
-    const responseData = await User.paginate(queryFilter, option);
-    responseData.headers = [];
-    let showStatus = false;
-    for (let i = 0; i < module.manageColumns.length; i++) {
-      if (userColumn.columns.includes(module.manageColumns[i].name)) {
-        if (module.manageColumns[i].name === 'status') {
-          showStatus = true;
-        }
-        responseData.headers.push(module.manageColumns[i]);
-      }
-    }
-    if (responseData && responseData.docs && responseData.docs.length !== 0) {
-      responseData.docs.forEach((user) => {
-        if (user.role) {
-          user.role =
-            user.role.charAt(0).toUpperCase() +
-            user.role
-              .slice(1)
-              .replace(/([A-Z])/g, ' $1')
-              .trim();
-        }
-        if (showStatus) {
-          if (!user.signUpToken) user.status = 'Active';
-          else user.status = 'Pending';
-        }
-        delete user.signUpToken;
-        delete user._id;
-      });
-    }
-    res.status(200).send({ status: 'SUCCESS', data: responseData });
-  } catch (e) {
-    Logger.log.error('Error occurred in filter list ', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -475,15 +374,6 @@ router.get('/', async function (req, res) {
  * Creates User
  */
 router.post('/', async function (req, res) {
-  Logger.log.info('In create user call');
-  if (!req.user || !req.user._id) {
-    Logger.log.error('You must login first to create a new user.');
-    return res.status(401).send({
-      status: 'ERROR',
-      messageCode: 'UNAUTHORIZED',
-      message: 'You must login first to create a new user.',
-    });
-  }
   if (!req.body.email) {
     Logger.log.error('Email not present for new user');
     return res.status(400).send({
@@ -581,14 +471,6 @@ router.post('/', async function (req, res) {
  */
 router.put('/profile', async function (req, res) {
   Logger.log.info('In user update profile call');
-  if (!req.user || !req.user._id) {
-    Logger.log.error('User data not found in req');
-    return res.status(401).send({
-      status: 'ERROR',
-      messageCode: 'UNAUTHORIZED',
-      message: 'Please first login to update the profile.',
-    });
-  }
   let updateObj = {};
   if (req.body.name) updateObj.name = req.body.name;
   if (req.body.contactNumber) updateObj.contactNumber = req.body.contactNumber;
@@ -612,14 +494,6 @@ router.put('/profile', async function (req, res) {
  * Update Column Names
  */
 router.put('/column-name', async function (req, res) {
-  if (!req.user || !req.user._id) {
-    Logger.log.error('User data not found in req');
-    return res.status(401).send({
-      status: 'ERROR',
-      messageCode: 'UNAUTHORIZED',
-      message: 'Please first login to update the profile.',
-    });
-  }
   if (!req.body.hasOwnProperty('isReset') || !req.body.columns) {
     Logger.log.error('Require fields are missing');
     return res.status(400).send({
@@ -665,7 +539,7 @@ router.put('/:userId', async function (req, res) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Something went wrong, please try again.',
+      message: 'Require fields are missing',
     });
   }
   if (!req.body.email) {
@@ -784,7 +658,7 @@ router.delete('/:userId', async function (req, res) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Something went wrong, please try again.',
+      message: 'Require fields are missing',
     });
   }
   try {
@@ -815,26 +689,6 @@ router.delete('/:userId', async function (req, res) {
     });
   }
 });
-
-/**
- * Helper Functions
- */
-function getProfileImagePath() {
-  return config.uploadLocations.user.base + config.uploadLocations.user.profile;
-}
-
-function getProfileUrl(imageName) {
-  if (imageName)
-    if (
-      imageName.indexOf(
-        config.server.backendServerUrl + getProfileImagePath(),
-      ) !== -1
-    )
-      return imageName;
-    else
-      return config.server.backendServerUrl + getProfileImagePath() + imageName;
-  return '';
-}
 
 /**
  * Export Router

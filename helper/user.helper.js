@@ -28,4 +28,18 @@ let getUserList = async () => {
   }
 };
 
-module.exports = { getUserList };
+const getAccessBaseUserList = async ({ hasFullAccess = false, userId }) => {
+  try {
+    const query = hasFullAccess
+      ? { isDeleted: false, role: { $ne: 'superAdmin' } }
+      : { isDeleted: false, _id: userId };
+    return await User.find(query).select('_id name').lean();
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in get access base user list ',
+      e.message || e,
+    );
+  }
+};
+
+module.exports = { getUserList, getAccessBaseUserList };

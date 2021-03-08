@@ -416,13 +416,6 @@ router.put('/user/column-name', async function (req, res) {
  * Update Column Names
  */
 router.put('/column-name', async function (req, res) {
-  if (!req.user || !req.user._id) {
-    return res.status(401).send({
-      status: 'ERROR',
-      messageCode: 'UNAUTHORIZED',
-      message: 'Please first login to update columns.',
-    });
-  }
   if (!req.body.hasOwnProperty('isReset') || !req.body.columns) {
     Logger.log.error('Require fields are missing');
     return res.status(400).send({

@@ -1,8 +1,16 @@
+/*
+ * Module Imports
+ * */
 const AWS = require('aws-sdk');
-var cloudFrontSign = require('aws-cloudfront-sign');
+const cloudFrontSign = require('aws-cloudfront-sign');
 const path = require('path');
+
+/*
+ * Local Imports
+ * */
 const config = require('./../config');
 const Logger = require('./../services/logger');
+
 //configuring the AWS environment
 AWS.config.update({
   accessKeyId: config.staticServing.accessKeyId,
@@ -46,6 +54,7 @@ let uploadFile = ({ file, filePath, fileType }) => {
     }
   });
 };
+
 let getPreSignedUrl = async ({ filePath, getCloudFrontUrl }) => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -77,6 +86,7 @@ let getPreSignedUrl = async ({ filePath, getCloudFrontUrl }) => {
     }
   });
 };
+
 let deleteFile = ({ filePath }) => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -101,8 +111,6 @@ let deleteFile = ({ filePath }) => {
   });
 };
 
-// uploadFile()
-// getPreSignedUrl()
 module.exports = {
   uploadFile,
   getPreSignedUrl,
