@@ -15,6 +15,7 @@ const Application = mongoose.model('application');
  * */
 const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
+const StaticData = require('./../static-files/staticData.json');
 
 /**
  * Get Column Names
@@ -281,11 +282,50 @@ router.get('/details/:debtorId', async function (req, res) {
     const debtor = await Debtor.findById(req.params.debtorId)
       .select({ isDeleted: 0, createdAt: 0, updatedAt: 0, __v: 0 })
       .lean();
-    if (debtor && debtor.address) {
-      for (let key in debtor.address) {
-        debtor[key] = debtor.address[key];
+    const client = await Client.findById(req.query.clientId)
+      .select('name')
+      .lean();
+    if (debtor) {
+      if (debtor.address) {
+        for (let key in debtor.address) {
+          debtor[key] = debtor.address[key];
+        }
+        delete debtor.address;
       }
-      delete debtor.address;
+      if (debtor.entityType) {
+        debtor.entityType = {
+          label: debtor.entityType
+            .replace(/_/g, ' ')
+            .replace(/\w\S*/g, function (txt) {
+              return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+            }),
+          value: debtor.entityType,
+        };
+      }
+      if (debtor.state) {
+        const state = StaticData.australianStates.find((i) => {
+          if (i._id === debtor.state) return i;
+        });
+        debtor.state = {
+          label: state.name,
+          value: debtor.state,
+        };
+      }
+      if (debtor.streetType) {
+        const streetType = StaticData.streetType.find((i) => {
+          if (i._id === debtor.streetType) return i;
+        });
+        debtor.streetType = {
+          label: streetType.name,
+          value: debtor.streetType,
+        };
+      }
+      if (client) {
+        debtor.clientId = {
+          label: client.name,
+          value: client._id,
+        };
+      }
     }
     res.status(200).send({ status: 'SUCCESS', data: debtor });
   } catch (e) {

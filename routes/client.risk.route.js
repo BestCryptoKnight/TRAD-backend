@@ -1138,7 +1138,6 @@ router.put('/user/:clientUserId', async function (req, res) {
     });
   }
   try {
-    //TODO send mail on Portal-Access
     let updateObj = {};
     let promises = [];
     const clientUser = await ClientUser.findOne({
@@ -1153,7 +1152,8 @@ router.put('/user/:clientUserId', async function (req, res) {
         hasPortalAccess: req.body.hasPortalAccess,
         signUpToken: signUpToken,
       };
-      let mailObj = {
+      //TODO uncomment for send mail on Portal-Access
+      /*let mailObj = {
         toAddress: [clientUser.email],
         subject: 'Welcome to TRAD CLIENT PORTAL',
         text: {
@@ -1167,7 +1167,7 @@ router.put('/user/:clientUserId', async function (req, res) {
         },
         mailFor: 'newClientUser',
       };
-      promises.push(MailHelper.sendMail(mailObj));
+      promises.push(MailHelper.sendMail(mailObj));*/
     }
     await ClientUser.updateOne({ _id: req.params.clientUserId }, updateObj);
     promises.push(

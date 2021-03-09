@@ -86,6 +86,7 @@ const applicationSchema = new Schema(
         },
       ],
     },
+    applicationStage: { type: Schema.Types.Number },
     isDeleted: { type: Schema.Types.Boolean, default: false },
   },
   { timestamps: true },
