@@ -196,8 +196,7 @@
     {
       "name": "client-policy",
       "manageColumns": [
-        { "name": "insurerId", "label": "Insurer Id", "type": "string" },
-        { "name": "clientId", "label": "Client Id", "type": "string" },
+        { "name": "insurerId", "label": "Insurer Name", "type": "string" },
         {
           "name": "product",
           "label": "Product",
@@ -218,7 +217,7 @@
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
-      "defaultColumns": ["insurerId", "clientId", "product"]
+      "defaultColumns": ["insurerId", "product"]
     },
     {
       "name": "client-task",

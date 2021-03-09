@@ -64,7 +64,7 @@ let getPreSignedUrl = async ({ filePath, getCloudFrontUrl }) => {
           Date.now() + config.staticServing.expiryTimeInMinutes * 60 * 1000;
         let signedUrl = cloudFrontSign.getSignedUrl(
           config.staticServing.cloudFrontUrl + filePath,
-          signingParams,
+          cloudFrontSigningParams,
         );
         return resolve(signedUrl);
       } else {

@@ -264,6 +264,9 @@ const getApplicationList = async ({
         if (!applicationColumn.includes('clientDebtorId')) {
           delete application.clientDebtorId;
         }
+        if (!applicationColumn.includes('debtorId')) {
+          delete application.debtorId;
+        }
       });
     }
     const total =
@@ -294,7 +297,11 @@ const getApplicationList = async ({
   }
 };
 
-const storeCompanyDetails = async ({ requestBody }) => {
+const storeCompanyDetails = async ({
+  requestBody,
+  createdBy,
+  createtdByType,
+}) => {
   try {
     const organization = await Organization.findOne({ isDeleted: false })
       .select('entityCount')
@@ -333,6 +340,7 @@ const storeCompanyDetails = async ({ requestBody }) => {
       clientId: requestBody.clientId,
       debtorId: debtor._id,
       clientDebtorId: clientDebtor._id,
+      applicationStage: 0,
     };
     let application;
     if (!requestBody.applicationId) {
@@ -431,6 +439,7 @@ const storePartnerDetails = async ({ requestBody }) => {
     const update = {
       person: person,
       company: company,
+      applicationStage: 1,
     };
     await Application.updateOne(
       { _id: requestBody.applicationId },
@@ -454,6 +463,7 @@ const storeCreditLimitDetails = async ({ requestBody }) => {
       creditLimit: requestBody.creditLimit,
       isExtendedPaymentTerms: requestBody.isExtendedPaymentTerms,
       isPassedOverdueAmount: requestBody.isPassedOverdueAmount,
+      applicationStage: 2,
     };
     if (requestBody.extendedPaymentTermsDetails)
       update.extendedPaymentTermsDetails =

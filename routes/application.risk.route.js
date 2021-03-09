@@ -120,6 +120,10 @@ router.get('/entity-list', async function (req, res) {
         streetType: { field: 'streetType', data: StaticData.streetType },
         australianStates: { field: 'state', data: StaticData.australianStates },
         entityType: { field: 'entityType', data: StaticData.entityType },
+        applicationStatus: {
+          field: 'applicationStatus',
+          data: StaticData.applicationStatus,
+        },
       },
     });
   } catch (e) {
@@ -452,7 +456,7 @@ router.put('/', async function (req, res) {
       case 'confirmation':
         await Application.updateOne(
           { _id: req.body.applicationId },
-          { $set: { status: 'SUBMITTED' } },
+          { $set: { status: 'SUBMITTED', applicationStage: 4 } },
         );
         message = 'Application submitted successfully.';
         break;

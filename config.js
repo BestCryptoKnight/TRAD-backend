@@ -63,7 +63,8 @@ module.exports = {
     secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
     region: process.env.S3_REGION,
     expiryTimeInMinutes: process.env.S3_LINK_EXPIRY_IN_MINUTES,
-    isCloudFrontEnabled: process.env.IS_CLOUD_FRONT_ENABLED,
+    isCloudFrontEnabled:
+      process.env.IS_CLOUD_FRONT_ENABLED === 'true' ? true : false,
     cloudFrontKeyId: process.env.CLOUD_FRONT_KEY_ID,
     cloudFrontUrl: process.env.CLOUD_FRONT_URL,
   },
