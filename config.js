@@ -67,4 +67,8 @@ module.exports = {
     cloudFrontKeyId: process.env.CLOUD_FRONT_KEY_ID,
     cloudFrontUrl: process.env.CLOUD_FRONT_URL,
   },
+  illion: {
+    environment: process.env.ILLION_ENVIRONMENT,
+    apiUrl: process.env.ILLION_API_URL,
+  },
 };

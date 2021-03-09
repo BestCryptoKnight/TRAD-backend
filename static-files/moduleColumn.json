@@ -579,6 +579,31 @@
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
       "defaultColumns": ["name", "email", "contactNumber"]
+    },
+    {
+      "name": "credit-report",
+      "manageColumns": [
+        { "name": "reportProvider", "label": "Report By", "type": "string" },
+        { "name": "name", "label": "Name", "type": "string" },
+        { "name": "productCode", "label": "Product Code", "type": "string" },
+        {
+          "name": "isExpired",
+          "label": "Is Expired",
+          "type": "boolean",
+          "isDisabled": false,
+          "request": { "method": "PUT", "url": "credit-report" }
+        },
+        { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
+        { "name": "createdAt", "label": "Generation Date", "type": "date" },
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+      ],
+      "defaultColumns": [
+        "name",
+        "reportProvider",
+        "isExpired",
+        "expiryDate",
+        "createdAt"
+      ]
     }
   ]
 }
