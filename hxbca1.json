@@ -1,0 +1,720 @@
+{
+  "soap:Envelope": {
+    "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+    "xmlns:xsd": "http://www.w3.org/2001/XMLSchema",
+    "xmlns:soap": "http://schemas.xmlsoap.org/soap/envelope/",
+    "soap:Body": {
+      "Response": {
+        "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+        "xmlns:xsd": "http://www.w3.org/2001/XMLSchema",
+        "xmlns": "http://www.dnb.com.au/Schema/CommercialBureau",
+        "Version": "1.1",
+        "Header": {
+          "ProductName": "HTML Commercial Bureau Enquiry w/ refresh ASIC w/o ASIC Docs",
+          "ProductCode": "HXBCA",
+          "TicketKey": "20210308450940001P",
+          "LookupMethod": "ABN",
+          "LookupValue": "51069691676"
+        },
+        "Messages": {
+          "ErrorCount": "0",
+          "WarningCount": "0"
+        },
+        "CompanyBasicDetails": {
+          "OrganisationName": "GARMCO (AUSTRALIA) PTY LTD",
+          "CompanyStatus": "Registered",
+          "DUNS": "752435180",
+          "CompanyNum": "069691676",
+          "ABN": "51069691676",
+          "ABNIssueDate": {
+            "Year": "2000",
+            "Month": "1",
+            "Day": "21"
+          },
+          "ASICExtractDate": {
+            "Year": "2021",
+            "Month": "3",
+            "Day": "6",
+            "Hour": "17",
+            "Minute": "50",
+            "Second": "39"
+          },
+          "ParentCompany": {
+            "OrganisationName": "GULF ALUMINIUM ROLLING MILL CO BSC",
+            "Country": "Bahrain"
+          },
+          "LineOfBusiness": "Wholesale of aluminium products",
+          "Principal": {
+            "PrincipalTitle": "Chief Executive Officer",
+            "Name": "Lip Yoong Loh",
+            "JobTitle": "Director & Company Secretary"
+          },
+          "YearFounded": "1995",
+          "IsInoperative": "false",
+          "IsDeregistered": "false"
+        },
+        "CompanyExtendedDetails": {
+          "SICCode": {
+            "Code": "5051",
+            "Desc": "Wholesales metals service centers and offices"
+          },
+          "IsImport": "true",
+          "IsExport": "true",
+          "Rating": "4A 1",
+          "EmployeesCount": "10",
+          "EmployeesGroupCount": "0",
+          "SalesType": "Revenue",
+          "AnnualSales": "31484942.0000",
+          "HasGroupSales": "false",
+          "HasEstimatedSales": "false",
+          "TangibleNetWorth": "23571502.0000"
+        },
+        "SummaryInformation": {
+          "CourtActionsCount": "0",
+          "EnquiriesCount": "30",
+          "CollectionsCount": "0",
+          "DirectorsCount": "4",
+          "DefaultsCount": "0",
+          "DirectorCourtActionCount": "0",
+          "RegisteredChargesCount": "0",
+          "DirectorFailedBusinessesCount": "0",
+          "TradeReferencesCount": "27",
+          "DNBRating": "4A 1"
+        },
+        "Incorporation": {
+          "RegIncorpIn": "ACT",
+          "RegIncorpDate": {
+            "Year": "1995",
+            "Month": "8",
+            "Day": "2"
+          },
+          "CompanyType": "Australian Proprietary Company",
+          "CompanyClass": "Limited By Shares",
+          "CompanySubClass": "Proprietary  Company",
+          "CompanyStatus": "Registered",
+          "NameStartDate": {
+            "Year": "1995",
+            "Month": "11",
+            "Day": "10"
+          },
+          "StatusStartDate": {
+            "Year": "1995",
+            "Month": "11",
+            "Day": "10"
+          },
+          "ReviewDate": {
+            "Year": "2021",
+            "Month": "8",
+            "Day": "2"
+          }
+        },
+        "ContactDetails": {
+          "HeadOffice": {
+            "Address": {
+              "UnformattedAddress": "268-280 Greens Rd",
+              "City": "Dandenong South",
+              "State": "VIC",
+              "Postcode": "3175",
+              "Country": "Australia"
+            }
+          },
+          "RegisteredOffice": {
+            "Address": {
+              "UnformattedAddress": "268-280 GREENS ROAD",
+              "City": "DANDENONG SOUTH",
+              "State": "VIC",
+              "Postcode": "3175"
+            },
+            "StartDate": {
+              "Year": "2005",
+              "Month": "2",
+              "Day": "22"
+            }
+          },
+          "PrincipalPlaceOfBusiness": {
+            "Address": {
+              "UnformattedAddress": "268-280 GREENS ROAD",
+              "City": "DANDENONG SOUTH",
+              "State": "VIC",
+              "Postcode": "3175"
+            },
+            "StartDate": {
+              "Year": "2005",
+              "Month": "2",
+              "Day": "14"
+            }
+          },
+          "PhoneNum": {
+            "AreaCode": "03",
+            "LocalNum": "97673000"
+          },
+          "Email": "lip.loh@garmco.com.au",
+          "Website": "garmco.com"
+        },
+        "Collections": {},
+        "PublicFilings": {},
+        "RegisteredCharges": {},
+        "Directors": {
+          "Director": [
+            {
+              "Entity": {
+                "Person": {
+                  "FirstName": "SYED",
+                  "OtherName": "SALMAN",
+                  "Surname": "ALI",
+                  "DateOfBirth": {
+                    "Year": "1955",
+                    "Month": "11",
+                    "Day": "5"
+                  },
+                  "BirthLocation": "KARACHI",
+                  "BirthState": "PAKISTAN"
+                }
+              },
+              "DateAppointed": {
+                "Year": "2020",
+                "Month": "10",
+                "Day": "13"
+              },
+              "Address": {
+                "UnformattedAddress": "UNIT 16, 32 MARIAN STREET",
+                "City": "KILLARA",
+                "State": "NSW",
+                "Postcode": "2071"
+              },
+              "OtherBoards": {},
+              "OtherBoardsPrevious": {}
+            },
+            {
+              "Entity": {
+                "Person": {
+                  "FirstName": "MOHAMED",
+                  "OtherName": "ISA EBRAHIM",
+                  "Surname": "ABBAS",
+                  "DateOfBirth": {
+                    "Year": "1963",
+                    "Month": "1",
+                    "Day": "1"
+                  },
+                  "BirthLocation": "ALMAAMEER, BAHRAIN",
+                  "BirthState": "BAHRAIN"
+                }
+              },
+              "DateAppointed": {
+                "Year": "2018",
+                "Month": "3",
+                "Day": "15"
+              },
+              "Address": {
+                "City": "937, ROAD 3431, BLOCK 634",
+                "Country": "BAHRAIN"
+              },
+              "OtherBoards": {},
+              "OtherBoardsPrevious": {}
+            },
+            {
+              "Entity": {
+                "Person": {
+                  "FirstName": "MOHAMED",
+                  "OtherName": "YUSUF MOHAMED ALI",
+                  "Surname": "ALRAFAEI",
+                  "DateOfBirth": {
+                    "Year": "1975",
+                    "Month": "10",
+                    "Day": "25"
+                  },
+                  "BirthLocation": "MUHARRAQ",
+                  "BirthState": "BAHRAIN"
+                }
+              },
+              "DateAppointed": {
+                "Year": "2020",
+                "Month": "12",
+                "Day": "28"
+              },
+              "Address": {
+                "UnformattedAddress": "FLAT/VILLA 0.BLDG #: 2820, BLDG ALPHA:A, ROAD: 4580 RD NAME : R 4580/4580,  #:0",
+                "City": "BLOCK #:745, BLOCK: SANAD GOV",
+                "Country": "BAHRAIN"
+              },
+              "OtherBoards": {},
+              "OtherBoardsPrevious": {}
+            },
+            {
+              "Entity": {
+                "Person": {
+                  "FirstName": "MOHAMED",
+                  "OtherName": "MUSTAFA MOHAMED",
+                  "Surname": "RAFEA",
+                  "DateOfBirth": {
+                    "Year": "1967",
+                    "Month": "2",
+                    "Day": "16"
+                  },
+                  "BirthLocation": "MANAMA",
+                  "BirthState": "BAHRAIN"
+                }
+              },
+              "DateAppointed": {
+                "Year": "2020",
+                "Month": "12",
+                "Day": "28"
+              },
+              "Address": {
+                "UnformattedAddress": "FLAT/VILLA 0.BLDG #: 486, ROAD: 3410,, SHAMALI",
+                "City": "BLOCK #:934, BLOCK: RIFFA/AL",
+                "Country": "BAHRAIN"
+              },
+              "OtherBoards": {},
+              "OtherBoardsPrevious": {}
+            }
+          ]
+        },
+        "DirectorChanges": {},
+        "DirectorAppointments": {},
+        "DirectorBackgrounds": {},
+        "History": {
+          "RegOrIncorp": "incorporated",
+          "RegIncorpIn": "ACT",
+          "RegIncorpDate": {
+            "Year": "1995",
+            "Month": "8",
+            "Day": "2"
+          },
+          "IsForeignCompanyBranch": "false",
+          "IsCreditUnion": "false",
+          "HasFormerPartnersNowDirectors": "false",
+          "IsTrustee": "false",
+          "CorporatePartners": {},
+          "OriginalName": "LUDOVICUS PTY LIMITED",
+          "PreviousNames": {},
+          "DateChangedToCurrentName": {
+            "Year": "1995",
+            "Month": "11",
+            "Day": "10"
+          },
+          "PerformanceRecords": {}
+        },
+        "Shares": {
+          "ShareType": "Share",
+          "Structure": {
+            "Class": {
+              "ClassCode": "ORD (ORDINARY)",
+              "SharesIssued": "975000",
+              "TotalPaidOnShares": "1025000.00"
+            }
+          },
+          "MajorShareholders": {
+            "Shareholder": {
+              "Member": {
+                "OrganisationName": "GULF ALUMINIUM ROLLING MILL B.S.C. (C)",
+                "Address": {
+                  "UnformattedAddress": "P O BOX 20725,, N. SITRA INDUSTRIAL AREA,",
+                  "City": "MANAMA,",
+                  "Country": "BAHRAIN"
+                }
+              },
+              "ClassCode": "ORD",
+              "SharesHeld": "975000",
+              "PercentHeld": "100",
+              "IsBeneficiallyHeld": "true",
+              "IsPaid": "true"
+            }
+          },
+          "PreviousShareholders": {}
+        },
+        "GeneralEnquiries": {
+          "Enquiry": [
+            {
+              "Date": {
+                "Year": "2021",
+                "Month": "3",
+                "Day": "8"
+              },
+              "Name": "TRADE CREDIT RISK PTY LTD"
+            },
+            {
+              "Date": {
+                "Year": "2021",
+                "Month": "3",
+                "Day": "7"
+              },
+              "Name": "TRADE CREDIT RISK PTY LTD"
+            },
+            {
+              "Date": {
+                "Year": "2021",
+                "Month": "3",
+                "Day": "6"
+              },
+              "Name": "TRADE CREDIT RISK PTY LTD"
+            },
+            {
+              "Date": {
+                "Year": "2021",
+                "Month": "3",
+                "Day": "5"
+              },
+              "Name": "TRADE CREDIT RISK PTY LTD"
+            },
+            {
+              "Date": {
+                "Year": "2021",
+                "Month": "3",
+                "Day": "5"
+              },
+              "Name": "TRADE CREDIT RISK PTY LTD"
+            },
+            {
+              "Date": {
+                "Year": "2021",
+                "Month": "3",
+                "Day": "5"
+              },
+              "Name": "TRADE CREDIT RISK PTY LTD"
+            },
+            {
+              "Date": {
+                "Year": "2021",
+                "Month": "3",
+                "Day": "5"
+              },
+              "Name": "TRADE CREDIT RISK PTY LTD"
+            },
+            {
+              "Date": {
+                "Year": "2021",
+                "Month": "3",
+                "Day": "5"
+              },
+              "Name": "TRADE CREDIT RISK PTY LTD"
+            },
+            {
+              "Date": {
+                "Year": "2021",
+                "Month": "3",
+                "Day": "5"
+              },
+              "Name": "TRADE CREDIT RISK PTY LTD"
+            },
+            {
+              "Date": {
+                "Year": "2021",
+                "Month": "3",
+                "Day": "5"
+              },
+              "Name": "TRADE CREDIT RISK PTY LTD"
+            },
+            {
+              "Date": {
+                "Year": "2021",
+                "Month": "3",
+                "Day": "5"
+              },
+              "Name": "TRADE CREDIT RISK PTY LTD"
+            },
+            {
+              "Date": {
+                "Year": "2021",
+                "Month": "3",
+                "Day": "5"
+              },
+              "Name": "TRADE CREDIT RISK PTY LTD"
+            },
+            {
+              "Date": {
+                "Year": "2021",
+                "Month": "3",
+                "Day": "5"
+              },
+              "Name": "TRADE CREDIT RISK PTY LTD"
+            },
+            {
+              "Date": {
+                "Year": "2021",
+                "Month": "3",
+                "Day": "5"
+              },
+              "Name": "TRADE CREDIT RISK PTY LTD"
+            },
+            {
+              "Date": {
+                "Year": "2021",
+                "Month": "3",
+                "Day": "5"
+              },
+              "Name": "TRADE CREDIT RISK PTY LTD"
+            },
+            {
+              "Date": {
+                "Year": "2021",
+                "Month": "3",
+                "Day": "5"
+              },
+              "Name": "TRADE CREDIT RISK PTY LTD"
+            },
+            {
+              "Date": {
+                "Year": "2021",
+                "Month": "3",
+                "Day": "5"
+              },
+              "Name": "TRADE CREDIT RISK PTY LTD"
+            },
+            {
+              "Date": {
+                "Year": "2021",
+                "Month": "3",
+                "Day": "5"
+              },
+              "Name": "TRADE CREDIT RISK PTY LTD"
+            },
+            {
+              "Date": {
+                "Year": "2021",
+                "Month": "3",
+                "Day": "5"
+              },
+              "Name": "TRADE CREDIT RISK PTY LTD"
+            },
+            {
+              "Date": {
+                "Year": "2021",
+                "Month": "3",
+                "Day": "5"
+              },
+              "Name": "TRADE CREDIT RISK PTY LTD"
+            },
+            {
+              "Date": {
+                "Year": "2021",
+                "Month": "3",
+                "Day": "5"
+              },
+              "Name": "TRADE CREDIT RISK PTY LTD"
+            },
+            {
+              "Date": {
+                "Year": "2021",
+                "Month": "3",
+                "Day": "5"
+              },
+              "Name": "TRADE CREDIT RISK PTY LTD"
+            },
+            {
+              "Date": {
+                "Year": "2021",
+                "Month": "3",
+                "Day": "5"
+              },
+              "Name": "TRADE CREDIT RISK PTY LTD"
+            },
+            {
+              "Date": {
+                "Year": "2021",
+                "Month": "3",
+                "Day": "4"
+              },
+              "Name": "TRADE CREDIT RISK PTY LTD"
+            },
+            {
+              "Date": {
+                "Year": "2021",
+                "Month": "3",
+                "Day": "2"
+              },
+              "Name": "TRADE CREDIT RISK PTY LTD"
+            },
+            {
+              "Date": {
+                "Year": "2021",
+                "Month": "2",
+                "Day": "19"
+              },
+              "Name": "TRADE CREDIT RISK PTY LTD"
+            },
+            {
+              "Date": {
+                "Year": "2021",
+                "Month": "2",
+                "Day": "19"
+              },
+              "Name": "TRADE CREDIT RISK PTY LTD"
+            },
+            {
+              "Date": {
+                "Year": "2021",
+                "Month": "2",
+                "Day": "16"
+              },
+              "Name": "TRADE CREDIT RISK PTY LTD"
+            },
+            {
+              "Date": {
+                "Year": "2021",
+                "Month": "2",
+                "Day": "16"
+              },
+              "Name": "TRADE CREDIT RISK PTY LTD"
+            },
+            {
+              "Date": {
+                "Year": "2021",
+                "Month": "2",
+                "Day": "16"
+              },
+              "Name": "TRADE CREDIT RISK PTY LTD"
+            }
+          ]
+        },
+        "DocumentsReceived": {},
+        "Banks": {},
+        "MediaEvents": {},
+        "ReportDetails": {
+          "CompiledBy": "Vanessa Fainsan",
+          "DefaultCurrency": "AUSTRALIAN DOLLARS"
+        },
+        "ASICBasicOrganisationDetails": {
+          "OrganisationName": "GARMCO (AUSTRALIA) PTY LTD",
+          "OrganisationHeadingType": "ACN (Australian Company Number)",
+          "CompanyNum": "069691676",
+          "ABN": "51069691676",
+          "RegIncorpIn": "ACT",
+          "RegIncorpDate": {
+            "Year": "1995",
+            "Month": "8",
+            "Day": "2"
+          },
+          "ExtractDate": {
+            "Year": "2021",
+            "Month": "3",
+            "Day": "6",
+            "Hour": "17",
+            "Minute": "50",
+            "Second": "39"
+          },
+          "ReviewDate": {
+            "Year": "2021",
+            "Month": "8",
+            "Day": "2"
+          }
+        },
+        "ASICOrganisationDetails": {
+          "ASICOrganisationDetailsItem": {
+            "DocumentNum": "009840765",
+            "OrganisationName": "GARMCO (AUSTRALIA) PTY LTD",
+            "StartDate": {
+              "Year": "1995",
+              "Month": "11",
+              "Day": "10"
+            },
+            "NameStartDate": {
+              "Year": "1995",
+              "Month": "11",
+              "Day": "10"
+            },
+            "CompanyStatus": "Registered",
+            "CompanyType": "Australian Proprietary Company",
+            "CompanyClass": "Limited By Shares",
+            "CompanySubClass": "Proprietary  Company",
+            "IsDisclosingEntity": "false"
+          }
+        },
+        "ASICOrganisationAddresses": {},
+        "ASICOfficerRoleDetails": {
+          "ASICOfficerRole": [
+            {
+              "OfficerRole": "Director",
+              "FirstName": "SYED",
+              "OtherNames": "SALMAN",
+              "Surname": "ALI",
+              "DateOfBirth": {
+                "Year": "1955",
+                "Month": "11",
+                "Day": "5"
+              },
+              "BirthLocation": "KARACHI",
+              "BirthState": "PAKISTAN",
+              "DateAppointed": {
+                "Year": "2020",
+                "Month": "10",
+                "Day": "13"
+              },
+              "Address": {
+                "UnformattedAddress": "UNIT 16, 32 MARIAN STREET",
+                "City": "KILLARA",
+                "State": "NSW",
+                "Postcode": "2071"
+              }
+            },
+            {
+              "OfficerRole": "Director",
+              "FirstName": "MOHAMED",
+              "OtherNames": "ISA EBRAHIM",
+              "Surname": "ABBAS",
+              "DateOfBirth": {
+                "Year": "1963",
+                "Month": "1",
+                "Day": "1"
+              },
+              "BirthLocation": "ALMAAMEER, BAHRAIN",
+              "BirthState": "BAHRAIN",
+              "DateAppointed": {
+                "Year": "2018",
+                "Month": "3",
+                "Day": "15"
+              }
+            },
+            {
+              "OfficerRole": "Director",
+              "FirstName": "MOHAMED",
+              "OtherNames": "YUSUF MOHAMED ALI",
+              "Surname": "ALRAFAEI",
+              "DateOfBirth": {
+                "Year": "1975",
+                "Month": "10",
+                "Day": "25"
+              },
+              "BirthLocation": "MUHARRAQ",
+              "BirthState": "BAHRAIN",
+              "DateAppointed": {
+                "Year": "2020",
+                "Month": "12",
+                "Day": "28"
+              },
+              "Address": {
+                "UnformattedAddress": "FLAT/VILLA 0.BLDG #: 2820, BLDG ALPHA:A, ROAD: 4580 RD NAME : R 4580/4580,  #:0",
+                "City": "BLOCK #:745, BLOCK: SANAD GOV"
+              }
+            },
+            {
+              "OfficerRole": "Director",
+              "FirstName": "MOHAMED",
+              "OtherNames": "MUSTAFA MOHAMED",
+              "Surname": "RAFEA",
+              "DateOfBirth": {
+                "Year": "1967",
+                "Month": "2",
+                "Day": "16"
+              },
+              "BirthLocation": "MANAMA",
+              "BirthState": "BAHRAIN",
+              "DateAppointed": {
+                "Year": "2020",
+                "Month": "12",
+                "Day": "28"
+              },
+              "Address": {
+                "UnformattedAddress": "FLAT/VILLA 0.BLDG #: 486, ROAD: 3410,, SHAMALI",
+                "City": "BLOCK #:934, BLOCK: RIFFA/AL"
+              }
+            }
+          ]
+        },
+        "ProductAvailability": {},
+        "ASICNameSearch": {},
+        "BusinessNameExtract": {}
+      }
+    }
+  }
+}
