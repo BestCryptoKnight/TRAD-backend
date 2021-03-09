@@ -1,7 +1,5 @@
 const axios = require('axios');
-const convert = require('xml-js');
 var parser = require('xml2json');
-const fs = require('fs');
 const mongoose = require('mongoose');
 const Organization = mongoose.model('organization');
 /*
@@ -13,9 +11,9 @@ let config = require('./../config');
 let fetchCreditReport = ({ productCode, searchField, searchValue }) => {
   return new Promise(async (resolve, reject) => {
     try {
-      productCode = 'HXBCA';
-      searchField = 'ABN';
-      searchValue = '51069691676';
+      // productCode = 'HXBCA';
+      // searchField = 'ABN';
+      // searchValue = '51069691676';
       const organization = await Organization.findOne({
         isDeleted: false,
       })
@@ -64,19 +62,13 @@ let fetchCreditReport = ({ productCode, searchField, searchValue }) => {
         },
       };
       Logger.log.info('Making a request to illion at', new Date());
-      // console.log(url, xmlBody, options);
       let { data } = await axios.post(url, xmlBody, options);
       Logger.log.info('Successfully received report at', new Date());
-      const jsonData = parser.toJson(data);
-      Logger.log.info('Successfully received report at', new Date());
-
-      // console.log('converted JSON::', jsonData);
-      console.log(
-        'converted JSON::',
-        JSON.stringify(JSON.parse(jsonData), null, 3),
-      );
-      fs.writeFileSync('hxbca1.json', jsonData);
-      return resolve(jsonData);
+      let jsonData = parser.toJson(data);
+      jsonData = JSON.parse(jsonData);
+      const processedReport = processIllionReport(jsonData);
+      // fs.writeFileSync('hxbca1.json', jsonData);
+      return resolve(processedReport);
     } catch (e) {
       console.log('Error in getting entity details from ABN');
       console.log(e.message || e);
@@ -88,35 +80,32 @@ let fetchCreditReport = ({ productCode, searchField, searchValue }) => {
 // let report = null;
 
 let processObj = (obj) => {
+  let processedObject = {};
   Object.keys(obj).forEach((key) => {
+    let processedKey = key;
+    if (processedKey.includes(':')) {
+      processedKey = processedKey.split(':')[1];
+    }
     if (typeof obj[key] === 'object' && obj[key].length === undefined) {
-      console.log('Calling for::', key);
-      obj[key] = processObj(obj[key]);
+      processedObject[processedKey] = processObj(obj[key]);
       if (obj[key].hasOwnProperty('Year')) {
-        obj[key + 'Str'] = processDate(obj[key]);
+        processedObject[processedKey + 'Str'] = processDate(obj[key]);
       }
-      console.log('Processed for::', key);
     } else if (typeof obj[key] === 'object' && obj[key].length > 0) {
-      console.log('Calling for::', key);
+      processedObject[processedKey] = [];
       obj[key].forEach((subObj) => {
         if (typeof subObj === 'object' && subObj.length === undefined) {
-          subObj = processObj(subObj);
+          processedObject[processedKey].push(processObj(subObj));
         }
       });
+    } else {
+      processedObject[processedKey] = obj[key];
     }
-    console.log('returning object::');
   });
-  return obj;
+  return processedObject;
 };
 
 let processDate = (obj) => {
-  console.log('OBJ in DATE::', obj);
-  if (
-    !obj.hasOwnProperty('Year') ||
-    !obj.hasOwnProperty('Month') ||
-    !obj.hasOwnProperty('Day')
-  )
-    return '';
   let dt = new Date(obj['Year'], parseInt(obj['Month']) - 1, obj['Day']);
   if (
     obj.hasOwnProperty('Hour') &&
@@ -124,31 +113,33 @@ let processDate = (obj) => {
     obj.hasOwnProperty('Second')
   )
     dt.setHours(obj['Hour'], obj['Minute'], obj['Second']);
-  console.log('Converted Date::', dt);
   return dt;
 };
 
 let processIllionReport = (report) => {
-  report = fs.readFileSync('hxbca1.json', 'utf8');
-  report = JSON.parse(report);
-  console.log(typeof report);
-  console.log(JSON.stringify(report, null, 3));
+  let processedReport = {};
   Object.keys(report).forEach((key) => {
-    if (typeof report[key] === 'object' && report[key].length === undefined) {
-      console.log('Calling for::', key);
-      report[key] = processObj(report[key]);
-      console.log('Processed for::', key, report[key]);
-      if (report[key].hasOwnProperty('Year')) {
-        report[key + 'Str'] = processDate(report[key]);
-      }
+    let processedKey = key;
+    if (processedKey.includes(':')) {
+      processedKey = processedKey.split(':')[1];
     }
-    // console.log('report[key] after::', report[key]);
+    if (typeof report[key] === 'object' && report[key].length === undefined) {
+      processedReport[processedKey] = processObj(report[key]);
+      if (
+        report[key].hasOwnProperty('Year') &&
+        report[key].hasOwnProperty('Month') &&
+        report[key].hasOwnProperty('Day')
+      ) {
+        processedReport[processedKey + 'Str'] = processDate(report[key]);
+      }
+    } else {
+      processedReport[processedKey] = report[key];
+    }
   });
-  console.log('Illion report processed::', JSON.stringify(report, null, 3));
-  // report['soap:Envelope']
+  return processedReport;
 };
 
-processIllionReport();
+// processIllionReport();
 
 module.exports = {
   fetchCreditReport,
