@@ -305,10 +305,26 @@ router.get('/:entityId', async function (req, res) {
     if (req.query.search) {
       aggregationQuery.push({
         $match: {
-          'documentTypeId.documentTitle': {
-            $regex: `${req.query.search}`,
-            $options: 'i',
-          },
+          $or: [
+            {
+              'documentTypeId.documentTitle': {
+                $regex: `${req.query.search}`,
+                $options: 'i',
+              },
+            },
+            {
+              description: {
+                $regex: `${req.query.search}`,
+                $options: 'i',
+              },
+            },
+            {
+              originalFileName: {
+                $regex: `${req.query.search}`,
+                $options: 'i',
+              },
+            },
+          ],
         },
       });
     }

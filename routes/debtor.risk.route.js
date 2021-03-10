@@ -293,38 +293,48 @@ router.get('/details/:debtorId', async function (req, res) {
         delete debtor.address;
       }
       if (debtor.entityType) {
-        debtor.entityType = {
-          label: debtor.entityType
-            .replace(/_/g, ' ')
-            .replace(/\w\S*/g, function (txt) {
-              return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
-            }),
-          value: debtor.entityType,
-        };
+        debtor.entityType = [
+          {
+            label: debtor.entityType
+              .replace(/_/g, ' ')
+              .replace(/\w\S*/g, function (txt) {
+                return (
+                  txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+                );
+              }),
+            value: debtor.entityType,
+          },
+        ];
       }
       if (debtor.state) {
         const state = StaticData.australianStates.find((i) => {
           if (i._id === debtor.state) return i;
         });
-        debtor.state = {
-          label: state.name,
-          value: debtor.state,
-        };
+        debtor.state = [
+          {
+            label: state.name,
+            value: debtor.state,
+          },
+        ];
       }
       if (debtor.streetType) {
         const streetType = StaticData.streetType.find((i) => {
           if (i._id === debtor.streetType) return i;
         });
-        debtor.streetType = {
-          label: streetType.name,
-          value: debtor.streetType,
-        };
+        debtor.streetType = [
+          {
+            label: streetType.name,
+            value: debtor.streetType,
+          },
+        ];
       }
       if (client) {
-        debtor.clientId = {
-          label: client.name,
-          value: client._id,
-        };
+        debtor.clientId = [
+          {
+            label: client.name,
+            value: client._id,
+          },
+        ];
       }
     }
     res.status(200).send({ status: 'SUCCESS', data: debtor });

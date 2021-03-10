@@ -273,8 +273,10 @@ router.get('/:userId', async function (req, res) {
       }
     });
     userData.moduleAccess.forEach((i) => {
-      i.isDefault = modules[i.name]['isDefault'];
-      i.label = modules[i.name]['label'];
+      if (modules[i.name]) {
+        i.isDefault = modules[i.name]['isDefault'];
+        i.label = modules[i.name]['label'];
+      }
     });
     userData.clientIds = clientIds;
     userData.clientIds.forEach((i) => {

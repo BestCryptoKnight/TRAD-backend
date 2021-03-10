@@ -167,6 +167,7 @@ router.get('/', async function (req, res) {
       requestedQuery: req.query,
       clientIds: clientIds,
       moduleColumn: module.manageColumns,
+      userId: req.user._id,
     });
 
     res.status(200).send({
@@ -226,6 +227,7 @@ router.get('/:entityId', async function (req, res) {
       requestedQuery: req.query,
       queryFilter: queryFilter,
       moduleColumn: module.manageColumns,
+      userId: req.user._id,
     });
     res.status(200).send({
       status: 'SUCCESS',
