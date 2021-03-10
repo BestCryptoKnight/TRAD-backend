@@ -307,6 +307,9 @@ router.get('/:entityId', async function (req, res) {
       page: parseInt(req.query.page) || 1,
       limit: parseInt(req.query.limit) || 5,
     };
+    if (policyColumn.columns.includes('insurerId')) {
+      option.populate = 'insurerId';
+    }
     option.select = policyColumn.columns.toString().replace(/,/g, ' ');
     option.sort = sortingOptions;
     option.lean = true;
@@ -324,6 +327,11 @@ router.get('/:entityId', async function (req, res) {
           value: data.product,
         };
       }
+      if (policyColumn.columns.includes('insurerId')) {
+        data.insurerId =
+          data.insurerId && data.insurerId.name ? data.insurerId.name : '-';
+      }
+      delete data.id;
     });
     res.status(200).send({ status: 'SUCCESS', data: responseObj });
   } catch (e) {

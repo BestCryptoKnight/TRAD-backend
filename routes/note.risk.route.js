@@ -190,7 +190,7 @@ router.get('/:entityId', async function (req, res) {
     });
 
     if (req.query.search) {
-      query.description = { $regex: `${req.query.search}` };
+      query.description = { $regex: `${req.query.search}`, $options: 'i' };
     }
     aggregationQuery.unshift({ $match: query });
 

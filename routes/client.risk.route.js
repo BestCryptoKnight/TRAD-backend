@@ -170,7 +170,7 @@ router.get('/user/:clientId', async function (req, res) {
     req.query.limit = req.query.limit || 5;
     req.query.page = req.query.page || 1;
     if (req.query.search) {
-      queryFilter.name = { $regex: `${req.query.search}` };
+      queryFilter.name = { $regex: `${req.query.search}`, $options: 'i' };
     }
     let sortingOptions = {};
     let aggregationQuery = [

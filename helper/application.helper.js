@@ -89,7 +89,10 @@ const getApplicationList = async ({
       });
     }
     if (requestedQuery.search) {
-      queryFilter.applicationId = { $regex: `${requestedQuery.search}` };
+      queryFilter.applicationId = {
+        $regex: `${requestedQuery.search}`,
+        $options: 'i',
+      };
     }
     if (requestedQuery.status) {
       queryFilter.status = requestedQuery.status;

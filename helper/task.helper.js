@@ -123,7 +123,7 @@ const aggregationQuery = async ({
       ? requestedQuery.listCreatedBy
       : false;
     if (requestedQuery.search) {
-      queryFilter.title = { $regex: `${requestedQuery.search}` };
+      queryFilter.title = { $regex: `${requestedQuery.search}`, $options: 'i' };
     }
     if (requestedQuery.requestedEntityId) {
       queryFilter.entityId = mongoose.Types.ObjectId(
