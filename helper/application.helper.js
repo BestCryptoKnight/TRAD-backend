@@ -26,7 +26,6 @@ const getEntityDetailsByABN = async ({ searchString }) => {
       method: 'GET',
       url: url,
     };
-    console.log('options: ', options);
     const { data } = await axios(options);
     const jsonData = convert.xml2js(data);
     return jsonData.elements;
@@ -262,7 +261,6 @@ const getApplicationList = async ({
     });
     query.unshift({ $match: queryFilter });
 
-    console.log(query);
     const applications = await Application.aggregate(query).allowDiskUse(true);
     if (applications && applications.length !== 0) {
       applications[0].paginatedResult.forEach((application) => {

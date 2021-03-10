@@ -289,7 +289,6 @@ router.get('/search-entity/:searchString', async function (req, res) {
     }
     let response = [];
     entityData[0].elements.forEach((data) => {
-      console.log('Data : ', data);
       if (data.name === 'response') {
         data.elements.forEach((i) => {
           if (

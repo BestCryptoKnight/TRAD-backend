@@ -227,7 +227,6 @@ router.get('/drawer-details/:debtorId', async function (req, res) {
       .select({ _id: 0, isDeleted: 0, clientId: 0, __v: 0 })
       .lean();
     let response = [];
-    console.log(debtor);
     let value = '';
     module.manageColumns.forEach((i) => {
       value =

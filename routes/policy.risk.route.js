@@ -128,6 +128,7 @@ router.get('/client/policy-details/:policyId', async function (req, res) {
   }
 });
 
+//TODO remove
 /**
  * List Client Policies
  */
@@ -260,7 +261,7 @@ router.get('/rmp-details/:policyId', async function (req, res) {
 });
 
 /**
- * List Insurer Policies
+ * List Insurer/Client Policies
  */
 router.get('/:entityId', async function (req, res) {
   if (!req.params.entityId || !req.query.listFor) {
@@ -301,8 +302,14 @@ router.get('/:entityId', async function (req, res) {
     if (req.query.sortBy && req.query.sortOrder) {
       sortingOptions[req.query.sortBy] = req.query.sortOrder;
     }
-    if (req.query.search)
-      queryFilter.product = { $regex: req.query.search, $options: 'i' };
+    if (req.query.search) {
+      queryFilter = Object.assign({}, queryFilter, {
+        $or: [
+          { product: { $regex: req.query.search, $options: 'i' } },
+          { policyPeriod: { $regex: req.query.search, $options: 'i' } },
+        ],
+      });
+    }
     let option = {
       page: parseInt(req.query.page) || 1,
       limit: parseInt(req.query.limit) || 5,

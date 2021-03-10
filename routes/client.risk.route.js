@@ -170,7 +170,13 @@ router.get('/user/:clientId', async function (req, res) {
     req.query.limit = req.query.limit || 5;
     req.query.page = req.query.page || 1;
     if (req.query.search) {
-      queryFilter.name = { $regex: `${req.query.search}`, $options: 'i' };
+      queryFilter = Object.assign({}, queryFilter, {
+        $or: [
+          { name: { $regex: req.query.search.trim(), $options: 'i' } },
+          { email: { $regex: req.query.search.trim(), $options: 'i' } },
+          { contactNumber: { $regex: req.query.search.trim(), $options: 'i' } },
+        ],
+      });
     }
     let sortingOptions = {};
     let aggregationQuery = [
@@ -330,7 +336,6 @@ router.get('/details/:clientId', async function (req, res) {
       .populate({ path: 'riskAnalystId serviceManagerId', select: 'name' })
       .select({ isDeleted: 0, crmClientId: 0, __v: 0 })
       .lean();
-    console.log('client ', client);
     let response = [];
     module.manageColumns.forEach((i) => {
       if (

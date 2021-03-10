@@ -195,7 +195,6 @@ router.get('/:entityId', async function (req, res) {
         ClientDebtor.findOne({ _id: req.params.entityId }).lean(),
       ]);
       const applicationIds = applications.map((i) => i._id);
-      console.log('applicationIds : ', applicationIds);
       query = {
         $and: [
           {
