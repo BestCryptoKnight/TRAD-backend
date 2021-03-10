@@ -120,6 +120,10 @@ router.get('/entity-list', async function (req, res) {
         streetType: { field: 'streetType', data: StaticData.streetType },
         australianStates: { field: 'state', data: StaticData.australianStates },
         entityType: { field: 'entityType', data: StaticData.entityType },
+        applicationStatus: {
+          field: 'applicationStatus',
+          data: StaticData.applicationStatus,
+        },
       },
     });
   } catch (e) {
@@ -163,6 +167,7 @@ router.get('/', async function (req, res) {
       requestedQuery: req.query,
       clientIds: clientIds,
       moduleColumn: module.manageColumns,
+      userId: req.user._id,
     });
 
     res.status(200).send({
@@ -222,6 +227,7 @@ router.get('/:entityId', async function (req, res) {
       requestedQuery: req.query,
       queryFilter: queryFilter,
       moduleColumn: module.manageColumns,
+      userId: req.user._id,
     });
     res.status(200).send({
       status: 'SUCCESS',
@@ -283,7 +289,6 @@ router.get('/search-entity/:searchString', async function (req, res) {
     }
     let response = [];
     entityData[0].elements.forEach((data) => {
-      console.log('Data : ', data);
       if (data.name === 'response') {
         data.elements.forEach((i) => {
           if (
@@ -452,7 +457,7 @@ router.put('/', async function (req, res) {
       case 'confirmation':
         await Application.updateOne(
           { _id: req.body.applicationId },
-          { $set: { status: 'SUBMITTED' } },
+          { $set: { status: 'SUBMITTED', applicationStage: 4 } },
         );
         message = 'Application submitted successfully.';
         break;

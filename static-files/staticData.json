@@ -1044,5 +1044,55 @@
       "_id": "REGISTERED_BODY",
       "name": "Registered Body"
     }
+  ],
+  "applicationStatus": [
+    {
+      "_id": "DRAFT",
+      "name": "Draft"
+    },
+    {
+      "_id": "SENT_TO_INSURER",
+      "name": "Sent To Insurer"
+    },
+    {
+      "_id": "REVIEW_APPLICATION",
+      "name": "Review Application"
+    },
+    {
+      "_id": "PENDING_INSURER_REVIEW",
+      "name": "Pending Insurer Review"
+    },
+    {
+      "_id": "APPROVED",
+      "name": "Approved"
+    },
+    {
+      "_id": "DECLINED",
+      "name": "Declined"
+    },
+    {
+      "_id": "CANCELLED",
+      "name": "Cancelled"
+    },
+    {
+      "_id": "WITHDRAWN",
+      "name": "Withdrawn"
+    },
+    {
+      "_id": "SUBMITTED",
+      "name": "Submitted"
+    },
+    {
+      "_id": "UNDER_REVIEW",
+      "name": "Under Review"
+    },
+    {
+      "_id": "AWAITING_INFORMATION",
+      "name": "Awaiting Information"
+    },
+    {
+      "_id": "SURRENDERED",
+      "name": "Surrendered"
+    }
   ]
 }

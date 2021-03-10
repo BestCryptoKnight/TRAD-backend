@@ -170,7 +170,13 @@ router.get('/user/:clientId', async function (req, res) {
     req.query.limit = req.query.limit || 5;
     req.query.page = req.query.page || 1;
     if (req.query.search) {
-      queryFilter.name = { $regex: `${req.query.search}` };
+      queryFilter = Object.assign({}, queryFilter, {
+        $or: [
+          { name: { $regex: req.query.search.trim(), $options: 'i' } },
+          { email: { $regex: req.query.search.trim(), $options: 'i' } },
+          { contactNumber: { $regex: req.query.search.trim(), $options: 'i' } },
+        ],
+      });
     }
     let sortingOptions = {};
     let aggregationQuery = [
@@ -330,7 +336,6 @@ router.get('/details/:clientId', async function (req, res) {
       .populate({ path: 'riskAnalystId serviceManagerId', select: 'name' })
       .select({ isDeleted: 0, crmClientId: 0, __v: 0 })
       .lean();
-    console.log('client ', client);
     let response = [];
     module.manageColumns.forEach((i) => {
       if (
@@ -679,7 +684,7 @@ router.get('/', async function (req, res) {
     if (req.query.serviceManagerId) {
       aggregationQuery.push({
         $match: {
-          'serviceManagerId.name': req.query.serviceManagerId,
+          'serviceManagerId._id': req.query.serviceManagerId,
         },
       });
     }
@@ -699,7 +704,7 @@ router.get('/', async function (req, res) {
     if (req.query.riskAnalystId) {
       aggregationQuery.push({
         $match: {
-          'riskAnalystId.name': req.query.riskAnalystId,
+          'riskAnalystId._id': req.query.riskAnalystId,
         },
       });
     }
@@ -1168,6 +1173,11 @@ router.put('/user/:clientUserId', async function (req, res) {
         mailFor: 'newClientUser',
       };
       promises.push(MailHelper.sendMail(mailObj));*/
+    } else {
+      //TODO revert portal access
+      updateObj = {
+        hasPortalAccess: req.body.hasPortalAccess,
+      };
     }
     await ClientUser.updateOne({ _id: req.params.clientUserId }, updateObj);
     promises.push(

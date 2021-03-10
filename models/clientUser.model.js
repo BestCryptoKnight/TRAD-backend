@@ -50,7 +50,11 @@ const clientUserSchema = new Schema(
 clientUserSchema.statics.findByCredentials = async function (email, password) {
   try {
     let clientUser = this;
-    clientUser = await clientUser.findOne({ email, isDeleted: false });
+    clientUser = await clientUser.findOne({
+      email,
+      isDeleted: false,
+      hasPortalAccess: true,
+    });
     if (!clientUser) {
       return Promise.reject({
         status: 'USER_NOT_FOUND',

@@ -22,7 +22,7 @@ let frontendUrls = {
     process.env.FRONTEND_ADMIN_URL || 'http://192.168.1.202:4600/',
   clientPanelBase:
     process.env.FRONTEND_CLIENT_URL || 'http://192.168.1.202:4600/',
-  setPasswordPage: 'set/',
+  setPasswordPage: 'set-password/',
   resetPasswordPage: 'reset/',
   forgotPasswordPage: 'forgot/',
 };
@@ -63,7 +63,8 @@ module.exports = {
     secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
     region: process.env.S3_REGION,
     expiryTimeInMinutes: process.env.S3_LINK_EXPIRY_IN_MINUTES,
-    isCloudFrontEnabled: process.env.IS_CLOUD_FRONT_ENABLED,
+    isCloudFrontEnabled:
+      process.env.IS_CLOUD_FRONT_ENABLED === 'true' ? true : false,
     cloudFrontKeyId: process.env.CLOUD_FRONT_KEY_ID,
     cloudFrontUrl: process.env.CLOUD_FRONT_URL,
   },

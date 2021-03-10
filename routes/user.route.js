@@ -273,8 +273,10 @@ router.get('/:userId', async function (req, res) {
       }
     });
     userData.moduleAccess.forEach((i) => {
-      i.isDefault = modules[i.name]['isDefault'];
-      i.label = modules[i.name]['label'];
+      if (modules[i.name]) {
+        i.isDefault = modules[i.name]['isDefault'];
+        i.label = modules[i.name]['label'];
+      }
     });
     userData.clientIds = clientIds;
     userData.clientIds.forEach((i) => {
@@ -436,7 +438,6 @@ router.post('/', async function (req, res) {
           setPasswordLink:
             config.server.frontendUrls.adminPanelBase +
             config.server.frontendUrls.setPasswordPage +
-            user._id +
             '?token=' +
             signUpToken,
         },
@@ -542,100 +543,80 @@ router.put('/:userId', async function (req, res) {
       message: 'Require fields are missing',
     });
   }
-  if (!req.body.email) {
-    return res.status(400).send({
-      status: 'ERROR',
-      messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Please provide email address',
-    });
-  }
   let userId = req.params.userId;
   try {
-    const userData = await User.findOne({
-      email: { $regex: new RegExp('^' + req.body.email.toLowerCase(), 'i') },
-      isDeleted: false,
-    }).lean();
-    if (userData && userData._id.toString() !== req.params.userId.toString()) {
-      return res.status(400).send({
-        status: 'ERROR',
-        messageCode: 'USER_EXISTS',
-        message: 'User already exists',
-      });
-    } else {
-      let updateObj = {};
-      if (req.body.name) updateObj.name = req.body.name;
-      if (req.body.contactNumber)
-        updateObj.contactNumber = req.body.contactNumber;
-      if (req.body.role) updateObj.role = req.body.role;
-      if (req.body.email) updateObj.email = req.body.email;
-      if (req.body.moduleAccess) updateObj.moduleAccess = req.body.moduleAccess;
-      let promises = [];
-      if (
-        req.body.hasOwnProperty('clientIds') &&
-        req.body.clientIds.length !== 0
-      ) {
-        const query =
-          updateObj.role === 'riskAnalyst'
-            ? { riskAnalystId: req.params.userId }
-            : { serviceManagerId: req.params.userId };
-        const removeUser =
-          updateObj.role === 'riskAnalyst'
-            ? { riskAnalystId: null }
-            : { serviceManagerId: null };
-        const clients = await Client.find(query).lean();
-        const oldClients = clients.map((i) => i._id.toString());
+    let updateObj = {};
+    if (req.body.name) updateObj.name = req.body.name;
+    if (req.body.contactNumber)
+      updateObj.contactNumber = req.body.contactNumber;
+    if (req.body.role) updateObj.role = req.body.role;
+    if (req.body.moduleAccess) updateObj.moduleAccess = req.body.moduleAccess;
+    let promises = [];
+    if (
+      req.body.hasOwnProperty('clientIds') &&
+      req.body.clientIds.length !== 0
+    ) {
+      const query =
+        updateObj.role === 'riskAnalyst'
+          ? { riskAnalystId: req.params.userId }
+          : { serviceManagerId: req.params.userId };
+      const removeUser =
+        updateObj.role === 'riskAnalyst'
+          ? { riskAnalystId: null }
+          : { serviceManagerId: null };
+      const clients = await Client.find(query).lean();
+      const oldClients = clients.map((i) => i._id.toString());
 
-        if (clients.length === 0) {
-          promises.push(
-            Client.update(
-              { _id: { $in: req.body.clientIds } },
-              { $set: query },
-              { multi: true },
-            ),
-          );
-        } else {
-          let newClients = [];
-          let sameClients = [];
-          req.body.clientIds.forEach((id) => {
-            if (oldClients.includes(id)) {
-              oldClients.splice(oldClients.indexOf(id), 1);
-              sameClients.push(id);
-            } else {
-              newClients.push(id);
-            }
-          });
-          sameClients = sameClients.concat(newClients);
-          promises.push(
-            Client.update(
-              { _id: { $in: sameClients } },
-              { $set: query },
-              { multi: true },
-            ),
-          );
-          promises.push(
-            Client.updateOne(
-              { _id: { $in: oldClients } },
-              { $set: removeUser },
-              { multi: true },
-            ),
-          );
-        }
+      if (clients.length === 0) {
+        promises.push(
+          Client.update(
+            { _id: { $in: req.body.clientIds } },
+            { $set: query },
+            { multi: true },
+          ),
+        );
+      } else {
+        let newClients = [];
+        let sameClients = [];
+        req.body.clientIds.forEach((id) => {
+          if (oldClients.includes(id)) {
+            oldClients.splice(oldClients.indexOf(id), 1);
+            sameClients.push(id);
+          } else {
+            newClients.push(id);
+          }
+        });
+        sameClients = sameClients.concat(newClients);
+        promises.push(
+          Client.update(
+            { _id: { $in: sameClients } },
+            { $set: query },
+            { multi: true },
+          ),
+        );
+        promises.push(
+          Client.updateOne(
+            { _id: { $in: oldClients } },
+            { $set: removeUser },
+            { multi: true },
+          ),
+        );
       }
-      await User.updateOne({ _id: userId }, updateObj, { new: true });
-      await addAuditLog({
-        entityType: 'user',
-        entityRefId: req.params.userId,
-        userType: 'user',
-        userRefId: req.user._id,
-        actionType: 'edit',
-        logDescription: 'User updated successfully.',
-      });
-      await Promise.all(promises);
-      Logger.log.info('User Updated successfully.');
-      res
-        .status(200)
-        .send({ status: 'SUCCESS', message: 'User updated successfully.' });
     }
+    await User.updateOne({ _id: userId }, updateObj, { new: true });
+    await addAuditLog({
+      entityType: 'user',
+      entityRefId: req.params.userId,
+      userType: 'user',
+      userRefId: req.user._id,
+      actionType: 'edit',
+      logDescription: 'User updated successfully.',
+    });
+    await Promise.all(promises);
+    Logger.log.info('User Updated successfully.');
+    res
+      .status(200)
+      .send({ status: 'SUCCESS', message: 'User updated successfully.' });
   } catch (e) {
     Logger.log.error('Error occurred.', e.message || e);
     res.status(500).send({

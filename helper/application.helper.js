@@ -26,7 +26,6 @@ const getEntityDetailsByABN = async ({ searchString }) => {
       method: 'GET',
       url: url,
     };
-    console.log('options: ', options);
     const { data } = await axios(options);
     const jsonData = convert.xml2js(data);
     return jsonData.elements;
@@ -66,6 +65,7 @@ const getApplicationList = async ({
   queryFilter = {},
   clientIds = [],
   moduleColumn,
+  userId,
 }) => {
   try {
     let query = [];
@@ -79,11 +79,27 @@ const getApplicationList = async ({
     if (!hasFullAccess && isForRisk && clientIds.length !== 0) {
       queryFilter.clientId = { $in: clientIds };
     }
+    if (userId) {
+      queryFilter = Object.assign({}, queryFilter, {
+        $or: [
+          { status: { $ne: 'DRAFT' } },
+          { createdById: mongoose.Types.ObjectId(userId), status: 'DRAFT' },
+        ],
+      });
+    }
     if (requestedQuery.search) {
-      queryFilter.applicationId = { $regex: `${requestedQuery.search}` };
+      queryFilter.applicationId = {
+        $regex: `${requestedQuery.search}`,
+        $options: 'i',
+      };
     }
     if (requestedQuery.status) {
       queryFilter.status = requestedQuery.status;
+    }
+    if (requestedQuery.clientId) {
+      requestedQuery.clientId = requestedQuery.clientId
+        .split(',')
+        .map((id) => mongoose.Types.ObjectId(id));
     }
     if (requestedQuery.clientId || applicationColumn.includes('clientId')) {
       query.push(
@@ -105,9 +121,14 @@ const getApplicationList = async ({
     if (requestedQuery.clientId) {
       query.push({
         $match: {
-          'clientId.name': requestedQuery.clientId,
+          'clientId._id': { $in: requestedQuery.clientId },
         },
       });
+    }
+    if (requestedQuery.debtorId) {
+      requestedQuery.debtorId = requestedQuery.debtorId
+        .split(',')
+        .map((id) => mongoose.Types.ObjectId(id));
     }
     if (
       requestedQuery.debtorId ||
@@ -135,7 +156,7 @@ const getApplicationList = async ({
     if (requestedQuery.debtorId) {
       query.push({
         $match: {
-          'debtorId.entityName': requestedQuery.debtorId,
+          'debtorId._id': { $in: requestedQuery.debtorId },
         },
       });
     }
@@ -179,6 +200,9 @@ const getApplicationList = async ({
           },
         },
       });
+    }
+    //TODO add filter for expiry date
+    if (requestedQuery.startDate && requestedQuery.maxCreditLimit) {
     }
 
     const fields = applicationColumn.map((i) => {
@@ -244,7 +268,11 @@ const getApplicationList = async ({
     if (applications && applications.length !== 0) {
       applications[0].paginatedResult.forEach((application) => {
         if (applicationColumn.includes('entityType')) {
-          application.entityType = application.debtorId.entityType;
+          application.entityType = application.debtorId.entityType
+            .replace(/_/g, ' ')
+            .replace(/\w\S*/g, function (txt) {
+              return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+            });
         }
         if (applicationColumn.includes('clientId')) {
           application.clientId = {
@@ -263,6 +291,9 @@ const getApplicationList = async ({
         }
         if (!applicationColumn.includes('clientDebtorId')) {
           delete application.clientDebtorId;
+        }
+        if (!applicationColumn.includes('debtorId')) {
+          delete application.debtorId;
         }
       });
     }
@@ -294,7 +325,11 @@ const getApplicationList = async ({
   }
 };
 
-const storeCompanyDetails = async ({ requestBody }) => {
+const storeCompanyDetails = async ({
+  requestBody,
+  createdBy,
+  createdByType,
+}) => {
   try {
     const organization = await Organization.findOne({ isDeleted: false })
       .select('entityCount')
@@ -333,6 +368,7 @@ const storeCompanyDetails = async ({ requestBody }) => {
       clientId: requestBody.clientId,
       debtorId: debtor._id,
       clientDebtorId: clientDebtor._id,
+      applicationStage: 0,
     };
     let application;
     if (!requestBody.applicationId) {
@@ -348,6 +384,8 @@ const storeCompanyDetails = async ({ requestBody }) => {
         { isDeleted: false },
         { $inc: { 'entityCount.application': 1 } },
       );
+      applicationDetails.createdById = createdBy;
+      applicationDetails.createdByType = createdByType;
       application = await Application.create(applicationDetails);
     } else {
       await Application.updateOne(
@@ -431,6 +469,7 @@ const storePartnerDetails = async ({ requestBody }) => {
     const update = {
       person: person,
       company: company,
+      applicationStage: 1,
     };
     await Application.updateOne(
       { _id: requestBody.applicationId },
@@ -454,6 +493,7 @@ const storeCreditLimitDetails = async ({ requestBody }) => {
       creditLimit: requestBody.creditLimit,
       isExtendedPaymentTerms: requestBody.isExtendedPaymentTerms,
       isPassedOverdueAmount: requestBody.isPassedOverdueAmount,
+      applicationStage: 2,
     };
     if (requestBody.extendedPaymentTermsDetails)
       update.extendedPaymentTermsDetails =

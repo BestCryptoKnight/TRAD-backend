@@ -195,7 +195,6 @@ router.get('/:entityId', async function (req, res) {
         ClientDebtor.findOne({ _id: req.params.entityId }).lean(),
       ]);
       const applicationIds = applications.map((i) => i._id);
-      console.log('applicationIds : ', applicationIds);
       query = {
         $and: [
           {
@@ -305,10 +304,26 @@ router.get('/:entityId', async function (req, res) {
     if (req.query.search) {
       aggregationQuery.push({
         $match: {
-          'documentTypeId.documentTitle': {
-            $regex: `${req.query.search}`,
-            $options: 'i',
-          },
+          $or: [
+            {
+              'documentTypeId.documentTitle': {
+                $regex: `${req.query.search}`,
+                $options: 'i',
+              },
+            },
+            {
+              description: {
+                $regex: `${req.query.search}`,
+                $options: 'i',
+              },
+            },
+            {
+              originalFileName: {
+                $regex: `${req.query.search}`,
+                $options: 'i',
+              },
+            },
+          ],
         },
       });
     }

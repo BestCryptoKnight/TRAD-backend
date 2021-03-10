@@ -168,6 +168,7 @@ router.get('/:entityId', async function (req, res) {
         description: 1,
         createdAt: 1,
         updatedAt: 1,
+        isPublic: 1,
         createdById: 1,
       },
     });
@@ -190,7 +191,7 @@ router.get('/:entityId', async function (req, res) {
     });
 
     if (req.query.search) {
-      query.description = { $regex: `${req.query.search}` };
+      query.description = { $regex: `${req.query.search}`, $options: 'i' };
     }
     aggregationQuery.unshift({ $match: query });
 
@@ -209,6 +210,11 @@ router.get('/:entityId', async function (req, res) {
       {
         name: 'updatedAt',
         label: 'Modified Date',
+        type: 'date',
+      },
+      {
+        name: 'isPublic',
+        label: 'Public',
         type: 'date',
       },
       {

@@ -133,10 +133,8 @@ let getInsurers = ({ searchKeyword }) => {
           limit: 100,
         },
       };
-      console.log('options::', JSON.stringify(options, null, 2));
       let { data } = await axios(options);
       let insurers = data.list.map((insurer) => insurer.record);
-      console.log('DATA::', JSON.stringify(insurers, null, 3));
       Logger.log.info('Successfully retrieved insurers from RSS');
       return resolve(insurers);
     } catch (err) {
@@ -213,7 +211,6 @@ let getInsurerById = ({ insurerId }) => {
       // console.log('options::', JSON.stringify(options, null, 2));
       let { data } = await axios(options);
       let insurer = data.record;
-      console.log('insurer::', JSON.stringify(insurer, null, 2));
       Logger.log.info('Successfully retrieved insurer from RSS');
       return resolve(insurer);
     } catch (err) {

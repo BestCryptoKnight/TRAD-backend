@@ -87,6 +87,11 @@ const applicationSchema = new Schema(
       ],
     },
     applicationStage: { type: Schema.Types.Number },
+    createdByType: {
+      type: Schema.Types.String,
+      enum: ['user', 'client-user'],
+    },
+    createdById: { type: Schema.Types.ObjectId },
     isDeleted: { type: Schema.Types.Boolean, default: false },
   },
   { timestamps: true },

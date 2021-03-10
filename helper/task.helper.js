@@ -123,7 +123,7 @@ const aggregationQuery = async ({
       ? requestedQuery.listCreatedBy
       : false;
     if (requestedQuery.search) {
-      queryFilter.title = { $regex: `${requestedQuery.search}` };
+      queryFilter.title = { $regex: `${requestedQuery.search}`, $options: 'i' };
     }
     if (requestedQuery.requestedEntityId) {
       queryFilter.entityId = mongoose.Types.ObjectId(
@@ -471,7 +471,6 @@ const aggregationQuery = async ({
     query.push({ $limit: parseInt(requestedQuery.limit) });*/
     query.unshift({ $match: queryFilter });
 
-    console.log('query : ', query);
     return { query, queryFilter };
   } catch (e) {
     Logger.log.error(

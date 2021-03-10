@@ -19,11 +19,12 @@ AWS.config.update({
   region: config.staticServing.region,
 });
 const s3 = new AWS.S3();
+let cloudFrontSigningParams;
 
 if (config.staticServing.isCloudFrontEnabled) {
   let keyFileName = 'cloud-front-key.pem';
   let pathToCredentialFile = path.join(__dirname, '../keys/', keyFileName);
-  let cloudFrontSigningParams = {
+  cloudFrontSigningParams = {
     keypairId: config.staticServing.cloudFrontKeyId,
     privateKeyPath: pathToCredentialFile,
   };
@@ -64,7 +65,7 @@ let getPreSignedUrl = async ({ filePath, getCloudFrontUrl }) => {
           Date.now() + config.staticServing.expiryTimeInMinutes * 60 * 1000;
         let signedUrl = cloudFrontSign.getSignedUrl(
           config.staticServing.cloudFrontUrl + filePath,
-          signingParams,
+          cloudFrontSigningParams,
         );
         return resolve(signedUrl);
       } else {
