@@ -90,7 +90,6 @@
           "label": "ServiceManager Name",
           "type": "string"
         },
-        { "name": "insurerId", "label": "Insurer Name", "type": "string" },
         { "name": "clientCode", "label": "Client Code", "type": "string" },
         { "name": "fullAddress", "label": "Full Address", "type": "string" },
         { "name": "addressLine", "label": "Address Line", "type": "string" },

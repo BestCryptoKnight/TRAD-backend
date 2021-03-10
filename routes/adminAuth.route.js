@@ -175,8 +175,9 @@ router.post('/forget-password', async (req, res) => {
         text: {
           name: user.name ? user.name : '',
           otp: data.verificationOtp,
+          expireTime: 5,
         },
-        mailFor: 'forgotPassword',
+        mailFor: 'adminForgotPassword',
       };
       await MailHelper.sendMail(mailObj);
       res.status(200).send({
@@ -407,7 +408,7 @@ router.post('/reset-password', async (req, res) => {
 /**
  * Set Password (Initially & One time)
  */
-router.post('/set-password/:id', async (req, res) => {
+router.post('/set-password', async (req, res) => {
   jwt.verify(req.body.signUpToken, config.jwt.secret, async (err, decoded) => {
     if (err) {
       Logger.log.warn('JWT - Authentication failed. Error in decoding token.');
@@ -417,64 +418,54 @@ router.post('/set-password/:id', async (req, res) => {
         message: 'Authentication failed. Error in decoding token.',
       });
     } else {
-      if (decoded._id.toString() !== req.params.id.toString()) {
-        Logger.log.warn('AUTH - Invalid id:' + req.params.id);
-        return res.status(401).send({
-          status: 'ERROR',
-          messageCode: 'UNAUTHORIZED',
-          message: 'Invalid request, please repeat process from beginning.',
-        });
-      } else {
-        try {
-          let user = await User.findById(decoded._id);
-          if (!user) {
-            return res.status(400).send({
-              status: 'ERROR',
-              messageCode: 'USER_NOT_FOUND',
-              message: 'No user for the given mail id found',
-            });
-          } else if (!user.signUpToken) {
-            Logger.log.warn(
-              'Link to generate password has already been used for user id:' +
-                req.params.id,
-            );
-            return res.status(400).send({
-              status: 'ERROR',
-              messageCode: 'PASSWORD_ALREADY_SET',
-              message:
-                'Password has already once set, to recover password, click on Forgot Password from Login Page.',
-            });
-          } else if (
-            !user.signUpToken ||
-            user.signUpToken !== req.body.signUpToken
-          ) {
-            Logger.log.warn(
-              'AUTH - Invalid signUp token or signUpToken not present in DB for user id:' +
-                req.params.id,
-            );
-            return res.status(401).send({
-              status: 'ERROR',
-              messageCode: 'UNAUTHORIZED',
-              message: 'Invalid request, please repeat process from beginning.',
-            });
-          } else {
-            user.password = req.body.password;
-            user.signUpToken = null;
-            await user.save();
-            Logger.log.info('User password set id:' + user._id);
-            res.status(200).send({
-              status: 'SUCCESS',
-              message: 'Password set successfully',
-            });
-          }
-        } catch (e) {
-          Logger.log.error('error occurred.', e.message || e);
-          res.status(500).send({
+      try {
+        let user = await User.findById(decoded._id);
+        if (!user) {
+          return res.status(400).send({
             status: 'ERROR',
+            messageCode: 'USER_NOT_FOUND',
+            message: 'No user for the given mail id found',
+          });
+        } else if (!user.signUpToken) {
+          Logger.log.warn(
+            'Link to generate password has already been used for user id:' +
+              decoded._id,
+          );
+          return res.status(400).send({
+            status: 'ERROR',
+            messageCode: 'PASSWORD_ALREADY_SET',
             message:
-              e.message || 'Something went wrong, please try again later.',
+              'Password has already once set, to recover password, click on Forgot Password from Login Page.',
+          });
+        } else if (
+          !user.signUpToken ||
+          user.signUpToken !== req.body.signUpToken
+        ) {
+          Logger.log.warn(
+            'AUTH - Invalid signUp token or signUpToken not present in DB for user id:' +
+              decoded._id,
+          );
+          return res.status(401).send({
+            status: 'ERROR',
+            messageCode: 'UNAUTHORIZED',
+            message: 'Invalid request, please repeat process from beginning.',
+          });
+        } else {
+          user.password = req.body.password;
+          user.signUpToken = null;
+          await user.save();
+          Logger.log.info('User password set id:' + user._id);
+          res.status(200).send({
+            status: 'SUCCESS',
+            message: 'Password set successfully',
           });
         }
+      } catch (e) {
+        Logger.log.error('error occurred.', e.message || e);
+        res.status(500).send({
+          status: 'ERROR',
+          message: e.message || 'Something went wrong, please try again later.',
+        });
       }
     }
   });

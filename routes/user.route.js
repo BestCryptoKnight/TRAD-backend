@@ -438,7 +438,6 @@ router.post('/', async function (req, res) {
           setPasswordLink:
             config.server.frontendUrls.adminPanelBase +
             config.server.frontendUrls.setPasswordPage +
-            user._id +
             '?token=' +
             signUpToken,
         },

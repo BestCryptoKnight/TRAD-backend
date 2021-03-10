@@ -684,7 +684,7 @@ router.get('/', async function (req, res) {
     if (req.query.serviceManagerId) {
       aggregationQuery.push({
         $match: {
-          'serviceManagerId.name': req.query.serviceManagerId,
+          'serviceManagerId._id': req.query.serviceManagerId,
         },
       });
     }
@@ -704,7 +704,7 @@ router.get('/', async function (req, res) {
     if (req.query.riskAnalystId) {
       aggregationQuery.push({
         $match: {
-          'riskAnalystId.name': req.query.riskAnalystId,
+          'riskAnalystId._id': req.query.riskAnalystId,
         },
       });
     }
@@ -1173,6 +1173,11 @@ router.put('/user/:clientUserId', async function (req, res) {
         mailFor: 'newClientUser',
       };
       promises.push(MailHelper.sendMail(mailObj));*/
+    } else {
+      //TODO revert portal access
+      updateObj = {
+        hasPortalAccess: req.body.hasPortalAccess,
+      };
     }
     await ClientUser.updateOne({ _id: req.params.clientUserId }, updateObj);
     promises.push(

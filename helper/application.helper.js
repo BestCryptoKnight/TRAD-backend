@@ -201,6 +201,9 @@ const getApplicationList = async ({
         },
       });
     }
+    //TODO add filter for expiry date
+    if (requestedQuery.startDate && requestedQuery.maxCreditLimit) {
+    }
 
     const fields = applicationColumn.map((i) => {
       /*if (i === 'clientId') {

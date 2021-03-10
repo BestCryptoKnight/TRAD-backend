@@ -2,143 +2,296 @@
  * Config
  * */
 const config = require('../config');
-module.exports = ({ name, resetPasswordLink, forgotPasswordLink }) => {
-    return (mailTemplate = `<html>
+module.exports = ({ name, otp, expireTime }) => {
+  return (mailTemplate = `<html>
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <style>
-    body {
-      font-family: "Segoe UI", sans-serif;
-    }
+    <meta charset='utf-8'/>
+    <meta name='viewport' content='width=device-width, initial-scale=1'/>
+    <style>
+        @font-face {
+            font-family: "GoogleSans-Medium";
+            src: local("GoogleSans-Medium"), url('${config.server.backendServerUrl}fonts/GoogleSans-Medium.ttf') format("truetype");
+            font-weight: normal;
+        }
 
-    @media (max-width: 600px) {
+        @font-face {
+            font-family: "GoogleSans-Regular";
+            src: local("GoogleSans-Regular"), url('${config.server.backendServerUrl}fonts/GoogleSans-Regular.ttf') format("truetype");
+            font-weight: normal;
+        }
 
-    }
+        @font-face {
+            font-family: "GoogleSans-Bold";
+            src: local("GoogleSans-Bold"), url('${config.server.backendServerUrl}fonts/GoogleSans-Bold.ttf') format("truetype");
+            font-weight: normal;
+        }
 
-  </style>
+        body * {
+            font-family: GoogleSans-Regular, SansSerif;
+        }
+    </style>
 </head>
-<body style="background-color: #F3F3F5!important;">
-<div style="width: 100%; height: 100%;
- box-sizing: border-box;">
-  <table style="width: 100%; height: 100%">
+<body style='background-color: #F4F6F8; box-sizing: border-box'>
+<table style='width: 100%;' cellpadding="40">
     <tr>
-      <td align="center" valign="center">
-        <div style="height: 100%; width: 100%; padding: 70px 0">
-          <div style="background-color: white!important; width: 740px; overflow: auto">
-            <table style="width: 100%; padding: 70px 20px" cellspacing="0" cellpadding="0">
-              <tr>
-                <td align="center" valign="center">
-                  <img src="${config.BaseUrl}/mail-images/Logo-Human-Pixel-Horizontal.png"
-                       style="width: 250px"/>
-                </td>
-              </tr>
+        <td align='center' valign='center' width="740"
+            style="background-color: #F4F6F8;">
+            <table width="740" cellspacing='0' cellpadding='0'
+                   style="background-color: white; border-radius: 10px; box-shadow: 0px 0px 30px #BFBFBF29;">
+                <tr>
+                    <td width="100" height="32"
+                        style="background-color: #003A78; border-top-left-radius: 10px; border-top-right-radius: 10px"></td>
+                </tr>
 
-              <tr>
-                <td align="center" valign="center">
-                  <div style="margin-top: 40px; color: #18c2c4; font-weight: 700; font-size: 30px; cursor: pointer">
-                    Forgot Password
-                  </div>
-                </td>
-              </tr>
 
-              <tr>
-                <td align="center" valign="center">
-                  <div style="width: 80%; margin-top: 40px;text-align: left;font-weight: 500;
-                   color: #B4B4B4; font-size: 22px;">
-                    Hello ${name}!
-                  </div>
-                  <div style="width: 80%; margin-top: 5px; text-align:left; color: rgba(69, 69, 69,.4);
-                  font-size: 20px">
-                    You recently requested to reset your password for your Human Pixel account.
-                    Click on the button below to reset it.
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td align="center" valign="center">
-                  <button
-                    style="margin-top:30px; padding: 15px 60px; background-color: #18C2C4; color: white;
-                     font-size: 20px; font-weight: 500; border:none; border-radius:10px; outline:none;
-                      cursor: pointer">
-                    <a href="${resetPasswordLink}" style="color: white!important; text-decoration: none!important;">Reset Password</a>
-                  </button>
-                </td>
-              </tr>
+                <tr>
+                    <td align="center" valign="center" height="85" style="background-color: #F4F6F8;">
+                        <img height="40" src="${config.server.backendServerUrl}mail-images/tcr-logo.png"/>
+                    </td>
+                </tr>
 
-              <tr>
-                <td align="center" valign="center">
-                  <div style="width: 80%; margin-top: 30px;font-weight: 400; text-align:left; color: rgba(69, 69, 69,.4);
-                  font-size: 20px">
-                    If you did not request a password reset, please ignore this email or reply to let us know.
-                    This password reset is only valid for the next 30 minutes.
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td align="center" valign="center">
-                  <div style="width: 80%; margin-top: 20px;font-weight: 500; text-align: left;
-                  color: rgba(60, 60, 60,.3);
-                  font-size: 18px">
-                    If you continue to have issues, please repeat the process of <a
-                    style="color: #18C2C4; text-decoration: underline; font-weight: 600;
-                     cursor: pointer" href="${forgotPasswordLink}">Forgot Password.</a>
-                  </div>
-                </td>
-              </tr>
+                <tr>
+                    <td align="center" valign="center" width="100"
+                        style="padding-top: 20px; font-size: 24px; font-family: GoogleSans-Medium; color: #003A78; background-color: white;">
+                        Dear ${name}!
+                    </td>
+                </tr>
 
-              <tr>
-                <td align="center" valign="center">
-                  <div style="width: 80%; margin-top: 50px; color: #b5b5b5; font-size: 20px">
-                    Yours Sincerely,
-                  </div>
-                </td>
-              </tr>
+                <tr>
+                    <td align="center" valign="center" width="100"
+                        style="padding: 3px 8%; font-size: 14px; font-family: GoogleSans-Regular; color: #37404D; background-color: white; opacity: .5">
+                        You have requested that we reset your TCR portal login password. <br/>To reset your password,
+                        enter the following OTP:
+                    </td>
+                </tr>
 
-              <tr>
-                <td align="center" valign="center">
-                  <img src="${config.BaseUrl}/mail-images/Logo-Human-Pixel-Horizontal.png"
-                       style="width: 130px; margin-top: 20px"/>
-                </td>
-              </tr>
+                <tr>
+                    <td align="center" valign="center"
+                        style="padding: 10px 0; background-color: white">
+                        <a style="text-decoration: none;">
+                            <button id="reset-password" onclick="myFunction(otp)" style="padding: 10px 20px; font-size: 16px; font-family: GoogleSans-Medium; color: white; background-color: #003A78; border-radius: 5px; border: none; outline: none; cursor: pointer">
+                                ${otp}
+                            </button>
+                        </a>
+                    </td>
+                </tr>
 
-              <tr>
-                <td align="center" valign="center">
-                  <div style="width: 80%; margin-top: 20px;font-weight: 700; color: rgba(60, 60, 60,.35); font-size: 18px">
-                    Company Address
-                  </div>
-                </td>
-              </tr>
-              <td align="center" valign="center">
-                <div style="width: 80%; margin-top: 5px;font-weight: 500; color: rgba(60, 60, 60,.35); font-size: 16px">
-                  Melbourne Head Office,<br> Level 2 / 570 St Kilda Road,<br> Melbourne VIC 3004
-                </div>
-              </td>
-              </tr>
+                <tr>
+                    <td align="center" valign="center" width="80"
+                        style="padding: 20px 5% 0 5%; font-size: 16px; font-family: GoogleSans-Medium; color: #003A78; background-color: white">
+                        Note
+                    </td>
+                </tr>
 
-              <tr>
-                <td align="center" valign="center">
-                  <div style="width: 80%; margin-top: 20px;font-weight: 500; color: rgba(60, 60, 60,.35); font-size: 16px">
-                    This email was sent to you from <a href="#" style="color: #18C2C4; font-weight: 600; cursor:pointer;">Company Email Adress</a>
-                  </div>
-                </td>
-              </tr>
+                <tr>
+                    <td align="center" valign="center" width="100"
+                        style="padding: 3px 8%; font-size: 14px; font-family: GoogleSans-Regular; color: #37404D; background-color: white; opacity: .5">
+                        For security reasons this OTP will only be valid for a ${expireTime} minutes.
+                    </td>
+                </tr>
 
-              <tr>
-                <td align="center" valign="center">
-                  <div style="width: 80%; margin-top: 20px; font-weight: 500; color: rgba(60, 60, 60,.35); font-size: 16px">
-                    Copyright ©2000-2020 Company Name,AllRights Reserved.
-                  </div>
-                </td>
-              </tr>
+                <tr>
+                    <td align="center" valign="center"
+                        style="padding: 15px 0; font-size: 24px; font-family: GoogleSans-Medium; color: #EF7B10">
+                        Thank You!
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <table width="100%" style="border-collapse: collapse">
+                            <tr>
+                                <td style="border-left: 0; vertical-align: top; padding: 20px; background-color: #F4F6F8;">
+                                    <table>
+                                        <tr>
+                                            <td
+                                                    style="font-size: 16px; font-family: GoogleSans-Medium; color: #003A78">
+                                                Service Manager
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <table width="100%">
+                                                    <tr>
+                                                        <td style="padding: 3px 0">
+                                                            <img height="18"
+                                                                 src="${config.server.backendServerUrl}mail-images/user.png"/>
+                                                        </td>
+                                                        <td style="padding: 3px 0; font-size: 13px; color: #828F9D">
+                                                            Hilmer Gwilym
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="padding: 3px 0">
+                                                            <img height="16"
+                                                                 src="${config.server.backendServerUrl}mail-images/call.png"/>
+                                                        </td>
+                                                        <td style="padding: 3px 0; font-size: 13px; color: #828F9D">
+                                                            1234 420 581
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="padding: 3px 0">
+                                                            <img height="18"
+                                                                 src="${config.server.backendServerUrl}mail-images/mail.png"/>
+                                                        </td>
+                                                        <td style="padding: 3px 0; font-size: 13px; color: #828F9D">
+                                                            hilmar@tradecreditrisk.com.au
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
+
+                                    </table>
+                                </td>
+                                <td style="border-left: 2px solid white; border-right: 2px solid white; vertical-align: top; padding: 20px; background-color: #F4F6F8;">
+                                    <table>
+                                        <tr>
+                                            <td style="font-size: 16px; font-family: GoogleSans-Medium; color: #003A78">
+                                                Risk Analyst
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <table width="100%">
+                                                    <tr>
+                                                        <td style="padding: 3px 0">
+                                                            <img height="18"
+                                                                 src="${config.server.backendServerUrl}mail-images/user.png"/>
+                                                        </td>
+                                                        <td style="padding: 3px 0; font-size: 13px; color: #828F9D">
+                                                            Jessica Grims
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="padding: 3px 0">
+                                                            <img height="16"
+                                                                 src="${config.server.backendServerUrl}mail-images/call.png"/>
+                                                        </td>
+                                                        <td style="padding: 3px 0; font-size: 13px; color: #828F9D">
+                                                            1234 420 581
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="padding: 3px 0">
+                                                            <img height="18"
+                                                                 src="${config.server.backendServerUrl}mail-images/mail.png"/>
+                                                        </td>
+                                                        <td style="padding: 3px 0; font-size: 13px; color: #828F9D">
+                                                            jess@tradecreditrisk.com.au
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
+
+                                    </table>
+                                </td>
+                                <td style="border-right: 0; vertical-align: top; padding: 20px; background-color: #F4F6F8;">
+                                    <table>
+                                        <tr>
+                                            <td style="font-size: 16px; font-family: GoogleSans-Medium; color: #003A78">
+                                                TRAD Support
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <table width="100%">
+                                                    <tr>
+                                                        <td style="padding: 3px 0 0">
+                                                            <img height="16"
+                                                                 src="${config.server.backendServerUrl}mail-images/call.png"/>
+                                                        </td>
+                                                        <td style="padding:3px; font-size: 13px; color: #828F9D">
+                                                            1234 420 581
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="vertical-align: top">
+                                                            <img height="18"
+                                                                 src="${config.server.backendServerUrl}mail-images/mail.png"/>
+                                                        </td>
+                                                        <td style="font-size: 13px; color: #828F9D">
+                                                            info@tradecreditrisk.com.au <br/>sharon@tradecreditrisk.com.au
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="vertical-align: top">
+                                                            <img height="18" style="padding-top: 0"
+                                                                 src="${config.server.backendServerUrl}mail-images/location.png"/>
+                                                        </td>
+                                                        <td style="font-size: 13px; color: #828F9D">
+                                                            Suite 11, 857 Doncaster Road
+                                                            <br/> Doncaster East, Victoria 3109
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
+
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td align="center" style="padding: 30px 0 5px 0">
+                        <img height="40" src="${config.server.backendServerUrl}mail-images/trad-icon.png"/>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td align='center' valign='center'
+                        style='padding: 5px 40px; font-size: 16px; font-family: GoogleSans-Medium; line-height: 24px; font-weight: 400;  color: #828F9D'>
+                        Copyright © 2021 Trade Credit Risk
+                    </td>
+                </tr>
+
+                <tr>
+                    <td align="center" style="padding-bottom: 40px">
+                        <table>
+                            <tr>
+                                <td>
+                                    <a style="text-decoration: none">
+                                        <img height="30" style="cursor:pointer;"
+                                             src="${config.server.backendServerUrl}mail-images/facebook.png"/>
+                                    </a>
+                                </td>
+                                <td>
+                                    <a style="text-decoration: none">
+                                        <img height="30" style="cursor:pointer;"
+                                             src="${config.server.backendServerUrl}mail-images/linkedin.png"/>
+                                    </a>
+                                </td>
+                                <td>
+                                    <a style="text-decoration: none">
+                                        <img height="30" style="cursor:pointer;"
+                                             src="${config.server.backendServerUrl}mail-images/twitter.png"/>
+                                    </a>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+
             </table>
-          </div>
-        </div>
-      </td>
+        </td>
     </tr>
-  </table>
-
-</div>
+</table>
 </body>
+<script>
+   function myFunction(otp) {
+        const el = document.createElement("textarea");
+        el.value = otp;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand("copy");
+        document.body.removeChild(el);
+        alert("OTP copied");
+    }
+</script>
 </html>`);
 };
