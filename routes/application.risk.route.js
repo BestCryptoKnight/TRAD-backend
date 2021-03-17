@@ -334,7 +334,12 @@ router.get('/search-entity/:searchString', async function (req, res) {
       if (entityDetails.mainTradingName)
         response.tradingName = entityDetails.mainTradingName.organisationName;
       if (entityDetails.mainBusinessPhysicalAddress[0])
-        response.state = entityDetails.mainBusinessPhysicalAddress[0].stateCode;
+        response.state = [
+          {
+            label: entityDetails.mainBusinessPhysicalAddress[0].stateCode,
+            value: entityDetails.mainBusinessPhysicalAddress[0].stateCode,
+          },
+        ];
       if (entityDetails.mainBusinessPhysicalAddress[0])
         response.postCode =
           entityDetails.mainBusinessPhysicalAddress[0].postcode;
