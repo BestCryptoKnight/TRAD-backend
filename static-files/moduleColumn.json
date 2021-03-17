@@ -261,12 +261,25 @@
           "type": "string"
         },
         { "name": "description", "label": "Description", "type": "string" },
-        { "name": "originalFileName", "label": "File Name", "type": "string" },
+        {
+          "name": "originalFileName",
+          "label": "Link",
+          "type": "link",
+          "request": {
+            "method": "GET",
+            "url": "document/download?action=view&documentIds="
+          }
+        },
         { "name": "uploadById", "label": "Upload By", "type": "string" },
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
-      "defaultColumns": ["description", "fileName", "updatedAt"]
+      "defaultColumns": [
+        "description",
+        "fileName",
+        "updatedAt",
+        "originalFileName"
+      ]
     },
     {
       "name": "credit-limit",

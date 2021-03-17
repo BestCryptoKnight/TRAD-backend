@@ -1045,6 +1045,36 @@
       "name": "Registered Body"
     }
   ],
+  "companyEntityType": [
+    {
+      "_id": "PROPRIETARY_LIMITED",
+      "name": "Proprietary Limited"
+    },
+    {
+      "_id": "LIMITED_COMPANY",
+      "name": "Limited"
+    },
+    {
+      "_id": "CORPORATION",
+      "name": "Corporation"
+    },
+    {
+      "_id": "INCORPORATED",
+      "name": "Incorporated"
+    },
+    {
+      "_id": "NO_LIABILITY",
+      "name": "No Liability"
+    },
+    {
+      "_id": "PROPRIETARY",
+      "name": "Proprietary"
+    },
+    {
+      "_id": "REGISTERED_BODY",
+      "name": "Registered Body"
+    }
+  ],
   "applicationStatus": [
     {
       "_id": "DRAFT",

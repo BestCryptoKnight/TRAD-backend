@@ -75,6 +75,24 @@ router.get('/column-name', async function (req, res) {
 });
 
 /**
+ * Get Entity Type List
+ * */
+router.get('/entity-type', async function (req, res) {
+  try {
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: StaticData.entityType,
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in get entity type list', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
  * Get Debtor list
  */
 router.get('/', async function (req, res) {
@@ -112,6 +130,9 @@ router.get('/', async function (req, res) {
     }
 
     let sortingOptions = {};
+    if (req.query.entityType) {
+      queryFilter.entityType = req.query.entityType;
+    }
     if (req.query.sortBy && req.query.sortOrder) {
       const addressFields = [
         'fullAddress',
@@ -191,6 +212,7 @@ router.get('/', async function (req, res) {
       delete debtor.address;
       delete debtor.id;
     });
+    responseObj.entityType = StaticData.entityType;
     res.status(200).send({
       status: 'SUCCESS',
       data: responseObj,
@@ -280,9 +302,6 @@ router.get('/details/:debtorId', async function (req, res) {
     }
     const debtor = await Debtor.findById(req.params.debtorId)
       .select({ isDeleted: 0, createdAt: 0, updatedAt: 0, __v: 0 })
-      .lean();
-    const client = await Client.findById(req.query.clientId)
-      .select('name')
       .lean();
     if (debtor) {
       if (debtor.address) {
@@ -609,6 +628,58 @@ router.put('/', async function (req, res) {
     });
   } catch (e) {
     Logger.log.error('Error occurred in update debtor status ', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Update Debtor Details
+ */
+router.put('/:debtorId', async function (req, res) {
+  if (
+    !req.params.debtorId ||
+    !mongoose.Types.ObjectId.isValid(req.params.debtorId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const update = {};
+    if (req.body.address && Object.keys(req.body.address).length !== 0) {
+      update.address = {
+        property: req.body.address.property,
+        unitNumber: req.body.address.unitNumber,
+        streetNumber: req.body.address.streetNumber,
+        streetName: req.body.address.streetName,
+        streetType: req.body.address.streetType,
+        suburb: req.body.address.suburb,
+        state: req.body.address.state,
+        country: req.body.address.country,
+        postCode: req.body.address.postCode,
+      };
+    }
+    if (req.body.entityType) update.entityType = req.body.entityType;
+    if (req.body.contactNumber) update.contactNumber = req.body.contactNumber;
+    if (req.body.tradingName) update.tradingName = req.body.tradingName;
+    if (req.body.entityName) update.entityName = req.body.entityName;
+    if (req.body.acn) update.acn = req.body.acn;
+    if (req.body.abn) update.abn = req.body.abn;
+    await Debtor.updateOne({ _id: req.params.debtorId }, update);
+    res.status(200).send({
+      status: 'SUCCESS',
+      message: 'Debtors details updated successfully',
+    });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in update debtor details ',
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

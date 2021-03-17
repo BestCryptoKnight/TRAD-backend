@@ -123,6 +123,10 @@ router.get('/entity-list', async function (req, res) {
         streetType: { field: 'streetType', data: StaticData.streetType },
         australianStates: { field: 'state', data: StaticData.australianStates },
         entityType: { field: 'entityType', data: StaticData.entityType },
+        companyEntityType: {
+          field: 'entityType',
+          data: StaticData.companyEntityType,
+        },
         applicationStatus: {
           field: 'applicationStatus',
           data: StaticData.applicationStatus,
