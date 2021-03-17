@@ -67,13 +67,13 @@ router.post('/login', async function (req, res) {
       res.status(400).send({
         status: 'ERROR',
         messageCode: 'INCORRECT_EMAIL_OR_PASSWORD',
-        message: 'Incorrect email or password.',
+        message: 'Incorrect email or password',
       });
     } else {
       Logger.log.error('error occurred.', e.message || e);
       res.status(500).send({
         status: 'ERROR',
-        message: e.message || 'Something went wrong, please try again later.',
+        message: e.message || 'Something went wrong, please try again later',
       });
     }
   }
@@ -127,14 +127,14 @@ router.put('/change-password', authenticate, async (req, res) => {
       res.status(400).send({
         status: 'ERROR',
         messageCode: 'WRONG_CURRENT_PASSWORD',
-        message: 'Wrong current password.',
+        message: 'Wrong current password',
       });
     }
   } catch (e) {
     Logger.log.error('error occurred.', e.message || e);
     res.status(500).send({
       status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
+      message: e.message || 'Something went wrong, please try again later',
     });
   }
 });
@@ -168,6 +168,13 @@ router.post('/forget-password', async (req, res) => {
         message: 'User not found',
       });
     } else {
+      if (user.signUpToken) {
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'PENDING_USER_ACTIVATION_PROCESS',
+          message: 'Please complete your activation process or contact admin',
+        });
+      }
       let data = await User.generateOtp(user);
       let mailObj = {
         toAddress: [req.body.email],
@@ -182,7 +189,7 @@ router.post('/forget-password', async (req, res) => {
       await MailHelper.sendMail(mailObj);
       res.status(200).send({
         status: 'SUCCESS',
-        message: 'If user exists then mail with verification OTP will be sent.',
+        message: 'If user exists then mail with verification OTP will be sent',
       });
     }
     // let user = await User.findOne({email: req.body.email});
@@ -219,7 +226,7 @@ router.post('/forget-password', async (req, res) => {
     Logger.log.error('error occurred.', e.message || e);
     res.status(500).send({
       status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
+      message: e.message || 'Something went wrong, please try again later',
     });
   }
 });
@@ -260,20 +267,21 @@ router.post('/resend-otp', async (req, res) => {
         text: {
           name: user.name ? user.name : '',
           otp: data.verificationOtp,
+          expireTime: 5,
         },
-        mailFor: 'forgotPassword',
+        mailFor: 'adminForgotPassword',
       };
       await MailHelper.sendMail(mailObj);
       res.status(200).send({
         status: 'SUCCESS',
-        message: 'If user exists then mail with verification OTP will be sent.',
+        message: 'If user exists then mail with verification OTP will be sent',
       });
     }
   } catch (e) {
     Logger.log.error('error occurred.', e.message || e);
     res.status(500).send({
       status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
+      message: e.message || 'Something went wrong, please try again later',
     });
   }
 });
@@ -286,7 +294,7 @@ router.post('/verify-otp', async (req, res) => {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Something went wrong, please try the process from beginning.',
+      message: 'Something went wrong, please try the process from beginning',
     });
   }
   try {
@@ -351,7 +359,7 @@ router.post('/reset-password', async (req, res) => {
       return res.status(401).send({
         status: 'ERROR',
         messageCode: 'AUTHENTICATION_FAILED',
-        message: 'Authentication failed. Error in decoding token.',
+        message: 'Authentication failed. Error in decoding token',
       });
     } else {
       if (decoded.expiredTime < Date.now()) {
@@ -359,7 +367,7 @@ router.post('/reset-password', async (req, res) => {
           status: 'ERROR',
           messageCode: 'LINK_EXPIRED',
           message:
-            'The link to reset password has expired, please repeat the process by clicking on Forget Password from login page.',
+            'The link to reset password has expired, please repeat the process by clicking on Forget Password from login page',
         });
         Logger.log.info('AUTH - token expired. user id:' + decoded._id);
       } else {
@@ -397,7 +405,7 @@ router.post('/reset-password', async (req, res) => {
           res.status(500).send({
             status: 'ERROR',
             message:
-              e.message || 'Something went wrong, please try again later.',
+              e.message || 'Something went wrong, please try again later',
           });
         }
       }
@@ -415,7 +423,7 @@ router.post('/set-password', async (req, res) => {
       return res.status(401).send({
         status: 'ERROR',
         messageCode: 'AUTHENTICATION_FAILED',
-        message: 'Authentication failed. Error in decoding token.',
+        message: 'Authentication failed. Error in decoding token',
       });
     } else {
       try {
@@ -435,7 +443,7 @@ router.post('/set-password', async (req, res) => {
             status: 'ERROR',
             messageCode: 'PASSWORD_ALREADY_SET',
             message:
-              'Password has already once set, to recover password, click on Forgot Password from Login Page.',
+              'Password has already once set, to recover password, click on Forgot Password from Login Page',
           });
         } else if (
           !user.signUpToken ||
@@ -448,7 +456,7 @@ router.post('/set-password', async (req, res) => {
           return res.status(401).send({
             status: 'ERROR',
             messageCode: 'UNAUTHORIZED',
-            message: 'Invalid request, please repeat process from beginning.',
+            message: 'Invalid request, please repeat process from beginning',
           });
         } else {
           user.password = req.body.password;
@@ -485,7 +493,7 @@ router.delete('/logout', authenticate, async (req, res) => {
     Logger.log.error('Error in logout API call ', e.message || e);
     res.status(500).send({
       status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
+      message: e.message || 'Something went wrong, please try again later',
     });
   }
 });

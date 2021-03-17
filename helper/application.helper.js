@@ -1,60 +1,17 @@
 /*
  * Module Imports
  * */
-const axios = require('axios');
-const convert = require('xml-js');
 const mongoose = require('mongoose');
 const Application = mongoose.model('application');
 const Organization = mongoose.model('organization');
 const Debtor = mongoose.model('debtor');
 const Client = mongoose.model('client');
-const ClientDebtor = mongoose.model('client-debtor');
 
 /*
  * Local Imports
  * */
 const Logger = require('./../services/logger');
 const { createDebtor } = require('./debtor.helper');
-
-const getEntityDetailsByABN = async ({ searchString }) => {
-  try {
-    const organization = await Organization.findOne({
-      isDeleted: false,
-    }).select({ 'integration.abn': 1 });
-    const url = `https://abr.business.gov.au/ABRXMLSearch/AbrXmlSearch.asmx/SearchByABNv202001?searchString=${searchString}&includeHistoricalDetails=y&authenticationGuid=${organization.integration.abn.guid}`;
-    const options = {
-      method: 'GET',
-      url: url,
-    };
-    const { data } = await axios(options);
-    const jsonData = convert.xml2js(data);
-    return jsonData.elements;
-  } catch (e) {
-    Logger.log.error('Error in getting entity details from ABN');
-    Logger.log.error(e.message || e);
-    return e.message;
-  }
-};
-
-const getEntityDetailsByACN = async ({ searchString }) => {
-  try {
-    const organization = await Organization.findOne({
-      isDeleted: false,
-    }).select({ 'integration.abn': 1 });
-    const url = `https://abr.business.gov.au/ABRXMLSearch/AbrXmlSearch.asmx/SearchByASICv201408?searchString=${searchString}&includeHistoricalDetails=y&authenticationGuid=${organization.integration.abn.guid}`;
-    const options = {
-      method: 'GET',
-      url: url,
-    };
-    const { data } = await axios(options);
-    const jsonData = convert.xml2js(data);
-    return jsonData.elements;
-  } catch (e) {
-    Logger.log.error('Error in getting entity details from ABN lookup ');
-    Logger.log.error(e.message || e);
-    return e.message;
-  }
-};
 
 //TODO add filter for expiry-date + credit-limit
 const getApplicationList = async ({
@@ -352,7 +309,7 @@ const storeCompanyDetails = async ({
           return {
             status: 'ERROR',
             messageCode: 'APPLICATION_ALREADY_EXISTS',
-            message: 'Application already exists.',
+            message: 'Application already exists',
           };
         }
       } else {
@@ -423,7 +380,7 @@ const storePartnerDetails = async ({ requestBody }) => {
       return {
         status: 'ERROR',
         messageCode: 'INSUFFICIENT_DATA',
-        message: 'Insufficient partners details.',
+        message: 'Insufficient partners details',
       };
     }
     const person = [];
@@ -554,8 +511,6 @@ const partnerDetailsValidation = ({
 };
 
 module.exports = {
-  getEntityDetailsByABN,
-  getEntityDetailsByACN,
   getApplicationList,
   storeCompanyDetails,
   storePartnerDetails,

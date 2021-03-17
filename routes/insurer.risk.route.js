@@ -13,8 +13,55 @@ const InsurerUser = mongoose.model('insurer-user');
  * */
 const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
-const { getInsurerContacts } = require('./../helper/rss.helper');
+const {
+  getInsurerContacts,
+  getInsurers,
+  getInsurersById,
+  getInsurerById,
+} = require('./../helper/rss.helper');
 const { addAuditLog } = require('./../helper/audit-log.helper');
+
+/**
+ * Search Insurer From CRM
+ */
+router.get('/search-from-crm', async function (req, res) {
+  if (!req.query.searchKeyword) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Pass some text to perform search.',
+    });
+  }
+  try {
+    const insurers = await getInsurers({
+      searchKeyword: req.query.searchKeyword,
+    });
+    const insurerIds = insurers.map((insurer) => insurer.id);
+    let dbInsurers = await Insurer.find({
+      isDeleted: false,
+      crmInsurerId: { $in: insurerIds },
+    })
+      .select({ crmInsurerId: 1 })
+      .lean();
+    const responseArr = [];
+    dbInsurers = dbInsurers.map((dbInsurer) => dbInsurer.crmInsurerId);
+    for (let i = 0; i < insurers.length; i++) {
+      if (dbInsurers.indexOf(insurers[i].id.toString()) === -1) {
+        responseArr.push({ crmId: insurers[i].id, name: insurers[i].name });
+      }
+    }
+    res.status(200).send({ status: 'SUCCESS', data: responseArr });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in getting insurer list for search.',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
 
 /**
  * Get Column Names
@@ -67,6 +114,66 @@ router.get('/column-name', async function (req, res) {
   } catch (e) {
     Logger.log.error(
       'Error occurred in get insurer column names',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Get Column Names
+ */
+router.get('/user/column-name', async function (req, res) {
+  try {
+    const module = StaticFile.modules.find((i) => i.name === 'insurer-user');
+    const insurerColumn = req.user.manageColumns.find(
+      (i) => i.moduleName === 'insurer-user',
+    );
+    let customFields = [];
+    let defaultFields = [];
+    for (let i = 0; i < module.manageColumns.length; i++) {
+      if (
+        insurerColumn &&
+        insurerColumn.columns.includes(module.manageColumns[i].name)
+      ) {
+        if (module.defaultColumns.includes(module.manageColumns[i].name)) {
+          defaultFields.push({
+            name: module.manageColumns[i].name,
+            label: module.manageColumns[i].label,
+            isChecked: true,
+          });
+        } else {
+          customFields.push({
+            name: module.manageColumns[i].name,
+            label: module.manageColumns[i].label,
+            isChecked: true,
+          });
+        }
+      } else {
+        if (module.defaultColumns.includes(module.manageColumns[i].name)) {
+          defaultFields.push({
+            name: module.manageColumns[i].name,
+            label: module.manageColumns[i].label,
+            isChecked: false,
+          });
+        } else {
+          customFields.push({
+            name: module.manageColumns[i].name,
+            label: module.manageColumns[i].label,
+            isChecked: false,
+          });
+        }
+      }
+    }
+    res
+      .status(200)
+      .send({ status: 'SUCCESS', data: { defaultFields, customFields } });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in get insurer contacts columns ',
       e.message || e,
     );
     res.status(500).send({
@@ -151,66 +258,6 @@ router.get('/user/:insurerId', async function (req, res) {
   } catch (e) {
     Logger.log.error(
       'Error occurred in get insurer contacts list ',
-      e.message || e,
-    );
-    res.status(500).send({
-      status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
-    });
-  }
-});
-
-/**
- * Get Column Names
- */
-router.get('/user/column-name', async function (req, res) {
-  try {
-    const module = StaticFile.modules.find((i) => i.name === 'insurer-user');
-    const insurerColumn = req.user.manageColumns.find(
-      (i) => i.moduleName === 'insurer-user',
-    );
-    let customFields = [];
-    let defaultFields = [];
-    for (let i = 0; i < module.manageColumns.length; i++) {
-      if (
-        insurerColumn &&
-        insurerColumn.columns.includes(module.manageColumns[i].name)
-      ) {
-        if (module.defaultColumns.includes(module.manageColumns[i].name)) {
-          defaultFields.push({
-            name: module.manageColumns[i].name,
-            label: module.manageColumns[i].label,
-            isChecked: true,
-          });
-        } else {
-          customFields.push({
-            name: module.manageColumns[i].name,
-            label: module.manageColumns[i].label,
-            isChecked: true,
-          });
-        }
-      } else {
-        if (module.defaultColumns.includes(module.manageColumns[i].name)) {
-          defaultFields.push({
-            name: module.manageColumns[i].name,
-            label: module.manageColumns[i].label,
-            isChecked: false,
-          });
-        } else {
-          customFields.push({
-            name: module.manageColumns[i].name,
-            label: module.manageColumns[i].label,
-            isChecked: false,
-          });
-        }
-      }
-    }
-    res
-      .status(200)
-      .send({ status: 'SUCCESS', data: { defaultFields, customFields } });
-  } catch (e) {
-    Logger.log.error(
-      'Error occurred in get insurer contacts columns ',
       e.message || e,
     );
     res.status(500).send({
@@ -361,6 +408,140 @@ router.get('/:insurerId', async function (req, res) {
     res.status(200).send({ status: 'SUCCESS', data: insurer });
   } catch (e) {
     Logger.log.error('Error occurred in get insurer details ', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Add Insurer from RSS
+ */
+router.post('/', async function (req, res) {
+  try {
+    if (!req.body.crmIds || req.body.crmIds.length === 0) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'REQUIRE_FIELD_MISSING',
+        message: 'Require fields are missing',
+      });
+    }
+    let insurers = await Insurer.find({
+      isDeleted: false,
+      crmInsurerId: { $in: req.body.crmIds },
+    });
+    if (insurers && insurers.length !== 0) {
+      const insurerIds = insurers.map((i) => i.crmInsurerId);
+      let newInsurers = [];
+      req.body.crmIds.forEach((id) => {
+        if (!insurerIds.includes(id)) {
+          newInsurers.push(id);
+        }
+      });
+      if (newInsurers.length === 0) {
+        return res.status(400).send({
+          status: 'ERROR',
+          message: 'Insurer already exists in the system.',
+        });
+      }
+      req.body.crmIds = newInsurers;
+    }
+    const insurerData = await getInsurersById({
+      crmIds: req.body.crmIds,
+    });
+    let promiseArr = [];
+    for (let i = 0; i < insurerData.length; i++) {
+      const insurer = new Insurer(insurerData[i]);
+      promiseArr.push(insurer.save());
+      promiseArr.push(
+        addAuditLog({
+          entityType: 'insurer',
+          entityRefId: insurer._id,
+          userType: 'user',
+          userRefId: req.user._id,
+          actionType: 'add',
+          logDescription: `Insurer ${insurer.name} added successfully.`,
+        }),
+      );
+      const insurerContacts = await getInsurerContacts({
+        crmInsurerId: insurer.crmInsurerId,
+        insurerId: insurer._id,
+        contacts: [],
+        page: 1,
+        limit: 50,
+      });
+      insurerContacts.forEach((contact) => {
+        const insurerContact = new InsurerUser(contact);
+        promiseArr.push(insurerContact.save());
+        promiseArr.push(
+          addAuditLog({
+            entityType: 'insurer-user',
+            entityRefId: insurerContact._id,
+            userType: 'user',
+            userRefId: req.user._id,
+            actionType: 'add',
+            logDescription: `Insurer contact ${insurerContact.name} added successfully.`,
+          }),
+        );
+      });
+    }
+    await Promise.all(promiseArr);
+    res
+      .status(200)
+      .send({ status: 'SUCCESS', message: 'Insurer data synced successfully' });
+  } catch (e) {
+    Logger.log.error('Error occurred in add clients from CRM ', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Sync Insurer from RSS - Update
+ */
+router.put('/sync-from-crm/:insurerId', async function (req, res) {
+  if (
+    !req.params.insurerId ||
+    !mongoose.Types.ObjectId.isValid(req.params.insurerId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing',
+    });
+  }
+  try {
+    const insurer = await Insurer.findOne({ _id: req.params.insurerId }).lean();
+    if (!insurer) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'INSURER_NOT_FOUND',
+        message: 'Insurer not found.',
+      });
+    }
+    const insurerFromCrm = await getInsurerById({
+      insurerCRMId: insurer.crmInsurerId,
+    });
+    await Insurer.updateOne({ _id: req.params.insurerId }, insurerFromCrm);
+    await addAuditLog({
+      entityType: 'client',
+      entityRefId: req.params.clientId,
+      userType: 'user',
+      userRefId: req.user._id,
+      actionType: 'sync',
+      logDescription: `Insurer ${insurerFromCrm.name} synced successfully.`,
+    });
+    res
+      .status(200)
+      .send({ status: 'SUCCESS', message: 'Insurer synced successfully' });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in getting sync insurer with CRM',
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

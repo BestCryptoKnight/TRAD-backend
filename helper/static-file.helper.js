@@ -1,6 +1,7 @@
 /*
  * Module Imports
  * */
+const archiver = require('archiver');
 const AWS = require('aws-sdk');
 const cloudFrontSign = require('aws-cloudfront-sign');
 const path = require('path');
@@ -112,8 +113,42 @@ let deleteFile = ({ filePath }) => {
   });
 };
 
+const createZipFile = ({ documentData }) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const s3FileDownloadStreams = documentData.map((item) => {
+        const stream = s3
+          .getObject({
+            Bucket: config.staticServing.bucketName,
+            Key: item.keyPath,
+          })
+          .createReadStream();
+        return {
+          stream,
+          fileName: item.originalFileName,
+        };
+      });
+
+      let zip = new archiver.create('zip');
+      zip.on('error', (error) => {
+        console.log('ERROR :: ', error);
+      });
+      s3FileDownloadStreams.forEach((s3FileDownloadStream) => {
+        zip.append(s3FileDownloadStream.stream, {
+          name: s3FileDownloadStream.fileName,
+        });
+      });
+      await zip.finalize();
+      return resolve(zip);
+    } catch (e) {
+      Logger.log.error('Error occurred in creating zip file ', e);
+    }
+  });
+};
+
 module.exports = {
   uploadFile,
   getPreSignedUrl,
   deleteFile,
+  createZipFile,
 };

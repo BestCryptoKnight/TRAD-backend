@@ -237,7 +237,7 @@ router.get('/drawer-details/:debtorId', async function (req, res) {
           : debtor['debtorId'][i.name];
       response.push({
         label: i.label,
-        value: value || '-',
+        value: value || '',
         type: i.type,
       });
     });
@@ -305,6 +305,14 @@ router.get('/details/:debtorId', async function (req, res) {
           },
         ];
       }
+      if (debtor.entityName) {
+        debtor.entityName = [
+          {
+            label: debtor.entityName,
+            value: debtor.entityName,
+          },
+        ];
+      }
       if (debtor.state) {
         const state = StaticData.australianStates.find((i) => {
           if (i._id === debtor.state) return i;
@@ -324,14 +332,6 @@ router.get('/details/:debtorId', async function (req, res) {
           {
             label: streetType.name,
             value: debtor.streetType,
-          },
-        ];
-      }
-      if (client) {
-        debtor.clientId = [
-          {
-            label: client.name,
-            value: client._id,
           },
         ];
       }

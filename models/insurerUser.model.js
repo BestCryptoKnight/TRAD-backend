@@ -17,6 +17,8 @@ const insurerUserSchema = new Schema(
     jobTitle: { type: Schema.Types.String },
     crmContactId: { type: Schema.Types.String },
     email: { type: Schema.Types.String },
+    hasLeftCompany: { type: Schema.Types.Boolean },
+    isDecisionMaker: { type: Schema.Types.Boolean },
     isDeleted: { type: Schema.Types.Boolean, default: false },
   },
   { timestamps: true },

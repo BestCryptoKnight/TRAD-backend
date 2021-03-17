@@ -108,7 +108,12 @@ const createDebtor = async ({ requestBody, organization, isDebtorExists }) => {
     }).lean();
     await ClientDebtor.updateOne(
       { clientId: requestBody.clientId, debtorId: debtor._id },
-      { clientId: requestBody.clientId, debtorId: debtor._id, isActive: true },
+      {
+        clientId: requestBody.clientId,
+        debtorId: debtor._id,
+        isActive: true,
+        outstandingAmount: requestBody.outstandingAmount,
+      },
       { upsert: true },
     );
     const clientDebtor = await ClientDebtor.findOne({

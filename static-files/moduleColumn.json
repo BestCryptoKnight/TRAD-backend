@@ -13,10 +13,15 @@
         { "name": "userRefId", "label": "User Name", "type": "string" },
         { "name": "entityRefId", "label": "Module Name", "type": "string" },
         { "name": "actionType", "label": "Action Type", "type": "string" },
-        { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+        { "name": "createdAt", "label": "Created Date", "type": "date" }
       ],
-      "defaultColumns": ["entityType", "logDescription", "userType"]
+      "defaultColumns": [
+        "entityType",
+        "actionType",
+        "logDescription",
+        "userType",
+        "createdAt"
+      ]
     },
     {
       "name": "application",
@@ -24,6 +29,11 @@
         {
           "name": "applicationId",
           "label": "Application ID",
+          "type": "string"
+        },
+        {
+          "name": "status",
+          "label": "Status",
           "type": "string"
         },
         {
@@ -53,7 +63,14 @@
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
-      "defaultColumns": ["entityType", "clientId"]
+      "defaultColumns": [
+        "applicationId",
+        "status",
+        "entityType",
+        "clientId",
+        "debtorId",
+        "clientDebtorId"
+      ]
     },
     {
       "name": "application-task",
@@ -90,6 +107,7 @@
           "label": "ServiceManager Name",
           "type": "string"
         },
+        { "name": "insurerId", "label": "Insurer Name", "type": "string" },
         { "name": "clientCode", "label": "Client Code", "type": "string" },
         { "name": "fullAddress", "label": "Full Address", "type": "string" },
         { "name": "addressLine", "label": "Address Line", "type": "string" },
@@ -450,10 +468,16 @@
         },
         { "name": "direct", "label": "Direct", "type": "string" },
         { "name": "jobTitle", "label": "Job Title", "type": "string" },
+        { "name": "hasLeftCompany", "label": "Left Company", "type": "string" },
+        {
+          "name": "isDecisionMaker",
+          "label": "Decision Maker",
+          "type": "string"
+        },
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
-      "defaultColumns": ["name", "email", "jobTitle"]
+      "defaultColumns": ["name", "email", "jobTitle", "direct"]
     },
     {
       "name": "insurer-policy",
@@ -466,34 +490,7 @@
           "type": "modal",
           "request": {
             "method": "GET",
-            "url": "policy/ci-details"
-          }
-        },
-        { "name": "policyPeriod", "label": "Policy Period", "type": "string" },
-        {
-          "name": "policyCurrency",
-          "label": "Policy Currency",
-          "type": "string"
-        },
-        { "name": "inceptionDate", "label": "Inception Date", "type": "date" },
-        { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
-        { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
-      ],
-      "defaultColumns": ["insurerId", "clientId", "product"]
-    },
-    {
-      "name": "insurer-matrix",
-      "manageColumns": [
-        { "name": "insurerId", "label": "Insurer Id", "type": "string" },
-        { "name": "clientId", "label": "Client Id", "type": "string" },
-        {
-          "name": "product",
-          "label": "Product",
-          "type": "modal",
-          "request": {
-            "method": "GET",
-            "url": "policy/rmp-details"
+            "url": "policy/details"
           }
         },
         { "name": "policyPeriod", "label": "Policy Period", "type": "string" },

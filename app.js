@@ -1,6 +1,6 @@
 /*
-* Module Imports
-* */
+ * Module Imports
+ * */
 let express = require('express');
 let path = require('path');
 let cookieParser = require('cookie-parser');
@@ -10,8 +10,8 @@ let mongoose = require('mongoose');
 const cors = require('cors');
 
 /*
-* Local Imports
-* */
+ * Local Imports
+ * */
 const config = require('./config');
 let Logger = require('./services/logger');
 
@@ -24,9 +24,7 @@ let dbURL = config.server.mongoDBConnectionUrl;
 /**
  * Bootstrap Models
  */
-fs.readdirSync(models)
-    .forEach(file => require(path.join(models, file)));
-
+fs.readdirSync(models).forEach((file) => require(path.join(models, file)));
 
 /**
  * Bootstrap App
@@ -36,26 +34,36 @@ let app = express();
 /**
  * CORS
  */
-app.use(cors({
+app.use(
+  cors({
     origin: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Origin', ' X-Requested-With', ' Content-Type', ' Accept ', ' Authorization'],
-    credentials: true
-}));
+    allowedHeaders: [
+      'Origin',
+      ' X-Requested-With',
+      ' Content-Type',
+      ' Accept ',
+      ' Authorization',
+    ],
+    credentials: true,
+  }),
+);
 app.use(Logger.morgan);
 app.use(bodyParser.json({ limit: '50mb' }));
-app.use(bodyParser.urlencoded({
+app.use(
+  bodyParser.urlencoded({
     limit: '50mb',
-    extended: false
-}));
+    extended: false,
+  }),
+);
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'upload')));
 
 /**
- * Import Middlewares
+ * Initialize CRON
  */
-const authenticate = require('./middlewares/authenticate').authMiddleWare;
-const checkModuleAccess = require('./middlewares/authenticate').checkModuleAccess;
+const SchedulerHelper = require('./services/cron.scheduler.service');
+SchedulerHelper.scheduler();
 
 /**
  * Import and Register Routes
@@ -66,8 +74,8 @@ let riskIndex = require('./routes/riskIndex');
 
 app.use('/', index);
 app.use('/socket.io', function (req, res, next) {
-    console.log('reached here...');
-    res.status(200).send();
+  console.log('reached here...');
+  res.status(200).send();
 });
 app.use('/cp', clientIndex);
 app.use('/rp', riskIndex);
@@ -75,7 +83,7 @@ app.use('/rp', riskIndex);
 /**
  * Catch 404 routes
  */
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
   let err = new Error('Not Found');
   err.status = 404;
   next(err);
@@ -84,7 +92,7 @@ app.use(function(req, res, next) {
 /**
  * Error Handler
  */
-app.use(function(err, req, res, next) {
+app.use(function (err, req, res, next) {
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
@@ -99,28 +107,27 @@ app.use(function(err, req, res, next) {
 mongoose.Promise = global.Promise;
 
 mongoose.connection.on('connected', () => {
-    Logger.log.info('DATABASE - Connected');
+  Logger.log.info('DATABASE - Connected');
 });
 
 mongoose.connection.on('error', (err) => {
-    Logger.log.error('DATABASE - Error:' + err);
+  Logger.log.error('DATABASE - Error:' + err);
 });
 
 mongoose.connection.on('disconnected', () => {
-    Logger.log.warn('DATABASE - disconnected  Retrying....');
+  Logger.log.warn('DATABASE - disconnected  Retrying....');
 });
 
 let connectDb = function () {
-    const dbOptions = {
-        poolSize: 5,
-        reconnectTries: Number.MAX_SAFE_INTEGER,
-        reconnectInterval: 500,
-        useNewUrlParser: true
-    };
-    mongoose.connect(dbURL, dbOptions)
-        .catch(err => {
-            Logger.log.fatal('DATABASE - Error:' + err);
-        });
+  const dbOptions = {
+    poolSize: 5,
+    reconnectTries: Number.MAX_SAFE_INTEGER,
+    reconnectInterval: 500,
+    useNewUrlParser: true,
+  };
+  mongoose.connect(dbURL, dbOptions).catch((err) => {
+    Logger.log.fatal('DATABASE - Error:' + err);
+  });
 };
 
 //Checks whether required attributes/documents are set in the database

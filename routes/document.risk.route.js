@@ -20,6 +20,7 @@ const { uploadDocument } = require('./../helper/document.helper');
 const {
   deleteFile,
   getPreSignedUrl,
+  createZipFile,
 } = require('./../helper/static-file.helper');
 const { addAuditLog } = require('./../helper/audit-log.helper');
 
@@ -109,21 +110,25 @@ router.get('/download', async function (req, res) {
   try {
     const documentIds = req.query.documentIds.split(',');
     const documentData = await Document.find({ _id: { $in: documentIds } })
-      .select('_id keyPath')
+      .select('_id keyPath originalFileName')
       .lean();
-    let promises = [];
-    for (let i = 0; i < documentData.length; i++) {
-      if (documentData[i].keyPath) {
-        promises.push(
-          getPreSignedUrl({
-            filePath: documentData[i].keyPath,
-            getCloudFrontUrl: config.staticServing.isCloudFrontEnabled,
-          }),
-        );
+    if (documentData.length === 1) {
+      let response;
+      if (documentData[0].keyPath) {
+        response = await getPreSignedUrl({
+          filePath: documentData[0].keyPath,
+          getCloudFrontUrl: config.staticServing.isCloudFrontEnabled,
+        });
       }
+      res.status(200).send({ status: 'SUCCESS', data: response });
+    } else {
+      const zipFile = await createZipFile({ documentData });
+      const timestamp = new Date().getTime();
+      const fileName = timestamp + '.zip';
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', 'attachment; filename=' + fileName);
+      zipFile.pipe(res);
     }
-    const response = await Promise.all(promises);
-    res.status(200).send({ status: 'SUCCESS', data: response });
   } catch (e) {
     Logger.log.error('Error occurred in download document ', e.message || e);
     res.status(500).send({
@@ -171,6 +176,7 @@ router.get('/:entityId', async function (req, res) {
       });
       query = {
         $and: [
+          { isDeleted: false },
           {
             entityRefId: mongoose.Types.ObjectId(req.params.entityId),
           },
@@ -197,6 +203,7 @@ router.get('/:entityId', async function (req, res) {
       const applicationIds = applications.map((i) => i._id);
       query = {
         $and: [
+          { isDeleted: false },
           {
             entityRefId: mongoose.Types.ObjectId(req.params.entityId),
           },
@@ -221,6 +228,7 @@ router.get('/:entityId', async function (req, res) {
     } else if (req.query.documentFor === 'client') {
       query = {
         $and: [
+          { isDeleted: false },
           {
             entityRefId: mongoose.Types.ObjectId(req.params.entityId),
           },

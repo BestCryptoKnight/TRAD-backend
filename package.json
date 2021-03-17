@@ -9,6 +9,7 @@
     "node": ">12"
   },
   "dependencies": {
+    "archiver": "^5.3.0",
     "aws-cloudfront-sign": "^2.2.0",
     "aws-sdk": "^2.847.0",
     "axios": "^0.21.1",

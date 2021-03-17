@@ -302,7 +302,7 @@ router.get('/user-details/:clientUserId', async function (req, res) {
         }
         response.push({
           label: i.label,
-          value: clientUser[i.name] || '-',
+          value: clientUser[i.name] || '',
           type: i.type,
         });
       }
@@ -347,7 +347,7 @@ router.get('/details/:clientId', async function (req, res) {
       ) {
         response.push({
           label: i.label,
-          value: client['address'][i.name] || '-',
+          value: client['address'][i.name] || '',
           type: i.type,
         });
       }
@@ -358,8 +358,8 @@ router.get('/details/:clientId', async function (req, res) {
             i.name === 'riskAnalystId' || i.name === 'serviceManagerId'
               ? client[i.name]
                 ? client[i.name]['name']
-                : '-'
-              : client[i.name] || '-',
+                : ''
+              : client[i.name] || '',
           type: i.type,
         });
       }
@@ -684,7 +684,9 @@ router.get('/', async function (req, res) {
     if (req.query.serviceManagerId) {
       aggregationQuery.push({
         $match: {
-          'serviceManagerId._id': req.query.serviceManagerId,
+          'serviceManagerId._id': mongoose.Types.ObjectId(
+            req.query.serviceManagerId,
+          ),
         },
       });
     }
@@ -704,13 +706,34 @@ router.get('/', async function (req, res) {
     if (req.query.riskAnalystId) {
       aggregationQuery.push({
         $match: {
-          'riskAnalystId._id': req.query.riskAnalystId,
+          'riskAnalystId._id': mongoose.Types.ObjectId(req.query.riskAnalystId),
+        },
+      });
+    }
+    if (req.query.insurerId || clientColumn.columns.includes('insurerId')) {
+      aggregationQuery.push({
+        $lookup: {
+          from: 'insurers',
+          localField: 'insurerId',
+          foreignField: '_id',
+          as: 'insurerId',
+        },
+      });
+    }
+    if (req.query.insurerId) {
+      aggregationQuery.push({
+        $match: {
+          'insurerId._id': mongoose.Types.ObjectId(req.query.insurerId),
         },
       });
     }
     clientColumn.columns.push('address');
     const fields = clientColumn.columns.map((i) => {
-      if (i === 'serviceManagerId' || i === 'riskAnalystId') {
+      if (
+        i === 'serviceManagerId' ||
+        i === 'riskAnalystId' ||
+        i === 'insurerId'
+      ) {
         i = i + '.name';
       }
       return [i, 1];
@@ -783,6 +806,9 @@ router.get('/', async function (req, res) {
           user.serviceManagerId = user.serviceManagerId[0]
             ? user.serviceManagerId[0].name
             : '';
+        }
+        if (clientColumn.columns.includes('insurerId') && user.insurerId) {
+          user.insurerId = user.insurerId[0] ? user.insurerId[0].name : '';
         }
         if (clientColumn.columns.includes('fullAddress')) {
           user.fullAddress = Object.values(user.address)
@@ -872,7 +898,7 @@ router.post('/', async function (req, res) {
       return res.status(400).send({
         status: 'ERROR',
         messageCode: 'REQUIRE_FIELD_MISSING',
-        message: 'Please pass client id.',
+        message: 'Require fields are missing',
       });
     }
     let clients = await Client.find({
@@ -900,24 +926,20 @@ router.post('/', async function (req, res) {
     });
     let promiseArr = [];
     for (let i = 0; i < clientData.length; i++) {
-      let client = new Client(clientData[i]);
-      await RssHelper.fetchInsurerDetails({
+      const client = new Client(clientData[i]);
+      const insurer = await RssHelper.fetchInsurerDetails({
         underwriterName: clientData[i].underWriter,
         crmClientId: clientData[i].crmClientId,
         clientId: client._id,
         auditLog: { userType: 'user', userRefId: req.user._id },
       });
+      client.insurerId = insurer && insurer._id ? insurer._id : null;
       const contactsFromCrm = await RssHelper.getClientContacts({
         clientId: clientData[i].crmClientId,
       });
       contactsFromCrm.forEach((crmContact) => {
         let clientUser = new ClientUser(crmContact);
         clientUser.clientId = client._id;
-        /* let signUpToken = jwt.sign(
-          JSON.stringify({ _id: clientUser._id }),
-          config.jwt.secret,
-        );
-        clientUser.signUpToken = signUpToken;*/
         promiseArr.push(clientUser.save());
         promiseArr.push(
           addAuditLog({
@@ -929,24 +951,6 @@ router.post('/', async function (req, res) {
             logDescription: `Client contact ${clientUser.name} added successfully.`,
           }),
         );
-        /*const userName =
-          (clientUser.firstName ? clientUser.firstName + ' ' : '') +
-          (clientUser.lastName ? clientUser.lastName : '');
-        let mailObj = {
-          toAddress: [clientUser.email],
-          subject: 'Welcome to TRAD CLIENT PORTAL',
-          text: {
-            name: userName,
-            setPasswordLink:
-              config.server.frontendUrls.clientPanelBase +
-              config.server.frontendUrls.setPasswordPage +
-              clientUser._id +
-              '?token=' +
-              signUpToken,
-          },
-          mailFor: 'newClientUser',
-        };
-        promiseArr.push(MailHelper.sendMail(mailObj));*/
       });
       promiseArr.push(client.save());
       promiseArr.push(
@@ -990,9 +994,11 @@ router.put('/sync-from-crm/:clientId', async function (req, res) {
     let client = await Client.findOne({ _id: req.params.clientId });
     if (!client) {
       Logger.log.error('No Client found', req.params.crmId);
-      return res
-        .status(400)
-        .send({ status: 'ERROR', message: 'Client not found.' });
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'CLIENT_NOT_FOUND',
+        message: 'Client not found.',
+      });
     }
     const clientDataFromCrm = await RssHelper.getClientById({
       clientId: client.crmClientId,

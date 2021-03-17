@@ -35,7 +35,7 @@ router.post(
         return res.status(400).send({
           status: 'ERROR',
           messageCode: 'USER_NOT_FOUND',
-          message: 'User not found, please try by logging in again.',
+          message: 'User not found, please try by logging in again',
         });
       }
       let s3Response = await StaticFileHelper.uploadFile({
@@ -57,7 +57,7 @@ router.post(
       Logger.log.error('Error occurred.', e.message || e);
       res.status(500).send({
         status: 'ERROR',
-        message: e.message || 'Something went wrong, please try again later.',
+        message: e.message || 'Something went wrong, please try again later',
       });
     }
   },
@@ -73,7 +73,7 @@ router.delete('/profile-picture', async (req, res) => {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'USER_NOT_FOUND',
-      message: 'User not found, please try by logging in again.',
+      message: 'User not found, please try by logging in again',
     });
   }
   if (!req.query.oldImageName) {
@@ -84,7 +84,7 @@ router.delete('/profile-picture', async (req, res) => {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'IMAGE_NOT_FOUND',
-      message: 'Image name not found, unable to remove old profile picture.',
+      message: 'Image name not found, unable to remove old profile picture',
     });
   }
   Logger.log.info('Old image name:', req.query.oldImageName);
@@ -93,7 +93,7 @@ router.delete('/profile-picture', async (req, res) => {
   await User.updateOne({ _id: userId }, { profileKeyPath: null });
   res.status(200).send({
     status: 'SUCCESS',
-    message: 'Profile Picture deleted successfully.',
+    message: 'Profile Picture deleted successfully',
   });
 });
 
@@ -122,7 +122,7 @@ router.get('/profile', async function (req, res) {
     Logger.log.error('Error occurred.', e.message || e);
     res.status(500).send({
       status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
+      message: e.message || 'Something went wrong, please try again later',
     });
   }
 });
@@ -140,7 +140,7 @@ router.get('/module-access', async function (req, res) {
     Logger.log.error('Error occurred.', e.message || e);
     res.status(500).send({
       status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
+      message: e.message || 'Something went wrong, please try again later',
     });
   }
 });
@@ -194,7 +194,7 @@ router.get('/column-name', async function (req, res) {
     Logger.log.error('Error occurred in get column names', e.message || e);
     res.status(500).send({
       status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
+      message: e.message || 'Something went wrong, please try again later',
     });
   }
 });
@@ -230,7 +230,7 @@ router.get('/client-name', async function (req, res) {
     Logger.log.error('Error occurred in get client name list ', e.message || e);
     res.status(500).send({
       status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
+      message: e.message || 'Something went wrong, please try again later',
     });
   }
 });
@@ -248,14 +248,21 @@ router.get('/:userId', async function (req, res) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Something went wrong, please try again.',
+      message: 'Something went wrong, please try again',
     });
   }
   let userId = req.params.userId;
   try {
     const systemModules = require('./../static-files/systemModules');
-    let userData = await User.findById(userId)
-      .select({ name: 1, email: 1, contactNumber: 1, role: 1, moduleAccess: 1 })
+    const userData = await User.findById(userId)
+      .select({
+        name: 1,
+        email: 1,
+        contactNumber: 1,
+        role: 1,
+        moduleAccess: 1,
+        signUpToken: 1,
+      })
       .lean();
     const query =
       userData.role === 'riskAnalyst'
@@ -285,13 +292,15 @@ router.get('/:userId', async function (req, res) {
       delete i._id;
       delete i.name;
     });
+    userData.status = userData.signUpToken ? 'Pending' : 'Active';
+    delete userData.signUpToken;
     Logger.log.info('Fetched details of user successfully.');
     res.status(200).send({ status: 'SUCCESS', data: userData });
   } catch (e) {
     Logger.log.error('Error occurred.', e);
     res.status(500).send({
       status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
+      message: e.message || 'Something went wrong, please try again later',
     });
   }
 });
@@ -367,7 +376,7 @@ router.get('/', async function (req, res) {
     Logger.log.error('Error occurred.', e.message || e);
     res.status(500).send({
       status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
+      message: e.message || 'Something went wrong, please try again later',
     });
   }
 });
@@ -381,7 +390,7 @@ router.post('/', async function (req, res) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'EMAIL_NOT_FOUND',
-      message: 'Please enter email for new user.',
+      message: 'Please enter email for new user',
     });
   }
   try {
@@ -454,12 +463,12 @@ router.post('/', async function (req, res) {
       Logger.log.info('User created successfully.');
       res
         .status(200)
-        .send({ status: 'SUCCESS', message: 'User created successfully.' });
+        .send({ status: 'SUCCESS', message: 'User created successfully' });
       await MailHelper.sendMail(mailObj);
       Logger.log.info('Mail sent to new user successfully.');
     }
   } catch (e) {
-    Logger.log.error('Error occurred.', e.message || e);
+    Logger.log.error('Error occurred', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -543,15 +552,36 @@ router.put('/:userId', async function (req, res) {
       message: 'Require fields are missing',
     });
   }
-  let userId = req.params.userId;
   try {
     let updateObj = {};
+    const user = await User.findById(req.params.userId).lean();
     if (req.body.name) updateObj.name = req.body.name;
     if (req.body.contactNumber)
       updateObj.contactNumber = req.body.contactNumber;
     if (req.body.role) updateObj.role = req.body.role;
     if (req.body.moduleAccess) updateObj.moduleAccess = req.body.moduleAccess;
     let promises = [];
+    if (updateObj.role !== user.role) {
+      const query =
+        user.role === 'riskAnalyst'
+          ? { riskAnalystId: req.params.userId }
+          : { serviceManagerId: req.params.userId };
+      const removeUser =
+        user.role === 'riskAnalyst'
+          ? { riskAnalystId: null }
+          : { serviceManagerId: null };
+      await Client.update(query, removeUser, { multi: true });
+    } else if (req.body.role === user.role && req.body.clientIds.length === 0) {
+      const query =
+        user.role === 'riskAnalyst'
+          ? { riskAnalystId: req.params.userId }
+          : { serviceManagerId: req.params.userId };
+      const removeUser =
+        user.role === 'riskAnalyst'
+          ? { riskAnalystId: null }
+          : { serviceManagerId: null };
+      await Client.update(query, removeUser, { multi: true });
+    }
     if (
       req.body.hasOwnProperty('clientIds') &&
       req.body.clientIds.length !== 0
@@ -603,7 +633,7 @@ router.put('/:userId', async function (req, res) {
         );
       }
     }
-    await User.updateOne({ _id: userId }, updateObj, { new: true });
+    await User.updateOne({ _id: req.params.userId }, updateObj, { new: true });
     await addAuditLog({
       entityType: 'user',
       entityRefId: req.params.userId,

@@ -29,7 +29,7 @@ const policy = require('./policy.risk.route');
 const privilege = require('./privilege.risk.route');
 const settings = require('./settings.risk.route');
 const task = require('./task.risk.route');
-const user = require('./user.route');
+const user = require('./user.risk.route');
 
 router.use('/auth', auth);
 router.use('/privilege', privilege);

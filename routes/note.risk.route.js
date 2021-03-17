@@ -215,7 +215,7 @@ router.get('/:entityId', async function (req, res) {
       {
         name: 'isPublic',
         label: 'Public',
-        type: 'date',
+        type: 'booleanString',
       },
       {
         name: 'createdById',

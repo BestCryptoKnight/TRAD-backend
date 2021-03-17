@@ -24,7 +24,7 @@ router.get('/column-name', async function (req, res) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Require field is missing.',
+      message: 'Require field is missing',
     });
   }
   try {
@@ -93,10 +93,13 @@ router.get('/column-name', async function (req, res) {
 });
 
 /**
- * Get Details of Client Policy
+ * Get Details of Client Policy For Modal
  */
 router.get('/client/policy-details/:policyId', async function (req, res) {
-  if (!req.params.policyId) {
+  if (
+    !req.params.policyId ||
+    !mongoose.Types.ObjectId.isValid(req.params.policyId)
+  ) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -106,14 +109,19 @@ router.get('/client/policy-details/:policyId', async function (req, res) {
   try {
     const module = StaticFile.modules.find((i) => i.name === 'client-policy');
     const policyData = await Policy.findById(req.params.policyId)
+      .populate({ path: 'insurerId', select: 'name' })
       .select({ __v: 0 })
       .lean();
     let response = [];
     module.manageColumns.forEach((i) => {
       if (policyData.hasOwnProperty(i.name)) {
+        const value =
+          i.name === 'insurerId' && policyData[i.name]
+            ? policyData[i.name]['name']
+            : policyData[i.name] || '';
         response.push({
           label: i.label,
-          value: policyData[i.name] || '-',
+          value: value || '',
           type: i.type,
         });
       }
@@ -121,66 +129,6 @@ router.get('/client/policy-details/:policyId', async function (req, res) {
     res.status(200).send({ status: 'SUCCESS', data: response });
   } catch (e) {
     Logger.log.error('Error occurred in get policy details ', e.message || e);
-    res.status(500).send({
-      status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
-    });
-  }
-});
-
-//TODO remove
-/**
- * List Client Policies
- */
-router.get('/client/:clientId', async function (req, res) {
-  if (!req.params.clientId) {
-    Logger.log.error('Client id not found.');
-    return res.status(400).send({
-      status: 'ERROR',
-      messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Please pass client id.',
-    });
-  }
-  try {
-    const module = StaticFile.modules.find((i) => i.name === 'client-policy');
-    const policyColumn = req.user.manageColumns.find(
-      (i) => i.moduleName === 'client-policy',
-    );
-    let queryFilter = {
-      isDeleted: false,
-      clientId: req.params.clientId,
-    };
-    let sortingOptions = {};
-    if (req.query.sortBy && req.query.sortOrder) {
-      sortingOptions[req.query.sortBy] = req.query.sortOrder;
-    }
-    if (req.query.search)
-      queryFilter.name = { $regex: req.query.search, $options: 'i' };
-    let option = {
-      page: parseInt(req.query.page) || 1,
-      limit: parseInt(req.query.limit) || 5,
-    };
-    option.select = policyColumn.columns.toString().replace(/,/g, ' ');
-    option.sort = sortingOptions;
-    option.lean = true;
-    let responseObj = await Policy.paginate(queryFilter, option);
-    responseObj.headers = [];
-    for (let i = 0; i < module.manageColumns.length; i++) {
-      if (policyColumn.columns.includes(module.manageColumns[i].name)) {
-        responseObj.headers.push(module.manageColumns[i]);
-      }
-    }
-    responseObj.docs.forEach((data) => {
-      if (data.product) {
-        data.product = {
-          id: data._id,
-          value: data.product,
-        };
-      }
-    });
-    res.status(200).send({ status: 'SUCCESS', data: responseObj });
-  } catch (e) {
-    Logger.log.error('Error occurred in get insurer list ', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -191,8 +139,11 @@ router.get('/client/:clientId', async function (req, res) {
 /**
  * Get Details of CI Policy
  */
-router.get('/ci-details/:policyId', async function (req, res) {
-  if (!req.params.policyId) {
+router.get('/details/:policyId', async function (req, res) {
+  if (
+    !req.params.policyId ||
+    !mongoose.Types.ObjectId.isValid(req.params.policyId)
+  ) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -202,50 +153,20 @@ router.get('/ci-details/:policyId', async function (req, res) {
   try {
     const module = StaticFile.modules.find((i) => i.name === 'insurer-policy');
     const policyData = await Policy.findById(req.params.policyId)
+      .populate({ path: 'insurerId clientId', select: 'name' })
       .select({ __v: 0 })
       .lean();
     let response = [];
     module.manageColumns.forEach((i) => {
       if (policyData.hasOwnProperty(i.name)) {
+        const value =
+          (i.name === 'insurerId' || i.name === 'clientId') &&
+          policyData[i.name]
+            ? policyData[i.name]['name']
+            : policyData[i.name] || '';
         response.push({
           label: i.label,
-          value: policyData[i.name] || '-',
-          type: i.type,
-        });
-      }
-    });
-    res.status(200).send({ status: 'SUCCESS', data: response });
-  } catch (e) {
-    Logger.log.error('Error occurred in get policy details ', e.message || e);
-    res.status(500).send({
-      status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
-    });
-  }
-});
-
-/**
- * Get Details of RMP Policy
- */
-router.get('/rmp-details/:policyId', async function (req, res) {
-  if (!req.params.policyId) {
-    return res.status(400).send({
-      status: 'ERROR',
-      messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Require fields are missing',
-    });
-  }
-  try {
-    const module = StaticFile.modules.find((i) => i.name === 'insurer-matrix');
-    const policyData = await Policy.findById(req.params.policyId)
-      .select({ __v: 0 })
-      .lean();
-    let response = [];
-    module.manageColumns.forEach((i) => {
-      if (policyData.hasOwnProperty(i.name)) {
-        response.push({
-          label: i.label,
-          value: policyData[i.name] || '-',
+          value: value,
           type: i.type,
         });
       }
@@ -278,11 +199,11 @@ router.get('/:entityId', async function (req, res) {
     switch (req.query.listFor) {
       case 'insurer-policy':
         queryFilter.insurerId = req.params.entityId;
-        queryFilter.product = { $regex: '.*Credit Insurance.*' };
+        /*queryFilter.product = { $regex: '.*Credit Insurance.*' };
         break;
       case 'insurer-matrix':
         queryFilter.insurerId = req.params.entityId;
-        queryFilter.product = { $regex: '.*Risk Management Package.*' };
+        queryFilter.product = { $regex: '.*Risk Management Package.*' };*/
         break;
       case 'client-policy':
         queryFilter.clientId = req.params.entityId;
@@ -336,7 +257,7 @@ router.get('/:entityId', async function (req, res) {
       }
       if (policyColumn.columns.includes('insurerId')) {
         data.insurerId =
-          data.insurerId && data.insurerId.name ? data.insurerId.name : '-';
+          data.insurerId && data.insurerId.name ? data.insurerId.name : '';
       }
       delete data.id;
     });
@@ -370,8 +291,8 @@ router.put('/column-name', async function (req, res) {
     let updateColumns = [];
     let module;
     switch (req.body.columnFor) {
+      // case 'insurer-matrix':
       case 'insurer-policy':
-      case 'insurer-matrix':
       case 'client-policy':
         if (req.body.isReset) {
           module = StaticFile.modules.find(
@@ -409,7 +330,10 @@ router.put('/column-name', async function (req, res) {
  * Sync Policies from RSS - Update
  */
 router.put('/sync-from-crm/:insurerId', async function (req, res) {
-  if (!req.params.insurerId || !req.query.listFor) {
+  if (
+    !req.params.insurerId ||
+    !mongoose.Types.ObjectId.isValid(req.params.insurerId)
+  ) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -417,8 +341,8 @@ router.put('/sync-from-crm/:insurerId', async function (req, res) {
     });
   }
   try {
-    let query;
-    switch (req.query.listFor) {
+    /*let query;
+    /!* switch (req.query.listFor) {
       case 'insurer-policy':
         query = { product: { $con: 'Credit Insurance' } };
         break;
@@ -431,7 +355,7 @@ router.put('/sync-from-crm/:insurerId', async function (req, res) {
           messageCode: 'BAD_REQUEST',
           message: 'Please pass correct fields',
         });
-    }
+    }*!/*/
     const [policies, insurer] = await Promise.all([
       Policy.aggregate([
         {
@@ -458,21 +382,18 @@ router.put('/sync-from-crm/:insurerId', async function (req, res) {
       return res.status(400).send({
         status: 'ERROR',
         messageCode: 'POLICY_NOT_FOUND',
-        message: 'Policies not found.',
+        message: 'Policies not found',
       });
     }
     console.log('Total Clients : ', policies.length);
     let policiesFromCrm;
     let promiseArr = [];
     let newPolicies = [];
-    const logDescription =
-      req.query.listFor === 'insurer-policy' ? 'policy' : 'matrix';
     for (let i = 0; i < policies.length; i++) {
       policiesFromCrm = await getClientPolicies({
         clientId: policies[i]._id,
         crmClientId: policies[i].crmClientId[0],
         insurerId: req.params.insurerId,
-        query: query,
         page: 1,
         limit: 50,
       });
@@ -496,7 +417,7 @@ router.put('/sync-from-crm/:insurerId', async function (req, res) {
               userType: 'user',
               userRefId: req.user._id,
               actionType: 'sync',
-              logDescription: `Insurer ${insurer.name} ${logDescription} ${policiesFromCrm[j].product} synced successfully`,
+              logDescription: `Insurer ${insurer.name} policy ${policiesFromCrm[j].product} synced successfully`,
             }),
           );
         } else {
@@ -518,7 +439,7 @@ router.put('/sync-from-crm/:insurerId', async function (req, res) {
             userType: 'user',
             userRefId: req.user._id,
             actionType: 'sync',
-            logDescription: `Insurer ${insurer.name} ${logDescription} ${policyData[i].product} synced successfully`,
+            logDescription: `Insurer ${insurer.name} policy ${policyData[i].product} synced successfully`,
           }),
         );
       }
@@ -540,7 +461,10 @@ router.put('/sync-from-crm/:insurerId', async function (req, res) {
  * Sync Clients Policies from RSS - Update
  */
 router.put('/client/sync-from-crm/:clientId', async function (req, res) {
-  if (!req.params.clientId) {
+  if (
+    !req.params.clientId ||
+    !mongoose.Types.ObjectId.isValid(req.params.clientId)
+  ) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',

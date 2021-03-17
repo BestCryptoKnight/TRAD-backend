@@ -15,13 +15,16 @@ const Application = mongoose.model('application');
 const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
 const {
-  getEntityDetailsByABN,
-  getEntityDetailsByACN,
   getApplicationList,
   storeCompanyDetails,
   storePartnerDetails,
   storeCreditLimitDetails,
 } = require('./../helper/application.helper');
+const {
+  getEntityDetailsByABN,
+  getEntityDetailsByACN,
+  getEntityListByName,
+} = require('./../helper/abr.helper');
 const { getClientList } = require('./../helper/client.helper');
 const { getDebtorList } = require('./../helper/debtor.helper');
 const StaticData = require('./../static-files/staticData.json');
@@ -287,74 +290,136 @@ router.get('/search-entity/:searchString', async function (req, res) {
         searchString: req.params.searchString,
       });
     }
-    let response = [];
-    entityData[0].elements.forEach((data) => {
-      if (data.name === 'response') {
-        data.elements.forEach((i) => {
-          if (
-            i.name === 'businessEntity202001' ||
-            i.name === 'businessEntity201408'
-          ) {
-            let data = {};
-            i.elements.forEach((j) => {
-              if (j.name === 'ABN') {
-                j.elements.forEach((k) => {
-                  if (k.name === 'identifierValue') {
-                    data['abn'] = k.elements[0]['text'];
-                  }
-                });
-              } else if (j.name === 'entityStatus') {
-                j.elements.forEach((k) => {
-                  if (k.name === 'entityStatusCode') {
-                    data['isActive'] = k.elements[0]['text'];
-                  }
-                });
-              } else if (j.name === 'ASICNumber') {
-                data['acn'] = j.elements[0]['text'];
-              } else if (j.name === 'entityType') {
-                j.elements.forEach((k) => {
-                  if (k.name === 'entityDescription') {
-                    data['entityType'] = k.elements[0]['text'];
-                  }
-                });
-              } else if (j.name === 'goodsAndServicesTax') {
-                j.elements.forEach((k) => {
-                  if (k.name === 'effectiveFrom') {
-                    data['gstStatus'] = k.elements[0]['text'];
-                  }
-                });
-              } else if (j.name === 'mainName') {
-                j.elements.forEach((k) => {
-                  if (k.name === 'organisationName') {
-                    data['entityName'] = k.elements[0]['text'];
-                  } else if (k.name === 'effectiveFrom') {
-                    data['registeredDate'] = k.elements[0]['text'];
-                  }
-                });
-              } else if (j.name === 'mainTradingName') {
-                j.elements.forEach((k) => {
-                  if (k.name === 'organisationName') {
-                    data['tradingName'] = k.elements[0]['text'];
-                  }
-                });
-              } else if (j.name === 'mainBusinessPhysicalAddress') {
-                j.elements.forEach((k) => {
-                  if (k.name === 'stateCode') {
-                    data['state'] = k.elements[0]['text'];
-                  } else if (k.name === 'postcode') {
-                    data['postCode'] = k.elements[0]['text'];
-                  }
-                });
-              }
-            });
-            response.push(data);
-          }
-        });
-      }
-    });
+    let response = {};
+    if (entityData && entityData.response) {
+      const entityDetails =
+        entityData.response.businessEntity202001 ||
+        entityData.response.businessEntity201408;
+      if (entityDetails.ABN) response.abn = entityDetails.ABN.identifierValue;
+      if (
+        entityDetails.entityStatus &&
+        entityDetails.entityStatus.entityStatusCode
+      )
+        response.isActive = entityDetails.entityStatus.entityStatusCode;
+      if (
+        entityDetails.entityStatus &&
+        entityDetails.entityStatus.effectiveFrom
+      )
+        response.registeredDate = entityDetails.entityStatus.effectiveFrom;
+      if (entityDetails.ASICNumber)
+        response.acn =
+          typeof entityDetails.ASICNumber.length === 'string'
+            ? entityDetails.ASICNumber
+            : '';
+      if (entityDetails.entityType)
+        response.entityType = [
+          {
+            label: entityDetails.entityType.entityDescription,
+            value: entityDetails.entityType.entityDescription,
+          },
+        ];
+      if (entityDetails.goodsAndServicesTax)
+        response.gstStatus = entityDetails.goodsAndServicesTax.effectiveFrom;
+      if (entityDetails.mainName)
+        response.entityName = [
+          {
+            label: Array.isArray(entityDetails.mainName)
+              ? entityDetails.mainName[0].organisationName
+              : entityDetails.mainName.organisationName,
+            value: Array.isArray(entityDetails.mainName)
+              ? entityDetails.mainName[0].organisationName
+              : entityDetails.mainName.organisationName,
+          },
+        ];
+      if (entityDetails.mainTradingName)
+        response.tradingName = entityDetails.mainTradingName.organisationName;
+      if (entityDetails.mainBusinessPhysicalAddress[0])
+        response.state = entityDetails.mainBusinessPhysicalAddress[0].stateCode;
+      if (entityDetails.mainBusinessPhysicalAddress[0])
+        response.postCode =
+          entityDetails.mainBusinessPhysicalAddress[0].postcode;
+    }
     res.status(200).send({
       status: 'SUCCESS',
-      data: response.length !== 0 ? response[0] : {},
+      data: response,
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in search by ABN number  ', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Search from Entity Name
+ */
+router.get('/search-entity-list/:searchString', async function (req, res) {
+  if (!req.params.searchString || !req.query.clientId) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const debtor = await Debtor.findOne({
+      $or: [{ abn: req.params.searchString }, { acn: req.params.searchString }],
+    }).lean();
+    if (debtor) {
+      const application = await Application.findOne({
+        clientId: req.query.clientId,
+        debtorId: debtor._id,
+        status: {
+          $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED', 'DRAFT'],
+        },
+      }).lean();
+      if (application) {
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'APPLICATION_ALREADY_EXISTS',
+          message: 'Application already exists.',
+        });
+      }
+    }
+    let entityList = await getEntityListByName({
+      searchString: req.params.searchString,
+    });
+    let response = [];
+    let entityData = {};
+    if (
+      entityList.ABRPayloadSearchResults.response &&
+      entityList.ABRPayloadSearchResults.response.searchResultsList &&
+      entityList.ABRPayloadSearchResults.response.searchResultsList
+        .searchResultsRecord.length !== 0
+    ) {
+      entityList.ABRPayloadSearchResults.response.searchResultsList.searchResultsRecord.forEach(
+        (data) => {
+          console.log(data);
+          entityData = {};
+          if (data.ABN) entityData.abn = data.ABN.identifierValue;
+          if (data.ABN) entityData.status = data.ABN.identifierStatus;
+          let fieldName =
+            data.mainName ||
+            data.businessName ||
+            data.otherTradingName ||
+            data.mainTradingName;
+          if (fieldName) {
+            entityData.label = fieldName.organisationName;
+            entityData.value = fieldName.organisationName;
+          }
+          if (data.mainBusinessPhysicalAddress) {
+            entityData.state = data.mainBusinessPhysicalAddress.stateCode;
+            entityData.postCode = data.mainBusinessPhysicalAddress.postcode;
+          }
+          response.push(entityData);
+        },
+      );
+    }
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: response,
     });
   } catch (e) {
     Logger.log.error('Error occurred in search by ABN number  ', e);
