@@ -21,6 +21,7 @@ const {
   deleteFile,
   getPreSignedUrl,
   createZipFile,
+  downloadDocument,
 } = require('./../helper/static-file.helper');
 const { addAuditLog } = require('./../helper/audit-log.helper');
 
@@ -100,7 +101,7 @@ router.get('/column-name', async function (req, res) {
  * Download documents
  */
 router.get('/download', async function (req, res) {
-  if (!req.query.documentIds) {
+  if (!req.query.documentIds || !req.query.action) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -112,22 +113,42 @@ router.get('/download', async function (req, res) {
     const documentData = await Document.find({ _id: { $in: documentIds } })
       .select('_id keyPath originalFileName')
       .lean();
-    if (documentData.length === 1) {
+    if (req.query.action.toLowerCase() === 'view') {
       let response;
-      if (documentData[0].keyPath) {
-        response = await getPreSignedUrl({
-          filePath: documentData[0].keyPath,
-          getCloudFrontUrl: config.staticServing.isCloudFrontEnabled,
-        });
+      if (documentData.length === 1) {
+        if (documentData[0].keyPath) {
+          response = await getPreSignedUrl({
+            filePath: documentData[0].keyPath,
+            getCloudFrontUrl: config.staticServing.isCloudFrontEnabled,
+          });
+        }
       }
       res.status(200).send({ status: 'SUCCESS', data: response });
     } else {
-      const zipFile = await createZipFile({ documentData });
-      const timestamp = new Date().getTime();
-      const fileName = timestamp + '.zip';
-      res.setHeader('Content-Type', 'application/zip');
-      res.setHeader('Content-Disposition', 'attachment; filename=' + fileName);
-      zipFile.pipe(res);
+      if (documentData.length === 1) {
+        let response;
+        if (documentData[0].keyPath) {
+          response = await downloadDocument({
+            filePath: documentData[0].keyPath,
+          });
+          res.setHeader(
+            'Content-Disposition',
+            'attachment; filename=' + documentData[0].originalFileName,
+          );
+          return response.pipe(res);
+        }
+        res.status(200).send({ status: 'SUCCESS', data: response });
+      } else {
+        const zipFile = await createZipFile({ documentData });
+        const timestamp = new Date().getTime();
+        const fileName = timestamp + '.zip';
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader(
+          'Content-Disposition',
+          'attachment; filename=' + fileName,
+        );
+        return zipFile.pipe(res);
+      }
     }
   } catch (e) {
     Logger.log.error('Error occurred in download document ', e.message || e);

@@ -128,10 +128,10 @@ const createZipFile = ({ documentData }) => {
           fileName: item.originalFileName,
         };
       });
-
       let zip = new archiver.create('zip');
       zip.on('error', (error) => {
-        console.log('ERROR :: ', error);
+        Logger.log.error('Error occurred in creating zip ', error);
+        return reject(error.message);
       });
       s3FileDownloadStreams.forEach((s3FileDownloadStream) => {
         zip.append(s3FileDownloadStream.stream, {
@@ -142,6 +142,21 @@ const createZipFile = ({ documentData }) => {
       return resolve(zip);
     } catch (e) {
       Logger.log.error('Error occurred in creating zip file ', e);
+      return reject(e.message);
+    }
+  });
+};
+
+const downloadDocument = ({ filePath }) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const response = await s3
+        .getObject({ Bucket: config.staticServing.bucketName, Key: filePath })
+        .createReadStream();
+      return resolve(response);
+    } catch (e) {
+      Logger.log.error('Error occurred in download document ', e);
+      return reject(e.message);
     }
   });
 };
@@ -151,4 +166,5 @@ module.exports = {
   getPreSignedUrl,
   deleteFile,
   createZipFile,
+  downloadDocument,
 };
