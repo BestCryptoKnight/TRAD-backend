@@ -77,11 +77,15 @@ router.get('/column-name', async function (req, res) {
 /**
  * Get Entity Type List
  * */
-router.get('/entity-type', async function (req, res) {
+router.get('/entity-list', async function (req, res) {
   try {
     res.status(200).send({
       status: 'SUCCESS',
-      data: StaticData.entityType,
+      data: {
+        streetType: StaticData.streetType,
+        australianStates: StaticData.australianStates,
+        entityType: StaticData.entityType,
+      },
     });
   } catch (e) {
     Logger.log.error('Error occurred in get entity type list', e.message || e);
@@ -212,7 +216,6 @@ router.get('/', async function (req, res) {
       delete debtor.address;
       delete debtor.id;
     });
-    responseObj.entityType = StaticData.entityType;
     res.status(200).send({
       status: 'SUCCESS',
       data: responseObj,

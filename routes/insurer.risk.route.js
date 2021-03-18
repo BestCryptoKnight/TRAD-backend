@@ -187,6 +187,16 @@ router.get('/user/column-name', async function (req, res) {
  * Get Insurer Contacts List
  */
 router.get('/user/:insurerId', async function (req, res) {
+  if (
+    !req.params.insurerId ||
+    !mongoose.Types.ObjectId.isValid(req.params.insurerId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing',
+    });
+  }
   try {
     const module = StaticFile.modules.find((i) => i.name === 'insurer-user');
     const insurerColumn = req.user.manageColumns.find(
@@ -268,6 +278,89 @@ router.get('/user/:insurerId', async function (req, res) {
 });
 
 /**
+ * Get Insurer Matrix
+ */
+router.get('/matrix/:insurerId', async function (req, res) {
+  if (
+    !req.params.insurerId ||
+    !mongoose.Types.ObjectId.isValid(req.params.insurerId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing',
+    });
+  }
+  try {
+    const matrixFileName = [
+      'trad',
+      'bond',
+      'euler',
+      'coface',
+      'qbe',
+      'atradius',
+    ];
+    const insurer = await Insurer.findById(req.params.insurerId).lean();
+    if (!insurer) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'NO_INSURER_FOUND',
+        message: 'No insurer found',
+      });
+    }
+    let fileName;
+    matrixFileName.find((i) => {
+      if (insurer.name.toLowerCase().includes(i)) {
+        fileName = i + '.json';
+      }
+    });
+    let insurerMatrix = require(`./../static-files/matrixes/${fileName}`);
+    insurerMatrix = JSON.parse(JSON.stringify(insurerMatrix));
+    let generalGuideLines = [];
+    for (let key in insurerMatrix.generalTerms) {
+      generalGuideLines.push(
+        insurerMatrix.generalTerms[key]['conditionString'],
+      );
+    }
+    insurerMatrix.priceRange.forEach((data) => {
+      data.level = (data.lowerLimit
+        ? '$' + data.lowerLimit + ' '
+        : 'Up '
+      ).concat(data.upperLimit ? 'to $' + data.upperLimit : '+');
+      data.australianIndividuals = data.australianIndividuals.reports;
+      data.australianCompanies = data.australianCompanies.reports;
+      data.newZealand = data.newZealand.reports;
+      data.australianReports = data.australianIndividuals.concat(
+        data.australianCompanies,
+      );
+      if (
+        (data.australianIndividuals.length ===
+          data.australianCompanies.length) ===
+        data.australianReports.length
+      ) {
+        data.australianReports = data.australianIndividuals;
+        delete data.australianIndividuals;
+        delete data.australianCompanies;
+      } else {
+        delete data.australianReports;
+      }
+      delete data.lowerLimit;
+      delete data.upperLimit;
+    });
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: { generalGuideLines, priceRange: insurerMatrix.priceRange },
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in get insurer matrix ', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
  * Get Insurer List
  */
 router.get('/', async function (req, res) {
@@ -340,25 +433,27 @@ router.get('/', async function (req, res) {
     }
     if (insurers && insurers.length !== 0) {
       insurers[0].paginatedResult.forEach((user) => {
-        if (insurerColumn.columns.includes('fullAddress')) {
-          user.fullAddress = Object.values(user.address)
-            .toString()
-            .replace(/,,/g, ',');
-        }
-        if (insurerColumn.columns.includes('addressLine')) {
-          user.addressLine = user.address.addressLine;
-        }
-        if (insurerColumn.columns.includes('city')) {
-          user.city = user.address.city;
-        }
-        if (insurerColumn.columns.includes('state')) {
-          user.state = user.address.state;
-        }
-        if (insurerColumn.columns.includes('country')) {
-          user.country = user.address.country;
-        }
-        if (insurerColumn.columns.includes('zipCode')) {
-          user.zipCode = user.address.zipCode;
+        if (user.address) {
+          if (insurerColumn.columns.includes('fullAddress')) {
+            user.fullAddress = Object.values(user.address)
+              .toString()
+              .replace(/,,/g, ',');
+          }
+          if (insurerColumn.columns.includes('addressLine')) {
+            user.addressLine = user.address.addressLine;
+          }
+          if (insurerColumn.columns.includes('city')) {
+            user.city = user.address.city;
+          }
+          if (insurerColumn.columns.includes('state')) {
+            user.state = user.address.state;
+          }
+          if (insurerColumn.columns.includes('country')) {
+            user.country = user.address.country;
+          }
+          if (insurerColumn.columns.includes('zipCode')) {
+            user.zipCode = user.address.zipCode;
+          }
         }
         delete user.address;
       });
@@ -380,7 +475,7 @@ router.get('/', async function (req, res) {
       },
     });
   } catch (e) {
-    Logger.log.error('Error occurred in get insurer list ', e.message || e);
+    Logger.log.error('Error occurred in get insurer list ', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -633,15 +728,17 @@ router.put('/column-name', async function (req, res) {
  * Sync Insurer Users from RSS - Update
  */
 router.put('/user/sync-from-crm/:insurerId', async function (req, res) {
+  if (
+    !req.params.insurerId ||
+    !mongoose.Types.ObjectId.isValid(req.params.insurerId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing',
+    });
+  }
   try {
-    if (!req.params.insurerId) {
-      Logger.log.error('Insurer id not found.');
-      return res.status(400).send({
-        status: 'ERROR',
-        messageCode: 'REQUIRE_FIELD_MISSING',
-        message: 'Please pass insurer id.',
-      });
-    }
     const insurer = await Insurer.findOne({ _id: req.params.insurerId }).lean();
     if (!insurer) {
       Logger.log.error('No Insurer found', req.params.crmId);

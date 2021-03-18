@@ -1,963 +1,811 @@
 {
   "streetType": [
     {
-      "_id": "ACC",
+      "_id": "ACCS",
       "name": "Access"
     },
     {
-      "_id": "Al",
+      "_id": "ALLY",
       "name": "Alley"
     },
     {
-      "_id": "Awy",
+      "_id": "ALWY",
       "name": "Alleyway"
     },
     {
-      "_id": "Amb",
+      "_id": "AMBL",
       "name": "Amble"
     },
     {
-      "_id": "Anc",
+      "_id": "ANCG",
       "name": "Anchorage"
     },
     {
-      "_id": "App",
+      "_id": "APP",
       "name": "Approach"
     },
     {
-      "_id": "Arc",
+      "_id": "ARC",
       "name": "Arcade"
     },
     {
-      "_id": "Art",
+      "_id": "ART",
       "name": "Artery"
     },
     {
-      "_id": "Ave",
+      "_id": "AVE",
       "name": "Avenue"
     },
     {
-      "_id": "Bk",
-      "name": "Bank"
-    },
-    {
-      "_id": "Bas",
+      "_id": "BASN",
       "name": "Basin"
     },
     {
-      "_id": "By",
-      "name": "Bay"
-    },
-    {
-      "_id": "Bch",
+      "_id": "BCH",
       "name": "Beach"
     },
     {
-      "_id": "Bt",
-      "name": "Belt"
-    },
-    {
-      "_id": "Bnd",
+      "_id": "BEND",
       "name": "Bend"
     },
     {
-      "_id": "Blk",
+      "_id": "BLK",
       "name": "Block"
     },
     {
-      "_id": "Blv",
+      "_id": "BVD",
       "name": "Boulevard"
     },
     {
-      "_id": "Bwl",
-      "name": "Bowl"
-    },
-    {
-      "_id": "Br",
+      "_id": "BRCE",
       "name": "Brace"
     },
     {
-      "_id": "Bra",
+      "_id": "BRAE",
       "name": "Brae"
     },
     {
-      "_id": "Brk",
+      "_id": "BRK",
       "name": "Break"
     },
     {
-      "_id": "Bs",
-      "name": "Briars"
-    },
-    {
-      "_id": "Brg",
+      "_id": "BDGE",
       "name": "Bridge"
     },
     {
-      "_id": "Bwy",
+      "_id": "BDWY",
       "name": "Broadway"
     },
     {
-      "_id": "Brw",
+      "_id": "BROW",
       "name": "Brow"
     },
     {
-      "_id": "Bps",
+      "_id": "BYPA",
       "name": "Bypass"
     },
     {
-      "_id": "Byw",
+      "_id": "BYWY",
       "name": "Byway"
     },
     {
-      "_id": "Cwy",
+      "_id": "CAUS",
       "name": "Causeway"
     },
     {
-      "_id": "Ctr",
+      "_id": "CTR",
       "name": "Centre"
     },
     {
-      "_id": "Cnwy",
+      "_id": "CNWY",
       "name": "Centreway"
     },
     {
-      "_id": "Ch",
+      "_id": "CH",
       "name": "Chase"
     },
     {
-      "_id": "Cir",
+      "_id": "CIR",
       "name": "Circle"
     },
     {
-      "_id": "Clt",
+      "_id": "CLT",
       "name": "Circlet"
     },
     {
-      "_id": "Cct",
+      "_id": "CCT",
       "name": "Circuit"
     },
     {
-      "_id": "Crc",
+      "_id": "CRCS",
       "name": "Circus"
     },
     {
-      "_id": "Cl",
+      "_id": "CL",
       "name": "Close"
     },
     {
-      "_id": "Cld",
+      "_id": "CLDE",
       "name": "Colonnade"
     },
     {
-      "_id": "Cmn",
+      "_id": "CMMN",
       "name": "Common"
     },
     {
-      "_id": "Cnc",
+      "_id": "CON",
       "name": "Concourse"
     },
     {
-      "_id": "Cps",
+      "_id": "CPS",
       "name": "Copse"
     },
     {
-      "_id": "Cnr",
+      "_id": "CNR",
       "name": "Corner"
     },
     {
-      "_id": "Cso",
+      "_id": "CSO",
       "name": "Corso"
     },
     {
-      "_id": "Crse",
-      "name": "Course"
-    },
-    {
-      "_id": "Ct",
+      "_id": "CT",
       "name": "Court"
     },
     {
-      "_id": "Cts",
-      "name": "Courts"
-    },
-    {
-      "_id": "Cyd",
+      "_id": "CTYD",
       "name": "Courtyard"
     },
     {
-      "_id": "Cve",
+      "_id": "COVE",
       "name": "Cove"
     },
     {
-      "_id": "Crs",
+      "_id": "CRES",
       "name": "Crescent"
     },
     {
-      "_id": "Cs",
+      "_id": "CRST",
       "name": "Crest"
     },
     {
-      "_id": "Crft",
-      "name": "Croft"
-    },
-    {
-      "_id": "Crss",
+      "_id": "CRSS",
       "name": "Cross"
     },
     {
-      "_id": "Csg",
+      "_id": "CRSG",
       "name": "Crossing"
     },
     {
-      "_id": "Crd",
+      "_id": "CRD",
       "name": "Crossroad"
     },
     {
-      "_id": "Crw",
+      "_id": "COWY",
       "name": "Crossway"
     },
     {
-      "_id": "Csw",
+      "_id": "CUWY",
       "name": "Cruiseway"
     },
     {
-      "_id": "Cds",
+      "_id": "CDS",
       "name": "Cul-de-sac"
     },
     {
-      "_id": "Cut",
+      "_id": "CTTG",
       "name": "Cutting"
     },
     {
-      "_id": "Dal",
+      "_id": "DALE",
       "name": "Dale"
     },
     {
-      "_id": "Dl",
+      "_id": "DELL",
       "name": "Dell"
     },
     {
-      "_id": "Dvn",
+      "_id": "DEVN",
       "name": "Deviation"
     },
     {
-      "_id": "Dip",
+      "_id": "DIP",
       "name": "Dip"
     },
     {
-      "_id": "Dtr",
+      "_id": "DSTR",
       "name": "Distributor"
     },
     {
-      "_id": "Dn",
-      "name": "Downs"
-    },
-    {
-      "_id": "Dr",
+      "_id": "DR",
       "name": "Drive"
     },
     {
-      "_id": "Dry",
+      "_id": "DRWY",
       "name": "Driveway"
     },
     {
-      "_id": "Ea",
-      "name": "East"
-    },
-    {
-      "_id": "Ege",
+      "_id": "EDGE",
       "name": "Edge"
     },
     {
-      "_id": "Elb",
+      "_id": "ELB",
       "name": "Elbow"
     },
     {
-      "_id": "Elm",
-      "name": "Elm"
-    },
-    {
-      "_id": "Ed",
+      "_id": "END",
       "name": "End"
     },
     {
-      "_id": "Ent",
+      "_id": "ENT",
       "name": "Entrance"
     },
     {
-      "_id": "Esp",
+      "_id": "ESP",
       "name": "Esplanade"
     },
     {
-      "_id": "Est",
+      "_id": "EST",
       "name": "Estate"
     },
     {
-      "_id": "Exp",
+      "_id": "EXP",
       "name": "Expressway"
     },
     {
-      "_id": "Extn",
+      "_id": "EXTN",
       "name": "Extension"
     },
     {
-      "_id": "Fay",
+      "_id": "FAWY",
       "name": "Fairway"
     },
     {
-      "_id": "Ftk",
+      "_id": "FTRK",
       "name": "Fire Track"
     },
     {
-      "_id": "Ftl",
+      "_id": "FITR",
       "name": "Firetrail"
     },
     {
-      "_id": "Flt",
+      "_id": "FLAT",
       "name": "Flat"
     },
     {
-      "_id": "Flats",
-      "name": "Flats"
-    },
-    {
-      "_id": "Flw",
+      "_id": "FOLW",
       "name": "Follow"
     },
     {
-      "_id": "Ftw",
+      "_id": "FTWY",
       "name": "Footway"
     },
     {
-      "_id": "Fsr",
+      "_id": "FSHR",
       "name": "Foreshore"
     },
     {
-      "_id": "Fmn",
+      "_id": "FORM",
       "name": "Formation"
     },
     {
-      "_id": "Fwy",
+      "_id": "FWY",
       "name": "Freeway"
     },
     {
-      "_id": "Frt",
+      "_id": "FRNT",
       "name": "Front"
     },
     {
-      "_id": "Fr",
+      "_id": "FRTG",
       "name": "Frontage"
     },
     {
-      "_id": "Gap",
+      "_id": "GAP",
       "name": "Gap"
     },
     {
-      "_id": "Gdn",
+      "_id": "GDN",
       "name": "Garden"
     },
     {
-      "_id": "Gds",
+      "_id": "GDNS",
       "name": "Gardens"
     },
     {
-      "_id": "Gte",
+      "_id": "GTE",
       "name": "Gate"
     },
     {
-      "_id": "Gts",
+      "_id": "GTES",
       "name": "Gates"
     },
     {
-      "_id": "Gl",
+      "_id": "GLD",
       "name": "Glade"
     },
     {
-      "_id": "Gln",
+      "_id": "GLEN",
       "name": "Glen"
     },
     {
-      "_id": "Gra",
+      "_id": "GRA",
       "name": "Grange"
     },
     {
-      "_id": "Ge",
-      "name": "Great"
-    },
-    {
-      "_id": "Grn",
+      "_id": "GRN",
       "name": "Green"
     },
     {
-      "_id": "Grd",
+      "_id": "GRND",
       "name": "Ground"
     },
     {
-      "_id": "Gve",
+      "_id": "GR",
       "name": "Grove"
     },
     {
-      "_id": "Gly",
-      "name": "Gully"
+      "_id": "GLY",
+      "name": "GullyHRD Highroad"
     },
     {
-      "_id": "Havn",
-      "name": "Haven"
-    },
-    {
-      "_id": "Head",
-      "name": "Head"
-    },
-    {
-      "_id": "Hth",
-      "name": "Heath"
-    },
-    {
-      "_id": "Hts",
+      "_id": "HTS",
       "name": "Heights"
     },
     {
-      "_id": "Hrd",
+      "_id": "HRD",
       "name": "Highroad"
     },
     {
-      "_id": "Hwy",
+      "_id": "HWY",
       "name": "Highway"
     },
     {
-      "_id": "Hl",
+      "_id": "HILL",
       "name": "Hill"
     },
     {
-      "_id": "Hub",
-      "name": "Hub"
-    },
-    {
-      "_id": "Itc",
+      "_id": "INTG",
       "name": "Interchange"
     },
     {
-      "_id": "Its",
+      "_id": "INTN",
       "name": "Intersection"
     },
     {
-      "_id": "Is",
-      "name": "Island"
-    },
-    {
-      "_id": "Jn",
+      "_id": "JNC",
       "name": "Junction"
     },
     {
-      "_id": "Key",
+      "_id": "KEY",
       "name": "Key"
     },
     {
-      "_id": "Ldg",
+      "_id": "LDG",
       "name": "Landing"
     },
     {
-      "_id": "La",
+      "_id": "LANE",
       "name": "Lane"
     },
     {
-      "_id": "Lwy",
+      "_id": "LNWY",
       "name": "Laneway"
     },
     {
-      "_id": "Largo",
-      "name": "Largo"
-    },
-    {
-      "_id": "Lee",
+      "_id": "LEES",
       "name": "Lees"
     },
     {
-      "_id": "Li",
+      "_id": "LNE",
       "name": "Line"
     },
     {
-      "_id": "Lk",
+      "_id": "LINK",
       "name": "Link"
     },
     {
-      "_id": "Lt",
+      "_id": "LT",
       "name": "Little"
     },
     {
-      "_id": "Loch",
-      "name": "Loch"
-    },
-    {
-      "_id": "Lkt",
+      "_id": "LKT",
       "name": "Lookout"
     },
     {
-      "_id": "Lp",
+      "_id": "LOOP",
       "name": "Loop"
     },
     {
-      "_id": "Lwr",
+      "_id": "LWR",
       "name": "Lower"
     },
     {
-      "_id": "Ma",
+      "_id": "MALL",
       "name": "Mall"
     },
     {
-      "_id": "Md",
-      "name": "Mead"
-    },
-    {
-      "_id": "Mw",
-      "name": "Meadows"
-    },
-    {
-      "_id": "Mdr",
+      "_id": "MNDR",
       "name": "Meander"
     },
     {
-      "_id": "Mew",
+      "_id": "MEW",
       "name": "Mew"
     },
     {
-      "_id": "Mws",
+      "_id": "MEWS",
       "name": "Mews"
     },
     {
-      "_id": "Ml",
-      "name": "Mile"
-    },
-    {
-      "_id": "Mwy",
+      "_id": "MWY",
       "name": "Motorway"
     },
     {
-      "_id": "Mt",
+      "_id": "MT",
       "name": "Mount"
     },
     {
-      "_id": "Nk",
+      "_id": "NOOK",
       "name": "Nook"
     },
     {
-      "_id": "Out",
+      "_id": "OTLK",
       "name": "Outlook"
     },
     {
-      "_id": "Pde",
+      "_id": "PDE",
       "name": "Parade"
     },
     {
-      "_id": "Pk",
+      "_id": "PARK",
       "name": "Park"
     },
     {
-      "_id": "Pkld",
+      "_id": "PKLD",
       "name": "Parklands"
     },
     {
-      "_id": "Pwy",
+      "_id": "PKWY",
       "name": "Parkway"
     },
     {
-      "_id": "Prt",
+      "_id": "PART",
       "name": "Part"
     },
     {
-      "_id": "Pss",
+      "_id": "PASS",
       "name": "Pass"
     },
     {
-      "_id": "Pth",
+      "_id": "PATH",
       "name": "Path"
     },
     {
-      "_id": "Phwy",
+      "_id": "PHWY",
       "name": "Pathway"
     },
     {
-      "_id": "Pza",
+      "_id": "PIAZ",
       "name": "Piazza"
     },
     {
-      "_id": "Pl",
+      "_id": "PL",
       "name": "Place"
     },
     {
-      "_id": "Plat",
+      "_id": "PLAT",
       "name": "Plateau"
     },
     {
-      "_id": "Plz",
+      "_id": "PLZA",
       "name": "Plaza"
     },
     {
-      "_id": "Pkt",
+      "_id": "PKT",
       "name": "Pocket"
     },
     {
-      "_id": "Pnt",
+      "_id": "PNT",
       "name": "Point"
     },
     {
-      "_id": "Pts",
-      "name": "Points"
-    },
-    {
-      "_id": "Pt",
+      "_id": "PORT",
       "name": "Port"
     },
     {
-      "_id": "Prm",
+      "_id": "PROM",
       "name": "Promenade"
     },
     {
-      "_id": "Purs",
-      "name": "Pursuit"
-    },
-    {
-      "_id": "Qud",
-      "name": "Quad"
-    },
-    {
-      "_id": "Qdg",
+      "_id": "QDGL",
       "name": "Quadrangle"
     },
     {
-      "_id": "Qd",
+      "_id": "QDRT",
       "name": "Quadrant"
     },
     {
-      "_id": "Qy",
+      "_id": "QUAD",
+      "name": "Quad"
+    },
+    {
+      "_id": "QY",
       "name": "Quay"
     },
     {
-      "_id": "Qys",
+      "_id": "QYS",
       "name": "Quays"
     },
     {
-      "_id": "Ra",
+      "_id": "RMBL",
       "name": "Ramble"
     },
     {
-      "_id": "Rmp",
+      "_id": "RAMP",
       "name": "Ramp"
     },
     {
-      "_id": "Rge",
+      "_id": "RNGE",
       "name": "Range"
     },
     {
-      "_id": "Rch",
+      "_id": "RCH",
       "name": "Reach"
     },
     {
-      "_id": "Res",
+      "_id": "RES",
       "name": "Reserve"
     },
     {
-      "_id": "Rst",
+      "_id": "REST",
       "name": "Rest"
     },
     {
-      "_id": "Ret",
-      "name": "Ret"
-    },
-    {
-      "_id": "Rt",
+      "_id": "RTT",
       "name": "Retreat"
     },
     {
-      "_id": "Retn",
-      "name": "Return"
-    },
-    {
-      "_id": "Rid",
+      "_id": "RIDE",
       "name": "Ride"
     },
     {
-      "_id": "Rdg",
+      "_id": "RDGE",
       "name": "Ridge"
     },
     {
-      "_id": "Rdw",
+      "_id": "RGWY",
       "name": "Ridgeway"
     },
     {
-      "_id": "Rtw",
+      "_id": "ROWY",
       "name": "Right of Way"
     },
     {
-      "_id": "Rng",
+      "_id": "RING",
       "name": "Ring"
     },
     {
-      "_id": "Ri",
+      "_id": "RISE",
       "name": "Rise"
     },
     {
-      "_id": "Rvr",
+      "_id": "RVR",
       "name": "River"
     },
     {
-      "_id": "Rvw",
+      "_id": "RVWY",
       "name": "Riverway"
     },
     {
-      "_id": "Rva",
+      "_id": "RVRA",
       "name": "Riviera"
     },
     {
-      "_id": "Rd",
+      "_id": "RD",
       "name": "Road"
     },
     {
-      "_id": "Rds",
+      "_id": "RDS",
       "name": "Roads"
     },
     {
-      "_id": "Rsd",
+      "_id": "RDSD",
       "name": "Roadside"
     },
     {
-      "_id": "Rdy",
+      "_id": "RDWY",
       "name": "Roadway"
     },
     {
-      "_id": "Rde",
+      "_id": "RNDE",
       "name": "Ronde"
     },
     {
-      "_id": "Rbl",
+      "_id": "RSBL",
       "name": "Rosebowl"
     },
     {
-      "_id": "Rty",
+      "_id": "RTY",
       "name": "Rotary"
     },
     {
-      "_id": "Rnd",
+      "_id": "RND",
       "name": "Round"
     },
     {
-      "_id": "Rte",
+      "_id": "RTE",
       "name": "Route"
     },
     {
-      "_id": "Row",
+      "_id": "ROW",
       "name": "Row"
     },
     {
-      "_id": "Rue",
+      "_id": "RUE",
       "name": "Rue"
     },
     {
-      "_id": "Run",
+      "_id": "RUN",
       "name": "Run"
     },
     {
-      "_id": "Swy",
+      "_id": "SWY",
       "name": "Service Way"
     },
     {
-      "_id": "Shop",
-      "name": "Shopping Centre"
-    },
-    {
-      "_id": "Sdg",
+      "_id": "SDNG",
       "name": "Siding"
     },
     {
-      "_id": "Slp",
+      "_id": "SLPE",
       "name": "Slope"
     },
     {
-      "_id": "Snd",
+      "_id": "SND",
       "name": "Sound"
     },
     {
-      "_id": "Spr",
+      "_id": "SPUR",
       "name": "Spur"
     },
     {
-      "_id": "Sq",
+      "_id": "SQ",
       "name": "Square"
     },
     {
-      "_id": "Sta",
+      "_id": "STRS",
       "name": "Stairs"
     },
     {
-      "_id": "Shw",
+      "_id": "SHWY",
       "name": "State Highway"
     },
     {
-      "_id": "Stp",
+      "_id": "STPS",
       "name": "Steps"
     },
     {
-      "_id": "Strait",
-      "name": "Strait"
-    },
-    {
-      "_id": "Stra",
+      "_id": "STRA",
       "name": "Strand"
     },
     {
-      "_id": "St",
+      "_id": "ST",
       "name": "Street"
     },
     {
-      "_id": "Sp",
+      "_id": "STRP",
       "name": "Strip"
     },
     {
-      "_id": "Sy",
+      "_id": "SBWY",
       "name": "Subway"
     },
     {
-      "_id": "Smmt",
-      "name": "Summit"
-    },
-    {
-      "_id": "Ta",
-      "name": "Tailings"
-    },
-    {
-      "_id": "Tarn",
+      "_id": "TARN",
       "name": "Tarn"
     },
     {
-      "_id": "Tce",
+      "_id": "TCE",
       "name": "Terrace"
     },
     {
-      "_id": "Thf",
+      "_id": "THOR",
       "name": "Thoroughfare"
     },
     {
-      "_id": "Twy",
+      "_id": "TLWY",
       "name": "Tollway"
     },
     {
-      "_id": "Top",
+      "_id": "TOP",
       "name": "Top"
     },
     {
-      "_id": "Tor",
+      "_id": "TOR",
       "name": "Tor"
     },
     {
-      "_id": "Twr",
+      "_id": "TWRS",
       "name": "Towers"
     },
     {
-      "_id": "Tr",
+      "_id": "TRK",
       "name": "Track"
     },
     {
-      "_id": "Trl",
+      "_id": "TRL",
       "name": "Trail"
     },
     {
-      "_id": "Trr",
+      "_id": "TRLR",
       "name": "Trailer"
     },
     {
-      "_id": "Ty",
-      "name": "Tramway"
-    },
-    {
-      "_id": "Tri",
+      "_id": "TRI",
       "name": "Triangle"
     },
     {
-      "_id": "Tkw",
+      "_id": "TKY",
       "name": "Trunkway"
     },
     {
-      "_id": "Tn",
-      "name": "Tunnel"
+      "_id": "TURN",
+      "name": "TURN"
     },
     {
-      "_id": "Tur",
-      "name": "Turn"
-    },
-    {
-      "_id": "Unp",
+      "_id": "UPAS",
       "name": "Underpass"
     },
     {
-      "_id": "Upr",
+      "_id": "UPR",
       "name": "Upper"
     },
     {
-      "_id": "Val",
+      "_id": "VALE",
       "name": "Vale"
     },
     {
-      "_id": "Vy",
-      "name": "Valley"
-    },
-    {
-      "_id": "Vdt",
+      "_id": "VDCT",
       "name": "Viaduct"
     },
     {
-      "_id": "Vw",
+      "_id": "VIEW",
       "name": "View"
     },
     {
-      "_id": "Ve",
-      "name": "Village"
-    },
-    {
-      "_id": "Vlls",
+      "_id": "VLLS",
       "name": "Villas"
     },
     {
-      "_id": "Vst",
+      "_id": "VSTA",
       "name": "Vista"
     },
     {
-      "_id": "Wd",
+      "_id": "WADE",
       "name": "Wade"
     },
     {
-      "_id": "Wk",
+      "_id": "WALK",
       "name": "Walk"
     },
     {
-      "_id": "Wky",
+      "_id": "WKWY",
       "name": "Walkway"
     },
     {
-      "_id": "Waters",
-      "name": "Waters"
-    },
-    {
-      "_id": "Way",
+      "_id": "WAY",
       "name": "Way"
     },
     {
-      "_id": "Wt",
-      "name": "West"
-    },
-    {
-      "_id": "Wf",
+      "_id": "WHRF",
       "name": "Wharf"
     },
     {
-      "_id": "Wood",
-      "name": "Wood"
-    },
-    {
-      "_id": "Wnd",
+      "_id": "WYND",
       "name": "Wynd"
     },
     {
-      "_id": "Yrd",
+      "_id": "YARD",
       "name": "Yard"
     }
   ],
