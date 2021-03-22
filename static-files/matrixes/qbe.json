@@ -52,6 +52,8 @@
       "upperLimit": 50000,
       "australianIndividuals": {
         "reports": ["Equifax Report: Commercial Apply (Individuals tab)"],
+        "isAutoApproval": true,
+        "reportFrom": "equifax",
         "guideLines": []
       },
       "australianCompanies": {
@@ -59,10 +61,14 @@
           "Illion Report: HTML Commercial Bureau Enquiry without ASIC Docs OR",
           "Illion Report: HTML Commercial Bureau Enquiry w/ refresh ASIC w/o ASIC Docs"
         ],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
         "guideLines": []
       },
       "newZealand": {
         "reports": ["Illion Report: HTML NZ Comm. Bureau Enq (AU Subs)"],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
         "guideLines": []
       },
       "commonGuideLines": []
@@ -72,6 +78,8 @@
       "upperLimit": 75000,
       "australianIndividuals": {
         "reports": ["Equifax Report: Commercial Apply (Individuals tab)"],
+        "isAutoApproval": true,
+        "reportFrom": "equifax",
         "guideLines": [
           "The Late Payment Risk Level indicated by D&B cannot be “High”, “Very High” or “Severe”",
           "The D&B Dynamic Delinquency Score cannot be lower than 386"
@@ -79,13 +87,17 @@
       },
       "australianCompanies": {
         "reports": ["Illion Report: Risk of Late Payment Report (DDS)"],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
         "guideLines": [
           "The Late Payment Risk Level indicated by D&B cannot be “High”, “Very High” or “Severe”",
           "The D&B Dynamic Delinquency Score cannot be lower than 386"
         ]
       },
       "newZealand": {
-        "reports": ["HTML Payment Analysis with refreshed NZCO"],
+        "reports": ["Illion Report: HTML Payment Analysis with refreshed NZCO"],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
         "guideLines": [
           "The Late Payment Risk Level indicated by D&B cannot be “High”, “Very High” or “Severe”",
           "The D&B Dynamic Delinquency Score cannot be lower than 386"
@@ -101,13 +113,19 @@
       "upperLimit": 100000,
       "australianIndividuals": {
         "reports": ["Equifax Report: Commercial Apply (Individuals tab)"],
+        "isAutoApproval": true,
+        "reportFrom": "equifax",
         "guideLines": [
           "The Late Payment Risk Level indicated by D&B cannot be “High”, “Very High” or “Severe”",
           "The D&B Dynamic Delinquency Score cannot be lower than 386"
         ]
       },
       "australianCompanies": {
-        "reports": ["HTML Payment Analysis & ASIC Current Extract"],
+        "reports": [
+          "Illion Report: HTML Payment Analysis & ASIC Current Extract"
+        ],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
         "guideLines": [
           "The Late Payment Risk Level indicated by D&B cannot be “High”, “Very High” or “Severe”",
           "The D&B Dynamic Delinquency Score cannot be lower than 386"
@@ -115,6 +133,7 @@
       },
       "newZealand": {
         "reports": ["To be referred to QBE for approval in all instances"],
+        "isAutoApproval": false,
         "guideLines": [
           "The Late Payment Risk Level indicated by D&B cannot be “High”, “Very High” or “Severe”",
           "The D&B Dynamic Delinquency Score cannot be lower than 386"

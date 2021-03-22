@@ -133,6 +133,7 @@ let connectDb = function () {
 //Checks whether required attributes/documents are set in the database
 const ProjectInitialization = require('./helper/projectInitialization');
 ProjectInitialization.createSuperAdmin();
+ProjectInitialization.createDefaultInsurer();
 
 connectDb();
 module.exports = app;

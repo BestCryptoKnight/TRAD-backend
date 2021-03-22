@@ -47,6 +47,8 @@
       "upperLimit": 75000,
       "australianIndividuals": {
         "reports": ["Equifax Report: Commercial Apply (Individuals tab)"],
+        "isAutoApproval": true,
+        "reportFrom": "equifax",
         "guideLines": ["Approved or Declined"]
       },
       "australianCompanies": {
@@ -54,10 +56,14 @@
           "Illion Report: HTML Commercial Bureau Enquiry without ASIC Docs OR",
           "Illion Report: HTML Commercial Bureau Enquiry w/ refresh ASIC w/o ASIC Docs"
         ],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
         "guideLines": ["Approved or Declined"]
       },
       "newZealand": {
-        "reports": ["HTML NZ Comm. Bureau Enq (AU Subs)"],
+        "reports": ["Illion Report: HTML NZ Comm. Bureau Enq (AU Subs)"],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
         "guideLines": ["Approved or Declined"]
       },
       "commonGuideLines": ["Approved or Declined"]
@@ -66,15 +72,25 @@
       "lowerLimit": 75001,
       "upperLimit": 100000,
       "australianIndividuals": {
-        "reports": ["HTML Payment Analysis & ASIC Current Extract"],
+        "reports": [
+          "Illion Report: HTML Payment Analysis & ASIC Current Extract"
+        ],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
         "guideLines": ["Approved or Declined"]
       },
       "australianCompanies": {
-        "reports": ["HTML Payment Analysis & ASIC Current Extract"],
+        "reports": [
+          "Illion Report: HTML Payment Analysis & ASIC Current Extract"
+        ],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
         "guideLines": ["Approved or Declined"]
       },
       "newZealand": {
-        "reports": ["HTML Payment Analysis with refreshed NZCO"],
+        "reports": ["Illion Report: HTML Payment Analysis with refreshed NZCO"],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
         "guideLines": ["Approved or Declined"]
       },
       "commonGuideLines": ["Approved or Declined"]
@@ -83,7 +99,11 @@
       "lowerLimit": 100001,
       "upperLimit": 200000,
       "australianIndividuals": {
-        "reports": ["HTML Payment Analysis & ASIC Current Extract"],
+        "reports": [
+          "Illion Report: HTML Payment Analysis & ASIC Current Extract"
+        ],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
         "guideLines": [
           "Trade Payment info must be included in the mercantile report",
           "Enquire Underwriter",
@@ -91,7 +111,11 @@
         ]
       },
       "australianCompanies": {
-        "reports": ["HTML Payment Analysis & ASIC Current Extract"],
+        "reports": [
+          "Illion Report: HTML Payment Analysis & ASIC Current Extract"
+        ],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
         "guideLines": [
           "Trade Payment info must be included in the mercantile report",
           "Enquire Underwriter",
@@ -99,7 +123,9 @@
         ]
       },
       "newZealand": {
-        "reports": ["HTML Payment Analysis with refreshed NZCO"],
+        "reports": ["Illion Report: HTML Payment Analysis with refreshed NZCO"],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
         "guideLines": [
           "Trade Payment info must be included in the mercantile report",
           "Enquire Underwriter",
@@ -117,9 +143,11 @@
       "upperLimit": null,
       "australianIndividuals": {
         "reports": [
-          "HTML Payment Analysis & ASIC Current Extract",
-          "Company Financials"
+          "Illion Report: HTML Payment Analysis & ASIC Current Extract",
+          "Illion Report: Company Financials"
         ],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
         "guideLines": [
           "Trade Payment info must be included in the mercantile report",
           "Enquire Underwriter",
@@ -128,9 +156,11 @@
       },
       "australianCompanies": {
         "reports": [
-          "HTML Payment Analysis & ASIC Current Extract",
-          "Company Financials"
+          "Illion Report: HTML Payment Analysis & ASIC Current Extract",
+          "Illion Report: Company Financials"
         ],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
         "guideLines": [
           "Trade Payment info must be included in the mercantile report",
           "Enquire Underwriter",
@@ -139,9 +169,11 @@
       },
       "newZealand": {
         "reports": [
-          "HTML Payment Analysis with refreshed NZCO",
-          "Company Financials"
+          "Illion Report: HTML Payment Analysis with refreshed NZCO",
+          "Illion Report: Company Financials"
         ],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
         "guideLines": [
           "Trade Payment info must be included in the mercantile report",
           "Enquire Underwriter",

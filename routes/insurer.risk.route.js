@@ -330,15 +330,16 @@ router.get('/matrix/:insurerId', async function (req, res) {
       data.australianIndividuals = data.australianIndividuals.reports;
       data.australianCompanies = data.australianCompanies.reports;
       data.newZealand = data.newZealand.reports;
-      data.australianReports = data.australianIndividuals.concat(
-        data.australianCompanies,
-      );
+      data.australianReports = [
+        ...new Set([
+          ...data.australianIndividuals,
+          ...data.australianCompanies,
+        ]),
+      ];
       if (
-        (data.australianIndividuals.length ===
-          data.australianCompanies.length) ===
-        data.australianReports.length
+        data.australianIndividuals.length === data.australianCompanies.length &&
+        data.australianCompanies.length === data.australianReports.length
       ) {
-        data.australianReports = data.australianIndividuals;
         delete data.australianIndividuals;
         delete data.australianCompanies;
       } else {

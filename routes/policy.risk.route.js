@@ -238,6 +238,9 @@ router.get('/:entityId', async function (req, res) {
     if (policyColumn.columns.includes('insurerId')) {
       option.populate = 'insurerId';
     }
+    if (policyColumn.columns.includes('clientId')) {
+      option.populate += ' clientId';
+    }
     option.select = policyColumn.columns.toString().replace(/,/g, ' ');
     option.sort = sortingOptions;
     option.lean = true;
@@ -258,6 +261,10 @@ router.get('/:entityId', async function (req, res) {
       if (policyColumn.columns.includes('insurerId')) {
         data.insurerId =
           data.insurerId && data.insurerId.name ? data.insurerId.name : '';
+      }
+      if (policyColumn.columns.includes('clientId')) {
+        data.clientId =
+          data.clientId && data.clientId.name ? data.clientId.name : '';
       }
       delete data.id;
     });

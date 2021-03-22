@@ -7,6 +7,7 @@ const mongoose = require('mongoose');
 const User = mongoose.model('user');
 const Client = mongoose.model('client');
 const Debtor = mongoose.model('debtor');
+const DebtorDirector = mongoose.model('debtor-director');
 const Application = mongoose.model('application');
 
 /*
@@ -191,6 +192,132 @@ router.get('/', async function (req, res) {
 });
 
 /**
+ * Get Application Details
+ */
+router.get('/details/:applicationId', async function (req, res) {
+  if (
+    !req.params.applicationId ||
+    !mongoose.Types.ObjectId.isValid(req.params.applicationId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const application = await Application.findById(req.params.applicationId)
+      .populate({
+        path: 'clientId debtorId clientDebtorId',
+        select: {
+          __v: 0,
+          isActive: 0,
+          updatedAt: 0,
+          debtorCode: 0,
+          createdAt: 0,
+        },
+      })
+      .select({ __v: 0, updatedAt: 0, createdAt: 0 })
+      .lean();
+    if (!application) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'NO_APPLICATION_FOUND',
+        message: 'No application found',
+      });
+    }
+    const directors = await DebtorDirector.find({
+      debtorId: application.debtorId,
+    })
+      .select({ createdAt: 0, updatedAt: 0, __v: 0 })
+      .lean();
+    let response = {};
+    if (application.status === 'DRAFT') {
+      response._id = application._id;
+      response.applicationStage = application.applicationStage;
+      response.company = {};
+      if (application.clientId) {
+        response.company.clientId = {
+          _id: application.clientId._id,
+          name: application.clientId.name,
+        };
+      }
+      if (application.debtorId) {
+        response.company.debtorId = {
+          _id: application.debtorId._id,
+          name: application.debtorId.entityName,
+        };
+        for (let key in application.debtorId) {
+          response.company[key] = application.debtorId[key];
+        }
+        for (let key in response.company.address) {
+          response.company[key] = response.company.address[key];
+        }
+        delete response.company.address;
+      }
+      if (application.creditLimit) {
+        response.creditLimit = {
+          creditLimit: application.creditLimit,
+          isExtendedPaymentTerms: application.isExtendedPaymentTerms,
+          extendedPaymentTermsDetails: application.extendedPaymentTermsDetails,
+          isPassedOverdueAmount: application.isPassedOverdueAmount,
+          passedOverdueDetails: application.passedOverdueDetails,
+        };
+      }
+      if (directors && directors.length !== 0) {
+        response.partners = directors;
+        response.partners.forEach((partner) => {
+          if (partner.type === 'individual') {
+            for (let key in partner.residentialAddress) {
+              partner[key] = partner.residentialAddress[key];
+            }
+            delete partner.residentialAddress;
+          }
+        });
+      }
+    } else {
+      if (application.clientId) {
+        response.clientId = {
+          _id: application.clientId._id,
+          name: application.clientId.name,
+        };
+      }
+      if (application.debtorId) {
+        response.debtorId = {
+          _id: application.debtorId._id,
+          name: application.debtorId.entityName,
+        };
+        for (let key in application.debtorId) {
+          if (key === 'address') {
+            response[key] = Object.values(application.debtorId[key])
+              .toString()
+              .replace(/,,/g, ',');
+          } else {
+            response[key] = application.debtorId[key];
+          }
+        }
+      }
+      if (application.clientDebtorId) {
+        application.outstandingAmount =
+          application.clientDebtorId.outstandingAmount;
+      }
+      response.creditLimit = application.creditLimit;
+      response.isExtendedPaymentTerms = application.isExtendedPaymentTerms;
+      response.extendedPaymentTermsDetails =
+        application.extendedPaymentTermsDetails;
+      response.isPassedOverdueAmount = application.isPassedOverdueAmount;
+      response.passedOverdueDetails = application.passedOverdueDetails;
+    }
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: response,
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in get application details ', e);
+  }
+});
+
+/**
  * Get Specific Entity's Application
  */
 router.get('/:entityId', async function (req, res) {
@@ -299,6 +426,7 @@ router.get('/search-entity/:searchString', async function (req, res) {
       const entityDetails =
         entityData.response.businessEntity202001 ||
         entityData.response.businessEntity201408;
+      console.log(entityDetails);
       if (entityDetails.ABN) response.abn = entityDetails.ABN.identifierValue;
       if (
         entityDetails.entityStatus &&
@@ -312,7 +440,7 @@ router.get('/search-entity/:searchString', async function (req, res) {
         response.registeredDate = entityDetails.entityStatus.effectiveFrom;
       if (entityDetails.ASICNumber)
         response.acn =
-          typeof entityDetails.ASICNumber.length === 'string'
+          typeof entityDetails.ASICNumber === 'string'
             ? entityDetails.ASICNumber
             : '';
       if (entityDetails.entityType)
@@ -335,8 +463,14 @@ router.get('/search-entity/:searchString', async function (req, res) {
               : entityDetails.mainName.organisationName,
           },
         ];
-      if (entityDetails.mainTradingName)
-        response.tradingName = entityDetails.mainTradingName.organisationName;
+      const tradingName =
+        entityDetails.mainTradingName || entityDetails.businessName;
+      if (tradingName)
+        response.tradingName =
+          tradingName.organisationName ||
+          typeof tradingName.organisationName === 'string'
+            ? tradingName.organisationName
+            : tradingName[0].organisationName;
       if (entityDetails.mainBusinessPhysicalAddress[0])
         response.state = [
           {
@@ -507,8 +641,30 @@ router.put('/', async function (req, res) {
   if (
     req.body.stepper !== 'company' &&
     (!req.body.applicationId ||
-      !mongoose.Types.ObjectId.isValid(req.params.applicationId))
+      !mongoose.Types.ObjectId.isValid(req.body.applicationId))
   ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  if (
+    req.body.stepper === 'company' &&
+    (!req.body.clientId ||
+      !req.body.outstandingAmount ||
+      !req.body.address ||
+      !req.body.contactNumber ||
+      !req.body.entityType ||
+      !req.body.entityName)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  if (req.body.stepper === 'person' && !req.body.partners) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -520,7 +676,11 @@ router.put('/', async function (req, res) {
     let message;
     switch (req.body.stepper) {
       case 'company':
-        response = await storeCompanyDetails({ requestBody: req.body });
+        response = await storeCompanyDetails({
+          requestBody: req.body,
+          createdByType: 'user',
+          createdBy: req.user._id,
+        });
         break;
       case 'person':
         response = await storePartnerDetails({ requestBody: req.body });

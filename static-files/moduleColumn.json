@@ -451,7 +451,6 @@
       "name": "insurer",
       "manageColumns": [
         { "name": "name", "label": "Name", "type": "string" },
-        { "name": "email", "label": "Email", "type": "string" },
         {
           "name": "contactNumber",
           "label": "Contact Number",
@@ -495,8 +494,7 @@
     {
       "name": "insurer-policy",
       "manageColumns": [
-        { "name": "insurerId", "label": "Insurer Id", "type": "string" },
-        { "name": "clientId", "label": "Client Id", "type": "string" },
+        { "name": "clientId", "label": "Client Name", "type": "string" },
         {
           "name": "product",
           "label": "Product",
@@ -517,7 +515,7 @@
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
-      "defaultColumns": ["insurerId", "clientId", "product"]
+      "defaultColumns": ["clientId", "product", "policyPeriod"]
     },
     {
       "name": "organization",

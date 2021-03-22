@@ -52,6 +52,8 @@
       "upperLimit": 100000,
       "australianIndividuals": {
         "reports": ["Equifax Report: Commercial Apply (Individuals tab)"],
+        "isAutoApproval": true,
+        "reportFrom": "equifax",
         "guideLines": []
       },
       "australianCompanies": {
@@ -59,6 +61,8 @@
           "Illion Report: HTML Commercial Bureau Enquiry without ASIC Docs OR",
           "Illion Report: HTML Commercial Bureau Enquiry w/ refresh ASIC w/o ASIC Docs"
         ],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
         "guideLines": []
       },
       "newZealand": {

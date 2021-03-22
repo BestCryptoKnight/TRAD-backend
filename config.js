@@ -55,6 +55,7 @@ module.exports = {
   },
   organization: {
     name: 'Trade Credit Risk',
+    insurerName: 'Trade Credit Risk',
   },
   environment: process.env.ENVIRONMENT || 'dev',
   staticServing: {

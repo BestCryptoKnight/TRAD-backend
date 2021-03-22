@@ -6,6 +6,7 @@ const Application = mongoose.model('application');
 const Organization = mongoose.model('organization');
 const Debtor = mongoose.model('debtor');
 const Client = mongoose.model('client');
+const DebtorDirector = mongoose.model('debtor-director');
 
 /*
  * Local Imports
@@ -349,11 +350,15 @@ const storeCompanyDetails = async ({
         { _id: requestBody.applicationId },
         applicationDetails,
       );
-      application = await Application.findById(
-        requestBody.applicationId,
-      ).lean();
+      application = await Application.findById(requestBody.applicationId)
+        .select('_id applicationStage')
+        .lean();
     }
-    return { debtor, clientDebtor, application };
+    const partners = await DebtorDirector.find({ debtorId: debtor._id })
+      .select({ __v: 0, updatedAt: 0, createdAt: 0, isDeleted: 0 })
+      .lean();
+    application.partners = partners;
+    return application;
   } catch (e) {
     Logger.log.error(
       'Error occurred in store company details ',
@@ -364,6 +369,9 @@ const storeCompanyDetails = async ({
 
 const storePartnerDetails = async ({ requestBody }) => {
   try {
+    const applicationData = await Application.findById(
+      requestBody.applicationId,
+    ).lean();
     let individualCount = 0;
     let companyCount = 0;
     requestBody.partners.forEach((data) =>
@@ -383,11 +391,14 @@ const storePartnerDetails = async ({ requestBody }) => {
         message: 'Insufficient partners details',
       };
     }
-    const person = [];
-    const company = [];
+    const promises = [];
     requestBody.partners.forEach((data) => {
       let update = {};
+      let query = {};
+      update.type = data.type.toLowerCase();
+      update.debtorId = applicationData.debtorId;
       if (data.type.toLowerCase() === 'individual') {
+        query = { driverLicenceNumber: data.driverLicenceNumber };
         if (data.address && Object.keys(data.address).length !== 0) {
           update.residentialAddress = {
             property: data.address.property,
@@ -413,28 +424,26 @@ const storePartnerDetails = async ({ requestBody }) => {
         if (data.email) update.email = data.email;
         if (data.hasOwnProperty('allowToCheckCreditHistory'))
           update.allowToCheckCreditHistory = data.allowToCheckCreditHistory;
-        person.push(update);
       } else {
         if (data.abn) update.abn = data.abn;
         if (data.acn) update.acn = data.acn;
         if (data.entityType) update.entityType = data.entityType;
         if (data.entityName) update.entityName = data.entityName;
         if (data.tradingName) update.tradingName = data.tradingName;
-        company.push(update);
+        query = { $or: [{ abn: data.abn }, { acn: data.acn }] };
       }
+      promises.push(DebtorDirector.updateOne(query, update, { upsert: true }));
     });
-    const update = {
-      person: person,
-      company: company,
-      applicationStage: 1,
-    };
-    await Application.updateOne(
-      { _id: requestBody.applicationId },
-      { partners: update },
+    promises.push(
+      Application.updateOne(
+        { _id: requestBody.applicationId },
+        { applicationStage: 1 },
+      ),
     );
-    const application = await Application.findById(
-      requestBody.applicationId,
-    ).lean();
+    await Promise.all(promises);
+    const application = await Application.findById(requestBody.applicationId)
+      .select('_id applicationStage')
+      .lean();
     return application;
   } catch (e) {
     Logger.log.error(
@@ -458,9 +467,9 @@ const storeCreditLimitDetails = async ({ requestBody }) => {
     if (requestBody.passedOverdueDetails)
       update.passedOverdueDetails = requestBody.passedOverdueDetails;
     await Application.updateOne({ _id: requestBody.applicationId }, update);
-    const application = await Application.findById(
-      requestBody.applicationId,
-    ).lean();
+    const application = await Application.findById(requestBody.applicationId)
+      .select('_id applicationStage')
+      .lean();
     return application;
   } catch (e) {
     Logger.log.error(
