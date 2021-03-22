@@ -236,10 +236,55 @@ router.get('/client-name', async function (req, res) {
 });
 
 /**
+ * Resend Mail to User
+ */
+router.get('send-mail/:userId', async function (req, res) {
+  if (
+    !req.params.userId ||
+    !mongoose.Types.ObjectId.isValid(req.params.userId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing',
+    });
+  }
+  try {
+    const user = await User.findOne({ _id: req.params.userId });
+    const signUpToken = jwt.sign(
+      JSON.stringify({ _id: user._id }),
+      config.jwt.secret,
+    );
+    user.signUpToken = signUpToken;
+    const promises = [];
+    promises.push(user.save());
+    const mailObj = {
+      toAddress: [user.email],
+      subject: 'Welcome to TRAD',
+      text: {
+        name: user.name ? user.name : '',
+        setPasswordLink:
+          config.server.frontendUrls.adminPanelBase +
+          config.server.frontendUrls.setPasswordPage +
+          '?token=' +
+          signUpToken,
+      },
+      mailFor: 'newAdminUser',
+    };
+    promises.push(MailHelper.sendMail(mailObj));
+    await Promise.all(promises);
+    res
+      .status(200)
+      .send({ status: 'SUCCESS', message: 'Mail sent successfully' });
+  } catch (e) {
+    Logger.log.error('Error occurred in sending mail to user ', e.message || e);
+  }
+});
+
+/**
  * Get details of a user
  */
 router.get('/:userId', async function (req, res) {
-  Logger.log.info('In get user details call');
   if (
     !req.params.userId ||
     !mongoose.Types.ObjectId.isValid(req.params.userId)
