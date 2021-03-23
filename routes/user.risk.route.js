@@ -30,13 +30,9 @@ router.post(
   upload.single('profile-picture'),
   async (req, res) => {
     try {
-      if (!req.user._id) {
-        Logger.log.error('User id not found in the logged in user');
-        return res.status(400).send({
-          status: 'ERROR',
-          messageCode: 'USER_NOT_FOUND',
-          message: 'User not found, please try by logging in again',
-        });
+      const user = await User.findById(req.user._id).lean();
+      if (user && user.profileKeyPath) {
+        await StaticFileHelper.deleteFile({ filePath: user.profileKeyPath });
       }
       let s3Response = await StaticFileHelper.uploadFile({
         file: req.file.buffer,
@@ -67,34 +63,26 @@ router.post(
  * Remove profile-picture of User.
  */
 router.delete('/profile-picture', async (req, res) => {
-  let userId = req.user._id;
-  if (!userId) {
-    Logger.log.error('User id not found in the logged in user');
-    return res.status(400).send({
-      status: 'ERROR',
-      messageCode: 'USER_NOT_FOUND',
-      message: 'User not found, please try by logging in again',
+  try {
+    const user = await User.findById(req.user._id).lean();
+    if (user && user.profileKeyPath) {
+      await StaticFileHelper.deleteFile({ filePath: user.profileKeyPath });
+    }
+    await User.updateOne({ _id: req.user._id }, { profileKeyPath: null });
+    res.status(200).send({
+      status: 'SUCCESS',
+      message: 'Profile Picture deleted successfully',
     });
-  }
-  if (!req.query.oldImageName) {
+  } catch (e) {
     Logger.log.error(
-      'In delete profile picture call, old image name not present for the user:',
-      userId,
+      'Error occurred in remove profile picture ',
+      e.message || e,
     );
-    return res.status(400).send({
+    res.status(500).send({
       status: 'ERROR',
-      messageCode: 'IMAGE_NOT_FOUND',
-      message: 'Image name not found, unable to remove old profile picture',
+      message: e.message || 'Something went wrong, please try again later',
     });
   }
-  Logger.log.info('Old image name:', req.query.oldImageName);
-  await StaticFileHelper.deleteFile({ filePath: req.query.oldImageName });
-  Logger.log.info('Successfully deleted old profile picture.');
-  await User.updateOne({ _id: userId }, { profileKeyPath: null });
-  res.status(200).send({
-    status: 'SUCCESS',
-    message: 'Profile Picture deleted successfully',
-  });
 });
 
 /**

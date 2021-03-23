@@ -32,7 +32,7 @@ const clientUserSchema = new Schema(
     },
     password: Schema.Types.String,
     signUpToken: Schema.Types.String,
-    profilePicture: Schema.Types.String,
+    profileKeyPath: Schema.Types.String,
     jwtToken: [Schema.Types.String],
     isDeleted: { type: Schema.Types.Boolean, default: false },
     manageColumns: [
