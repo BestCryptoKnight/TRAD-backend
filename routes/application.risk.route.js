@@ -652,9 +652,7 @@ router.put('/', async function (req, res) {
   if (
     req.body.stepper === 'company' &&
     (!req.body.clientId ||
-      !req.body.outstandingAmount ||
       !req.body.address ||
-      !req.body.contactNumber ||
       !req.body.entityType ||
       !req.body.entityName)
   ) {
@@ -664,7 +662,23 @@ router.put('/', async function (req, res) {
       message: 'Require fields are missing.',
     });
   }
-  if (req.body.stepper === 'person' && !req.body.partners) {
+  if (
+    req.body.stepper === 'person' &&
+    !req.body.partners &&
+    req.body.partners.length === 0
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  if (
+    req.body.stepper === 'credit-limit' &&
+    !req.body.creditLimit &&
+    !req.body.hasOwnProperty('isPassedOverdueAmount') &&
+    !req.body.has('isExtendedPaymentTerms')
+  ) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',

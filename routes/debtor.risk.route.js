@@ -339,23 +339,27 @@ router.get('/details/:debtorId', async function (req, res) {
         const state = StaticData.australianStates.find((i) => {
           if (i._id === debtor.state) return i;
         });
-        debtor.state = [
-          {
-            label: state.name,
-            value: debtor.state,
-          },
-        ];
+        if (state) {
+          debtor.state = [
+            {
+              label: state.name,
+              value: debtor.state,
+            },
+          ];
+        }
       }
       if (debtor.streetType) {
         const streetType = StaticData.streetType.find((i) => {
           if (i._id === debtor.streetType) return i;
         });
-        debtor.streetType = [
-          {
-            label: streetType.name,
-            value: debtor.streetType,
-          },
-        ];
+        if (streetType) {
+          debtor.streetType = [
+            {
+              label: streetType.name,
+              value: debtor.streetType,
+            },
+          ];
+        }
       }
     }
     res.status(200).send({ status: 'SUCCESS', data: debtor });
