@@ -25,6 +25,7 @@ const {
   getEntityDetailsByABN,
   getEntityDetailsByACN,
   getEntityListByName,
+  resolveEntityType,
 } = require('./../helper/abr.helper');
 const { getClientList } = require('./../helper/client.helper');
 const { getDebtorList } = require('./../helper/debtor.helper');
@@ -443,13 +444,23 @@ router.get('/search-entity/:searchString', async function (req, res) {
           typeof entityDetails.ASICNumber === 'string'
             ? entityDetails.ASICNumber
             : '';
-      if (entityDetails.entityType)
+      if (entityDetails.entityType) {
+        const entityType = await resolveEntityType({
+          entityType: entityDetails.entityType.entityDescription,
+        });
         response.entityType = [
           {
-            label: entityDetails.entityType.entityDescription,
-            value: entityDetails.entityType.entityDescription,
+            label: entityType
+              .replace(/_/g, ' ')
+              .replace(/\w\S*/g, function (txt) {
+                return (
+                  txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+                );
+              }),
+            value: entityType,
           },
         ];
+      }
       if (entityDetails.goodsAndServicesTax)
         response.gstStatus = entityDetails.goodsAndServicesTax.effectiveFrom;
       if (entityDetails.mainName)

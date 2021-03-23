@@ -95,8 +95,30 @@ const getEntityListByName = async ({ searchString }) => {
   }
 };
 
+//TODO change
+const resolveEntityType = async ({ entityType }) => {
+  try {
+    const entityTypesFromABR = {
+      'Individual/Sole Trader': 'SOLE_TRADER',
+      'Australian Private Company': 'PROPRIETARY_LIMITED',
+      'Fixed Unit Trust': 'TRUST',
+      'Discretionary Trading Trust': 'TRUST',
+      'Hybrid Trust': 'TRUST',
+      'Australian Public Company': 'LIMITED_COMPANY',
+      'Other Partnership': 'PARTNERSHIP',
+      'Family Partnership': 'PARTNERSHIP',
+    };
+    return (await entityTypesFromABR[entityType])
+      ? entityTypesFromABR[entityType]
+      : 'PROPRIETARY_LIMITED';
+  } catch (e) {
+    Logger.log.error('Error occurred in resolve entity type ', e.message || e);
+  }
+};
+
 module.exports = {
   getEntityDetailsByABN,
   getEntityDetailsByACN,
   getEntityListByName,
+  resolveEntityType,
 };

@@ -353,6 +353,13 @@ const storeCompanyDetails = async ({
       application = await Application.findById(requestBody.applicationId)
         .select('_id applicationStage')
         .lean();
+      if (!application) {
+        return {
+          status: 'ERROR',
+          messageCode: 'NO_APPLICATION_FOUND',
+          message: 'No application found',
+        };
+      }
     }
     const partners = await DebtorDirector.find({ debtorId: debtor._id })
       .select({ __v: 0, updatedAt: 0, createdAt: 0, isDeleted: 0 })
@@ -360,10 +367,7 @@ const storeCompanyDetails = async ({
     application.partners = partners;
     return application;
   } catch (e) {
-    Logger.log.error(
-      'Error occurred in store company details ',
-      e.message || e,
-    );
+    Logger.log.error('Error occurred in store company details ', e);
   }
 };
 
@@ -398,6 +402,22 @@ const storePartnerDetails = async ({ requestBody }) => {
       update.type = data.type.toLowerCase();
       update.debtorId = applicationData.debtorId;
       if (data.type.toLowerCase() === 'individual') {
+        if (
+          !data.title ||
+          !data.firstName ||
+          !data.lastName ||
+          !data.dateOfBirth ||
+          !data.address ||
+          !data.address.state ||
+          !data.address.postCode ||
+          !data.address.streetNumber
+        ) {
+          return {
+            status: 'ERROR',
+            messageCode: 'REQUIRE_FIELD_MISSING',
+            message: 'Require fields are missing',
+          };
+        }
         query = { driverLicenceNumber: data.driverLicenceNumber };
         if (data.address && Object.keys(data.address).length !== 0) {
           update.residentialAddress = {
@@ -425,6 +445,13 @@ const storePartnerDetails = async ({ requestBody }) => {
         if (data.hasOwnProperty('allowToCheckCreditHistory'))
           update.allowToCheckCreditHistory = data.allowToCheckCreditHistory;
       } else {
+        if (!data.entityName || !data.entityType || (!data.abn && !data.acn)) {
+          return {
+            status: 'ERROR',
+            messageCode: 'REQUIRE_FIELD_MISSING',
+            message: 'Require fields are missing',
+          };
+        }
         if (data.abn) update.abn = data.abn;
         if (data.acn) update.acn = data.acn;
         if (data.entityType) update.entityType = data.entityType;
