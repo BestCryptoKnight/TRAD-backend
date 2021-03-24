@@ -36,7 +36,7 @@ const uploadDocument = ({
   entityRefId,
   isPublic,
   bufferData,
-  mimetype,
+  mimeType,
 }) => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -44,7 +44,7 @@ const uploadDocument = ({
         file: bufferData,
         filePath:
           'documents/' + entityType + '/' + Date.now() + '-' + originalFileName,
-        fileType: mimetype,
+        fileType: mimeType,
       });
       console.log('s3Response : ', s3Response);
       const document = await Document.create({
@@ -57,6 +57,7 @@ const uploadDocument = ({
         entityType,
         entityRefId,
         isPublic,
+        mimeType,
       });
       return resolve(document);
     } catch (e) {

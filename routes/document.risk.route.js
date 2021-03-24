@@ -111,7 +111,7 @@ router.get('/download', async function (req, res) {
   try {
     const documentIds = req.query.documentIds.split(',');
     const documentData = await Document.find({ _id: { $in: documentIds } })
-      .select('_id keyPath originalFileName')
+      .select('_id keyPath originalFileName mimeType')
       .lean();
     if (req.query.action.toLowerCase() === 'view') {
       let response;
@@ -127,10 +127,11 @@ router.get('/download', async function (req, res) {
     } else {
       if (documentData.length === 1) {
         let response;
-        if (documentData[0].keyPath) {
+        if (documentData[0].keyPath && documentData[0].mimeType) {
           response = await downloadDocument({
             filePath: documentData[0].keyPath,
           });
+          res.setHeader('Content-Type', documentData[0].mimeType);
           res.setHeader(
             'Content-Disposition',
             'attachment; filename=' + documentData[0].originalFileName,
@@ -468,7 +469,7 @@ router.post('/upload', upload.single('document'), async function (req, res) {
       documentTypeId: req.body.documentType,
       originalFileName: req.file.originalname,
       bufferData: req.file.buffer,
-      mimetype: req.file.mimetype,
+      mimeType: req.file.mimetype,
       uploadById: req.user._id,
       uploadByType: 'user',
     });

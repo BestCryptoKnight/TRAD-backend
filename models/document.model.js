@@ -14,6 +14,7 @@ const documentSchema = new Schema(
     description: { type: Schema.Types.String },
     originalFileName: { type: Schema.Types.String },
     keyPath: { type: Schema.Types.String },
+    mimeType: { type: Schema.Types.String },
     uploadByType: { type: Schema.Types.String, enum: ['user', 'client-user'] },
     uploadById: { type: Schema.Types.ObjectId },
     entityType: { type: Schema.Types.String },
