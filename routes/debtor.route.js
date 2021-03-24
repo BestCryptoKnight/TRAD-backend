@@ -89,29 +89,35 @@ router.get('/', async function (req, res) {
     const aggregationQuery = [
       {
         $lookup: {
-          from: 'clients',
-          localField: 'clientId',
+          from: 'debtors',
+          localField: 'debtorId',
           foreignField: '_id',
-          as: 'clientId',
+          as: 'debtorId',
         },
       },
       {
         $unwind: {
-          path: '$clientId',
+          path: '$debtorId',
         },
       },
     ];
+    debtorColumn.columns.push('address');
+    const fields = debtorColumn.columns.map((i) => {
+      if (
+        i !== 'creditLimit' ||
+        i !== 'createdAt' ||
+        i !== 'updatedAt' ||
+        i !== 'isActive'
+      ) {
+        i = 'debtorId.' + i;
+      }
+      return [i, 1];
+    });
     aggregationQuery.push({
-      $project: {
-        'clientId._id': 1,
-        'clientId.name': 1,
-        'clientId.contactNumber': 1,
-        'clientId.abn': 1,
-        'clientId.acn': 1,
-        'clientId.inceptionDate': 1,
-        'clientId.expiryDate': 1,
-        creditLimit: 1,
-      },
+      $project: fields.reduce((obj, [key, val]) => {
+        obj[key] = val;
+        return obj;
+      }, {}),
     });
     const sortingOptions = {};
     if (req.query.sortBy && req.query.sortOrder) {
@@ -153,28 +159,45 @@ router.get('/', async function (req, res) {
       }
     }
     debtors[0].paginatedResult.forEach((debtor) => {
-      if (debtor.clientId.name) {
-        debtor.name = {
-          id: debtor.clientId._id,
-          value: debtor.clientId.name,
-        };
+      if (debtor.debtorId) {
+        for (let key in debtor.debtorId) {
+          debtor[key] = debtor.debtorId[key];
+        }
+        if (debtorColumn.columns.includes('fullAddress')) {
+          debtor.fullAddress = Object.values(debtor.debtorId.address)
+            .toString()
+            .replace(/,,/g, ',');
+        }
+        if (debtorColumn.columns.includes('property')) {
+          debtor.property = debtor.debtorId.address.property;
+        }
+        if (debtorColumn.columns.includes('unitNumber')) {
+          debtor.unitNumber = debtor.debtorId.address.unitNumber;
+        }
+        if (debtorColumn.columns.includes('streetNumber')) {
+          debtor.streetNumber = debtor.debtorId.address.streetNumber;
+        }
+        if (debtorColumn.columns.includes('streetName')) {
+          debtor.streetName = debtor.debtorId.address.streetName;
+        }
+        if (debtorColumn.columns.includes('streetType')) {
+          debtor.streetType = debtor.debtorId.address.streetType;
+        }
+        if (debtorColumn.columns.includes('suburb')) {
+          debtor.suburb = debtor.debtorId.address.suburb;
+        }
+        if (debtorColumn.columns.includes('state')) {
+          debtor.state = debtor.debtorId.address.state;
+        }
+        if (debtorColumn.columns.includes('country')) {
+          debtor.country = debtor.debtorId.address.country;
+        }
+        if (debtorColumn.columns.includes('postCode')) {
+          debtor.postCode = debtor.debtorId.address.postCode;
+        }
+        delete debtor.address;
       }
-      if (debtor.clientId.contactNumber) {
-        debtor.contactNumber = debtor.clientId.contactNumber;
-      }
-      if (debtor.clientId.abn) {
-        debtor.abn = debtor.clientId.abn;
-      }
-      if (debtor.clientId.acn) {
-        debtor.acn = debtor.clientId.acn;
-      }
-      if (debtor.clientId.inceptionDate) {
-        debtor.inceptionDate = debtor.clientId.inceptionDate;
-      }
-      if (debtor.clientId.expiryDate) {
-        debtor.expiryDate = debtor.clientId.expiryDate;
-      }
-      delete debtor.clientId;
+      delete debtor.debtorId;
     });
     const total =
       debtors[0]['totalCount'].length !== 0
@@ -192,10 +215,7 @@ router.get('/', async function (req, res) {
       },
     });
   } catch (e) {
-    Logger.log.error(
-      'Error occurred in get client-debtor details ',
-      e.message || e,
-    );
+    Logger.log.error('Error occurred in get client-debtor details ', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
