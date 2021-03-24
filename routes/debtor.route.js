@@ -78,6 +78,10 @@ router.get('/column-name', async function (req, res) {
  */
 router.get('/', async function (req, res) {
   try {
+    const module = StaticFile.modules.find((i) => i.name === 'credit-limit');
+    const debtorColumn = req.user.manageColumns.find(
+      (i) => i.moduleName === 'credit-limit',
+    );
     let queryFilter = {
       isActive: true,
       clientId: mongoose.Types.ObjectId(req.user.clientId),
@@ -142,20 +146,12 @@ router.get('/', async function (req, res) {
     const debtors = await ClientDebtor.aggregate(aggregationQuery).allowDiskUse(
       true,
     );
-    const headers = [
-      {
-        name: 'clientId',
-        label: 'Client Name',
-        type: 'modal',
-        request: { method: 'GET', url: 'client/details' },
-      },
-      { name: 'contactNumber', label: 'Contact Number', type: 'string' },
-      { name: 'abn', label: 'ABN', type: 'string' },
-      { name: 'acn', label: 'ACN', type: 'string' },
-      { name: 'inceptionDate', label: 'Inception Date', type: 'date' },
-      { name: 'expiryDate', label: 'Expiry Date', type: 'date' },
-      { name: 'creditLimit', label: 'Credit Limit', type: 'string' },
-    ];
+    const headers = [];
+    for (let i = 0; i < module.manageColumns.length; i++) {
+      if (debtorColumn.columns.includes(module.manageColumns[i].name)) {
+        headers.push(module.manageColumns[i]);
+      }
+    }
     debtors[0].paginatedResult.forEach((debtor) => {
       if (debtor.clientId.name) {
         debtor.name = {
