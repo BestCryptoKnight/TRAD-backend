@@ -123,6 +123,66 @@ router.get('/user/column-name', async function (req, res) {
 });
 
 /**
+ * Get Column Names
+ */
+router.get('/credit-limit/column-name', async function (req, res) {
+  try {
+    const module = StaticFile.modules.find((i) => i.name === 'credit-limit');
+    const clientUserColumn = req.user.manageColumns.find(
+      (i) => i.moduleName === 'credit-limit',
+    );
+    const customFields = [];
+    const defaultFields = [];
+    for (let i = 0; i < module.manageColumns.length; i++) {
+      if (
+        clientUserColumn &&
+        clientUserColumn.columns.includes(module.manageColumns[i].name)
+      ) {
+        if (module.defaultColumns.includes(module.manageColumns[i].name)) {
+          defaultFields.push({
+            name: module.manageColumns[i].name,
+            label: module.manageColumns[i].label,
+            isChecked: true,
+          });
+        } else {
+          customFields.push({
+            name: module.manageColumns[i].name,
+            label: module.manageColumns[i].label,
+            isChecked: true,
+          });
+        }
+      } else {
+        if (module.defaultColumns.includes(module.manageColumns[i].name)) {
+          defaultFields.push({
+            name: module.manageColumns[i].name,
+            label: module.manageColumns[i].label,
+            isChecked: false,
+          });
+        } else {
+          customFields.push({
+            name: module.manageColumns[i].name,
+            label: module.manageColumns[i].label,
+            isChecked: false,
+          });
+        }
+      }
+    }
+    res
+      .status(200)
+      .send({ status: 'SUCCESS', data: { defaultFields, customFields } });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in get client-user column names',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
  * Get User List
  */
 router.get('/user-list', async function (req, res) {
@@ -1119,6 +1179,41 @@ router.put('/user/column-name', async function (req, res) {
     }
     await User.updateOne(
       { _id: req.user._id, 'manageColumns.moduleName': 'client-user' },
+      { $set: { 'manageColumns.$.columns': updateColumns } },
+    );
+    res
+      .status(200)
+      .send({ status: 'SUCCESS', message: 'Columns updated successfully' });
+  } catch (e) {
+    Logger.log.error('Error occurred in update column names', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Update Column Names
+ */
+router.put('/user/column-name', async function (req, res) {
+  if (!req.body.hasOwnProperty('isReset') || !req.body.columns) {
+    Logger.log.error('Require fields are missing');
+    return res.status(400).send({
+      status: 'ERROR',
+      message: 'Something went wrong, please try again.',
+    });
+  }
+  try {
+    let updateColumns = [];
+    if (req.body.isReset) {
+      const module = StaticFile.modules.find((i) => i.name === 'credit-limit');
+      updateColumns = module.defaultColumns;
+    } else {
+      updateColumns = req.body.columns;
+    }
+    await User.updateOne(
+      { _id: req.user._id, 'manageColumns.moduleName': 'credit-limit' },
       { $set: { 'manageColumns.$.columns': updateColumns } },
     );
     res
