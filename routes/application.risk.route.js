@@ -675,8 +675,9 @@ router.put('/', async function (req, res) {
   }
   if (
     req.body.stepper === 'person' &&
-    !req.body.partners &&
-    req.body.partners.length === 0
+    (!req.body.entityType ||
+      !req.body.partners ||
+      req.body.partners.length === 0)
   ) {
     return res.status(400).send({
       status: 'ERROR',
@@ -686,9 +687,9 @@ router.put('/', async function (req, res) {
   }
   if (
     req.body.stepper === 'credit-limit' &&
-    !req.body.creditLimit &&
-    !req.body.hasOwnProperty('isPassedOverdueAmount') &&
-    !req.body.has('isExtendedPaymentTerms')
+    (!req.body.creditLimit ||
+      !req.body.hasOwnProperty('isPassedOverdueAmount') ||
+      !req.body.hasOwnProperty('isExtendedPaymentTerms'))
   ) {
     return res.status(400).send({
       status: 'ERROR',

@@ -233,7 +233,10 @@ router.get('/', async function (req, res) {
  * Get Debtor Modal details
  */
 router.get('/drawer-details/:debtorId', async function (req, res) {
-  if (!req.params.debtorId) {
+  if (
+    !req.params.debtorId ||
+    !mongoose.Types.ObjectId.isValid(req.params.debtorId)
+  ) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',

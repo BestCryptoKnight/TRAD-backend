@@ -203,12 +203,18 @@ router.get('/user/:insurerId', async function (req, res) {
       (i) => i.moduleName === 'insurer-user',
     );
     const fields = insurerColumn.columns.map((i) => [i, 1]);
-    const queryFilter = {
+    let queryFilter = {
       isDeleted: false,
       insurerId: mongoose.Types.ObjectId(req.params.insurerId),
     };
-    if (req.query.search)
-      queryFilter.name = { $regex: req.query.search, $options: 'i' };
+    if (req.query.search) {
+      queryFilter = Object.assign({}, queryFilter, {
+        $or: [
+          { name: { $regex: req.query.search, $options: 'i' } },
+          { email: { $regex: req.query.search, $options: 'i' } },
+        ],
+      });
+    }
     let sortingOptions = {};
     const aggregationQuery = [
       { $match: queryFilter },
@@ -278,6 +284,43 @@ router.get('/user/:insurerId', async function (req, res) {
 });
 
 /**
+ * Get Insurer Contact Modal Details
+ */
+router.get('/user-details/:userId', async function (req, res) {
+  if (
+    !req.params.userId ||
+    !mongoose.Types.ObjectId.isValid(req.params.userId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing',
+    });
+  }
+  try {
+    const module = StaticFile.modules.find((i) => i.name === 'insurer-user');
+
+    const insurerUser = await InsurerUser.findOne({
+      _id: req.params.userId,
+    })
+      .select({ _id: 0, isDeleted: 0, __v: 0 })
+      .lean();
+    let response = [];
+    module.manageColumns.forEach((i) => {
+      if (i.name === 'isDecisionMaker' || i.name === 'hasLeftCompany') {
+        insurerUser[i.name] = insurerUser[i.name] ? 'Yes' : 'No';
+      }
+      response.push({
+        label: i.label,
+        value: insurerUser[i.name] || '',
+        type: i.type,
+      });
+    });
+    res.status(200).send({ status: 'SUCCESS', data: response });
+  } catch (e) {}
+});
+
+/**
  * Get Insurer Matrix
  */
 router.get('/matrix/:insurerId', async function (req, res) {
@@ -314,6 +357,13 @@ router.get('/matrix/:insurerId', async function (req, res) {
         fileName = i + '.json';
       }
     });
+    if (!fileName) {
+      return res.status(200).send({
+        status: 'SUCCESS',
+        message: 'No Data Available',
+        data: {},
+      });
+    }
     let insurerMatrix = require(`./../static-files/matrixes/${fileName}`);
     insurerMatrix = JSON.parse(JSON.stringify(insurerMatrix));
     let generalGuideLines = [];

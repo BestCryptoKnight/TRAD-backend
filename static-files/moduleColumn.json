@@ -471,7 +471,12 @@
     {
       "name": "insurer-user",
       "manageColumns": [
-        { "name": "name", "label": "Last Name", "type": "string" },
+        {
+          "name": "name",
+          "label": "Name",
+          "type": "modal",
+          "request": { "method": "GET", "url": "insurer/user-details" }
+        },
         { "name": "email", "label": "Email", "type": "string" },
         {
           "name": "contactNumber",

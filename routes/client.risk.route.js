@@ -1196,7 +1196,7 @@ router.put('/user/column-name', async function (req, res) {
 /**
  * Update Column Names
  */
-router.put('/user/column-name', async function (req, res) {
+router.put('/credit-limit/column-name', async function (req, res) {
   if (!req.body.hasOwnProperty('isReset') || !req.body.columns) {
     Logger.log.error('Require fields are missing');
     return res.status(400).send({

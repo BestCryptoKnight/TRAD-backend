@@ -22,6 +22,7 @@ const insurerSchema = new Schema(
     },
     email: { type: Schema.Types.String },
     website: { type: Schema.Types.String },
+    isDefault: { type: Schema.Types.Boolean, default: false },
     isDeleted: { type: Schema.Types.Boolean, default: false },
   },
   { timestamps: true },

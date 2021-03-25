@@ -396,21 +396,21 @@ const storePartnerDetails = async ({ requestBody }) => {
       };
     }
     const promises = [];
-    requestBody.partners.forEach((data) => {
+    for (let i = 0; i < requestBody.partners.length; i++) {
       let update = {};
       let query = {};
-      update.type = data.type.toLowerCase();
+      update.type = requestBody.partners[i].type.toLowerCase();
       update.debtorId = applicationData.debtorId;
-      if (data.type.toLowerCase() === 'individual') {
+      if (requestBody.partners[i].type.toLowerCase() === 'individual') {
         if (
-          !data.title ||
-          !data.firstName ||
-          !data.lastName ||
-          !data.dateOfBirth ||
-          !data.address ||
-          !data.address.state ||
-          !data.address.postCode ||
-          !data.address.streetNumber
+          !requestBody.partners[i].title ||
+          !requestBody.partners[i].firstName ||
+          !requestBody.partners[i].lastName ||
+          !requestBody.partners[i].dateOfBirth ||
+          !requestBody.partners[i].address ||
+          !requestBody.partners[i].address.state ||
+          !requestBody.partners[i].address.postCode ||
+          !requestBody.partners[i].address.streetNumber
         ) {
           return {
             status: 'ERROR',
@@ -418,49 +418,78 @@ const storePartnerDetails = async ({ requestBody }) => {
             message: 'Require fields are missing',
           };
         }
-        query = { driverLicenceNumber: data.driverLicenceNumber };
-        if (data.address && Object.keys(data.address).length !== 0) {
+        query = {
+          driverLicenceNumber: requestBody.partners[i].driverLicenceNumber,
+        };
+        if (
+          requestBody.partners[i].address &&
+          Object.keys(requestBody.partners[i].address).length !== 0
+        ) {
           update.residentialAddress = {
-            property: data.address.property,
-            unitNumber: data.address.unitNumber,
-            streetNumber: data.address.streetNumber,
-            streetName: data.address.streetName,
-            streetType: data.address.streetType,
-            suburb: data.address.suburb,
-            state: data.address.state,
-            country: data.address.country,
-            postCode: data.address.postCode,
+            property: requestBody.partners[i].address.property,
+            unitNumber: requestBody.partners[i].address.unitNumber,
+            streetNumber: requestBody.partners[i].address.streetNumber,
+            streetName: requestBody.partners[i].address.streetName,
+            streetType: requestBody.partners[i].address.streetType,
+            suburb: requestBody.partners[i].address.suburb,
+            state: requestBody.partners[i].address.state,
+            country: requestBody.partners[i].address.country,
+            postCode: requestBody.partners[i].address.postCode,
           };
         }
-        if (data.title) update.title = data.title;
-        if (data.firstName) update.firstName = data.firstName;
-        if (data.middleName) update.middleName = data.middleName;
-        if (data.lastName) update.lastName = data.lastName;
-        if (data.dateOfBirth) update.dateOfBirth = data.dateOfBirth;
-        if (data.driverLicenceNumber)
-          update.driverLicenceNumber = data.driverLicenceNumber;
-        if (data.phoneNumber) update.phoneNumber = data.phoneNumber;
-        if (data.mobileNumber) update.mobileNumber = data.mobileNumber;
-        if (data.email) update.email = data.email;
-        if (data.hasOwnProperty('allowToCheckCreditHistory'))
-          update.allowToCheckCreditHistory = data.allowToCheckCreditHistory;
+        if (requestBody.partners[i].title)
+          update.title = requestBody.partners[i].title;
+        if (requestBody.partners[i].firstName)
+          update.firstName = requestBody.partners[i].firstName;
+        if (requestBody.partners[i].middleName)
+          update.middleName = requestBody.partners[i].middleName;
+        if (requestBody.partners[i].lastName)
+          update.lastName = requestBody.partners[i].lastName;
+        if (requestBody.partners[i].dateOfBirth)
+          update.dateOfBirth = requestBody.partners[i].dateOfBirth;
+        if (requestBody.partners[i].driverLicenceNumber)
+          update.driverLicenceNumber =
+            requestBody.partners[i].driverLicenceNumber;
+        if (requestBody.partners[i].phoneNumber)
+          update.phoneNumber = requestBody.partners[i].phoneNumber;
+        if (requestBody.partners[i].mobileNumber)
+          update.mobileNumber = requestBody.partners[i].mobileNumber;
+        if (requestBody.partners[i].email)
+          update.email = requestBody.partners[i].email;
+        if (requestBody.partners[i].hasOwnProperty('allowToCheckCreditHistory'))
+          update.allowToCheckCreditHistory =
+            requestBody.partners[i].allowToCheckCreditHistory;
       } else {
-        if (!data.entityName || !data.entityType || (!data.abn && !data.acn)) {
+        if (
+          !requestBody.partners[i].entityName ||
+          !requestBody.partners[i].entityType ||
+          (!requestBody.partners[i].abn && !requestBody.partners[i].acn)
+        ) {
           return {
             status: 'ERROR',
             messageCode: 'REQUIRE_FIELD_MISSING',
             message: 'Require fields are missing',
           };
         }
-        if (data.abn) update.abn = data.abn;
-        if (data.acn) update.acn = data.acn;
-        if (data.entityType) update.entityType = data.entityType;
-        if (data.entityName) update.entityName = data.entityName;
-        if (data.tradingName) update.tradingName = data.tradingName;
-        query = { $or: [{ abn: data.abn }, { acn: data.acn }] };
+        if (requestBody.partners[i].abn)
+          update.abn = requestBody.partners[i].abn;
+        if (requestBody.partners[i].acn)
+          update.acn = requestBody.partners[i].acn;
+        if (requestBody.partners[i].entityType)
+          update.entityType = requestBody.partners[i].entityType;
+        if (requestBody.partners[i].entityName)
+          update.entityName = requestBody.partners[i].entityName;
+        if (requestBody.partners[i].tradingName)
+          update.tradingName = requestBody.partners[i].tradingName;
+        query = {
+          $or: [
+            { abn: requestBody.partners[i].abn },
+            { acn: requestBody.partners[i].acn },
+          ],
+        };
       }
       promises.push(DebtorDirector.updateOne(query, update, { upsert: true }));
-    });
+    }
     promises.push(
       Application.updateOne(
         { _id: requestBody.applicationId },
@@ -473,10 +502,7 @@ const storePartnerDetails = async ({ requestBody }) => {
       .lean();
     return application;
   } catch (e) {
-    Logger.log.error(
-      'Error occurred in store partners details ',
-      e.message || e,
-    );
+    Logger.log.error('Error occurred in store partners details ', e);
   }
 };
 

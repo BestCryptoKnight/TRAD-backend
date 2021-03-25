@@ -15,6 +15,7 @@ const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
 const { getClientPolicies } = require('./../helper/rss.helper');
 const { addAuditLog } = require('./../helper/audit-log.helper');
+const { getPolicyDetails } = require('./../helper/policy.helper');
 
 /**
  * Get Column Names
@@ -107,25 +108,11 @@ router.get('/client/policy-details/:policyId', async function (req, res) {
     });
   }
   try {
-    const module = StaticFile.modules.find((i) => i.name === 'client-policy');
     const policyData = await Policy.findById(req.params.policyId)
       .populate({ path: 'insurerId', select: 'name' })
       .select({ __v: 0 })
       .lean();
-    let response = [];
-    module.manageColumns.forEach((i) => {
-      if (policyData.hasOwnProperty(i.name)) {
-        const value =
-          i.name === 'insurerId' && policyData[i.name]
-            ? policyData[i.name]['name']
-            : policyData[i.name] || '';
-        response.push({
-          label: i.label,
-          value: value || '',
-          type: i.type,
-        });
-      }
-    });
+    const response = await getPolicyDetails({ policyData });
     res.status(200).send({ status: 'SUCCESS', data: response });
   } catch (e) {
     Logger.log.error('Error occurred in get policy details ', e.message || e);
@@ -137,7 +124,7 @@ router.get('/client/policy-details/:policyId', async function (req, res) {
 });
 
 /**
- * Get Details of CI Policy
+ * Get Policy Details For Modal
  */
 router.get('/details/:policyId', async function (req, res) {
   if (
@@ -151,26 +138,11 @@ router.get('/details/:policyId', async function (req, res) {
     });
   }
   try {
-    const module = StaticFile.modules.find((i) => i.name === 'insurer-policy');
     const policyData = await Policy.findById(req.params.policyId)
       .populate({ path: 'insurerId clientId', select: 'name' })
-      .select({ __v: 0 })
+      .select({ __v: 0, isDeleted: false, crmPolicyId: 0 })
       .lean();
-    let response = [];
-    module.manageColumns.forEach((i) => {
-      if (policyData.hasOwnProperty(i.name)) {
-        const value =
-          (i.name === 'insurerId' || i.name === 'clientId') &&
-          policyData[i.name]
-            ? policyData[i.name]['name']
-            : policyData[i.name] || '';
-        response.push({
-          label: i.label,
-          value: value,
-          type: i.type,
-        });
-      }
-    });
+    const response = await getPolicyDetails({ policyData });
     res.status(200).send({ status: 'SUCCESS', data: response });
   } catch (e) {
     Logger.log.error('Error occurred in get policy details ', e.message || e);

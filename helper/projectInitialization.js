@@ -79,7 +79,10 @@ const createDefaultInsurer = () => {
         Logger.log.info('Insurer already exists');
         return resolve();
       }
-      const insurer = new Insurer({ name: config.organization.insurerName });
+      const insurer = new Insurer({
+        name: config.organization.insurerName,
+        isDefault: true,
+      });
       await insurer.save();
       Logger.log.info('Insurer created successfully');
       return resolve();
