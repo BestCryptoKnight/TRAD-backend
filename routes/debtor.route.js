@@ -104,11 +104,12 @@ router.get('/', async function (req, res) {
     debtorColumn.columns.push('address');
     const fields = debtorColumn.columns.map((i) => {
       if (
-        i !== 'creditLimit' ||
-        i !== 'createdAt' ||
-        i !== 'updatedAt' ||
+        i !== 'creditLimit' &&
+        i !== 'createdAt' &&
+        i !== 'updatedAt' &&
         i !== 'isActive'
       ) {
+        console.log('i : ', i);
         i = 'debtorId.' + i;
       }
       return [i, 1];
@@ -128,7 +129,7 @@ router.get('/', async function (req, res) {
     if (req.query.search) {
       aggregationQuery.push({
         $match: {
-          'clientId.name': { $regex: req.query.search, $options: 'i' },
+          'debtorId.entityName': { $regex: req.query.search, $options: 'i' },
         },
       });
     }
