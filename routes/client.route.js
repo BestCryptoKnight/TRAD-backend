@@ -85,7 +85,8 @@ router.get('/user', async function (req, res) {
     });
   }
   try {
-    const module = StaticFile.modules.find((i) => i.name === 'client-user');
+    let module = StaticFile.modules.find((i) => i.name === 'client-user');
+    module = JSON.parse(JSON.stringify(module));
     const clientColumn = req.user.manageColumns.find(
       (i) => i.moduleName === 'client-user',
     );

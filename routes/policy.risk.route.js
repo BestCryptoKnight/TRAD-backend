@@ -5,6 +5,7 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const User = mongoose.model('user');
+const Client = mongoose.model('client');
 const Policy = mongoose.model('policy');
 const Insurer = mongoose.model('insurer');
 
@@ -311,7 +312,9 @@ router.put('/column-name', async function (req, res) {
 router.put('/sync-from-crm/:insurerId', async function (req, res) {
   if (
     !req.params.insurerId ||
-    !mongoose.Types.ObjectId.isValid(req.params.insurerId)
+    !mongoose.Types.ObjectId.isValid(req.params.insurerId) ||
+    !req.body.clientIds ||
+    req.body.clientIds.length === 0
   ) {
     return res.status(400).send({
       status: 'ERROR',
@@ -320,41 +323,10 @@ router.put('/sync-from-crm/:insurerId', async function (req, res) {
     });
   }
   try {
-    /*let query;
-    /!* switch (req.query.listFor) {
-      case 'insurer-policy':
-        query = { product: { $con: 'Credit Insurance' } };
-        break;
-      case 'insurer-matrix':
-        query = { product: { $con: 'Risk Management Package' } };
-        break;
-      default:
-        return res.status(400).send({
-          status: 'ERROR',
-          messageCode: 'BAD_REQUEST',
-          message: 'Please pass correct fields',
-        });
-    }*!/*/
     const [policies, insurer] = await Promise.all([
-      Policy.aggregate([
-        {
-          $match: { insurerId: mongoose.Types.ObjectId(req.params.insurerId) },
-        },
-        {
-          $lookup: {
-            from: 'clients',
-            localField: 'clientId',
-            foreignField: '_id',
-            as: 'client',
-          },
-        },
-        {
-          $group: {
-            _id: '$clientId',
-            crmClientId: { $first: '$client.crmClientId' },
-          },
-        },
-      ]).allowDiskUse(true),
+      Client.find({ _id: { $in: req.body.clientIds } })
+        .select('_id crmClientId')
+        .lean(),
       Insurer.findOne({ _id: req.params.insurerId }).lean(),
     ]);
     if (!policies || policies.length === 0) {
@@ -364,14 +336,14 @@ router.put('/sync-from-crm/:insurerId', async function (req, res) {
         message: 'Policies not found',
       });
     }
-    console.log('Total Clients : ', policies.length);
+    console.log('Total Clients : ', policies);
     let policiesFromCrm;
     let promiseArr = [];
     let newPolicies = [];
     for (let i = 0; i < policies.length; i++) {
       policiesFromCrm = await getClientPolicies({
         clientId: policies[i]._id,
-        crmClientId: policies[i].crmClientId[0],
+        crmClientId: policies[i].crmClientId,
         insurerId: req.params.insurerId,
         page: 1,
         limit: 50,
