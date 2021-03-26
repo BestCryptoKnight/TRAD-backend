@@ -20,6 +20,7 @@ const RssHelper = require('./../helper/rss.helper');
 const StaticFile = require('./../static-files/moduleColumn');
 const { addAuditLog } = require('./../helper/audit-log.helper');
 const { getUserList } = require('./../helper/user.helper');
+const { getClientDebtorDetails } = require('./../helper/client-debtor.helper');
 
 //client
 /**
@@ -173,6 +174,55 @@ router.get('/credit-limit/column-name', async function (req, res) {
   } catch (e) {
     Logger.log.error(
       'Error occurred in get client-user column names',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Get Credit-Limit Modal details
+ */
+router.get('/credit-limit/drawer-details/:debtorId', async function (req, res) {
+  if (
+    !req.params.debtorId ||
+    !mongoose.Types.ObjectId.isValid(req.params.debtorId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing',
+    });
+  }
+  try {
+    const module = StaticFile.modules.find((i) => i.name === 'debtor');
+    const debtor = await ClientDebtor.findOne({
+      _id: req.params.debtorId,
+    })
+      .populate({
+        path: 'debtorId',
+        select: { _id: 0, isDeleted: 0, createdAt: 0, updatedAt: 0 },
+      })
+      .select({ _id: 0, isDeleted: 0, clientId: 0, __v: 0 })
+      .lean();
+    if (!debtor) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'NO_DEBTOR_FOUND',
+        message: 'No debtor found',
+      });
+    }
+    const response = await getClientDebtorDetails({
+      debtor,
+      manageColumns: module.manageColumns,
+    });
+    res.status(200).send({ status: 'SUCCESS', data: response });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in get debtor modal details ',
       e.message || e,
     );
     res.status(500).send({

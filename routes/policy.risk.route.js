@@ -325,7 +325,7 @@ router.put('/sync-from-crm/:insurerId', async function (req, res) {
   try {
     const [policies, insurer] = await Promise.all([
       Client.find({ _id: { $in: req.body.clientIds } })
-        .select('_id crmClientId')
+        .select('_id name crmClientId')
         .lean(),
       Insurer.findOne({ _id: req.params.insurerId }).lean(),
     ]);
@@ -336,7 +336,7 @@ router.put('/sync-from-crm/:insurerId', async function (req, res) {
         message: 'Policies not found',
       });
     }
-    console.log('Total Clients : ', policies);
+    console.log('Total Clients : ', policies.length);
     let policiesFromCrm;
     let promiseArr = [];
     let newPolicies = [];
@@ -368,7 +368,7 @@ router.put('/sync-from-crm/:insurerId', async function (req, res) {
               userType: 'user',
               userRefId: req.user._id,
               actionType: 'sync',
-              logDescription: `Insurer ${insurer.name} policy ${policiesFromCrm[j].product} synced successfully`,
+              logDescription: `Insurer ${insurer.name} and client ${policies[i].name} policy ${policiesFromCrm[j].product} synced successfully`,
             }),
           );
         } else {
@@ -381,7 +381,13 @@ router.put('/sync-from-crm/:insurerId', async function (req, res) {
     if (newPolicies.length !== 0) {
       const policyData = await Policy.find({
         crmPolicyId: { $in: newPolicies },
-      }).lean();
+      })
+        .populate({
+          path: 'clientId',
+          select: 'name',
+        })
+        .select('_id product clientId')
+        .lean();
       for (let i = 0; i < policyData.length; i++) {
         promises.push(
           addAuditLog({
@@ -390,7 +396,7 @@ router.put('/sync-from-crm/:insurerId', async function (req, res) {
             userType: 'user',
             userRefId: req.user._id,
             actionType: 'sync',
-            logDescription: `Insurer ${insurer.name} policy ${policyData[i].product} synced successfully`,
+            logDescription: `Insurer ${insurer.name} and client ${policyData[i].clientId.name} policy ${policyData[i].product} synced successfully`,
           }),
         );
       }

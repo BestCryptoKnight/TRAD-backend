@@ -16,6 +16,7 @@ const Application = mongoose.model('application');
 const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
 const StaticData = require('./../static-files/staticData.json');
+const { getClientDebtorDetails } = require('./../helper/client-debtor.helper');
 
 /**
  * Get Column Names
@@ -254,20 +255,16 @@ router.get('/drawer-details/:debtorId', async function (req, res) {
       })
       .select({ _id: 0, isDeleted: 0, clientId: 0, __v: 0 })
       .lean();
-    let response = [];
-    let value = '';
-    module.manageColumns.forEach((i) => {
-      value =
-        i.name === 'creditLimit' ||
-        i.name === 'createdAt' ||
-        i.name === 'updatedAt'
-          ? debtor[i.name]
-          : debtor['debtorId'][i.name];
-      response.push({
-        label: i.label,
-        value: value || '',
-        type: i.type,
+    if (!debtor) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'NO_DEBTOR_FOUND',
+        message: 'No debtor found',
       });
+    }
+    const response = await getClientDebtorDetails({
+      debtor,
+      manageColumns: module.manageColumns,
     });
     res.status(200).send({ status: 'SUCCESS', data: response });
   } catch (e) {

@@ -288,7 +288,10 @@
           "name": "entityName",
           "label": "Name",
           "type": "modal",
-          "request": { "method": "GET", "url": "debtor/drawer-details" }
+          "request": {
+            "method": "GET",
+            "url": "client/credit-limit/drawer-details"
+          }
         },
         { "name": "entityType", "label": "Entity Type", "type": "string" },
         { "name": "abn", "label": "ABN", "type": "string" },
