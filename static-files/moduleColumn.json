@@ -585,6 +585,11 @@
           "type": "string"
         },
         { "name": "role", "label": "Role", "type": "string" },
+        {
+          "name": "maxCreditLimit",
+          "label": "Max Credit Limit",
+          "type": "number"
+        },
         { "name": "status", "label": "Status", "type": "string" },
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }

@@ -1123,16 +1123,18 @@ router.put('/user/sync-from-crm/:clientId', async function (req, res) {
         crmContactId: contactsFromCrm[i].crmContactId,
         isDeleted: false,
       }).lean();
-      promiseArr.push(
-        addAuditLog({
-          entityType: 'client-user',
-          entityRefId: clientUser._id,
-          userType: 'user',
-          userRefId: req.user._id,
-          actionType: 'sync',
-          logDescription: `Client contact ${contactsFromCrm[i].name} synced successfully.`,
-        }),
-      );
+      if (clientUser && clientUser._id) {
+        promiseArr.push(
+          addAuditLog({
+            entityType: 'client-user',
+            entityRefId: clientUser._id,
+            userType: 'user',
+            userRefId: req.user._id,
+            actionType: 'sync',
+            logDescription: `Client contact ${contactsFromCrm[i].name} synced successfully.`,
+          }),
+        );
+      }
     }
     await Promise.all(promiseArr);
     res.status(200).send({

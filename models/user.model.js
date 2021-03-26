@@ -38,6 +38,7 @@ const userSchema = new Schema(
       enum: ['riskAnalyst', 'serviceManager', 'superAdmin'],
       default: 'superAdmin',
     },
+    maxCreditLimit: Schema.Types.Number,
     moduleAccess: [
       {
         name: { type: Schema.Types.String },

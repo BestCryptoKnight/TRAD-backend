@@ -447,6 +447,9 @@ router.post('/', async function (req, res) {
         });
       }
       let objToSave = req.body;
+      objToSave.maxCreditLimit = req.body.maxCreditLimit
+        ? req.body.maxCreditLimit
+        : 0;
       objToSave.createdBy = req.user._id;
       objToSave.organizationId = req.user.organizationId;
       objToSave.manageColumns = manageColumns;
@@ -589,6 +592,8 @@ router.put('/:userId', async function (req, res) {
     let updateObj = {};
     const user = await User.findById(req.params.userId).lean();
     if (req.body.name) updateObj.name = req.body.name;
+    if (req.body.maxCreditLimit)
+      updateObj.maxCreditLimit = req.body.maxCreditLimit;
     if (req.body.contactNumber)
       updateObj.contactNumber = req.body.contactNumber;
     if (req.body.role) updateObj.role = req.body.role;
