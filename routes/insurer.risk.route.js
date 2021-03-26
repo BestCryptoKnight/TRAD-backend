@@ -5,6 +5,7 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const User = mongoose.model('user');
+const Client = mongoose.model('client');
 const Insurer = mongoose.model('insurer');
 const InsurerUser = mongoose.model('insurer-user');
 
@@ -29,7 +30,7 @@ router.get('/search-from-crm', async function (req, res) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Pass some text to perform search.',
+      message: 'Pass some text to perform search',
     });
   }
   try {
@@ -56,6 +57,43 @@ router.get('/search-from-crm', async function (req, res) {
       'Error occurred in getting insurer list for search.',
       e.message || e,
     );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Search Insurer's Client
+ */
+router.get('/client-list/:insurerId', async function (req, res) {
+  if (
+    !req.params.insurerId ||
+    !mongoose.Types.ObjectId.isValid(req.params.insurerId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing',
+    });
+  }
+  if (!req.query.searchKeyword) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Pass some text to perform search',
+    });
+  }
+  try {
+    const query = {
+      insurerId: req.params.insurerId,
+      name: { $regex: `${req.query.searchKeyword}`, $options: 'i' },
+    };
+    const clients = await Client.find(query).select({ _id: 1, name: 1 }).lean();
+    res.status(200).send({ status: 'SUCCESS', data: clients });
+  } catch (e) {
+    Logger.log.error('Error occurred in get client list ', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

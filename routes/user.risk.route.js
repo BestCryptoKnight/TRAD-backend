@@ -295,6 +295,7 @@ router.get('/:userId', async function (req, res) {
         role: 1,
         moduleAccess: 1,
         signUpToken: 1,
+        maxCreditLimit: 1,
       })
       .lean();
     const query =
