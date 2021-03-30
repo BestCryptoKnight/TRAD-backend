@@ -309,10 +309,15 @@ router.get('/details/:debtorId', async function (req, res) {
     if (debtor) {
       if (debtor.address) {
         for (let key in debtor.address) {
-          debtor[key] =
-            key === 'country' ? [debtor.address[key]] : debtor.address[key];
+          debtor[key] = debtor.address[key];
         }
         delete debtor.address;
+      }
+      if (debtor.country) {
+        debtor.country = {
+          label: debtor.country.name,
+          value: debtor.country.code,
+        };
       }
       if (debtor.entityType) {
         debtor.entityType = [
