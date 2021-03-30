@@ -1934,5 +1934,579 @@
       "name": "Zimbabwe",
       "_id": "ZWE"
     }
+  ],
+  "ABREntityType": [
+    {
+      "_id": "BUSINESS",
+      "name": "Approved Deposit Fund"
+    },
+    {
+      "_id": "BUSINESS",
+      "name": "APRA Regulated Fund (Fund Type Unknown)"
+    },
+    {
+      "_id": "BUSINESS",
+      "name": "APRA Regulated Non-Public Offer Fund"
+    },
+    {
+      "_id": "BUSINESS",
+      "name": "APRA Regulated Public Offer Fund"
+    },
+    {
+      "_id": "PROPRIETARY_LIMITED",
+      "name": "Australian Private Company"
+    },
+    {
+      "_id": "LIMITED_COMPANY",
+      "name": "Australian Public Company"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Cash Management Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Commonwealth Government APRA Regulated Public Sector Fund"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Commonwealth Government APRA Regulated Public Sector Scheme"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Commonwealth Government Cash Management Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Commonwealth Government Company"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Commonwealth Government Co-operative"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Commonwealth Government Corporate Unit Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Commonwealth Government Discretionary Investment Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Commonwealth Government Discretionary Services Management Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Commonwealth Government Discretionary Trading Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Commonwealth Government Entity"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Commonwealth Government Fixed Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Commonwealth Government Fixed Unit Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Commonwealth Government Hybrid Trust"
+    },
+    {
+      "_id": "PARTNERSHIP",
+      "name": "Commonwealth Government Limited Partnership"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Commonwealth Government Listed Public Unit Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Commonwealth Government Non-Regulated Super Fund"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Commonwealth Government Other Incorporated Entity"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Commonwealth Government Other Unincorporated Entity"
+    },
+    {
+      "_id": "PARTNERSHIP",
+      "name": "Commonwealth Government Partnership"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Commonwealth Government Pooled Development Fund"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Commonwealth Government Private Company"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Commonwealth Government Public Company"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Commonwealth Government Public Trading Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Commonwealth Government Statutory Authority"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Commonwealth Government Strata Title"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Commonwealth Government Super Fund"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Commonwealth Government Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Commonwealth Government Unlisted Public Unit Trust"
+    },
+    {
+      "_id": "BUSINESS",
+      "name": "Co-operative"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Corporate Unit Trust"
+    },
+    {
+      "_id": "BUSINESS",
+      "name": "Deceased Estate"
+    },
+    {
+      "_id": "BUSINESS",
+      "name": "Diplomatic/Consulate Body or High Commission"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Discretionary Investment Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Discretionary Services Management Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Discretionary Trading Trust"
+    },
+    {
+      "_id": "PARTNERSHIP",
+      "name": "Family Partnership"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Fixed Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Fixed Unit Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "First Home Saver Accounts Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Hybrid Trust"
+    },
+    {
+      "_id": "SOLE_TRADER",
+      "name": "Individual/Sole Trader"
+    },
+    {
+      "_id": "PARTNERSHIP",
+      "name": "Limited Partnership"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Listed Public Unit Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Local Government APRA Regulated Public Sector Fund"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Local Government APRA Regulated Public Sector Scheme"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Local Government Cash Management Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Local Government Company"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Local Government Co-operative"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Local Government Corporate Unit Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Local Government Discretionary Investment Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Local Government Discretionary Services Management Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Local Government Discretionary Trading Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Local Government Entity"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Local Government Fixed Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Local Government Fixed Unit Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Local Government Hybrid Trust"
+    },
+    {
+      "_id": "PARTNERSHIP",
+      "name": "Local Government Limited Partnership"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Local Government Listed Public Unit Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Local Government Non-Regulated Super Fund"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Local Government Other Incorporated Entity"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Local Government Other Unincorporated Entity"
+    },
+    {
+      "_id": "PARTNERSHIP",
+      "name": "Local Government Partnership"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Local Government Pooled Development Fund"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Local Government Private Company"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Local Government Public Company"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Local Government Public Trading Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Local Government Statutory Authority"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Local Government Strata Title"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Local Government Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Local Government Unlisted Public Unit Trust"
+    },
+    {
+      "_id": "BUSINESS",
+      "name": "Non-Regulated Superannuation Fund"
+    },
+    {
+      "_id": "BUSINESS",
+      "name": "Other Incorporated Entity"
+    },
+    {
+      "_id": "PARTNERSHIP",
+      "name": "Other Partnership"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Other Trust"
+    },
+    {
+      "_id": "BUSINESS",
+      "name": "Other Unincorporated Entity"
+    },
+    {
+      "_id": "BUSINESS",
+      "name": "Pooled Development Fund"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Pooled Superannuation Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Public Trading Trust"
+    },
+    {
+      "_id": "BUSINESS",
+      "name": "Regulated Self-Managed Superannuation Fund"
+    },
+    {
+      "_id": "BUSINESS",
+      "name": "Small APRA Regulated Fund"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "State Government APRA Regulated Public Sector Fund"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "State Government APRA Regulated Public Sector Scheme"
+    },
+    {
+      "_id": "TRUST",
+      "name": "State Government Cash Management Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "State Government Company"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "State Government Co-operative"
+    },
+    {
+      "_id": "TRUST",
+      "name": "State Government Corporate Unit Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "State Government Discretionary Investment Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "State Government Discretionary Services Management Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "State Government Discretionary Trading Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "State Government Entity"
+    },
+    {
+      "_id": "TRUST",
+      "name": "State Government Fixed Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "State Government Fixed Unit Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "State Government Hybrid Trust"
+    },
+    {
+      "_id": "PARTNERSHIP",
+      "name": "State Government Limited Partnership"
+    },
+    {
+      "_id": "TRUST",
+      "name": "State Government Listed Public Unit Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "State Government Non-Regulated Super Fund"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "State Government Other Incorporated Entity"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "State Government Other Unincorporated Entity"
+    },
+    {
+      "_id": "PARTNERSHIP",
+      "name": "State Government Partnership"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "State Government Pooled Development Fund"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "State Government Private Company"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "State Government Public Company"
+    },
+    {
+      "_id": "TRUST",
+      "name": "State Government Public Trading Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "State Government Statutory Authority"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "State Government Strata Title"
+    },
+    {
+      "_id": "TRUST",
+      "name": "State Government Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "State Government Unlisted Public Unit Trust"
+    },
+    {
+      "_id": "BUSINESS",
+      "name": "Strata-title"
+    },
+    {
+      "_id": "BUSINESS",
+      "name": "Super Fund"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Territory Government APRA Regulated Public Sector Fund"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Territory Government APRA Regulated Public Sector Scheme"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Territory Government Cash Management Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Territory Government Co-operative"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Territory Government Corporate Unit Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Territory Government Discretionary Investment Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Territory Government Discretionary Services Management Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Territory Government Discretionary Trading Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Territory Government Entity"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Territory Government Fixed Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Territory Government Fixed Unit Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Territory Government Hybrid Trust"
+    },
+    {
+      "_id": "PARTNERSHIP",
+      "name": "Territory Government Limited Partnership"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Territory Government Listed Public Unit Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Territory Government Non-Regulated Super Fund"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Territory Government Other Incorporated Entity"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Territory Government Other Unincorporated Entity"
+    },
+    {
+      "_id": "PARTNERSHIP",
+      "name": "Territory Government Partnership"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Territory Government Pooled Development Fund"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Territory Government Private Company"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Territory Government Public Company"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Territory Government Public Trading Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Territory Government Statutory Authority"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Territory Government Strata Title"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Territory Government Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Territory Government Unlisted Public Unit Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Unlisted Public Unit Trust"
+    }
   ]
 }

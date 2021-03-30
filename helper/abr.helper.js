@@ -2,7 +2,6 @@
  * Module Imports
  * */
 const axios = require('axios');
-const convert = require('xml-js');
 const parser = require('xml2json');
 const mongoose = require('mongoose');
 const Organization = mongoose.model('organization');
@@ -11,6 +10,7 @@ const Organization = mongoose.model('organization');
  * Local Imports
  * */
 const Logger = require('./../services/logger');
+const StaticData = require('./../static-files/staticData.json');
 
 const getEntityDetailsByABN = async ({ searchString }) => {
   try {
@@ -98,19 +98,14 @@ const getEntityListByName = async ({ searchString }) => {
 //TODO change
 const resolveEntityType = async ({ entityType }) => {
   try {
-    const entityTypesFromABR = {
-      'Individual/Sole Trader': 'SOLE_TRADER',
-      'Australian Private Company': 'PROPRIETARY_LIMITED',
-      'Fixed Unit Trust': 'TRUST',
-      'Discretionary Trading Trust': 'TRUST',
-      'Hybrid Trust': 'TRUST',
-      'Australian Public Company': 'LIMITED_COMPANY',
-      'Other Partnership': 'PARTNERSHIP',
-      'Family Partnership': 'PARTNERSHIP',
-    };
-    return (await entityTypesFromABR[entityType])
-      ? entityTypesFromABR[entityType]
-      : 'PROPRIETARY_LIMITED';
+    const entityTypesFromABR = StaticData.ABREntityType;
+    for (let i = 0; i < entityTypesFromABR.length; i++) {
+      if (entityTypesFromABR[i].name === entityType) {
+        entityType = entityTypesFromABR[i]._id;
+        break;
+      }
+    }
+    return entityType;
   } catch (e) {
     Logger.log.error('Error occurred in resolve entity type ', e.message || e);
   }
