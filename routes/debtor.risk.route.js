@@ -314,10 +314,12 @@ router.get('/details/:debtorId', async function (req, res) {
         delete debtor.address;
       }
       if (debtor.country) {
-        debtor.country = {
-          label: debtor.country.name,
-          value: debtor.country.code,
-        };
+        debtor.country = [
+          {
+            label: debtor.country.name,
+            value: debtor.country.code,
+          },
+        ];
       }
       if (debtor.entityType) {
         debtor.entityType = [
