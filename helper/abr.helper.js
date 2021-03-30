@@ -95,7 +95,6 @@ const getEntityListByName = async ({ searchString }) => {
   }
 };
 
-//TODO change
 const resolveEntityType = async ({ entityType }) => {
   try {
     const entityTypesFromABR = StaticData.ABREntityType;

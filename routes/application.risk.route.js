@@ -133,6 +133,7 @@ router.get('/entity-list', async function (req, res) {
           field: 'applicationStatus',
           data: StaticData.applicationStatus,
         },
+        countryList: { field: 'country', data: StaticData.countryList },
       },
     });
   } catch (e) {

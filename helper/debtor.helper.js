@@ -70,7 +70,60 @@ const createDebtor = async ({ requestBody, organization, isDebtorExists }) => {
   try {
     let update = {};
     if (requestBody.address && Object.keys(requestBody.address).length !== 0) {
-      update.address = {
+      update.address = {};
+      if (
+        requestBody.address.property &&
+        requestBody.address.property.length !== 0
+      ) {
+        update.address.property = requestBody.address.property;
+      }
+      if (
+        requestBody.address.unitNumber &&
+        requestBody.address.unitNumber.length !== 0
+      ) {
+        update.address.unitNumber = requestBody.address.unitNumber;
+      }
+      if (
+        requestBody.address.streetNumber &&
+        requestBody.address.streetNumber.length !== 0
+      ) {
+        update.address.streetNumber = requestBody.address.streetNumber;
+      }
+      if (
+        requestBody.address.streetName &&
+        requestBody.address.streetName.length !== 0
+      ) {
+        update.address.streetName = requestBody.address.streetName;
+      }
+      if (
+        requestBody.address.streetType &&
+        requestBody.address.streetType.length !== 0
+      ) {
+        update.address.streetType = requestBody.address.streetType;
+      }
+      if (
+        requestBody.address.suburb &&
+        requestBody.address.suburb.length !== 0
+      ) {
+        update.address.suburb = requestBody.address.suburb;
+      }
+      if (requestBody.address.state && requestBody.address.state.length !== 0) {
+        update.address.state = requestBody.address.state;
+      }
+      if (
+        requestBody.address.country &&
+        requestBody.address.country.name &&
+        requestBody.address.country.code
+      ) {
+        update.address.country = requestBody.address.country;
+      }
+      if (
+        requestBody.address.postCode &&
+        requestBody.address.postCode.length !== 0
+      ) {
+        update.address.postCode = requestBody.address.postCode;
+      }
+      /*update.address = {
         property: requestBody.address.property,
         unitNumber: requestBody.address.unitNumber,
         streetNumber: requestBody.address.streetNumber,
@@ -80,7 +133,7 @@ const createDebtor = async ({ requestBody, organization, isDebtorExists }) => {
         state: requestBody.address.state,
         country: requestBody.address.country,
         postCode: requestBody.address.postCode,
-      };
+      };*/
     }
     if (requestBody.entityType) update.entityType = requestBody.entityType;
     if (requestBody.contactNumber)

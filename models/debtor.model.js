@@ -41,7 +41,10 @@ const debtorSchema = new Schema(
       streetType: Schema.Types.String,
       suburb: Schema.Types.String,
       state: Schema.Types.String,
-      country: Schema.Types.String,
+      country: {
+        name: Schema.Types.String,
+        code: Schema.Types.String,
+      },
       postCode: Schema.Types.String,
     },
     isActive: { type: Schema.Types.Boolean, default: false },
