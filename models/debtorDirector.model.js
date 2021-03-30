@@ -42,7 +42,10 @@ const debtorDirectorSchema = new Schema(
       streetType: Schema.Types.String,
       suburb: Schema.Types.String,
       state: Schema.Types.String,
-      country: Schema.Types.String,
+      country: {
+        name: Schema.Types.String,
+        code: Schema.Types.String,
+      },
       postCode: Schema.Types.String,
     },
     phoneNumber: { type: Schema.Types.String },
