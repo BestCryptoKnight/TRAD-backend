@@ -471,7 +471,7 @@ const aggregationQuery = async ({
     query.push({ $limit: parseInt(requestedQuery.limit) });*/
     query.unshift({ $match: queryFilter });
 
-    return { query, queryFilter };
+    return query;
   } catch (e) {
     Logger.log.error(
       'Error occurred in task aggregation query ',

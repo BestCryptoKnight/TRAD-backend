@@ -190,7 +190,7 @@ router.get('/', async function (req, res) {
     if (req.accessTypes && req.accessTypes.indexOf('full-access') !== -1) {
       hasFullAccess = true;
     }
-    const { query, queryFilter } = await aggregationQuery({
+    const query = await aggregationQuery({
       taskColumn: taskColumn.columns,
       requestedQuery: req.query,
       userId: req.user._id,
@@ -226,7 +226,7 @@ router.get('/', async function (req, res) {
             task.entityId.name && task.entityId._id
               ? {
                   _id: task.entityId._id[0],
-                  name: task.entityId.name[0],
+                  value: task.entityId.name[0],
                   type: task.entityId.type,
                 }
               : '';
