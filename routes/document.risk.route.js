@@ -193,6 +193,12 @@ router.get('/:entityId', async function (req, res) {
     sortingOptions[req.query.sortBy] = req.query.sortOrder === 'desc' ? -1 : 1;
 
     if (req.query.documentFor === 'application') {
+      documentColumn.columns = [
+        'documentTypeId',
+        'description',
+        'uploadById',
+        'createdAt',
+      ];
       const application = await Application.findOne({
         _id: req.params.entityId,
       });
@@ -394,9 +400,11 @@ router.get('/:entityId', async function (req, res) {
       true,
     );
     const headers = [];
-    for (let i = 0; i < module.manageColumns.length; i++) {
-      if (documentColumn.columns.includes(module.manageColumns[i].name)) {
-        headers.push(module.manageColumns[i]);
+    if (module) {
+      for (let i = 0; i < module.manageColumns.length; i++) {
+        if (documentColumn.columns.includes(module.manageColumns[i].name)) {
+          headers.push(module.manageColumns[i]);
+        }
       }
     }
     if (documents && documents.length !== 0) {
