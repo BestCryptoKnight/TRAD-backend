@@ -205,9 +205,9 @@ router.get('/', async function (req, res) {
           module.manageColumns[i].request = {
             method: 'GET',
             user: 'user',
-            client: 'client',
+            client: 'client/details',
             'client-user': 'client/user-details',
-            debtor: 'debtor',
+            debtor: 'debtor/drawer-details',
             application: 'application',
             claim: 'claim',
             overdue: 'overdue',
