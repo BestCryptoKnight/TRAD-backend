@@ -51,8 +51,23 @@
         { "name": "entityType", "label": "Entity Type", "type": "string" },
         { "name": "clientDebtorId", "label": "Credit Limit", "type": "number" },
         {
+          "name": "outstandingAmount",
+          "label": "Outstanding Amount",
+          "type": "number"
+        },
+        {
+          "name": "isExtendedPaymentTerms",
+          "label": "Has Extended Payment Terms",
+          "type": "string"
+        },
+        {
           "name": "extendedPaymentTermsDetails",
           "label": "Extended Payment Terms Details",
+          "type": "string"
+        },
+        {
+          "name": "isPassedOverdueAmount",
+          "label": "Has Passed Overdue Amount",
           "type": "string"
         },
         {

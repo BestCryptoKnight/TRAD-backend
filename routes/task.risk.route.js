@@ -208,7 +208,7 @@ router.get('/', async function (req, res) {
             client: 'client/details',
             'client-user': 'client/user-details',
             debtor: 'debtor/drawer-details',
-            application: 'application',
+            application: 'application/drawer-details',
             claim: 'claim',
             overdue: 'overdue',
           };

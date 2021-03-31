@@ -30,6 +30,7 @@ const {
 const { getClientList } = require('./../helper/client.helper');
 const { getDebtorList } = require('./../helper/debtor.helper');
 const StaticData = require('./../static-files/staticData.json');
+const { getClientDebtorDetails } = require('./../helper/client-debtor.helper');
 
 /**
  * Get Column Names
@@ -186,6 +187,94 @@ router.get('/', async function (req, res) {
     });
   } catch (e) {
     Logger.log.error('Error occurred in get application list ', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Get Application Modal details
+ */
+router.get('/drawer-details/:applicationId', async function (req, res) {
+  if (
+    !req.params.applicationId ||
+    !mongoose.Types.ObjectId.isValid(req.params.applicationId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing',
+    });
+  }
+  try {
+    const module = StaticFile.modules.find((i) => i.name === 'application');
+    const debtor = StaticFile.modules.find((i) => i.name === 'debtor');
+    const application = await Application.findById(req.params.applicationId)
+      .populate({
+        path: 'clientId debtorId clientDebtorId',
+        select: {
+          __v: 0,
+          updatedAt: 0,
+          debtorCode: 0,
+          createdAt: 0,
+        },
+      })
+      .select({
+        __v: 0,
+        updatedAt: 0,
+        createdAt: 0,
+        createdById: 0,
+        createdByType: 0,
+        applicationStage: 0,
+      })
+      .lean();
+    if (!application) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'NO_APPLICATION_FOUND',
+        message: 'No application found',
+      });
+    }
+    const debtorDetails = await getClientDebtorDetails({
+      debtor: application,
+      manageColumns: debtor.manageColumns,
+    });
+    let response = [];
+    let value = '';
+    module.manageColumns.forEach((i) => {
+      value =
+        i.name === 'clientId'
+          ? application['clientId'][i.name]
+          : i.name === 'outstandingAmount'
+          ? application['clientDebtorId'][i.name]
+          : i.name === 'isExtendedPaymentTerms' ||
+            i.name === 'isPassedOverdueAmount'
+          ? application[i.name]
+            ? 'Yes'
+            : 'No'
+          : application[i.name];
+      if (i.name === 'status') {
+        value = value.replace(/_/g, ' ').replace(/\w\S*/g, function (txt) {
+          return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+        });
+      }
+      if (typeof value === 'string') {
+        response.push({
+          label: i.label,
+          value: value || '',
+          type: i.type,
+        });
+      }
+    });
+    response = response.concat(debtorDetails);
+    res.status(200).send({ status: 'SUCCESS', data: response });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in get application modal details ',
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
