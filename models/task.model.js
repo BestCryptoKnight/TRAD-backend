@@ -38,6 +38,7 @@ const taskSchema = new Schema(
     assigneeId: { type: Schema.Types.ObjectId },
     dueDate: { type: Schema.Types.Date },
     isCompleted: { type: Schema.Types.Boolean, default: false },
+    completedDate: { type: Schema.Types.Date },
     isDeleted: { type: Schema.Types.Boolean, default: false },
   },
   { timestamps: true },

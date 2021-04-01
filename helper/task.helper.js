@@ -440,6 +440,16 @@ const aggregationQuery = async ({
       });
     }
 
+    if (requestedQuery.sortBy && requestedQuery.sortOrder) {
+      sortingOptions[requestedQuery.sortBy] =
+        requestedQuery.sortOrder === 'desc' ? -1 : 1;
+      query.push({ $sort: sortingOptions });
+    } else {
+      query.push({ $sort: { dueDate: 1 } });
+      query.push({ $sort: { completedDate: -1 } });
+      query.push({ $sort: { isCompleted: 1 } });
+    }
+
     const fields = taskColumn.map((i) => [i, 1]);
     query.push({
       $project: fields.reduce((obj, [key, val]) => {
@@ -447,11 +457,6 @@ const aggregationQuery = async ({
         return obj;
       }, {}),
     });
-    if (requestedQuery.sortBy && requestedQuery.sortOrder) {
-      sortingOptions[requestedQuery.sortBy] =
-        requestedQuery.sortOrder === 'desc' ? -1 : 1;
-      query.push({ $sort: sortingOptions });
-    }
 
     query.push({
       $facet: {
