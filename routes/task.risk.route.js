@@ -397,7 +397,8 @@ router.put('/:taskId', async function (req, res) {
     if (req.body.entityId) updateObj.entityId = req.body.entityId;
     if (req.body.assigneeId) updateObj.assigneeId = req.body.assigneeId;
     if (req.body.dueDate) updateObj.dueDate = req.body.dueDate;
-    if (req.body.isCompleted) updateObj.isCompleted = req.body.isCompleted;
+    if (req.body.hasOwnProperty('isCompleted'))
+      updateObj.isCompleted = req.body.isCompleted;
     await Task.updateOne({ _id: req.params.taskId }, updateObj);
     res
       .status(200)
