@@ -200,7 +200,12 @@ router.get('/', async function (req, res) {
     });
     const tasks = await Task.aggregate(query).allowDiskUse(true);
     const headers = [
-      { name: 'isCompleted', label: 'Completed', type: 'boolean' },
+      {
+        name: 'isCompleted',
+        label: 'Completed',
+        type: 'boolean',
+        request: { method: 'PUT', url: 'task' },
+      },
     ];
     for (let i = 0; i < module.manageColumns.length; i++) {
       if (taskColumn.columns.includes(module.manageColumns[i].name)) {
