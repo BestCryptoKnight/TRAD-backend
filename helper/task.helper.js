@@ -145,8 +145,8 @@ const aggregationQuery = async ({
     }
     if (requestedQuery.startDate && requestedQuery.endDate) {
       queryFilter.dueDate = {
-        $gte: requestedQuery.startDate,
-        $lt: requestedQuery.endDate,
+        $gte: new Date(requestedQuery.startDate),
+        $lt: new Date(requestedQuery.endDate),
       };
     }
     let sortingOptions = {};
@@ -341,8 +341,14 @@ const aggregationQuery = async ({
             assigneeId: {
               $cond: [
                 { $eq: ['$assigneeType', 'client-user'] },
-                '$clientUserId.name',
-                '$userId.name',
+                {
+                  name: '$clientUserId.name',
+                  _id: '$clientUserId._id',
+                },
+                {
+                  name: '$userId.name',
+                  _id: '$userId._id',
+                },
               ],
             },
           },
@@ -353,7 +359,7 @@ const aggregationQuery = async ({
     if (requestedQuery.assigneeId) {
       query.push({
         $match: {
-          'assigneeId.name': requestedQuery.assigneeId,
+          'assigneeId._id': mongoose.Types.ObjectId(requestedQuery.assigneeId),
         },
       });
     }

@@ -219,7 +219,9 @@ router.get('/', async function (req, res) {
     if (tasks && tasks.length !== 0) {
       tasks[0]['paginatedResult'].forEach((task) => {
         if (taskColumn.columns.includes('assigneeId')) {
-          task.assigneeId = task.assigneeId[0] ? task.assigneeId[0] : '';
+          task.assigneeId = task.assigneeId.name[0]
+            ? task.assigneeId.name[0]
+            : '';
         }
         if (taskColumn.columns.includes('entityId')) {
           task.entityId =

@@ -49,9 +49,9 @@
           "request": { "method": "GET", "url": "debtor/drawer-details" }
         },
         { "name": "entityType", "label": "Entity Type", "type": "string" },
-        { "name": "clientDebtorId", "label": "Credit Limit", "type": "number" },
+        { "name": "creditLimit", "label": "Credit Limit", "type": "number" },
         {
-          "name": "outstandingAmount",
+          "name": "clientDebtorId",
           "label": "Outstanding Amount",
           "type": "number"
         },
@@ -83,8 +83,7 @@
         "status",
         "entityType",
         "clientId",
-        "debtorId",
-        "clientDebtorId"
+        "debtorId"
       ]
     },
     {
@@ -98,6 +97,7 @@
         { "name": "createdById", "label": "Created By", "type": "string" },
         { "name": "assigneeId", "label": "Assignee", "type": "string" },
         { "name": "dueDate", "label": "Due Date", "type": "date" },
+        { "name": "isCompleted", "label": "Completed", "type": "boolean" },
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
@@ -191,7 +191,12 @@
           "request": { "method": "GET", "url": "debtor/drawer-details" }
         },
         { "name": "entityType", "label": "Entity Type", "type": "string" },
-        { "name": "clientDebtorId", "label": "Credit Limit", "type": "number" },
+        { "name": "creditLimit", "label": "Credit Limit", "type": "number" },
+        {
+          "name": "clientDebtorId",
+          "label": "Outstanding Amount",
+          "type": "number"
+        },
         {
           "name": "extendedPaymentTermsDetails",
           "label": "Extended Payment Terms Details",
@@ -249,7 +254,7 @@
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
-      "defaultColumns": ["insurerId", "product"]
+      "defaultColumns": ["insurerId", "product", "policyPeriod", "expiryDate"]
     },
     {
       "name": "client-task",
@@ -262,6 +267,7 @@
         { "name": "createdById", "label": "Created By", "type": "string" },
         { "name": "assigneeId", "label": "Assignee", "type": "string" },
         { "name": "dueDate", "label": "Due Date", "type": "date" },
+        { "name": "isCompleted", "label": "Completed", "type": "boolean" },
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
@@ -355,6 +361,7 @@
         { "name": "createdById", "label": "Created By", "type": "string" },
         { "name": "assigneeId", "label": "Assignee", "type": "string" },
         { "name": "dueDate", "label": "Due Date", "type": "date" },
+        { "name": "isCompleted", "label": "Completed", "type": "boolean" },
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
@@ -399,7 +406,12 @@
           "request": { "method": "GET", "url": "client/details" }
         },
         { "name": "entityType", "label": "Entity Type", "type": "string" },
-        { "name": "clientDebtorId", "label": "Credit Limit", "type": "number" },
+        { "name": "creditLimit", "label": "Credit Limit", "type": "number" },
+        {
+          "name": "clientDebtorId",
+          "label": "Outstanding Amount",
+          "type": "number"
+        },
         {
           "name": "extendedPaymentTermsDetails",
           "label": "Extended Payment Terms Details",
@@ -444,6 +456,7 @@
         { "name": "createdById", "label": "Created By", "type": "string" },
         { "name": "assigneeId", "label": "Assignee", "type": "string" },
         { "name": "dueDate", "label": "Due Date", "type": "date" },
+        { "name": "isCompleted", "label": "Completed", "type": "boolean" },
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
@@ -566,6 +579,7 @@
         { "name": "createdById", "label": "Created By", "type": "string" },
         { "name": "assigneeId", "label": "Assignee", "type": "string" },
         { "name": "dueDate", "label": "Due Date", "type": "date" },
+        { "name": "isCompleted", "label": "Completed", "type": "boolean" },
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
@@ -587,6 +601,7 @@
         { "name": "createdById", "label": "Created By", "type": "string" },
         { "name": "assigneeId", "label": "Assignee", "type": "string" },
         { "name": "dueDate", "label": "Due Date", "type": "date" },
+        { "name": "isCompleted", "label": "Completed", "type": "boolean" },
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],

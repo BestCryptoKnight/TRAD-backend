@@ -496,6 +496,7 @@ router.post('/upload', upload.single('document'), async function (req, res) {
       })
       .select('documentTypeId description originalFileName keyPath isPublic')
       .lean();
+    documentData.documentTypeId = documentData.documentTypeId.documentTitle;
     res.status(200).send({
       status: 'SUCCESS',
       message: 'Document uploaded successfully',

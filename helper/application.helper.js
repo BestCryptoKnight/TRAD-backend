@@ -127,8 +127,7 @@ const getApplicationList = async ({
     }
 
     if (
-      applicationColumn.includes('clientDebtorId') ||
-      (requestedQuery.minCreditLimit && requestedQuery.maxCreditLimit) ||
+      applicationColumn.includes('outstandingAmount') ||
       requestedQuery.debtorId ||
       applicationColumn.includes('debtorId')
     ) {
@@ -152,7 +151,7 @@ const getApplicationList = async ({
     if (requestedQuery.minCreditLimit && requestedQuery.maxCreditLimit) {
       query.push({
         $match: {
-          'clientDebtorId.creditLimit': {
+          creditLimit: {
             $gte: parseInt(requestedQuery.minCreditLimit),
             $lt: parseInt(requestedQuery.maxCreditLimit),
           },
@@ -164,9 +163,9 @@ const getApplicationList = async ({
     }
 
     const fields = applicationColumn.map((i) => {
-      /*if (i === 'clientId') {
-          i = i + '.name';
-        }*/
+      if (i === 'outstandingAmount') {
+        i = 'clientDebtorId';
+      }
       if (i === 'debtorId') {
         i = i + '.entityName';
       }
@@ -175,7 +174,7 @@ const getApplicationList = async ({
       }
       return [i, 1];
     });
-    if (!applicationColumn.includes('clientDebtorId')) {
+    if (!applicationColumn.includes('outstandingAmount')) {
       fields.push(['clientDebtorId', 1]);
     }
     query.push({
@@ -192,8 +191,8 @@ const getApplicationList = async ({
       if (requestedQuery.sortBy === 'debtorId') {
         requestedQuery.sortBy = requestedQuery.sortBy + '.entityName';
       }
-      if (requestedQuery.sortBy === 'clientDebtorId') {
-        requestedQuery.sortBy = requestedQuery.sortBy + '.creditLimit';
+      if (requestedQuery.sortBy === 'outstandingAmount') {
+        requestedQuery.sortBy = 'clientDebtorId.' + requestedQuery.sortBy;
       }
       if (requestedQuery.sortBy === 'entityType') {
         requestedQuery.sortBy = 'debtorId.' + requestedQuery.sortBy;
@@ -244,15 +243,14 @@ const getApplicationList = async ({
             value: application.debtorId.entityName,
           };
         }
-        if (applicationColumn.includes('clientDebtorId')) {
-          application.clientDebtorId = application.clientDebtorId.creditLimit;
-        }
-        if (!applicationColumn.includes('clientDebtorId')) {
-          delete application.clientDebtorId;
+        if (applicationColumn.includes('outstandingAmount')) {
+          application.outstandingAmount =
+            application.clientDebtorId.outstandingAmount;
         }
         if (!applicationColumn.includes('debtorId')) {
           delete application.debtorId;
         }
+        delete application.clientDebtorId;
       });
     }
     const total =
@@ -276,10 +274,7 @@ const getApplicationList = async ({
       pages: Math.ceil(total / parseInt(requestedQuery.limit)),
     };
   } catch (e) {
-    Logger.log.error(
-      'Error occurred in get aggregation stages ',
-      e.message || e,
-    );
+    Logger.log.error('Error occurred in get aggregation stages ', e);
   }
 };
 
