@@ -97,7 +97,6 @@
         { "name": "createdById", "label": "Created By", "type": "string" },
         { "name": "assigneeId", "label": "Assignee", "type": "string" },
         { "name": "dueDate", "label": "Due Date", "type": "date" },
-        { "name": "isCompleted", "label": "Completed", "type": "boolean" },
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
@@ -267,7 +266,6 @@
         { "name": "createdById", "label": "Created By", "type": "string" },
         { "name": "assigneeId", "label": "Assignee", "type": "string" },
         { "name": "dueDate", "label": "Due Date", "type": "date" },
-        { "name": "isCompleted", "label": "Completed", "type": "boolean" },
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
@@ -361,7 +359,6 @@
         { "name": "createdById", "label": "Created By", "type": "string" },
         { "name": "assigneeId", "label": "Assignee", "type": "string" },
         { "name": "dueDate", "label": "Due Date", "type": "date" },
-        { "name": "isCompleted", "label": "Completed", "type": "boolean" },
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
@@ -456,7 +453,6 @@
         { "name": "createdById", "label": "Created By", "type": "string" },
         { "name": "assigneeId", "label": "Assignee", "type": "string" },
         { "name": "dueDate", "label": "Due Date", "type": "date" },
-        { "name": "isCompleted", "label": "Completed", "type": "boolean" },
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
@@ -579,7 +575,6 @@
         { "name": "createdById", "label": "Created By", "type": "string" },
         { "name": "assigneeId", "label": "Assignee", "type": "string" },
         { "name": "dueDate", "label": "Due Date", "type": "date" },
-        { "name": "isCompleted", "label": "Completed", "type": "boolean" },
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
@@ -601,7 +596,6 @@
         { "name": "createdById", "label": "Created By", "type": "string" },
         { "name": "assigneeId", "label": "Assignee", "type": "string" },
         { "name": "dueDate", "label": "Due Date", "type": "date" },
-        { "name": "isCompleted", "label": "Completed", "type": "boolean" },
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],

@@ -186,6 +186,7 @@ router.get('/', async function (req, res) {
     const taskColumn = req.user.manageColumns.find(
       (i) => i.moduleName === 'task',
     );
+    taskColumn.columns.push('isCompleted');
     let hasFullAccess = false;
     if (req.accessTypes && req.accessTypes.indexOf('full-access') !== -1) {
       hasFullAccess = true;
@@ -198,7 +199,9 @@ router.get('/', async function (req, res) {
       hasFullAccess: hasFullAccess,
     });
     const tasks = await Task.aggregate(query).allowDiskUse(true);
-    const headers = [];
+    const headers = [
+      { name: 'isCompleted', label: 'Completed', type: 'boolean' },
+    ];
     for (let i = 0; i < module.manageColumns.length; i++) {
       if (taskColumn.columns.includes(module.manageColumns[i].name)) {
         if (module.manageColumns[i].name === 'entityId') {
