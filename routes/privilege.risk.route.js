@@ -13,13 +13,6 @@ const authenticate = require('./../middlewares/authenticate').authMiddleWare;
 const Logger = require('./../services/logger');
 
 router.get('/', authenticate, async function (req, res) {
-  if (!req.user || !req.user._id) {
-    return res.status(401).send({
-      status: 'ERROR',
-      messageCode: 'UNAUTHORIZED',
-      message: 'Please first login to get privileges.',
-    });
-  }
   try {
     const user = await User.findById(req.user._id)
       .select('moduleAccess')

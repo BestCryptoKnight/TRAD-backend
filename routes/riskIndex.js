@@ -25,6 +25,7 @@ const insurer = require('./insurer.risk.route');
 const note = require('./note.risk.route');
 const organization = require('./organization.risk.route');
 const overdue = require('./overdue.risk.route');
+const profile = require('./profile.risk.route');
 const policy = require('./policy.risk.route');
 const privilege = require('./privilege.risk.route');
 const settings = require('./settings.risk.route');
@@ -33,6 +34,7 @@ const user = require('./user.risk.route');
 
 router.use('/auth', auth);
 router.use('/privilege', privilege);
+router.use('/profile', profile);
 router.use(authenticate);
 router.use(checkModuleAccess);
 router.use('/application', application);
