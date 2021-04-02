@@ -144,9 +144,13 @@ const aggregationQuery = async ({
       queryFilter.isCompleted =
         requestedQuery.isCompleted === 'true' ? true : false;
     }
-    if (requestedQuery.startDate && requestedQuery.endDate) {
+    if (requestedQuery.startDate) {
       queryFilter.dueDate = {
         $gte: new Date(requestedQuery.startDate),
+      };
+    }
+    if (requestedQuery.endDate) {
+      queryFilter.dueDate = {
         $lt: new Date(requestedQuery.endDate),
       };
     }
@@ -483,6 +487,7 @@ const aggregationQuery = async ({
     query.push({ $limit: parseInt(requestedQuery.limit) });*/
     query.unshift({ $match: queryFilter });
 
+    console.log(JSON.stringify(query, null, 3));
     return query;
   } catch (e) {
     Logger.log.error(

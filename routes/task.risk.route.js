@@ -103,10 +103,13 @@ router.get('/user-list', async function (req, res) {
     const hasFullAccess = !!(
       req.accessTypes && req.accessTypes.indexOf('full-access') !== -1
     );
-    const users = await getAccessBaseUserList({
+    let users = await getAccessBaseUserList({
       userId: req.user._id,
       hasFullAccess: hasFullAccess,
     });
+    users = [
+      ...new Set([...users, ...[{ _id: req.user._id, name: req.user.name }]]),
+    ];
     res.status(200).send({ status: 'SUCCESS', data: users });
   } catch (e) {
     Logger.log.error('Error occurred in get user list ', e.message || e);
@@ -237,7 +240,7 @@ router.get('/', async function (req, res) {
         }
         if (taskColumn.columns.includes('entityId')) {
           task.entityId =
-            task.entityId.name && task.entityId._id
+            task.entityId && task.entityId.name && task.entityId._id
               ? {
                   _id: task.entityId._id[0],
                   value: task.entityId.name[0],
@@ -281,10 +284,6 @@ router.post('/', async function (req, res) {
   if (
     !req.body.taskFrom ||
     !req.body.title ||
-    !req.body.description ||
-    !req.body.priority ||
-    !req.body.entityType ||
-    !req.body.entityId ||
     !req.body.assigneeId ||
     !req.body.dueDate
   ) {
@@ -295,18 +294,31 @@ router.post('/', async function (req, res) {
     });
   }
   try {
-    await createTask({
-      priority: req.body.priority.toUpperCase(),
+    const data = {
+      // priority: req.body.priority.toUpperCase(),
       title: req.body.title,
-      description: req.body.description,
-      entityType: req.body.entityType.toLowerCase(),
-      entityId: req.body.entityId,
+      // description: req.body.description,
+      // entityType: req.body.entityType ? req.body.entityType.toLowerCase() : null,
+      // entityId: req.body.entityId,
       createdByType: 'user',
       createdById: req.user._id,
       assigneeType: 'user',
       assigneeId: req.body.assigneeId,
       dueDate: req.body.dueDate,
-    });
+    };
+    if (req.body.entityType) {
+      data.entityType = req.body.entityType.toLowerCase();
+    }
+    if (req.body.entityId) {
+      data.entityId = req.body.entityId;
+    }
+    if (req.body.description) {
+      data.description = req.body.description;
+    }
+    if (req.body.priority) {
+      data.priority = req.body.priority.toUpperCase();
+    }
+    await createTask(data);
     //TODO add audit log
     res
       .status(200)
