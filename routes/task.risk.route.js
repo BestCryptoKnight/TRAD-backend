@@ -226,6 +226,10 @@ router.get('/', async function (req, res) {
     }
     if (tasks && tasks.length !== 0) {
       tasks[0]['paginatedResult'].forEach((task) => {
+        if (task.entityType) {
+          task.entityType =
+            task.entityType.charAt(0).toUpperCase() + task.entityType.slice(1);
+        }
         if (taskColumn.columns.includes('assigneeId')) {
           task.assigneeId = task.assigneeId.name[0]
             ? task.assigneeId.name[0]
