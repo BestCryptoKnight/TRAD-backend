@@ -141,7 +141,8 @@ const aggregationQuery = async ({
       queryFilter.priority = requestedQuery.priority.toUpperCase();
     }
     if (requestedQuery.isCompleted) {
-      queryFilter.isCompleted = requestedQuery.isCompleted;
+      queryFilter.isCompleted =
+        requestedQuery.isCompleted === 'true' ? true : false;
     }
     if (requestedQuery.startDate && requestedQuery.endDate) {
       queryFilter.dueDate = {
