@@ -280,6 +280,51 @@ router.get('/drawer-details/:debtorId', async function (req, res) {
 });
 
 /**
+ * Get Debtor Modal details
+ */
+router.get('/drawer/:debtorId', async function (req, res) {
+  if (
+    !req.params.debtorId ||
+    !mongoose.Types.ObjectId.isValid(req.params.debtorId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing',
+    });
+  }
+  try {
+    const module = StaticFile.modules.find((i) => i.name === 'debtor');
+    const debtor = await Debtor.findOne({
+      _id: req.params.debtorId,
+    })
+      .select({ _id: 0, isDeleted: 0, createdAt: 0, updatedAt: 0 })
+      .lean();
+    if (!debtor) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'NO_DEBTOR_FOUND',
+        message: 'No debtor found',
+      });
+    }
+    const response = await getClientDebtorDetails({
+      debtor: { debtorId: debtor },
+      manageColumns: module.manageColumns,
+    });
+    res.status(200).send({ status: 'SUCCESS', data: response });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in get debtor modal details ',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
  * Get Debtor Details
  */
 router.get('/details/:debtorId', async function (req, res) {
