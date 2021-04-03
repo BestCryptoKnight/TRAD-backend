@@ -103,13 +103,14 @@ router.get('/user-list', async function (req, res) {
     const hasFullAccess = !!(
       req.accessTypes && req.accessTypes.indexOf('full-access') !== -1
     );
-    let users = await getAccessBaseUserList({
+    const users = await getAccessBaseUserList({
       userId: req.user._id,
       hasFullAccess: hasFullAccess,
     });
-    users = [
-      ...new Set([...users, ...[{ _id: req.user._id, name: req.user.name }]]),
-    ];
+    const userIds = users.map((i) => i._id.toString());
+    if (!userIds.includes(req.user._id.toString())) {
+      users.push({ _id: req.user._id, name: req.user.name });
+    }
     res.status(200).send({ status: 'SUCCESS', data: users });
   } catch (e) {
     Logger.log.error('Error occurred in get user list ', e.message || e);
