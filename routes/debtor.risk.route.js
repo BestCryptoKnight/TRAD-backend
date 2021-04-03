@@ -444,19 +444,6 @@ router.get('/credit-limit/:debtorId', async function (req, res) {
       isActive: true,
       debtorId: mongoose.Types.ObjectId(req.params.debtorId),
     };
-    if (req.accessTypes && req.accessTypes.indexOf('full-access') === -1) {
-      const clients = await Client.find({
-        isDeleted: false,
-        $or: [
-          { riskAnalystId: req.user._id },
-          { serviceManagerId: req.user._id },
-        ],
-      })
-        .select({ _id: 1 })
-        .lean();
-      const clientIds = clients.map((i) => i._id);
-      queryFilter.clientId = { $in: clientIds };
-    }
     const aggregationQuery = [
       {
         $lookup: {

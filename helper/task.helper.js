@@ -487,7 +487,6 @@ const aggregationQuery = async ({
     query.push({ $limit: parseInt(requestedQuery.limit) });*/
     query.unshift({ $match: queryFilter });
 
-    console.log(JSON.stringify(query, null, 3));
     return query;
   } catch (e) {
     Logger.log.error(
