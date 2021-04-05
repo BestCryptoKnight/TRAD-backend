@@ -182,6 +182,34 @@ router.get('/entity-list', async function (req, res) {
 });
 
 /**
+ * Get Task Details
+ */
+router.get('/details/:taskId', async function (req, res) {
+  if (
+    !req.params.taskId ||
+    !mongoose.Types.ObjectId.isValid(req.params.taskId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing',
+    });
+  }
+  try {
+    const task = await Task.findById(req.params.taskId)
+      .select({ __v: 0, isDeleted: 0, createdAt: 0, updatedAt: 0 })
+      .lean();
+    res.status(200).send({ status: 'SUCCESS', data: task });
+  } catch (e) {
+    Logger.log.error('Error occurred get task details ', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
  * Get Task List
  */
 router.get('/', async function (req, res) {
