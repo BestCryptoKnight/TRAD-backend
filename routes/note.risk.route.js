@@ -77,10 +77,17 @@ router.get('/:entityId', async function (req, res) {
         $and: [
           { isDeleted: false },
           {
-            noteFor: req.query.noteFor,
-            entityId: mongoose.Types.ObjectId(req.params.entityId),
+            $or: [
+              {
+                noteFor: 'application',
+                entityId: { $in: applicationIds },
+              },
+              {
+                noteFor: req.query.noteFor,
+                entityId: mongoose.Types.ObjectId(req.params.entityId),
+              },
+            ],
           },
-
           {
             $or: [
               {
@@ -193,14 +200,7 @@ router.get('/:entityId', async function (req, res) {
       query.description = { $regex: `${req.query.search}`, $options: 'i' };
     }
     aggregationQuery.unshift({ $match: query });
-
-    console.log(
-      'aggregationQuery: ',
-      JSON.stringify(aggregationQuery, null, 3),
-    );
     const notes = await Note.aggregate(aggregationQuery).allowDiskUse(true);
-
-    console.log('notes : ', notes);
     const headers = [
       {
         name: 'description',

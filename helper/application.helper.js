@@ -371,6 +371,13 @@ const storePartnerDetails = async ({ requestBody }) => {
     const applicationData = await Application.findById(
       requestBody.applicationId,
     ).lean();
+    if (!applicationData) {
+      return {
+        status: 'ERROR',
+        messageCode: 'NO_APPLICATION_FOUND',
+        message: 'No application exists',
+      };
+    }
     let individualCount = 0;
     let companyCount = 0;
     requestBody.partners.forEach((data) =>
