@@ -6,6 +6,8 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const User = mongoose.model('user');
 const Task = mongoose.model('task');
+const Client = mongoose.model('client');
+const Application = mongoose.model('application');
 
 /*
  * Local Imports
@@ -199,6 +201,41 @@ router.get('/details/:taskId', async function (req, res) {
     const task = await Task.findById(req.params.taskId)
       .select({ __v: 0, isDeleted: 0, createdAt: 0, updatedAt: 0 })
       .lean();
+    if (task.priority) {
+      task.priority = [
+        {
+          label: task.priority,
+          value: task.priority.charAt(0).toUpperCase() + task.priority.slice(1),
+        },
+      ];
+    }
+    let value;
+    if (task.assigneeId) {
+      const user = await User.findById(task.assigneeId).lean();
+      value = user.name;
+      task.assigneeId = [
+        {
+          label: task.assigneeId,
+          value: user.name,
+        },
+      ];
+    }
+    if (task.entityId && task.entityType) {
+      let response;
+      if (task.entityType === 'client') {
+        response = await Client.findById(task.entityId).lean();
+        value = response.name;
+      } else if (task.entityType === 'application') {
+        response = await Application.findById(task.entityId).lean();
+        value = response.applicationId;
+      }
+      task.assigneeId = [
+        {
+          label: task.assigneeId,
+          value: value,
+        },
+      ];
+    }
     res.status(200).send({ status: 'SUCCESS', data: task });
   } catch (e) {
     Logger.log.error('Error occurred get task details ', e.message || e);
