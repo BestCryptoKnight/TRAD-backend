@@ -229,9 +229,9 @@ router.get('/details/:taskId', async function (req, res) {
         response = await Application.findById(task.entityId).lean();
         value = response.applicationId;
       }
-      task.assigneeId = [
+      task.entityId = [
         {
-          label: task.assigneeId,
+          label: task.entityId,
           value: value,
         },
       ];
