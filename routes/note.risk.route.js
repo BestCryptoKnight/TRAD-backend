@@ -70,7 +70,9 @@ router.get('/:entityId', async function (req, res) {
         Application.find({ debtorId: req.params.entityId }).lean(),
         ClientDebtor.findOne({ debtorId: req.params.entityId }).lean(),
       ]);
-      const applicationIds = applications.map((i) => i._id);
+      const applicationIds = applications.map((i) =>
+        mongoose.Types.ObjectId(i._id),
+      );
       query = {
         $and: [
           { isDeleted: false },
@@ -78,10 +80,7 @@ router.get('/:entityId', async function (req, res) {
             noteFor: req.query.noteFor,
             entityId: mongoose.Types.ObjectId(req.params.entityId),
           },
-          {
-            noteFor: 'application',
-            entityId: { $in: applicationIds },
-          },
+
           {
             $or: [
               {
@@ -195,7 +194,13 @@ router.get('/:entityId', async function (req, res) {
     }
     aggregationQuery.unshift({ $match: query });
 
+    console.log(
+      'aggregationQuery: ',
+      JSON.stringify(aggregationQuery, null, 3),
+    );
     const notes = await Note.aggregate(aggregationQuery).allowDiskUse(true);
+
+    console.log('notes : ', notes);
     const headers = [
       {
         name: 'description',
@@ -247,6 +252,31 @@ router.get('/:entityId', async function (req, res) {
     });
   } catch (e) {
     Logger.log.error('Error occurred in get note list ', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+router.get('/details/:noteId', async function (req, res) {
+  if (
+    !req.params.noteId ||
+    !mongoose.Types.ObjectId.isValid(req.params.noteId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing',
+    });
+  }
+  try {
+    const note = await Note.findById(req.params.noteId)
+      .select({ __v: 0, isDeleted: 0, createdAt: 0, updatedAt: 0 })
+      .lean();
+    res.status(200).send({ status: 'SUCCESS', data: note });
+  } catch (e) {
+    Logger.log.error('Error occurred get task details ', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
