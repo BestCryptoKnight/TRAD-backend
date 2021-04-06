@@ -237,6 +237,13 @@ router.get('/details/:taskId', async function (req, res) {
           label: value,
         },
       ];
+      task.entityType = [
+        {
+          value: task.entityType,
+          label:
+            task.entityType.charAt(0).toUpperCase() + task.entityType.slice(1),
+        },
+      ];
     }
     res.status(200).send({ status: 'SUCCESS', data: task });
   } catch (e) {
