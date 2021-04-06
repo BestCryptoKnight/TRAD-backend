@@ -70,4 +70,21 @@ const uploadDocument = ({
   });
 };
 
-module.exports = { deleteImage, uploadDocument };
+const getApplicationDocumentList = async ({ entityId }) => {
+  try {
+    const documents = await Document.find({ entityRefId: entityId })
+      .populate({ path: 'documentTypeId', select: 'documentTitle' })
+      .select('_id documentTypeId description')
+      .lean();
+    documents.forEach((i) => {
+      if (i.documentTypeId && i.documentTypeId.documentTitle) {
+        i.documentTypeId = i.documentTypeId.documentTitle;
+      }
+    });
+    return documents;
+  } catch (e) {
+    Logger.log.error('Error occurred in get document list ', e.message || e);
+  }
+};
+
+module.exports = { deleteImage, uploadDocument, getApplicationDocumentList };

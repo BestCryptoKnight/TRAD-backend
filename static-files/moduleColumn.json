@@ -301,7 +301,7 @@
       ]
     },
     {
-      "name": "credit-limit",
+      "name": "client-credit-limit",
       "manageColumns": [
         {
           "name": "entityName",
@@ -475,6 +475,44 @@
       "defaultColumns": ["description", "fileName", "updatedAt"]
     },
     {
+      "name": "debtor-credit-limit",
+      "manageColumns": [
+        {
+          "name": "entityName",
+          "label": "Name",
+          "type": "modal",
+          "request": {
+            "method": "GET",
+            "url": "client/credit-limit/drawer-details"
+          }
+        },
+        { "name": "entityType", "label": "Entity Type", "type": "string" },
+        { "name": "abn", "label": "ABN", "type": "string" },
+        { "name": "acn", "label": "ACN", "type": "string" },
+        { "name": "creditLimit", "label": "Credit Limit", "type": "string" },
+        {
+          "name": "contactNumber",
+          "label": "Contact Number",
+          "type": "string"
+        },
+        { "name": "isActive", "label": "IsActive", "type": "string" },
+        { "name": "fullAddress", "label": "Full Address", "type": "string" },
+        { "name": "property", "label": "Property", "type": "string" },
+        { "name": "unitNumber", "label": "Unit Number", "type": "string" },
+        { "name": "streetNumber", "label": "Street Number", "type": "string" },
+        { "name": "streetName", "label": "Street Name", "type": "string" },
+        { "name": "streetType", "label": "Street Type", "type": "string" },
+        { "name": "suburb", "label": "Suburb", "type": "string" },
+        { "name": "state", "label": "Country/State", "type": "string" },
+        { "name": "country", "label": "Country", "type": "string" },
+        { "name": "postCode", "label": "Postcode/Zip", "type": "string" },
+
+        { "name": "createdAt", "label": "Created Date", "type": "date" },
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+      ],
+      "defaultColumns": ["debtorId", "creditLimit"]
+    },
+    {
       "name": "insurer",
       "manageColumns": [
         { "name": "name", "label": "Name", "type": "string" },
@@ -584,6 +622,47 @@
       "name": "report",
       "manageColumns": [],
       "defaultColumns": []
+    },
+    {
+      "name": "stakeholder",
+      "manageColumns": [
+        { "name": "abn", "label": "ABN", "type": "string" },
+        { "name": "acn", "label": "ACN", "type": "string" },
+        { "name": "title", "label": "Title", "type": "string" },
+        {
+          "name": "name",
+          "label": "Name",
+          "type": "modal",
+          "request": {
+            "method": "GET",
+            "url": "debtor/stakeholder/drawer-details"
+          }
+        },
+        { "name": "tradingName", "label": "Trading Name", "type": "string" },
+        { "name": "entityType", "label": "Entity Type", "type": "string" },
+        { "name": "dateOfBirth", "label": "Date Of Birth", "type": "date" },
+        {
+          "name": "driverLicenceNumber",
+          "label": "Driver Licence Number",
+          "type": "string"
+        },
+        { "name": "email", "label": "Email", "type": "string" },
+        { "name": "phoneNumber", "label": "Phone Number", "type": "string" },
+        { "name": "mobileNumber", "label": "Mobile Number", "type": "string" },
+        { "name": "fullAddress", "label": "Full Address", "type": "string" },
+        { "name": "property", "label": "Property", "type": "string" },
+        { "name": "unitNumber", "label": "Unit Number", "type": "string" },
+        { "name": "streetNumber", "label": "Street Number", "type": "string" },
+        { "name": "streetName", "label": "Street Name", "type": "string" },
+        { "name": "streetType", "label": "Street Type", "type": "string" },
+        { "name": "suburb", "label": "Suburb", "type": "string" },
+        { "name": "state", "label": "Country/State", "type": "string" },
+        { "name": "country", "label": "Country", "type": "string" },
+        { "name": "postCode", "label": "Postcode/Zip", "type": "string" },
+        { "name": "createdAt", "label": "Created Date", "type": "date" },
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+      ],
+      "defaultColumns": ["abn", "entityName", "entityType"]
     },
     {
       "name": "task",

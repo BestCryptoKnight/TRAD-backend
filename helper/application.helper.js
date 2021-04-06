@@ -399,7 +399,9 @@ const storePartnerDetails = async ({ requestBody }) => {
     }
     const promises = [];
     for (let i = 0; i < requestBody.partners.length; i++) {
-      let update = {};
+      const update = {
+        isDeleted: false,
+      };
       let query = {};
       update.type = requestBody.partners[i].type.toLowerCase();
       update.debtorId = applicationData.debtorId;
@@ -421,7 +423,12 @@ const storePartnerDetails = async ({ requestBody }) => {
           };
         }
         query = {
-          driverLicenceNumber: requestBody.partners[i].driverLicenceNumber,
+          $or: [
+            {
+              driverLicenceNumber: requestBody.partners[i].driverLicenceNumber,
+            },
+            { dateOfBirth: requestBody.partners[i].dateOfBirth },
+          ],
         };
         if (
           requestBody.partners[i].address &&
@@ -547,7 +554,10 @@ const partnerDetailsValidation = ({
         response = individualCount >= 1 && companyCount === 0;
         break;
       case 'PARTNERSHIP':
-        response = individualCount >= 1 && companyCount >= 1;
+        response =
+          individualCount >= 2 ||
+          (individualCount >= 1 && companyCount >= 1) ||
+          companyCount >= 2;
         break;
       case 'SOLE_TRADER':
         response = individualCount === 1 && companyCount === 0;
@@ -579,4 +589,5 @@ module.exports = {
   storeCompanyDetails,
   storePartnerDetails,
   storeCreditLimitDetails,
+  partnerDetailsValidation,
 };

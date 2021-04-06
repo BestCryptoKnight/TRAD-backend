@@ -8,6 +8,7 @@ const User = mongoose.model('user');
 const Client = mongoose.model('client');
 const ClientDebtor = mongoose.model('client-debtor');
 const Debtor = mongoose.model('debtor');
+const DebtorDirector = mongoose.model('debtor-director');
 const Application = mongoose.model('application');
 
 /*
@@ -17,16 +18,37 @@ const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
 const StaticData = require('./../static-files/staticData.json');
 const { getClientDebtorDetails } = require('./../helper/client-debtor.helper');
+const {
+  getStakeholderDetails,
+  storeStakeholderDetails,
+} = require('./../helper/stakeholder.helper');
+const { partnerDetailsValidation } = require('./../helper/application.helper');
 
 /**
  * Get Column Names
  */
 router.get('/column-name', async function (req, res) {
+  if (!req.query.columnFor) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require field is missing.',
+    });
+  }
   try {
-    const module = StaticFile.modules.find((i) => i.name === 'debtor');
-    const debtorColumn = req.user.manageColumns.find(
-      (i) => i.moduleName === 'debtor',
+    const module = StaticFile.modules.find(
+      (i) => i.name === req.query.columnFor,
     );
+    const debtorColumn = req.user.manageColumns.find(
+      (i) => i.moduleName === req.query.columnFor,
+    );
+    if (!module || !module.manageColumns || module.manageColumns.length === 0) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'BAD_REQUEST',
+        message: 'Please pass correct fields',
+      });
+    }
     const customFields = [];
     const defaultFields = [];
     for (let i = 0; i < module.manageColumns.length; i++) {
@@ -223,6 +245,231 @@ router.get('/', async function (req, res) {
     });
   } catch (e) {
     Logger.log.error('Error occurred in get debtor list ', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Get Stakeholder drawer details
+ */
+router.get(
+  '/stakeholder/drawer-details/:stakeholderId',
+  async function (req, res) {
+    if (
+      !req.params.stakeholderId ||
+      !mongoose.Types.ObjectId.isValid(req.params.stakeholderId)
+    ) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'REQUIRE_FIELD_MISSING',
+        message: 'Require fields are missing',
+      });
+    }
+    try {
+      const module = StaticFile.modules.find((i) => i.name === 'stakeholder');
+      const stakeholder = await DebtorDirector.findById(
+        req.params.stakeholderId,
+      )
+        .select({ __v: 0, isDeleted: 0 })
+        .lean();
+      if (!stakeholder) {
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'NO_STAKEHOLDER_FOUND',
+          message: 'No stakeholder found',
+        });
+      }
+      const response = await getStakeholderDetails({
+        stakeholder,
+        manageColumns: module.manageColumns,
+      });
+      res.status(200).send({ status: 'SUCCESS', data: response });
+    } catch (e) {
+      Logger.log.error(
+        'Error occurred in get stakeholder modal details ',
+        e.message || e,
+      );
+      res.status(500).send({
+        status: 'ERROR',
+        message: e.message || 'Something went wrong, please try again later.',
+      });
+    }
+  },
+);
+
+/**
+ * Get Stakeholder details
+ */
+router.get('/stakeholder-details/:stakeholderId', async function (req, res) {
+  if (
+    !req.params.stakeholderId ||
+    !mongoose.Types.ObjectId.isValid(req.params.stakeholderId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const stakeholder = await DebtorDirector.findById(req.params.stakeholderId)
+      .select({ debtorId: 0, __v: 0, isDeleted: 0, createdAt: 0, updatedAt: 0 })
+      .lean();
+    res.status(200).send({ status: 'SUCCESS', data: stakeholder });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in get stakeholder details ',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Get StakeHolder List
+ */
+router.get('/stakeholder/:debtorId', async function (req, res) {
+  if (
+    !req.params.debtorId ||
+    !mongoose.Types.ObjectId.isValid(req.params.debtorId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const module = StaticFile.modules.find((i) => i.name === 'stakeholder');
+    const stakeholderColumn = req.user.manageColumns.find(
+      (i) => i.moduleName === 'stakeholder',
+    );
+    if (stakeholderColumn.columns.includes('name')) {
+      stakeholderColumn.columns.push('entityName');
+      stakeholderColumn.columns.push('firstName');
+      stakeholderColumn.columns.push('middleName');
+      stakeholderColumn.columns.push('lastName');
+    }
+    const queryFilter = {
+      isDeleted: false,
+      debtorId: mongoose.Types.ObjectId(req.params.debtorId),
+    };
+    const sortingOptions = {};
+    req.query.sortBy = req.query.sortBy || '_id';
+    req.query.sortOrder = req.query.sortOrder || 'desc';
+    sortingOptions[req.query.sortBy] = req.query.sortOrder;
+    /* if (req.query.search)
+      queryFilter.name = { $regex: req.query.search, $options: 'i' };*/
+
+    const option = {
+      page: parseInt(req.query.page) || 1,
+      limit: parseInt(req.query.limit) || 5,
+    };
+    option.select =
+      stakeholderColumn.columns.toString().replace(/,/g, ' ') +
+      ' residentialAddress type';
+    option.sort = sortingOptions;
+    option.lean = true;
+    const responseObj = await DebtorDirector.paginate(queryFilter, option);
+    responseObj.headers = [];
+    for (let i = 0; i < module.manageColumns.length; i++) {
+      if (stakeholderColumn.columns.includes(module.manageColumns[i].name)) {
+        responseObj.headers.push(module.manageColumns[i]);
+      }
+    }
+    if (responseObj && responseObj.docs && responseObj.docs.length !== 0) {
+      responseObj.docs.forEach((stakeholder) => {
+        if (stakeholder.type === 'individual') {
+          if (
+            stakeholder.firstName ||
+            stakeholder.middleName ||
+            stakeholder.lastName
+          ) {
+            stakeholder.name = {
+              _id: stakeholder._id,
+              value: (
+                (stakeholder.firstName ? stakeholder.firstName + ' ' : '') +
+                (stakeholder.middleName ? stakeholder.middleName + ' ' : '') +
+                (stakeholder.lastName ? stakeholder.lastName : '')
+              ).trim(),
+            };
+            delete stakeholder.firstName;
+            delete stakeholder.middleName;
+            delete stakeholder.lastName;
+          }
+          if (stakeholderColumn.columns.includes('fullAddress')) {
+            stakeholder.fullAddress = Object.values(
+              stakeholder.residentialAddress,
+            )
+              .toString()
+              .replace(/,,/g, ',');
+          }
+          if (stakeholderColumn.columns.includes('property')) {
+            stakeholder.property = stakeholder.residentialAddress.property;
+          }
+          if (stakeholderColumn.columns.includes('unitNumber')) {
+            stakeholder.unitNumber = stakeholder.residentialAddress.unitNumber;
+          }
+          if (stakeholderColumn.columns.includes('streetNumber')) {
+            stakeholder.streetNumber =
+              stakeholder.residentialAddress.streetNumber;
+          }
+          if (stakeholderColumn.columns.includes('streetName')) {
+            stakeholder.streetName = stakeholder.residentialAddress.streetName;
+          }
+          if (stakeholderColumn.columns.includes('streetType')) {
+            const streetType = StaticData.streetType.find((i) => {
+              if (i._id === stakeholder.residentialAddress.streetType) return i;
+            });
+            stakeholder.streetType =
+              streetType && streetType.name
+                ? streetType.name
+                : stakeholder.residentialAddress.streetType;
+          }
+          if (stakeholderColumn.columns.includes('suburb')) {
+            stakeholder.suburb = stakeholder.residentialAddress.suburb;
+          }
+          if (stakeholderColumn.columns.includes('state')) {
+            stakeholder.state = stakeholder.residentialAddress.state;
+          }
+          if (stakeholderColumn.columns.includes('country')) {
+            stakeholder.country = stakeholder.residentialAddress.country.name;
+          }
+          if (stakeholderColumn.columns.includes('postCode')) {
+            stakeholder.postCode = stakeholder.residentialAddress.postCode;
+          }
+          delete stakeholder.residentialAddress;
+        } else {
+          if (stakeholder.entityName) {
+            stakeholder.name = {
+              _id: stakeholder._id,
+              value: stakeholder.entityName,
+            };
+            delete stakeholder.entityName;
+          }
+          if (stakeholder.entityType) {
+            stakeholder.entityType = stakeholder.entityType
+              .replace(/_/g, ' ')
+              .replace(/\w\S*/g, function (txt) {
+                return (
+                  txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+                );
+              });
+          }
+        }
+        delete stakeholder.type;
+        delete stakeholder.id;
+      });
+    }
+    res.status(200).send({ status: 'SUCCESS', data: responseObj });
+  } catch (e) {
+    Logger.log.error('Error occurred in get stakeholder list ', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -611,33 +858,230 @@ router.get('/:debtorId', async function (req, res) {
 });
 
 /**
+ * Add Stakeholder
+ */
+router.post('/stakeholder/:debtorId', async function (req, res) {
+  if (
+    !req.params.debtorId ||
+    !mongoose.Types.ObjectId.isValid(req.params.debtorId) ||
+    !req.body.type
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  if (
+    req.body.type === 'company' &&
+    (!req.body.entityName ||
+      !req.body.entityType ||
+      (!req.body.abn && !req.body.acn))
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'INSUFFICIENT_COMPANY_DETAILS',
+      message: 'Insufficient company details',
+    });
+  }
+  if (
+    !req.body.title ||
+    !req.body.firstName ||
+    !req.body.lastName ||
+    (!req.body.dateOfBirth && !req.body.driverLicenceNumber) ||
+    !req.body.address ||
+    !req.body.address.state ||
+    !req.body.address.postCode ||
+    !req.body.address.streetNumber
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'INSUFFICIENT_INDIVIDUAL_DETAILS',
+      message: 'Insufficient individual details',
+    });
+  }
+  try {
+    const [debtor, stakeholders] = await Promise.all([
+      Debtor.findById(req.params.debtorId).lean(),
+      DebtorDirector.find({ debtorId: req.params.debtorId })
+        .select('_id type')
+        .lean(),
+    ]);
+    let individualCount = 0;
+    let companyCount = 0;
+    req.body.type === 'company' ? companyCount++ : individualCount++;
+    stakeholders.forEach((data) =>
+      data.type.toLowerCase() === 'company'
+        ? companyCount++
+        : individualCount++,
+    );
+    const isValidate = partnerDetailsValidation({
+      entityType: debtor.entityType,
+      individualCount,
+      companyCount,
+    });
+    if (!isValidate) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'INSUFFICIENT_DATA',
+        message: 'Insufficient stakeholder details',
+      });
+    }
+    const data = await storeStakeholderDetails({
+      stakeholder: req.body,
+      debtorId: debtor._id,
+    });
+    const stakeholder = await DebtorDirector.create(data);
+    console.log('stakeholder : ', stakeholder);
+    res.status(200).send({
+      status: 'SUCCESS',
+      message: 'Stakeholder added successfully',
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in add stakeholder ', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Update Stakeholder
+ */
+router.put('/stakeholder/:debtorId/:stakeholderId', async function (req, res) {
+  if (
+    !req.params.debtorId ||
+    !mongoose.Types.ObjectId.isValid(req.params.debtorId) ||
+    !req.params.stakeholderId ||
+    !mongoose.Types.ObjectId.isValid(req.params.stakeholderId) ||
+    !req.body.type
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  if (
+    req.body.type === 'company' &&
+    (!req.body.entityName ||
+      !req.body.entityType ||
+      (!req.body.abn && !req.body.acn))
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'INSUFFICIENT_COMPANY_DETAILS',
+      message: 'Insufficient company details',
+    });
+  }
+  if (
+    !req.body.title ||
+    !req.body.firstName ||
+    !req.body.lastName ||
+    (!req.body.dateOfBirth && !req.body.driverLicenceNumber) ||
+    !req.body.address ||
+    !req.body.address.state ||
+    !req.body.address.postCode ||
+    !req.body.address.streetNumber
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'INSUFFICIENT_INDIVIDUAL_DETAILS',
+      message: 'Insufficient individual details',
+    });
+  }
+  try {
+    const [debtor, stakeholders] = await Promise.all([
+      Debtor.findById(req.params.debtorId).lean(),
+      DebtorDirector.find({ debtorId: req.params.debtorId })
+        .select('_id type')
+        .lean(),
+    ]);
+    let individualCount = 0;
+    let companyCount = 0;
+    stakeholders.forEach((data) => {
+      if (data._id.toString() === req.params.stakeholderId) {
+        req.body.type.toLowerCase() === 'company'
+          ? companyCount++
+          : individualCount++;
+      } else {
+        data.type.toLowerCase() === 'company'
+          ? companyCount++
+          : individualCount++;
+      }
+    });
+    const isValidate = partnerDetailsValidation({
+      entityType: debtor.entityType,
+      individualCount,
+      companyCount,
+    });
+    if (!isValidate) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'INSUFFICIENT_DATA',
+        message: 'Insufficient stakeholder details',
+      });
+    }
+    const update = await storeStakeholderDetails({
+      stakeholder: req.body,
+      debtorId: debtor._id,
+    });
+    await DebtorDirector.updateOne({ _id: req.params.stakeholderId }, update);
+    console.log('stakeholder : ', update);
+    res.status(200).send({
+      status: 'SUCCESS',
+      message: 'Stakeholder added successfully',
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in add stakeholder ', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
  * Update Column Names
  */
 router.put('/column-name', async function (req, res) {
-  if (!req.user || !req.user._id) {
-    Logger.log.error('User data not found in req');
-    return res.status(401).send({
-      status: 'ERROR',
-      message: 'Please first login to update the profile.',
-    });
-  }
-  if (!req.body.hasOwnProperty('isReset') || !req.body.columns) {
-    Logger.log.error('Require fields are missing');
+  if (
+    !req.body.hasOwnProperty('isReset') ||
+    !req.body.columns ||
+    !req.body.columnFor
+  ) {
     return res.status(400).send({
       status: 'ERROR',
-      message: 'Something went wrong, please try again.',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing',
     });
   }
   try {
     let updateColumns = [];
-    if (req.body.isReset) {
-      const module = StaticFile.modules.find((i) => i.name === 'debtor');
-      updateColumns = module.defaultColumns;
-    } else {
-      updateColumns = req.body.columns;
+    let module;
+    switch (req.body.columnFor) {
+      case 'debtor':
+      case 'debtor-credit-limit':
+      case 'stakeholder':
+        if (req.body.isReset) {
+          module = StaticFile.modules.find(
+            (i) => i.name === req.body.columnFor,
+          );
+          updateColumns = module.defaultColumns;
+        } else {
+          updateColumns = req.body.columns;
+        }
+        break;
+      default:
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'BAD_REQUEST',
+          message: 'Please pass correct fields',
+        });
     }
     await User.updateOne(
-      { _id: req.user._id, 'manageColumns.moduleName': 'debtor' },
+      { _id: req.user._id, 'manageColumns.moduleName': req.body.columnFor },
       { $set: { 'manageColumns.$.columns': updateColumns } },
     );
     res
@@ -725,6 +1169,41 @@ router.put('/:debtorId', async function (req, res) {
   } catch (e) {
     Logger.log.error(
       'Error occurred in update debtor details ',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Delete Client-Debtor
+ */
+router.delete('/stakeholder/:stakeholderId', async function (req, res) {
+  if (
+    !req.params.stakeholderId ||
+    !mongoose.Types.ObjectId.isValid(req.params.stakeholderId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    await DebtorDirector.updateOne(
+      { _id: req.params.stakeholderId },
+      { isDeleted: true },
+    );
+    res.status(200).send({
+      status: 'SUCCESS',
+      message: 'Stakeholder deleted successfully',
+    });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in delete debtor-director ',
       e.message || e,
     );
     res.status(500).send({

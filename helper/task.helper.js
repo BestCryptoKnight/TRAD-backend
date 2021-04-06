@@ -67,24 +67,18 @@ const getDebtorList = async ({
       .populate({ path: 'debtorId', select: 'entityName' })
       .select('_id')
       .lean();
+    const debtorIds = [];
+    const response = [];
     debtors.forEach((i) => {
-      i.name = i.debtorId.entityName;
-      delete i.debtorId;
+      if (!debtorIds.includes(i.debtorId)) {
+        response.push({
+          _id: i.debtorId._id,
+          name: i.debtorId.entityName,
+        });
+        debtorIds.push(i.debtorId);
+      }
     });
-    return debtors;
-  } catch (e) {
-    Logger.log.error('Error occurred in get debtor list ', e.message || e);
-  }
-};
-
-const getDebtorsList = async ({}) => {
-  try {
-    const debtors = await Debtor.find({}).select('_id entityName').lean();
-    debtors.forEach((i) => {
-      i.name = i.entityName;
-      delete i.entityName;
-    });
-    return debtors;
+    return response;
   } catch (e) {
     Logger.log.error('Error occurred in get debtor list ', e.message || e);
   }
@@ -515,5 +509,4 @@ module.exports = {
   getDebtorList,
   aggregationQuery,
   getApplicationList,
-  getDebtorsList,
 };

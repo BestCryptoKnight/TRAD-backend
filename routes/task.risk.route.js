@@ -16,7 +16,7 @@ const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
 const {
   createTask,
-  getDebtorsList,
+  getDebtorList,
   aggregationQuery,
   getApplicationList,
 } = require('./../helper/task.helper');
@@ -153,7 +153,11 @@ router.get('/entity-list', async function (req, res) {
         });
         break;
       case 'debtor':
-        entityList = await getDebtorsList({});
+        entityList = await getDebtorList({
+          userId: req.user._id,
+          hasFullAccess: hasFullAccess,
+          isForRisk: true,
+        });
         break;
       case 'application':
         entityList = await getApplicationList({
@@ -255,11 +259,27 @@ router.get('/details/:taskId', async function (req, res) {
  * Get Task List
  */
 router.get('/', async function (req, res) {
+  if (!req.query.columnFor) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require field is missing.',
+    });
+  }
   try {
-    const module = StaticFile.modules.find((i) => i.name === 'task');
-    const taskColumn = req.user.manageColumns.find(
-      (i) => i.moduleName === 'task',
+    const module = StaticFile.modules.find(
+      (i) => i.name === req.query.columnFor,
     );
+    const taskColumn = req.user.manageColumns.find(
+      (i) => i.moduleName === req.query.columnFor,
+    );
+    if (!module || !module.manageColumns || module.manageColumns.length === 0) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'BAD_REQUEST',
+        message: 'Please pass correct fields',
+      });
+    }
     taskColumn.columns.push('isCompleted');
     let hasFullAccess = false;
     if (req.accessTypes && req.accessTypes.indexOf('full-access') !== -1) {

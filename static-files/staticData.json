@@ -843,6 +843,72 @@
       "name": "Queensland"
     }
   ],
+  "newZealandStates": [
+    {
+      "_id": "AUK",
+      "name": "Auckland"
+    },
+    {
+      "_id": "BOP",
+      "name": "Bay of Plenty"
+    },
+    {
+      "_id": "CAN",
+      "name": "Canterbury"
+    },
+    {
+      "_id": "GIS",
+      "name": "Gisborne"
+    },
+    {
+      "_id": "HKB",
+      "name": "Hawke's Bay"
+    },
+    {
+      "_id": "MWT",
+      "name": "Manawatu-Wanganui"
+    },
+    {
+      "_id": "MBH",
+      "name": "Marlborough"
+    },
+    {
+      "_id": "NSN",
+      "name": "Nelson"
+    },
+    {
+      "_id": "NTL",
+      "name": "Northland"
+    },
+    {
+      "_id": "OTA",
+      "name": "Otago"
+    },
+    {
+      "_id": "STL",
+      "name": "Southland"
+    },
+    {
+      "_id": "TAS",
+      "name": "Tasman"
+    },
+    {
+      "_id": "TKI",
+      "name": "Taranaki"
+    },
+    {
+      "_id": "WKO",
+      "name": "Waikato"
+    },
+    {
+      "_id": "WGN",
+      "name": "Wellington"
+    },
+    {
+      "_id": "WTC",
+      "name": "West Coast"
+    }
+  ],
   "entityType": [
     {
       "_id": "PROPRIETARY_LIMITED",

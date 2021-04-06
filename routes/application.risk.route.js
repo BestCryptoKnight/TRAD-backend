@@ -31,6 +31,7 @@ const { getClientList } = require('./../helper/client.helper');
 const { getDebtorList } = require('./../helper/debtor.helper');
 const StaticData = require('./../static-files/staticData.json');
 const { getClientDebtorDetails } = require('./../helper/client-debtor.helper');
+const { getApplicationDocumentList } = require('./../helper/document.helper');
 
 /**
  * Get Column Names
@@ -125,6 +126,7 @@ router.get('/entity-list', async function (req, res) {
         debtors: { field: 'debtor', data: debtors },
         streetType: { field: 'streetType', data: StaticData.streetType },
         australianStates: { field: 'state', data: StaticData.australianStates },
+        newZealandStates: { field: 'state', data: StaticData.newZealandStates },
         entityType: { field: 'entityType', data: StaticData.entityType },
         companyEntityType: {
           field: 'entityType',
@@ -328,21 +330,83 @@ router.get('/details/:applicationId', async function (req, res) {
       response.applicationStage = application.applicationStage;
       response.company = {};
       if (application.clientId) {
-        response.company.clientId = {
-          _id: application.clientId._id,
-          name: application.clientId.name,
-        };
+        response.company.clientId = [
+          {
+            _id: application.clientId._id,
+            name: application.clientId.name,
+          },
+        ];
       }
       if (application.debtorId) {
-        response.company.debtorId = {
-          _id: application.debtorId._id,
-          name: application.debtorId.entityName,
-        };
+        response.company.debtorId = [
+          {
+            _id: application.debtorId._id,
+            name: application.debtorId.entityName,
+          },
+        ];
         for (let key in application.debtorId) {
           response.company[key] = application.debtorId[key];
         }
+        if (response.company.entityName) {
+          response.company.entityName = [
+            {
+              _id: application.debtorId._id,
+              name: response.company.entityName,
+            },
+          ];
+        }
+        if (response.company.entityType) {
+          response.company.entityType = [
+            {
+              _id: response.company.entityType,
+              name:
+                response.company.entityType.charAt(0).toUpperCase() +
+                response.company.entityType.slice(1).toLowerCase(),
+            },
+          ];
+        }
         for (let key in response.company.address) {
           response.company[key] = response.company.address[key];
+        }
+        if (response.company.country) {
+          response.company.country = [
+            {
+              _id: response.company.country.code,
+              name: response.company.country.name,
+            },
+          ];
+        }
+        if (response.company.state) {
+          const state =
+            response.company.country.code === 'AUS'
+              ? StaticData.australianStates.find((i) => {
+                  if (i._id === response.company.state) return i;
+                })
+              : response.company.country.code === 'NZL'
+              ? StaticData.newZealandStates.find((i) => {
+                  if (i._id === response.company.state) return i;
+                })
+              : { name: response.company.state };
+          response.company.state = [
+            {
+              _id: response.company.state,
+              name: state && state.name ? state.name : response.company.state,
+            },
+          ];
+        }
+        if (response.company.streetType) {
+          const streetType = StaticData.streetType.find((i) => {
+            if (i._id === response.company.streetType) return i;
+          });
+          response.company.streetType = [
+            {
+              _id: response.company.streetType,
+              name:
+                streetType && streetType.name
+                  ? streetType.name
+                  : response.company.streetType,
+            },
+          ];
         }
         delete response.company.address;
       }
@@ -362,10 +426,72 @@ router.get('/details/:applicationId', async function (req, res) {
             for (let key in partner.residentialAddress) {
               partner[key] = partner.residentialAddress[key];
             }
+            if (partner.country) {
+              partner.country = [
+                {
+                  _id: partner.country.code,
+                  name: partner.country.name,
+                },
+              ];
+            }
+            if (partner.state) {
+              const state =
+                partner.country.code === 'AUS'
+                  ? StaticData.australianStates.find((i) => {
+                      if (i._id === partner.state) return i;
+                    })
+                  : partner.country.code === 'NZL'
+                  ? StaticData.newZealandStates.find((i) => {
+                      if (i._id === partner.state) return i;
+                    })
+                  : { name: partner.state };
+              partner.state = [
+                {
+                  _id: partner.state,
+                  name: state && state.name ? state.name : partner.state,
+                },
+              ];
+            }
+            if (partner.streetType) {
+              const streetType = StaticData.streetType.find((i) => {
+                if (i._id === partner.streetType) return i;
+              });
+              partner.streetType = [
+                {
+                  _id: partner.streetType,
+                  name:
+                    streetType && streetType.name
+                      ? streetType.name
+                      : partner.streetType,
+                },
+              ];
+            }
             delete partner.residentialAddress;
+          } else {
+            if (partner.entityName) {
+              partner.entityName = [
+                {
+                  _id: application.debtorId._id,
+                  name: partner.entityName,
+                },
+              ];
+            }
+            if (partner.entityType) {
+              partner.entityType = [
+                {
+                  _id: partner.entityType,
+                  name:
+                    partner.entityType.charAt(0).toUpperCase() +
+                    partner.entityType.slice(1).toLowerCase(),
+                },
+              ];
+            }
           }
         });
       }
+      response.documents = await getApplicationDocumentList({
+        entityId: application._id,
+      });
     } else {
       if (application.clientId) {
         response.clientId = {
@@ -640,7 +766,6 @@ router.get('/search-entity-list/:searchString', async function (req, res) {
     ) {
       entityList.ABRPayloadSearchResults.response.searchResultsList.searchResultsRecord.forEach(
         (data) => {
-          console.log(data);
           entityData = {};
           if (data.ABN) entityData.abn = data.ABN.identifierValue;
           if (data.ABN) entityData.status = data.ABN.identifierStatus;
@@ -803,6 +928,15 @@ router.put('/', async function (req, res) {
         break;
       case 'credit-limit':
         response = await storeCreditLimitDetails({ requestBody: req.body });
+        break;
+      case 'documents':
+        await Application.updateOne(
+          { _id: req.body.applicationId },
+          { $set: { applicationStage: 3 } },
+        );
+        response = await Application.findById(req.body.applicationId)
+          .select('_id applicationStage')
+          .lean();
         break;
       case 'confirmation':
         await Application.updateOne(
