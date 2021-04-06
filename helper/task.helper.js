@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 const Task = mongoose.model('task');
 const Client = mongoose.model('client');
 const ClientDebtor = mongoose.model('client-debtor');
+const Debtor = mongoose.model('debtor');
 const Application = mongoose.model('application');
 
 /*
@@ -69,6 +70,19 @@ const getDebtorList = async ({
     debtors.forEach((i) => {
       i.name = i.debtorId.entityName;
       delete i.debtorId;
+    });
+    return debtors;
+  } catch (e) {
+    Logger.log.error('Error occurred in get debtor list ', e.message || e);
+  }
+};
+
+const getDebtorsList = async ({}) => {
+  try {
+    const debtors = await Debtor.find({}).select('_id entityName').lean();
+    debtors.forEach((i) => {
+      i.name = i.entityName;
+      delete i.entityName;
     });
     return debtors;
   } catch (e) {
@@ -501,4 +515,5 @@ module.exports = {
   getDebtorList,
   aggregationQuery,
   getApplicationList,
+  getDebtorsList,
 };

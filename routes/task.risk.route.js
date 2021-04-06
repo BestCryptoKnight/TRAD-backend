@@ -16,7 +16,7 @@ const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
 const {
   createTask,
-  getDebtorList,
+  getDebtorsList,
   aggregationQuery,
   getApplicationList,
 } = require('./../helper/task.helper');
@@ -153,11 +153,7 @@ router.get('/entity-list', async function (req, res) {
         });
         break;
       case 'debtor':
-        entityList = await getDebtorList({
-          userId: req.user._id,
-          hasFullAccess: hasFullAccess,
-          isForRisk: true,
-        });
+        entityList = await getDebtorsList({});
         break;
       case 'application':
         entityList = await getApplicationList({
