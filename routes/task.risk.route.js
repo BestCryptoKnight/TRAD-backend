@@ -204,8 +204,10 @@ router.get('/details/:taskId', async function (req, res) {
     if (task.priority) {
       task.priority = [
         {
-          label: task.priority,
-          value: task.priority.charAt(0).toUpperCase() + task.priority.slice(1),
+          value: task.priority,
+          label:
+            task.priority.charAt(0).toUpperCase() +
+            task.priority.slice(1).toLowerCase(),
         },
       ];
     }
@@ -215,8 +217,8 @@ router.get('/details/:taskId', async function (req, res) {
       value = user.name;
       task.assigneeId = [
         {
-          label: task.assigneeId,
-          value: user.name,
+          label: user.name,
+          value: task.assigneeId,
         },
       ];
     }
@@ -231,8 +233,8 @@ router.get('/details/:taskId', async function (req, res) {
       }
       task.entityId = [
         {
-          label: task.entityId,
-          value: value,
+          value: task.entityId,
+          label: value,
         },
       ];
     }
