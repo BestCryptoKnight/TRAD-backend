@@ -286,7 +286,15 @@ router.get('/user/:insurerId', async function (req, res) {
     const insurerUser = await InsurerUser.aggregate(
       aggregationQuery,
     ).allowDiskUse(true);
-
+    insurerUser[0].paginatedResult.forEach((user) => {
+      console.log('insurerUser ', user);
+      if (user.name) {
+        user.name = {
+          _id: user._id,
+          value: user.name,
+        };
+      }
+    });
     const headers = [];
     for (let i = 0; i < module.manageColumns.length; i++) {
       if (insurerColumn.columns.includes(module.manageColumns[i].name)) {
@@ -297,7 +305,6 @@ router.get('/user/:insurerId', async function (req, res) {
       insurerUser[0]['totalCount'].length !== 0
         ? insurerUser[0]['totalCount'][0]['count']
         : 0;
-
     res.status(200).send({
       status: 'SUCCESS',
       data: {

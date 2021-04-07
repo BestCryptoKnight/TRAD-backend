@@ -237,6 +237,8 @@ router.get('/details/:taskId', async function (req, res) {
           label: value,
         },
       ];
+    }
+    if (task.entityType) {
       task.entityType = [
         {
           value: task.entityType,
