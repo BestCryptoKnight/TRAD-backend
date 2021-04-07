@@ -444,11 +444,11 @@ router.put('/client/sync-from-crm/:clientId', async function (req, res) {
           _id: '$clientId',
           clientName: { $first: '$client.name' },
           crmClientId: { $first: '$client.crmClientId' },
+          insurerId: { $first: '$client.insurerId' },
         },
       },
     ]).allowDiskUse(true);
     if (!policies || policies.length === 0) {
-      Logger.log.error('No Policies found', req.params.insurerId);
       return res.status(400).send({
         status: 'ERROR',
         messageCode: 'POLICY_NOT_FOUND',
@@ -463,7 +463,7 @@ router.put('/client/sync-from-crm/:clientId', async function (req, res) {
       policiesFromCrm = await getClientPolicies({
         clientId: policies[i]._id,
         crmClientId: policies[i].crmClientId[0],
-        insurerId: req.params.insurerId,
+        insurerId: policies[i].insurerId[0],
         limit: 50,
         page: 1,
       });

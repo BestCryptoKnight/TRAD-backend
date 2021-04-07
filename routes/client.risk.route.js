@@ -983,7 +983,10 @@ router.get('/:clientId', async function (req, res) {
       });
     }
     const client = await Client.findOne({ _id: req.params.clientId })
-      .populate({ path: 'riskAnalystId serviceManagerId', select: 'name' })
+      .populate({
+        path: 'riskAnalystId serviceManagerId insurerId',
+        select: '_id name',
+      })
       .lean();
     const { riskAnalystList, serviceManagerList } = await getUserList();
     client.riskAnalystList = riskAnalystList;
