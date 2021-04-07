@@ -7,6 +7,7 @@ const mongoose = require('mongoose');
 const User = mongoose.model('user');
 const Task = mongoose.model('task');
 const Client = mongoose.model('client');
+const Debtor = mongoose.model('debtor');
 const Application = mongoose.model('application');
 
 /*
@@ -230,6 +231,9 @@ router.get('/details/:taskId', async function (req, res) {
       } else if (task.entityType === 'application') {
         response = await Application.findById(task.entityId).lean();
         value = response.applicationId;
+      } else if (task.entityType === 'debtor') {
+        response = await Debtor.findById(task.entityId).lean();
+        value = response.entityName;
       }
       task.entityId = [
         {

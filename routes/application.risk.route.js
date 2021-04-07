@@ -332,16 +332,16 @@ router.get('/details/:applicationId', async function (req, res) {
       if (application.clientId) {
         response.company.clientId = [
           {
-            _id: application.clientId._id,
-            name: application.clientId.name,
+            value: application.clientId._id,
+            label: application.clientId.name,
           },
         ];
       }
       if (application.debtorId) {
         response.company.debtorId = [
           {
-            _id: application.debtorId._id,
-            name: application.debtorId.entityName,
+            value: application.debtorId._id,
+            label: application.debtorId.entityName,
           },
         ];
         for (let key in application.debtorId) {
@@ -350,16 +350,16 @@ router.get('/details/:applicationId', async function (req, res) {
         if (response.company.entityName) {
           response.company.entityName = [
             {
-              _id: application.debtorId._id,
-              name: response.company.entityName,
+              value: application.debtorId._id,
+              label: response.company.entityName,
             },
           ];
         }
         if (response.company.entityType) {
           response.company.entityType = [
             {
-              _id: response.company.entityType,
-              name:
+              value: response.company.entityType,
+              label:
                 response.company.entityType.charAt(0).toUpperCase() +
                 response.company.entityType.slice(1).toLowerCase(),
             },
@@ -367,14 +367,6 @@ router.get('/details/:applicationId', async function (req, res) {
         }
         for (let key in response.company.address) {
           response.company[key] = response.company.address[key];
-        }
-        if (response.company.country) {
-          response.company.country = [
-            {
-              _id: response.company.country.code,
-              name: response.company.country.name,
-            },
-          ];
         }
         if (response.company.state) {
           const state =
@@ -389,8 +381,16 @@ router.get('/details/:applicationId', async function (req, res) {
               : { name: response.company.state };
           response.company.state = [
             {
-              _id: response.company.state,
-              name: state && state.name ? state.name : response.company.state,
+              value: response.company.state,
+              label: state && state.name ? state.name : response.company.state,
+            },
+          ];
+        }
+        if (response.company.country) {
+          response.company.country = [
+            {
+              value: response.company.country.code,
+              label: response.company.country.name,
             },
           ];
         }
@@ -400,8 +400,8 @@ router.get('/details/:applicationId', async function (req, res) {
           });
           response.company.streetType = [
             {
-              _id: response.company.streetType,
-              name:
+              value: response.company.streetType,
+              label:
                 streetType && streetType.name
                   ? streetType.name
                   : response.company.streetType,
@@ -423,14 +423,22 @@ router.get('/details/:applicationId', async function (req, res) {
         response.partners = directors;
         response.partners.forEach((partner) => {
           if (partner.type === 'individual') {
+            if (partner.title) {
+              partner.title = [
+                {
+                  value: partner.title,
+                  label: partner.title,
+                },
+              ];
+            }
             for (let key in partner.residentialAddress) {
               partner[key] = partner.residentialAddress[key];
             }
             if (partner.country) {
               partner.country = [
                 {
-                  _id: partner.country.code,
-                  name: partner.country.name,
+                  value: partner.country.code,
+                  label: partner.country.name,
                 },
               ];
             }
@@ -447,8 +455,8 @@ router.get('/details/:applicationId', async function (req, res) {
                   : { name: partner.state };
               partner.state = [
                 {
-                  _id: partner.state,
-                  name: state && state.name ? state.name : partner.state,
+                  value: partner.state,
+                  label: state && state.name ? state.name : partner.state,
                 },
               ];
             }
@@ -458,8 +466,8 @@ router.get('/details/:applicationId', async function (req, res) {
               });
               partner.streetType = [
                 {
-                  _id: partner.streetType,
-                  name:
+                  value: partner.streetType,
+                  label:
                     streetType && streetType.name
                       ? streetType.name
                       : partner.streetType,
@@ -471,16 +479,16 @@ router.get('/details/:applicationId', async function (req, res) {
             if (partner.entityName) {
               partner.entityName = [
                 {
-                  _id: application.debtorId._id,
-                  name: partner.entityName,
+                  value: application.debtorId._id,
+                  label: partner.entityName,
                 },
               ];
             }
             if (partner.entityType) {
               partner.entityType = [
                 {
-                  _id: partner.entityType,
-                  name:
+                  value: partner.entityType,
+                  label:
                     partner.entityType.charAt(0).toUpperCase() +
                     partner.entityType.slice(1).toLowerCase(),
                 },
