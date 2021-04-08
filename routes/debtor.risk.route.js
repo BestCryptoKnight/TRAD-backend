@@ -687,36 +687,51 @@ router.get('/credit-limit/:debtorId', async function (req, res) {
     });
   }
   try {
-    let queryFilter = {
+    const module = StaticFile.modules.find(
+      (i) => i.name === 'debtor-credit-limit',
+    );
+    const debtorColumn = req.user.manageColumns.find(
+      (i) => i.moduleName === 'debtor-credit-limit',
+    );
+    const queryFilter = {
       isActive: true,
       debtorId: mongoose.Types.ObjectId(req.params.debtorId),
     };
-    const aggregationQuery = [
-      {
-        $lookup: {
-          from: 'clients',
-          localField: 'clientId',
-          foreignField: '_id',
-          as: 'clientId',
+    const aggregationQuery = [];
+    if (debtorColumn.columns.includes('clientId')) {
+      aggregationQuery.push(
+        {
+          $lookup: {
+            from: 'clients',
+            localField: 'clientId',
+            foreignField: '_id',
+            as: 'clientId',
+          },
         },
-      },
-      {
-        $unwind: {
-          path: '$clientId',
+        {
+          $unwind: {
+            path: '$clientId',
+          },
         },
-      },
-    ];
+      );
+    }
+    const fields = debtorColumn.columns.map((i) => {
+      if (
+        i === 'contactNumber' ||
+        i === 'abn' ||
+        i === 'acn' ||
+        i === 'inceptionDate' ||
+        i === 'expiryDate'
+      ) {
+        i = 'clientId';
+      }
+      return [i, 1];
+    });
     aggregationQuery.push({
-      $project: {
-        'clientId._id': 1,
-        'clientId.name': 1,
-        'clientId.contactNumber': 1,
-        'clientId.abn': 1,
-        'clientId.acn': 1,
-        'clientId.inceptionDate': 1,
-        'clientId.expiryDate': 1,
-        creditLimit: 1,
-      },
+      $project: fields.reduce((obj, [key, val]) => {
+        obj[key] = val;
+        return obj;
+      }, {}),
     });
     const sortingOptions = {};
     if (req.query.sortBy && req.query.sortOrder) {
@@ -751,20 +766,12 @@ router.get('/credit-limit/:debtorId', async function (req, res) {
     const debtors = await ClientDebtor.aggregate(aggregationQuery).allowDiskUse(
       true,
     );
-    const headers = [
-      {
-        name: 'clientId',
-        label: 'Client Name',
-        type: 'modal',
-        request: { method: 'GET', url: 'client/details' },
-      },
-      { name: 'contactNumber', label: 'Contact Number', type: 'string' },
-      { name: 'abn', label: 'ABN', type: 'string' },
-      { name: 'acn', label: 'ACN', type: 'string' },
-      { name: 'inceptionDate', label: 'Inception Date', type: 'date' },
-      { name: 'expiryDate', label: 'Expiry Date', type: 'date' },
-      { name: 'creditLimit', label: 'Credit Limit', type: 'string' },
-    ];
+    const headers = [];
+    for (let i = 0; i < module.manageColumns.length; i++) {
+      if (debtorColumn.columns.includes(module.manageColumns[i].name)) {
+        headers.push(module.manageColumns[i]);
+      }
+    }
     debtors[0].paginatedResult.forEach((debtor) => {
       if (debtor.clientId.name) {
         debtor.name = {
@@ -786,6 +793,9 @@ router.get('/credit-limit/:debtorId', async function (req, res) {
       }
       if (debtor.clientId.expiryDate) {
         debtor.expiryDate = debtor.clientId.expiryDate;
+      }
+      if (debtor.hasOwnProperty('isActive')) {
+        debtor.isActive = debtor.isActive ? 'Yes' : 'No';
       }
       delete debtor.clientId;
     });

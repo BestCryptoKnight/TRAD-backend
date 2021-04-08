@@ -478,39 +478,39 @@
       "name": "debtor-credit-limit",
       "manageColumns": [
         {
-          "name": "entityName",
-          "label": "Name",
+          "name": "clientId",
+          "label": "Client Name",
           "type": "modal",
-          "request": {
-            "method": "GET",
-            "url": "client/credit-limit/drawer-details"
-          }
+          "request": { "method": "GET", "url": "client/details" }
         },
-        { "name": "entityType", "label": "Entity Type", "type": "string" },
-        { "name": "abn", "label": "ABN", "type": "string" },
-        { "name": "acn", "label": "ACN", "type": "string" },
-        { "name": "creditLimit", "label": "Credit Limit", "type": "string" },
         {
           "name": "contactNumber",
           "label": "Contact Number",
           "type": "string"
         },
-        { "name": "isActive", "label": "IsActive", "type": "string" },
-        { "name": "fullAddress", "label": "Full Address", "type": "string" },
-        { "name": "property", "label": "Property", "type": "string" },
-        { "name": "unitNumber", "label": "Unit Number", "type": "string" },
-        { "name": "streetNumber", "label": "Street Number", "type": "string" },
-        { "name": "streetName", "label": "Street Name", "type": "string" },
-        { "name": "streetType", "label": "Street Type", "type": "string" },
-        { "name": "suburb", "label": "Suburb", "type": "string" },
-        { "name": "state", "label": "Country/State", "type": "string" },
-        { "name": "country", "label": "Country", "type": "string" },
-        { "name": "postCode", "label": "Postcode/Zip", "type": "string" },
-
-        { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+        { "name": "abn", "label": "ABN", "type": "string" },
+        { "name": "acn", "label": "ACN", "type": "string" },
+        { "name": "inceptionDate", "label": "Inception Date", "type": "date" },
+        { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
+        {
+          "name": "reportExpiryDate",
+          "label": "Report Expiry Date",
+          "type": "date"
+        },
+        { "name": "creditLimit", "label": "Credit Limit", "type": "string" },
+        {
+          "name": "outstandingAmount",
+          "label": "Outstanding Amount",
+          "type": "string"
+        },
+        {
+          "name": "creditLimitAction",
+          "label": "Credit Limit Action",
+          "type": "button"
+        },
+        { "name": "isActive", "label": "Active", "type": "string" }
       ],
-      "defaultColumns": ["debtorId", "creditLimit"]
+      "defaultColumns": ["clientId", "abn", "creditLimit", "creditLimitAction"]
     },
     {
       "name": "insurer",
