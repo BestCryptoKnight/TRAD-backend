@@ -408,6 +408,40 @@ router.get('/document-type', async function (req, res) {
 });
 
 /**
+ * Get Document Type Details
+ */
+router.get('/document-type-details/:documentTypeId', async function (req, res) {
+  if (
+    !req.params.documentTypeId ||
+    !mongoose.Types.ObjectId.isValid(req.params.documentTypeId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const documentType = await DocumentType.findById(req.params.documentTypeId)
+      .select('_id documentFor documentTitle')
+      .lean();
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: documentType,
+    });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in get document type details ',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
  * Get API Integration
  */
 router.get('/api-integration', async function (req, res) {
