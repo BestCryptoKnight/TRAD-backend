@@ -226,7 +226,7 @@ router.get('/:entityId', async function (req, res) {
     } else if (req.query.documentFor === 'debtor') {
       const [applications, debtor] = await Promise.all([
         Application.find({ debtorId: req.params.entityId }).lean(),
-        ClientDebtor.findOne({ _id: req.params.entityId }).lean(),
+        ClientDebtor.findOne({ debtorId: req.params.entityId }).lean(),
       ]);
       const applicationIds = applications.map((i) => i._id);
       query = {
