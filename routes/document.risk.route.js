@@ -228,7 +228,9 @@ router.get('/:entityId', async function (req, res) {
         Application.find({ debtorId: req.params.entityId }).lean(),
         ClientDebtor.findOne({ debtorId: req.params.entityId }).lean(),
       ]);
-      const applicationIds = applications.map((i) => i._id);
+      const applicationIds = applications.map((i) =>
+        mongoose.Types.ObjectId(i._id),
+      );
       query = {
         $and: [
           { isDeleted: false },
@@ -236,10 +238,10 @@ router.get('/:entityId', async function (req, res) {
             entityRefId: mongoose.Types.ObjectId(req.params.entityId),
           },
           {
-            entityRefId: { $in: applicationIds },
-          },
-          {
             $or: [
+              {
+                entityRefId: { $in: applicationIds },
+              },
               {
                 uploadByType: 'client-user',
                 uploadById: mongoose.Types.ObjectId(debtor.clientId),
