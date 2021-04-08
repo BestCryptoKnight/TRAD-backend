@@ -744,7 +744,7 @@ router.put('/origination-details', async function (req, res) {
 /**
  * Delete Document Type
  */
-router.put('/document-type/:documentId', async function (req, res) {
+router.delete('/document-type/:documentId', async function (req, res) {
   if (!req.params.documentId) {
     return res.status(400).send({
       status: 'ERROR',

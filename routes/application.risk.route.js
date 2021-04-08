@@ -422,6 +422,7 @@ router.get('/details/:applicationId', async function (req, res) {
       if (directors && directors.length !== 0) {
         response.partners = directors;
         response.partners.forEach((partner) => {
+          partner.isDisabled = true;
           if (partner.type === 'individual') {
             if (partner.title) {
               partner.title = [
