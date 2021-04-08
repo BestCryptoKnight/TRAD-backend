@@ -108,6 +108,8 @@ router.get('/entity-list', async function (req, res) {
         streetType: StaticData.streetType,
         australianStates: StaticData.australianStates,
         entityType: StaticData.entityType,
+        newZealandStates: StaticData.newZealandStates,
+        countryList: StaticData.countryList,
       },
     });
   } catch (e) {
@@ -844,12 +846,77 @@ router.get('/:debtorId', async function (req, res) {
     const debtor = await Debtor.findById(req.params.debtorId)
       .select({ isDeleted: 0, __v: 0 })
       .lean();
-    if (debtor && debtor.entityType) {
-      debtor.entityType = debtor.entityType
-        .replace(/_/g, ' ')
-        .replace(/\w\S*/g, function (txt) {
-          return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+    if (!debtor) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'NO_DEBTOR_FOUND',
+        message: 'No debtor found',
+      });
+    }
+    if (debtor.entityType) {
+      debtor.entityType = [
+        {
+          label: debtor.entityType
+            .replace(/_/g, ' ')
+            .replace(/\w\S*/g, function (txt) {
+              return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+            }),
+          value: debtor.entityType,
+        },
+      ];
+    }
+    if (debtor.entityName) {
+      debtor.entityName = [
+        {
+          label: debtor.entityName,
+          value: debtor.entityName,
+        },
+      ];
+    }
+    if (debtor.address) {
+      for (let key in debtor.address) {
+        debtor[key] = debtor.address[key];
+      }
+      if (debtor.state) {
+        const state =
+          debtor.country.code === 'AUS'
+            ? StaticData.australianStates.find((i) => {
+                if (i._id === debtor.state) return i;
+              })
+            : debtor.country.code === 'NZL'
+            ? StaticData.newZealandStates.find((i) => {
+                if (i._id === debtor.state) return i;
+              })
+            : { name: debtor.state };
+        debtor.state = [
+          {
+            value: debtor.state,
+            label: state && state.name ? state.name : debtor.state,
+          },
+        ];
+      }
+      if (debtor.streetType) {
+        const streetType = StaticData.streetType.find((i) => {
+          if (i._id === debtor.streetType) return i;
         });
+        if (streetType) {
+          debtor.streetType = [
+            {
+              label: streetType.name,
+              value: debtor.streetType,
+            },
+          ];
+        }
+      }
+      if (debtor.country) {
+        debtor.country = [
+          {
+            label: debtor.country.name,
+            value: debtor.country.code,
+          },
+        ];
+      }
+      delete debtor.address;
     }
     res.status(200).send({
       status: 'SUCCESS',
