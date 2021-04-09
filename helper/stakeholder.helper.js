@@ -35,14 +35,19 @@ const getStakeholderDetails = async ({ stakeholder, manageColumns }) => {
         'postCode',
       ];
       if (addressFields.includes(i.name)) {
-        response.push({
-          label: i.label,
-          value:
-            i.name === 'country'
-              ? stakeholder['residentialAddress']['country'][i.name]
-              : stakeholder['residentialAddress'][i.name] || '',
-          type: i.type,
-        });
+        if (
+          stakeholder['residentialAddress'] &&
+          stakeholder['residentialAddress'][i.name]
+        ) {
+          response.push({
+            label: i.label,
+            value:
+              i.name === 'country'
+                ? stakeholder['residentialAddress']['country'][i.name]
+                : stakeholder['residentialAddress'][i.name] || '',
+            type: i.type,
+          });
+        }
       } else {
         value =
           i.name === 'individualName' && stakeholder.type === 'individual'

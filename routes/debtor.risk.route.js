@@ -271,7 +271,8 @@ router.get(
       });
     }
     try {
-      const module = StaticFile.modules.find((i) => i.name === 'stakeholder');
+      let module = StaticFile.modules.find((i) => i.name === 'stakeholder');
+      module = JSON.parse(JSON.stringify(module));
       const stakeholder = await DebtorDirector.findById(
         req.params.stakeholderId,
       )
