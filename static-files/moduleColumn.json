@@ -301,7 +301,7 @@
       ]
     },
     {
-      "name": "client-credit-limit",
+      "name": "credit-limit",
       "manageColumns": [
         {
           "name": "entityName",
