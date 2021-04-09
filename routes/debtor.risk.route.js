@@ -494,7 +494,8 @@ router.get('/drawer-details/:debtorId', async function (req, res) {
     });
   }
   try {
-    const module = StaticFile.modules.find((i) => i.name === 'debtor');
+    let module = StaticFile.modules.find((i) => i.name === 'debtor');
+    module = JSON.parse(JSON.stringify(module));
     const debtor = await ClientDebtor.findOne({
       _id: req.params.debtorId,
     })
