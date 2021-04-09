@@ -670,7 +670,7 @@
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
-      "defaultColumns": ["abn", "entityName", "entityType"]
+      "defaultColumns": ["title", "name", "abn", "dateOfBirth", "entityType"]
     },
     {
       "name": "task",
