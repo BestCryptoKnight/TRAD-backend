@@ -865,14 +865,6 @@ router.get('/:debtorId', async function (req, res) {
         },
       ];
     }
-    if (debtor.entityName) {
-      debtor.entityName = [
-        {
-          label: debtor.entityName,
-          value: debtor.entityName,
-        },
-      ];
-    }
     if (debtor.address) {
       for (let key in debtor.address) {
         debtor[key] = debtor.address[key];
