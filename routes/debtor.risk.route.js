@@ -775,12 +775,6 @@ router.get('/credit-limit/:debtorId', async function (req, res) {
       }
     }
     debtors[0].paginatedResult.forEach((debtor) => {
-      if (debtor.clientId.name) {
-        debtor.name = {
-          id: debtor.clientId._id,
-          value: debtor.clientId.name,
-        };
-      }
       if (debtor.clientId.contactNumber) {
         debtor.contactNumber = debtor.clientId.contactNumber;
       }
@@ -799,7 +793,15 @@ router.get('/credit-limit/:debtorId', async function (req, res) {
       if (debtor.hasOwnProperty('isActive')) {
         debtor.isActive = debtor.isActive ? 'Yes' : 'No';
       }
-      delete debtor.clientId;
+      if (debtor.clientId.name) {
+        debtor.clientId = {
+          id: debtor.clientId._id,
+          value: debtor.clientId.name,
+        };
+      }
+      if (!debtorColumn.columns.includes('clientId')) {
+        delete debtor.clientId;
+      }
     });
     const total =
       debtors[0]['totalCount'].length !== 0

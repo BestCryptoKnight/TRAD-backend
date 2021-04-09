@@ -356,13 +356,27 @@ const storeCompanyDetails = async ({
         };
       }
     }
-    const partners = await DebtorDirector.find({ debtorId: debtor._id })
-      .select({ __v: 0, updatedAt: 0, createdAt: 0, isDeleted: 0 })
-      .lean();
-    partners.forEach((data) => {
-      data.isDisabled = true;
-    });
-    application.partners = partners;
+    if (
+      requestBody.hasOwnProperty('wipeOutDetails') &&
+      requestBody.wipeOutDetails
+    ) {
+      await DebtorDirector.update(
+        { debtorId: debtor._id },
+        { isDeleted: true },
+        { multi: true },
+      );
+    } else {
+      const partners = await DebtorDirector.find({
+        debtorId: debtor._id,
+        isDeleted: false,
+      })
+        .select({ __v: 0, updatedAt: 0, createdAt: 0, isDeleted: 0 })
+        .lean();
+      partners.forEach((data) => {
+        data.isDisabled = true;
+      });
+      application.partners = partners;
+    }
     return application;
   } catch (e) {
     Logger.log.error('Error occurred in store company details ', e);
