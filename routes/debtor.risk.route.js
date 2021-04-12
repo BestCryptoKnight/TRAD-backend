@@ -199,11 +199,6 @@ router.get('/', async function (req, res) {
       }
     }
     responseObj.docs.forEach((debtor) => {
-      if (debtorColumn.columns.includes('fullAddress')) {
-        debtor.fullAddress = Object.values(debtor.address)
-          .toString()
-          .replace(/,,/g, ',');
-      }
       if (debtorColumn.columns.includes('property')) {
         debtor.property = debtor.address.property;
       }
@@ -230,6 +225,14 @@ router.get('/', async function (req, res) {
       }
       if (debtorColumn.columns.includes('postCode')) {
         debtor.postCode = debtor.address.postCode;
+      }
+      if (debtorColumn.columns.includes('fullAddress')) {
+        if (debtor.address.country && debtor.address.country.name) {
+          debtor.address.country = debtor.address.country.name;
+        }
+        debtor.fullAddress = Object.values(debtor.address)
+          .toString()
+          .replace(/,,/g, ',');
       }
       if (debtor.entityType) {
         debtor.entityType = debtor.entityType
@@ -324,6 +327,70 @@ router.get('/stakeholder-details/:stakeholderId', async function (req, res) {
     const stakeholder = await DebtorDirector.findById(req.params.stakeholderId)
       .select({ debtorId: 0, __v: 0, isDeleted: 0, createdAt: 0, updatedAt: 0 })
       .lean();
+    if (stakeholder) {
+      if (stakeholder.residentialAddress) {
+        for (let key in stakeholder.residentialAddress) {
+          stakeholder[key] = stakeholder.residentialAddress[key];
+        }
+        delete stakeholder.residentialAddress;
+      }
+      if (stakeholder.country) {
+        stakeholder.country = [
+          {
+            label: stakeholder.country.name,
+            value: stakeholder.country.code,
+          },
+        ];
+      }
+      if (stakeholder.entityType) {
+        stakeholder.entityType = [
+          {
+            label: stakeholder.entityType
+              .replace(/_/g, ' ')
+              .replace(/\w\S*/g, function (txt) {
+                return (
+                  txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+                );
+              }),
+            value: stakeholder.entityType,
+          },
+        ];
+      }
+      if (stakeholder.entityName) {
+        stakeholder.entityName = [
+          {
+            label: stakeholder.entityName,
+            value: stakeholder.entityName,
+          },
+        ];
+      }
+      if (stakeholder.state) {
+        const state = StaticData.australianStates.find((i) => {
+          if (i._id === stakeholder.state) return i;
+        });
+        if (state) {
+          stakeholder.state = [
+            {
+              label: state.name,
+              value: stakeholder.state,
+            },
+          ];
+        }
+      }
+      if (stakeholder.streetType) {
+        const streetType = StaticData.streetType.find((i) => {
+          if (i._id === stakeholder.streetType) return i;
+        });
+        if (streetType) {
+          stakeholder.streetType = [
+            {
+              label: streetType.name,
+              value: stakeholder.streetType,
+            },
+          ];
+        }
+      }
+    }
     res.status(200).send({ status: 'SUCCESS', data: stakeholder });
   } catch (e) {
     Logger.log.error(
@@ -409,13 +476,6 @@ router.get('/stakeholder/:debtorId', async function (req, res) {
             delete stakeholder.middleName;
             delete stakeholder.lastName;
           }
-          if (stakeholderColumn.columns.includes('fullAddress')) {
-            stakeholder.fullAddress = Object.values(
-              stakeholder.residentialAddress,
-            )
-              .toString()
-              .replace(/,,/g, ',');
-          }
           if (stakeholderColumn.columns.includes('property')) {
             stakeholder.property = stakeholder.residentialAddress.property;
           }
@@ -449,6 +509,20 @@ router.get('/stakeholder/:debtorId', async function (req, res) {
           }
           if (stakeholderColumn.columns.includes('postCode')) {
             stakeholder.postCode = stakeholder.residentialAddress.postCode;
+          }
+          if (stakeholderColumn.columns.includes('fullAddress')) {
+            if (
+              stakeholder.residentialAddress.country &&
+              stakeholder.residentialAddress.country.name
+            ) {
+              stakeholder.residentialAddress.country =
+                stakeholder.residentialAddress.country.name;
+            }
+            stakeholder.fullAddress = Object.values(
+              stakeholder.residentialAddress,
+            )
+              .toString()
+              .replace(/,,/g, ',');
           }
           delete stakeholder.residentialAddress;
         } else {

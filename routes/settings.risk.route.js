@@ -656,6 +656,17 @@ router.put('/api-integration', async function (req, res) {
         update = { 'integration.abn.guid': req.body.guid };
         break;
       case 'equifax':
+        if (!req.body.username || !req.body.password) {
+          return res.status(400).send({
+            status: 'ERROR',
+            messageCode: 'REQUIRE_FIELD_MISSING',
+            message: 'Require fields are missing.',
+          });
+        }
+        update = {
+          'integration.equifax.username': req.body.username,
+          'integration.equifax.password': req.body.password,
+        };
         break;
       case 'illion':
         if (!req.body.userId || !req.body.password || !req.body.subscriberId) {

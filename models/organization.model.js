@@ -28,6 +28,10 @@ const organizationSchema = new Schema(
         password: Schema.Types.String,
         subscriberId: Schema.Types.String,
       },
+      equifax: {
+        username: Schema.Types.String,
+        password: Schema.Types.String,
+      },
     },
     entityCount: {
       client: { type: Schema.Types.Number, default: 0 },
