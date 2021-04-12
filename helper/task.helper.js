@@ -217,18 +217,18 @@ const aggregationQuery = async ({
             as: 'clientUserId',
           },
         },
-        {
+        /* {
           $lookup: {
             from: 'client-debtors',
             localField: 'debtorId',
             foreignField: '_id',
             as: 'debtorId',
           },
-        },
+        },*/
         {
           $lookup: {
             from: 'debtors',
-            localField: 'debtorId.debtorId',
+            localField: 'debtorId',
             foreignField: '_id',
             as: 'debtorId',
           },
