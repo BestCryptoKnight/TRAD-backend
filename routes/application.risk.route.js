@@ -122,8 +122,8 @@ router.get('/entity-list', async function (req, res) {
     res.status(200).send({
       status: 'SUCCESS',
       data: {
-        clients: { field: 'client', data: clients },
-        debtors: { field: 'debtor', data: debtors },
+        clients: { field: 'clientId', data: clients },
+        debtors: { field: 'debtorId', data: debtors },
         streetType: { field: 'streetType', data: StaticData.streetType },
         australianStates: { field: 'state', data: StaticData.australianStates },
         newZealandStates: { field: 'state', data: StaticData.newZealandStates },
@@ -707,13 +707,21 @@ router.get('/search-entity/:searchString', async function (req, res) {
           typeof tradingName.organisationName === 'string'
             ? tradingName.organisationName
             : tradingName[0].organisationName;
-      if (entityDetails.mainBusinessPhysicalAddress[0])
+      if (entityDetails.mainBusinessPhysicalAddress[0]) {
+        const state = StaticData.australianStates.find((i) => {
+          if (i._id === entityDetails.mainBusinessPhysicalAddress[0].stateCode)
+            return i;
+        });
         response.state = [
           {
-            label: entityDetails.mainBusinessPhysicalAddress[0].stateCode,
+            label:
+              state && state.name
+                ? state.name
+                : entityDetails.mainBusinessPhysicalAddress[0].stateCode,
             value: entityDetails.mainBusinessPhysicalAddress[0].stateCode,
           },
         ];
+      }
       if (entityDetails.mainBusinessPhysicalAddress[0])
         response.postCode =
           entityDetails.mainBusinessPhysicalAddress[0].postcode;

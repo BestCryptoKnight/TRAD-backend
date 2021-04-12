@@ -1301,6 +1301,7 @@ router.put('/user/:clientUserId', async function (req, res) {
   try {
     let updateObj = {};
     let promises = [];
+    let message;
     const clientUser = await ClientUser.findOne({
       _id: req.params.clientUserId,
     }).lean();
@@ -1329,11 +1330,13 @@ router.put('/user/:clientUserId', async function (req, res) {
         mailFor: 'newClientUser',
       };
       promises.push(MailHelper.sendMail(mailObj));*/
+      message = 'Login access sent successfully';
     } else {
       //TODO revert portal access
       updateObj = {
         hasPortalAccess: req.body.hasPortalAccess,
       };
+      message = 'Portal access revert successfully';
     }
     await ClientUser.updateOne({ _id: req.params.clientUserId }, updateObj);
     promises.push(
@@ -1347,9 +1350,7 @@ router.put('/user/:clientUserId', async function (req, res) {
       }),
     );
     await Promise.all(promises);
-    res
-      .status(200)
-      .send({ status: 'SUCCESS', message: 'Client User updated successfully' });
+    res.status(200).send({ status: 'SUCCESS', message: message });
   } catch (e) {
     Logger.log.error(
       'Error occurred in getting client list for search.',
