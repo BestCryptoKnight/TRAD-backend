@@ -238,6 +238,9 @@ router.get('/', async function (req, res) {
             return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
           });
       }
+      if (debtor.hasOwnProperty('isActive')) {
+        debtor.isActive = debtor.isActive ? 'Yes' : 'No';
+      }
       delete debtor.address;
       delete debtor.id;
     });

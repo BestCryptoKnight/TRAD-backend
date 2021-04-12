@@ -387,7 +387,7 @@
           "label": "Contact Number",
           "type": "string"
         },
-        { "name": "isActive", "label": "Active", "type": "boolean" },
+        { "name": "isActive", "label": "Active", "type": "string" },
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
