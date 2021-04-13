@@ -779,23 +779,22 @@ router.get('/credit-limit/:debtorId', async function (req, res) {
       isActive: true,
       debtorId: mongoose.Types.ObjectId(req.params.debtorId),
     };
-    const aggregationQuery = [];
+    const aggregationQuery = [
+      {
+        $lookup: {
+          from: 'clients',
+          localField: 'clientId',
+          foreignField: '_id',
+          as: 'clientId',
+        },
+      },
+      {
+        $unwind: {
+          path: '$clientId',
+        },
+      },
+    ];
     if (debtorColumn.columns.includes('clientId')) {
-      aggregationQuery.push(
-        {
-          $lookup: {
-            from: 'clients',
-            localField: 'clientId',
-            foreignField: '_id',
-            as: 'clientId',
-          },
-        },
-        {
-          $unwind: {
-            path: '$clientId',
-          },
-        },
-      );
     }
     const fields = debtorColumn.columns.map((i) => {
       if (
@@ -855,25 +854,34 @@ router.get('/credit-limit/:debtorId', async function (req, res) {
       }
     }
     debtors[0].paginatedResult.forEach((debtor) => {
-      if (debtor.clientId.contactNumber) {
+      if (
+        debtorColumn.columns.includes('contactNumber') &&
+        debtor.clientId.contactNumber
+      ) {
         debtor.contactNumber = debtor.clientId.contactNumber;
       }
-      if (debtor.clientId.abn) {
+      if (debtorColumn.columns.includes('abn') && debtor.clientId.abn) {
         debtor.abn = debtor.clientId.abn;
       }
-      if (debtor.clientId.acn) {
+      if (debtorColumn.columns.includes('acn') && debtor.clientId.acn) {
         debtor.acn = debtor.clientId.acn;
       }
-      if (debtor.clientId.inceptionDate) {
+      if (
+        debtorColumn.columns.includes('inceptionDate') &&
+        debtor.clientId.inceptionDate
+      ) {
         debtor.inceptionDate = debtor.clientId.inceptionDate;
       }
-      if (debtor.clientId.expiryDate) {
+      if (
+        debtorColumn.columns.includes('expiryDate') &&
+        debtor.clientId.expiryDate
+      ) {
         debtor.expiryDate = debtor.clientId.expiryDate;
       }
       if (debtor.hasOwnProperty('isActive')) {
         debtor.isActive = debtor.isActive ? 'Yes' : 'No';
       }
-      if (debtor.clientId.name) {
+      if (debtorColumn.columns.includes('clientId') && debtor.clientId.name) {
         debtor.clientId = {
           id: debtor.clientId._id,
           value: debtor.clientId.name,
