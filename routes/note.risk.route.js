@@ -73,6 +73,19 @@ router.get('/:entityId', async function (req, res) {
       const applicationIds = applications.map((i) =>
         mongoose.Types.ObjectId(i._id),
       );
+      const conditions = [
+        { createdByType: 'user', isPublic: true },
+        {
+          createdByType: 'user',
+          createdById: mongoose.Types.ObjectId(req.user._id),
+        },
+      ];
+      if (debtor && debtor.clientId) {
+        conditions.push({
+          createdByType: 'client-user',
+          createdById: mongoose.Types.ObjectId(debtor.clientId),
+        });
+      }
       query = {
         $and: [
           { isDeleted: false },
@@ -89,17 +102,7 @@ router.get('/:entityId', async function (req, res) {
             ],
           },
           {
-            $or: [
-              {
-                createdByType: 'client-user',
-                createdById: mongoose.Types.ObjectId(debtor.clientId),
-              },
-              { createdByType: 'user', isPublic: true },
-              {
-                createdByType: 'user',
-                createdById: mongoose.Types.ObjectId(req.user._id),
-              },
-            ],
+            $or: conditions,
           },
         ],
       };
@@ -259,6 +262,9 @@ router.get('/:entityId', async function (req, res) {
   }
 });
 
+/**
+ * Get Note Details
+ */
 router.get('/details/:noteId', async function (req, res) {
   if (
     !req.params.noteId ||
