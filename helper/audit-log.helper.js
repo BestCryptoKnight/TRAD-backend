@@ -1,21 +1,46 @@
 /*
-* Module Imports
-* */
+ * Module Imports
+ * */
 const mongoose = require('mongoose');
 const AuditLog = mongoose.model('audit-log');
 
 /*
-* Local Imports
-* */
+ * Local Imports
+ * */
 const Logger = require('./../services/logger');
 
-let addAuditLog = async ({entityType, entityRefId, userType, userRefId, actionType, logDescription}) => {
-    try {
-        await AuditLog.create({entityType, entityRefId, userType, userRefId, actionType, logDescription});
-        Logger.log.info('Audit log added');
-    } catch (e) {
-        Logger.log.error(`Error occurred in add audit log `, e.message || e);
-    }
+let addAuditLog = async ({
+  entityType,
+  entityRefId,
+  userType,
+  userRefId,
+  actionType,
+  logDescription,
+}) => {
+  try {
+    await AuditLog.create({
+      entityType,
+      entityRefId,
+      userType,
+      userRefId,
+      actionType,
+      logDescription,
+    });
+    Logger.log.info('Audit log added');
+  } catch (e) {
+    Logger.log.error(`Error occurred in add audit log `, e.message || e);
+  }
 };
 
-module.exports = {addAuditLog};
+const getAuditLogs = async ({ entityId }) => {
+  try {
+    const logs = await AuditLog.find({ entityRefId: entityId })
+      .select('_id logDescription createdAt')
+      .lean();
+    return logs;
+  } catch (e) {
+    Logger.log.error('Error occurred in get audit log list ', e.message || e);
+  }
+};
+
+module.exports = { addAuditLog, getAuditLogs };

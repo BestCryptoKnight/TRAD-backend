@@ -31,7 +31,11 @@ const { getClientList } = require('./../helper/client.helper');
 const { getDebtorList } = require('./../helper/debtor.helper');
 const StaticData = require('./../static-files/staticData.json');
 const { getClientDebtorDetails } = require('./../helper/client-debtor.helper');
-const { getApplicationDocumentList } = require('./../helper/document.helper');
+const {
+  getApplicationDocumentList,
+  getSpecificEntityDocumentList,
+} = require('./../helper/document.helper');
+const { getAuditLogs } = require('./../helper/audit-log.helper');
 
 /**
  * Get Column Names
@@ -359,9 +363,13 @@ router.get('/details/:applicationId', async function (req, res) {
           response.company.entityType = [
             {
               value: response.company.entityType,
-              label:
-                response.company.entityType.charAt(0).toUpperCase() +
-                response.company.entityType.slice(1).toLowerCase(),
+              label: response.company.entityType
+                .replace(/_/g, ' ')
+                .replace(/\w\S*/g, function (txt) {
+                  return (
+                    txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+                  );
+                }),
             },
           ];
         }
@@ -502,25 +510,50 @@ router.get('/details/:applicationId', async function (req, res) {
         entityId: application._id,
       });
     } else {
+      response.status = [
+        {
+          label: application.status
+            .replace(/_/g, ' ')
+            .replace(/\w\S*/g, function (txt) {
+              return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+            }),
+          value: application.status,
+        },
+      ];
+      response.isAllowToUpdate =
+        req.user.maxCreditLimit >= application.creditLimit;
       if (application.clientId) {
-        response.clientId = {
-          _id: application.clientId._id,
-          name: application.clientId.name,
-        };
+        response.clientId = [
+          {
+            _id: application.clientId._id,
+            value: application.clientId.name,
+          },
+        ];
       }
       if (application.debtorId) {
-        response.debtorId = {
-          _id: application.debtorId._id,
-          name: application.debtorId.entityName,
-        };
+        response.debtorId = [
+          {
+            _id: application.debtorId._id,
+            value: application.debtorId.entityName,
+          },
+        ];
         for (let key in application.debtorId) {
           if (key === 'address') {
+            application.debtorId.address.country =
+              application.debtorId.address.country.name;
             response[key] = Object.values(application.debtorId[key])
               .toString()
               .replace(/,,/g, ',');
           } else {
             response[key] = application.debtorId[key];
           }
+        }
+        if (response.entityType) {
+          response.entityType = response.entityType
+            .replace(/_/g, ' ')
+            .replace(/\w\S*/g, function (txt) {
+              return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+            });
         }
       }
       if (application.clientDebtorId) {
@@ -533,6 +566,9 @@ router.get('/details/:applicationId', async function (req, res) {
         application.extendedPaymentTermsDetails;
       response.isPassedOverdueAmount = application.isPassedOverdueAmount;
       response.passedOverdueDetails = application.passedOverdueDetails;
+      response.applicationStatus = StaticData.applicationStatus.filter(
+        (data) => data._id !== 'DRAFT',
+      );
     }
     res.status(200).send({
       status: 'SUCCESS',
@@ -540,6 +576,56 @@ router.get('/details/:applicationId', async function (req, res) {
     });
   } catch (e) {
     Logger.log.error('Error occurred in get application details ', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+//TODO add for reports + alerts
+router.get('/modules/:applicationId', async function (req, res) {
+  if (
+    !req.params.applicationId ||
+    !mongoose.Types.ObjectId.isValid(req.params.applicationId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const application = await Application.findById(
+      req.params.applicationId,
+    ).lean();
+    if (!application) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'NO_APPLICATION_FOUND',
+        message: 'No application found',
+      });
+    }
+    const response = {};
+    response.documents = await getSpecificEntityDocumentList({
+      entityId: application._id,
+      userId: req.user._id,
+      clientId: application.clientId,
+    });
+    response.logs = await getAuditLogs({ entityId: application._id });
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: response,
+    });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in get application modules data ',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
   }
 });
 

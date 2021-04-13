@@ -72,7 +72,10 @@ const uploadDocument = ({
 
 const getApplicationDocumentList = async ({ entityId }) => {
   try {
-    const documents = await Document.find({ entityRefId: entityId })
+    const documents = await Document.find({
+      isDeleted: false,
+      entityRefId: entityId,
+    })
       .populate({ path: 'documentTypeId', select: 'documentTitle' })
       .select('_id documentTypeId description')
       .lean();
@@ -87,4 +90,104 @@ const getApplicationDocumentList = async ({ entityId }) => {
   }
 };
 
-module.exports = { deleteImage, uploadDocument, getApplicationDocumentList };
+const getSpecificEntityDocumentList = async ({
+  entityId,
+  clientId,
+  userId,
+}) => {
+  try {
+    const query = [
+      {
+        $match: {
+          $and: [
+            { isDeleted: false },
+            {
+              entityRefId: mongoose.Types.ObjectId(entityId),
+            },
+            {
+              $or: [
+                {
+                  uploadByType: 'client-user',
+                  uploadById: mongoose.Types.ObjectId(clientId),
+                },
+                { uploadByType: 'user', isPublic: true },
+                {
+                  uploadByType: 'user',
+                  uploadById: mongoose.Types.ObjectId(userId),
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        $addFields: {
+          clientUserId: {
+            $cond: [
+              { $eq: ['$uploadByType', 'client-user'] },
+              '$uploadById',
+              null,
+            ],
+          },
+          userId: {
+            $cond: [{ $eq: ['$uploadByType', 'user'] }, '$uploadById', null],
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'userId',
+        },
+      },
+      {
+        $lookup: {
+          from: 'client-users',
+          localField: 'clientUserId',
+          foreignField: '_id',
+          as: 'clientUserId',
+        },
+      },
+      {
+        $addFields: {
+          uploadById: {
+            $cond: [
+              { $eq: ['$createdByType', 'client-user'] },
+              '$clientUserId.name',
+              '$userId.name',
+            ],
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          description: 1,
+          uploadById: 1,
+          createdAt: 1,
+        },
+      },
+    ];
+    const documents = await Document.aggregate(query).allowDiskUse(true);
+    console.log(documents);
+    documents.forEach((document) => {
+      document.uploadById =
+        document.uploadById.length !== 0 ? document.uploadById[0] : '';
+    });
+    return documents;
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in get specific entity document list ',
+      e.message || e,
+    );
+  }
+};
+
+module.exports = {
+  deleteImage,
+  uploadDocument,
+  getApplicationDocumentList,
+  getSpecificEntityDocumentList,
+};
