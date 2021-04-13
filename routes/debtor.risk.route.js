@@ -1293,18 +1293,30 @@ router.put('/:debtorId', async function (req, res) {
   }
   try {
     const update = {};
+    const debtor = await Debtor.findById(req.params.debtorId).lean();
     if (req.body.address && Object.keys(req.body.address).length !== 0) {
-      update.address = {
-        property: req.body.address.property,
-        unitNumber: req.body.address.unitNumber,
-        streetNumber: req.body.address.streetNumber,
-        streetName: req.body.address.streetName,
-        streetType: req.body.address.streetType,
-        suburb: req.body.address.suburb,
-        state: req.body.address.state,
-        country: req.body.address.country,
-        postCode: req.body.address.postCode,
-      };
+      update.address = debtor.address;
+      if (req.body.address.property) {
+        update.address.property = req.body.address.property;
+      }
+      if (req.body.address.unitNumber) {
+        update.address.unitNumber = req.body.address.unitNumber;
+      }
+      if (req.body.address.streetNumber) {
+        update.address.streetNumber = req.body.address.streetNumber;
+      }
+      if (req.body.address.streetName) {
+        update.address.streetName = req.body.address.streetName;
+      }
+      if (req.body.address.streetType) {
+        update.address.streetType = req.body.address.streetType;
+      }
+      if (req.body.address.suburb) {
+        update.address.suburb = req.body.address.suburb;
+      }
+      if (req.body.address.postCode) {
+        update.address.postCode = req.body.address.postCode;
+      }
     }
     if (req.body.entityType) update.entityType = req.body.entityType;
     if (req.body.contactNumber) update.contactNumber = req.body.contactNumber;
