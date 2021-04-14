@@ -1303,6 +1303,7 @@ router.put('/:debtorId', async function (req, res) {
     const update = {};
     const debtor = await Debtor.findById(req.params.debtorId).lean();
     if (req.body.address && Object.keys(req.body.address).length !== 0) {
+      update.address = {};
       if (req.body.address.property) {
         update.address.property = req.body.address.property;
       } else {
@@ -1353,10 +1354,7 @@ router.put('/:debtorId', async function (req, res) {
       message: 'Debtors details updated successfully',
     });
   } catch (e) {
-    Logger.log.error(
-      'Error occurred in update debtor details ',
-      e.message || e,
-    );
+    Logger.log.error('Error occurred in update debtor details ', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
