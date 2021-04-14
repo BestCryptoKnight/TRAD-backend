@@ -718,7 +718,8 @@ router.put('/origination-details', async function (req, res) {
     !req.body.name ||
     !req.body.website ||
     !req.body.contactNumber ||
-    !req.body.location
+    !req.body.email ||
+    !req.body.address
   ) {
     return res.status(400).send({
       status: 'ERROR',
@@ -732,7 +733,8 @@ router.put('/origination-details', async function (req, res) {
         name: req.body.name,
         website: req.body.website,
         contactNumber: req.body.contactNumber,
-        address: req.body.location,
+        address: req.body.address,
+        email: req.body.email,
       },
     );
     const organization = await Organization.findOne({
