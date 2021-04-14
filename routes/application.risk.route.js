@@ -567,7 +567,7 @@ router.get('/details/:applicationId', async function (req, res) {
       response.isPassedOverdueAmount = application.isPassedOverdueAmount;
       response.passedOverdueDetails = application.passedOverdueDetails;
       response.applicationStatus = StaticData.applicationStatus.filter(
-        (data) => data._id !== 'DRAFT',
+        (data) => data.value !== 'DRAFT',
       );
     }
     res.status(200).send({

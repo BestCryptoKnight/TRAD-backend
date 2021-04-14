@@ -991,52 +991,52 @@
   ],
   "applicationStatus": [
     {
-      "_id": "DRAFT",
-      "name": "Draft"
+      "value": "DRAFT",
+      "label": "Draft"
     },
     {
-      "_id": "SENT_TO_INSURER",
-      "name": "Sent To Insurer"
+      "value": "SENT_TO_INSURER",
+      "label": "Sent To Insurer"
     },
     {
-      "_id": "REVIEW_APPLICATION",
-      "name": "Review Application"
+      "value": "REVIEW_APPLICATION",
+      "label": "Review Application"
     },
     {
-      "_id": "PENDING_INSURER_REVIEW",
-      "name": "Pending Insurer Review"
+      "value": "PENDING_INSURER_REVIEW",
+      "label": "Pending Insurer Review"
     },
     {
-      "_id": "APPROVED",
-      "name": "Approved"
+      "value": "APPROVED",
+      "label": "Approved"
     },
     {
-      "_id": "DECLINED",
-      "name": "Declined"
+      "value": "DECLINED",
+      "label": "Declined"
     },
     {
-      "_id": "CANCELLED",
-      "name": "Cancelled"
+      "value": "CANCELLED",
+      "label": "Cancelled"
     },
     {
-      "_id": "WITHDRAWN",
-      "name": "Withdrawn"
+      "value": "WITHDRAWN",
+      "label": "Withdrawn"
     },
     {
-      "_id": "SUBMITTED",
-      "name": "Submitted"
+      "value": "SUBMITTED",
+      "label": "Submitted"
     },
     {
-      "_id": "UNDER_REVIEW",
-      "name": "Under Review"
+      "value": "UNDER_REVIEW",
+      "label": "Under Review"
     },
     {
-      "_id": "AWAITING_INFORMATION",
-      "name": "Awaiting Information"
+      "value": "AWAITING_INFORMATION",
+      "label": "Awaiting Information"
     },
     {
-      "_id": "SURRENDERED",
-      "name": "Surrendered"
+      "value": "SURRENDERED",
+      "label": "Surrendered"
     }
   ],
   "countryList": [
