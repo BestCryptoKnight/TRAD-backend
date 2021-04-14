@@ -7,6 +7,7 @@ let mongoose = require('mongoose');
 let Organization = mongoose.model('organization');
 const AuditLog = mongoose.model('audit-log');
 const DocumentType = mongoose.model('document-type');
+const User = mongoose.model('user');
 
 /*
  * Local Imports
