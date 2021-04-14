@@ -1306,32 +1306,46 @@ router.put('/:debtorId', async function (req, res) {
       update.address = debtor.address;
       if (req.body.address.property) {
         update.address.property = req.body.address.property;
+      } else {
+        delete update.address.property;
       }
       if (req.body.address.unitNumber) {
         update.address.unitNumber = req.body.address.unitNumber;
+      } else {
+        delete update.address.unitNumber;
       }
       if (req.body.address.streetNumber) {
         update.address.streetNumber = req.body.address.streetNumber;
+      } else {
+        delete update.address.streetNumber;
       }
       if (req.body.address.streetName) {
         update.address.streetName = req.body.address.streetName;
+      } else {
+        delete update.address.streetName;
       }
       if (req.body.address.streetType) {
         update.address.streetType = req.body.address.streetType;
+      } else {
+        delete update.address.streetType;
       }
       if (req.body.address.suburb) {
         update.address.suburb = req.body.address.suburb;
+      } else {
+        delete update.address.suburb;
       }
       if (req.body.address.postCode) {
         update.address.postCode = req.body.address.postCode;
+      } else {
+        delete update.address.postCode;
       }
     }
-    if (req.body.entityType) update.entityType = req.body.entityType;
-    if (req.body.contactNumber) update.contactNumber = req.body.contactNumber;
-    if (req.body.tradingName) update.tradingName = req.body.tradingName;
-    if (req.body.entityName) update.entityName = req.body.entityName;
-    if (req.body.acn) update.acn = req.body.acn;
-    if (req.body.abn) update.abn = req.body.abn;
+    update.contactNumber = req.body.contactNumber
+      ? req.body.contactNumber
+      : undefined;
+    update.tradingName = req.body.tradingName
+      ? req.body.tradingName
+      : undefined;
     await Debtor.updateOne({ _id: req.params.debtorId }, update);
     res.status(200).send({
       status: 'SUCCESS',

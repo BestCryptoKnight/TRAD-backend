@@ -569,6 +569,20 @@ router.get('/details/:applicationId', async function (req, res) {
       response.applicationStatus = StaticData.applicationStatus.filter(
         (data) => data.value !== 'DRAFT',
       );
+      response.headers = [
+        {
+          name: 'clientId',
+          label: 'Client Name',
+          type: 'modal',
+          request: { method: 'GET', url: 'client/details' },
+        },
+        {
+          name: 'debtorId',
+          label: 'Debtor Name',
+          type: 'modal',
+          request: { method: 'GET', url: 'debtor/drawer-details' },
+        },
+      ];
     }
     res.status(200).send({
       status: 'SUCCESS',
@@ -1062,6 +1076,42 @@ router.put('/', async function (req, res) {
       status: 'SUCCESS',
       message: message,
       data: response,
+    });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in generating application ',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e,
+    });
+  }
+});
+
+/**
+ * Update Application
+ */
+router.put('/:applicationId', async function (req, res) {
+  if (
+    !req.params.applicationId ||
+    !mongoose.Types.ObjectId.isValid(req.params.applicationId) ||
+    !req.body.status
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    await Application.updateOne(
+      { _id: req.params.applicationId },
+      { status: req.body.status },
+    );
+    res.status(200).send({
+      status: 'SUCCESS',
+      message: 'Application status updated successfully',
     });
   } catch (e) {
     Logger.log.error(
