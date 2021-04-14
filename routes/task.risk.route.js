@@ -324,8 +324,12 @@ router.get('/', async function (req, res) {
         headers.push(module.manageColumns[i]);
       }
     }
+    let response;
     if (tasks && tasks.length !== 0) {
-      tasks[0]['paginatedResult'].forEach((task) => {
+      response = tasks[0]['paginatedResult']
+        ? tasks[0]['paginatedResult']
+        : tasks;
+      response.forEach((task) => {
         if (task.entityType) {
           task.entityType =
             task.entityType.charAt(0).toUpperCase() + task.entityType.slice(1);
@@ -351,13 +355,13 @@ router.get('/', async function (req, res) {
       });
     }
     const total =
-      tasks[0]['totalCount'].length !== 0
+      tasks[0]['totalCount'] && tasks[0]['totalCount'].length !== 0
         ? tasks[0]['totalCount'][0]['count']
         : 0;
     res.status(200).send({
       status: 'SUCCESS',
       data: {
-        docs: tasks[0].paginatedResult,
+        docs: response,
         headers,
         total,
         page: parseInt(req.query.page),
