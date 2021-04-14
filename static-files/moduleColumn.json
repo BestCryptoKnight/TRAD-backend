@@ -113,12 +113,12 @@
         },
         {
           "name": "riskAnalystId",
-          "label": "RiskAnalyst Name",
+          "label": "Risk Analyst",
           "type": "string"
         },
         {
           "name": "serviceManagerId",
-          "label": "ServiceManager Name",
+          "label": "Service Manager",
           "type": "string"
         },
         { "name": "insurerId", "label": "Insurer Name", "type": "string" },

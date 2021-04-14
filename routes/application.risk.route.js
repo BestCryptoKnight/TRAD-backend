@@ -1035,7 +1035,7 @@ router.put('/', async function (req, res) {
       case 'documents':
         await Application.updateOne(
           { _id: req.body.applicationId },
-          { $set: { applicationStage: 3 } },
+          { $set: { applicationStage: 4 } },
         );
         response = await Application.findById(req.body.applicationId)
           .select('_id applicationStage')
@@ -1044,7 +1044,7 @@ router.put('/', async function (req, res) {
       case 'confirmation':
         await Application.updateOne(
           { _id: req.body.applicationId },
-          { $set: { status: 'SUBMITTED', applicationStage: 4 } },
+          { $set: { status: 'SUBMITTED', applicationStage: 5 } },
         );
         message = 'Application submitted successfully.';
         break;

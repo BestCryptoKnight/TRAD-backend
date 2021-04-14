@@ -321,7 +321,7 @@ const storeCompanyDetails = async ({
       clientId: requestBody.clientId,
       debtorId: debtor._id,
       clientDebtorId: clientDebtor._id,
-      applicationStage: 0,
+      applicationStage: 1,
     };
     let application;
     if (!requestBody.applicationId) {
@@ -519,7 +519,7 @@ const storePartnerDetails = async ({ requestBody }) => {
     promises.push(
       Application.updateOne(
         { _id: requestBody.applicationId },
-        { applicationStage: 1 },
+        { applicationStage: 2 },
       ),
     );
     await Promise.all(promises);
@@ -538,7 +538,7 @@ const storeCreditLimitDetails = async ({ requestBody }) => {
       creditLimit: requestBody.creditLimit,
       isExtendedPaymentTerms: requestBody.isExtendedPaymentTerms,
       isPassedOverdueAmount: requestBody.isPassedOverdueAmount,
-      applicationStage: 2,
+      applicationStage: 3,
     };
     if (requestBody.extendedPaymentTermsDetails)
       update.extendedPaymentTermsDetails =
