@@ -510,6 +510,7 @@ router.get('/details/:applicationId', async function (req, res) {
         entityId: application._id,
       });
     } else {
+      response.applicationId = application.applicationId;
       response.status = [
         {
           label: application.status

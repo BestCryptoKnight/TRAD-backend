@@ -1303,7 +1303,6 @@ router.put('/:debtorId', async function (req, res) {
     const update = {};
     const debtor = await Debtor.findById(req.params.debtorId).lean();
     if (req.body.address && Object.keys(req.body.address).length !== 0) {
-      update.address = debtor.address;
       if (req.body.address.property) {
         update.address.property = req.body.address.property;
       } else {
@@ -1334,11 +1333,13 @@ router.put('/:debtorId', async function (req, res) {
       } else {
         delete update.address.suburb;
       }
+      update.address.state = debtor.address.state;
       if (req.body.address.postCode) {
         update.address.postCode = req.body.address.postCode;
       } else {
         delete update.address.postCode;
       }
+      update.address.country = debtor.address.country;
     }
     update.contactNumber = req.body.contactNumber
       ? req.body.contactNumber
