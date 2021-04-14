@@ -96,10 +96,14 @@ router.get('/audit-logs', async function (req, res) {
     if (req.query.actionType) {
       queryFilter.actionType = req.query.actionType.toLowerCase();
     }
-    if (req.query.startDate && req.query.endDate) {
+    if (req.query.startDate) {
       queryFilter.createdAt = {
-        $gte: req.query.startDate,
-        $lt: req.query.endDate,
+        $gte: new Date(req.query.startDate),
+      };
+    }
+    if (req.query.endDate) {
+      queryFilter.createdAt = {
+        $lt: new Date(req.query.endDate),
       };
     }
     let query = [];
@@ -561,6 +565,42 @@ router.post('/document-type', async function (req, res) {
     }
   } catch (e) {
     Logger.log.error('Error occurred in add document types ', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Update Column Names
+ */
+router.put('/column-name', async function (req, res) {
+  if (!req.body.hasOwnProperty('isReset') || !req.body.columns) {
+    Logger.log.error('Require fields are missing');
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Something went wrong, please try again.',
+    });
+  }
+  try {
+    let updateColumns = [];
+    if (req.body.isReset) {
+      const module = StaticFile.modules.find((i) => i.name === 'audit-logs');
+      updateColumns = module.defaultColumns;
+    } else {
+      updateColumns = req.body.columns;
+    }
+    await User.updateOne(
+      { _id: req.user._id, 'manageColumns.moduleName': 'audit-logs' },
+      { $set: { 'manageColumns.$.columns': updateColumns } },
+    );
+    res
+      .status(200)
+      .send({ status: 'SUCCESS', message: 'Columns updated successfully' });
+  } catch (e) {
+    Logger.log.error('Error occurred in update column names', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
