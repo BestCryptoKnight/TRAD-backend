@@ -35,8 +35,10 @@ router.get('/:entityId', async function (req, res) {
     let sortingOptions = {};
     req.query.sortBy = req.query.sortBy || '_id';
     req.query.sortOrder = req.query.sortOrder || 'desc';
-    req.query.limit = req.query.limit || 5;
-    req.query.page = req.query.page || 1;
+    if (req.query.noteFor !== 'application') {
+      req.query.limit = req.query.limit || 5;
+      req.query.page = req.query.page || 1;
+    }
     sortingOptions[req.query.sortBy] = req.query.sortOrder === 'desc' ? -1 : 1;
 
     if (req.query.noteFor === 'application') {
@@ -183,21 +185,23 @@ router.get('/:entityId', async function (req, res) {
     });
     aggregationQuery.push({ $sort: sortingOptions });
 
-    aggregationQuery.push({
-      $facet: {
-        paginatedResult: [
-          {
-            $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
-          },
-          { $limit: parseInt(req.query.limit) },
-        ],
-        totalCount: [
-          {
-            $count: 'count',
-          },
-        ],
-      },
-    });
+    if (req.query.limit && req.query.page) {
+      aggregationQuery.push({
+        $facet: {
+          paginatedResult: [
+            {
+              $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
+            },
+            { $limit: parseInt(req.query.limit) },
+          ],
+          totalCount: [
+            {
+              $count: 'count',
+            },
+          ],
+        },
+      });
+    }
 
     if (req.query.search) {
       query.description = { $regex: `${req.query.search}`, $options: 'i' };
@@ -231,21 +235,23 @@ router.get('/:entityId', async function (req, res) {
         type: 'string',
       },
     ];
+    let response;
     if (notes && notes.length !== 0) {
-      notes[0].paginatedResult.forEach((note) => {
+      response = notes[0].paginatedResult ? notes[0].paginatedResult : notes;
+      response.forEach((note) => {
         note.createdById =
           note.createdById && note.createdById[0] ? note.createdById[0] : '';
       });
     }
     const total =
-      notes[0]['totalCount'].length !== 0
+      notes[0]['totalCount'] && notes[0]['totalCount'].length !== 0
         ? notes[0]['totalCount'][0]['count']
         : 0;
 
     res.status(200).send({
       status: 'SUCCESS',
       data: {
-        docs: notes[0].paginatedResult,
+        docs: response,
         headers,
         total,
         page: parseInt(req.query.page),
