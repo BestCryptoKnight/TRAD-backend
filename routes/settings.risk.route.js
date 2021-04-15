@@ -91,27 +91,32 @@ router.get('/audit-logs', async function (req, res) {
     req.query.sortOrder = req.query.sortOrder || 'desc';
     sortingOptions[req.query.sortBy] = req.query.sortOrder === 'desc' ? -1 : 1;
 
-    if (req.accessTypes && req.accessTypes.indexOf('full-access') !== -1) {
+    if (req.accessTypes && req.accessTypes.indexOf('full-access') === -1) {
       queryFilter.userRefId = mongoose.Types.ObjectId(req.user._id);
     }
     if (req.query.actionType) {
       queryFilter.actionType = req.query.actionType.toLowerCase();
     }
-    if (req.query.startDate) {
-      queryFilter.createdAt = {
-        $gte: new Date(req.query.startDate),
-      };
+    if (req.query.entityType) {
+      queryFilter.entityType = req.query.entityType.toLowerCase();
     }
-    if (req.query.endDate) {
-      queryFilter.createdAt = {
-        $lt: new Date(req.query.endDate),
-      };
+    if (req.query.startDate || req.query.endDate) {
+      let dateQuery = {};
+      if (req.query.startDate) {
+        dateQuery = {
+          $gte: new Date(req.query.startDate),
+        };
+      }
+      if (req.query.endDate) {
+        dateQuery = Object.assign({}, dateQuery, {
+          $lt: new Date(req.query.endDate),
+        });
+      }
+      queryFilter.createdAt = dateQuery;
     }
+
     let query = [];
-    if (
-      auditLogsColumn.columns.includes('entityRefId') ||
-      req.query.entityRefId
-    ) {
+    if (auditLogsColumn.columns.includes('entityRefId')) {
       query.push(
         {
           $addFields: {
@@ -263,8 +268,14 @@ router.get('/audit-logs', async function (req, res) {
             userRefId: {
               $cond: [
                 { $eq: ['$userType', 'client-user'] },
-                '$clientUserId.name',
-                '$userId.name',
+                {
+                  name: '$clientUserId.name',
+                  _id: '$clientUserId._id',
+                },
+                {
+                  name: '$userId.name',
+                  _id: '$userId._id',
+                },
               ],
             },
           },
@@ -274,7 +285,7 @@ router.get('/audit-logs', async function (req, res) {
     if (req.query.userRefId) {
       query.push({
         $match: {
-          'userRefId.name': req.query.userRefId,
+          'userRefId._id': mongoose.Types.ObjectId(req.query.userRefId),
         },
       });
     }
@@ -316,14 +327,30 @@ router.get('/audit-logs', async function (req, res) {
     if (auditLogs && auditLogs.length !== 0) {
       auditLogs[0].paginatedResult.forEach((log) => {
         if (auditLogsColumn.columns.includes('entityRefId')) {
-          log.entityRefId = log.entityRefId[0] ? log.entityRefId[0] : '';
+          log.entityRefId =
+            log.entityRefId && log.entityRefId[0] ? log.entityRefId[0] : '';
         }
         if (auditLogsColumn.columns.includes('userRefId')) {
-          log.userRefId = log.userRefId[0] ? log.userRefId[0] : '';
+          log.userRefId =
+            log.userRefId && log.userRefId.name && log.userRefId.name[0]
+              ? log.userRefId.name[0]
+              : '';
         }
-        /*if(log.actionType){
-          log.actionType = log.actionType.charAt(0).toUpperCase() + log.actionType.slice(1);
-        }*/
+        if (log.actionType) {
+          log.actionType =
+            log.actionType.charAt(0).toUpperCase() + log.actionType.slice(1);
+        }
+        if (log.entityType) {
+          log.entityType = log.entityType
+            .replace(/-/g, ' ')
+            .replace(/\w\S*/g, function (txt) {
+              return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+            });
+        }
+        if (log.userType) {
+          log.userType =
+            log.userType.charAt(0).toUpperCase() + log.userType.slice(1);
+        }
       });
     }
     const total =
@@ -343,7 +370,7 @@ router.get('/audit-logs', async function (req, res) {
       },
     });
   } catch (e) {
-    Logger.log.error('Error occurred in get audit-logs ', e.message || e);
+    Logger.log.error('Error occurred in get audit-logs ', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

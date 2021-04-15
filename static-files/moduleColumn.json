@@ -627,11 +627,6 @@
       "defaultColumns": ["priority", "title", "description", "entityType"]
     },
     {
-      "name": "report",
-      "manageColumns": [],
-      "defaultColumns": []
-    },
-    {
       "name": "stakeholder",
       "manageColumns": [
         { "name": "abn", "label": "ABN", "type": "string" },

@@ -162,8 +162,22 @@ const getSpecificEntityDocumentList = async ({
         },
       },
       {
+        $lookup: {
+          from: 'document-types',
+          localField: 'documentTypeId',
+          foreignField: '_id',
+          as: 'documentTypeId',
+        },
+      },
+      {
+        $unwind: {
+          path: '$documentTypeId',
+        },
+      },
+      {
         $project: {
           _id: 1,
+          'documentTypeId.documentTitle': 1,
           description: 1,
           uploadById: 1,
           createdAt: 1,
@@ -171,10 +185,13 @@ const getSpecificEntityDocumentList = async ({
       },
     ];
     const documents = await Document.aggregate(query).allowDiskUse(true);
-    console.log(documents);
     documents.forEach((document) => {
       document.uploadById =
         document.uploadById.length !== 0 ? document.uploadById[0] : '';
+      document.documentTypeId =
+        document.documentTypeId && document.documentTypeId.documentTitle
+          ? document.documentTypeId.documentTitle
+          : '';
     });
     return documents;
   } catch (e) {
