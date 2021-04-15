@@ -329,6 +329,7 @@ router.get('/details/:applicationId', async function (req, res) {
       .select({ createdAt: 0, updatedAt: 0, __v: 0 })
       .lean();
     let response = {};
+    response.status = application.status;
     if (application.status === 'DRAFT') {
       response._id = application._id;
       response.applicationStage = application.applicationStage;
