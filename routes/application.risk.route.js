@@ -329,7 +329,16 @@ router.get('/details/:applicationId', async function (req, res) {
       .select({ createdAt: 0, updatedAt: 0, __v: 0 })
       .lean();
     let response = {};
-    response.status = application.status;
+    response.status = [
+      {
+        label: application.status
+          .replace(/_/g, ' ')
+          .replace(/\w\S*/g, function (txt) {
+            return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+          }),
+        value: application.status,
+      },
+    ];
     if (application.status === 'DRAFT') {
       response._id = application._id;
       response.applicationStage = application.applicationStage;
@@ -512,16 +521,6 @@ router.get('/details/:applicationId', async function (req, res) {
       });
     } else {
       response.applicationId = application.applicationId;
-      response.status = [
-        {
-          label: application.status
-            .replace(/_/g, ' ')
-            .replace(/\w\S*/g, function (txt) {
-              return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
-            }),
-          value: application.status,
-        },
-      ];
       response.isAllowToUpdate =
         req.user.maxCreditLimit >= application.creditLimit;
       if (application.clientId) {
