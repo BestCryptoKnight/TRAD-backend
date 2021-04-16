@@ -235,7 +235,7 @@ router.get('/:entityId', async function (req, res) {
         type: 'string',
       },
     ];
-    let response;
+    let response = [];
     if (notes && notes.length !== 0) {
       response = notes[0].paginatedResult ? notes[0].paginatedResult : notes;
       response.forEach((note) => {
@@ -244,7 +244,9 @@ router.get('/:entityId', async function (req, res) {
       });
     }
     const total =
-      notes[0]['totalCount'] && notes[0]['totalCount'].length !== 0
+      notes.length !== 0 &&
+      notes[0]['totalCount'] &&
+      notes[0]['totalCount'].length !== 0
         ? notes[0]['totalCount'][0]['count']
         : 0;
 

@@ -324,7 +324,7 @@ router.get('/', async function (req, res) {
         headers.push(module.manageColumns[i]);
       }
     }
-    let response;
+    let response = [];
     if (tasks && tasks.length !== 0) {
       response = tasks[0]['paginatedResult']
         ? tasks[0]['paginatedResult']
@@ -355,7 +355,9 @@ router.get('/', async function (req, res) {
       });
     }
     const total =
-      tasks[0]['totalCount'] && tasks[0]['totalCount'].length !== 0
+      tasks.length !== 0 &&
+      tasks[0]['totalCount'] &&
+      tasks[0]['totalCount'].length !== 0
         ? tasks[0]['totalCount'][0]['count']
         : 0;
     res.status(200).send({
