@@ -23,6 +23,7 @@ const {
   storeStakeholderDetails,
 } = require('./../helper/stakeholder.helper');
 const { partnerDetailsValidation } = require('./../helper/application.helper');
+const { addAuditLog, getEntityName } = require('./../helper/audit-log.helper');
 
 /**
  * Get Column Names
@@ -1349,6 +1350,14 @@ router.put('/:debtorId', async function (req, res) {
       ? req.body.tradingName
       : undefined;
     await Debtor.updateOne({ _id: req.params.debtorId }, update);
+    await addAuditLog({
+      entityType: 'debtor',
+      entityRefId: debtor._id,
+      actionType: 'edit',
+      userType: 'user',
+      userRefId: req.user._id,
+      logDescription: `A debtor ${debtor.entityName} is successfully updated by ${req.user.name}`,
+    });
     res.status(200).send({
       status: 'SUCCESS',
       message: 'Debtors details updated successfully',

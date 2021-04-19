@@ -46,6 +46,7 @@ app.use(
       ' Authorization',
     ],
     credentials: true,
+    exposedHeaders: ['Content-Disposition'],
   }),
 );
 app.use(Logger.morgan);

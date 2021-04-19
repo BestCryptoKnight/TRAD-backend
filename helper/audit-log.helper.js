@@ -3,13 +3,17 @@
  * */
 const mongoose = require('mongoose');
 const AuditLog = mongoose.model('audit-log');
+const Application = mongoose.model('application');
+const User = mongoose.model('user');
+const Client = mongoose.model('client');
+const Debtor = mongoose.model('debtor');
 
 /*
  * Local Imports
  * */
 const Logger = require('./../services/logger');
 
-let addAuditLog = async ({
+const addAuditLog = async ({
   entityType,
   entityRefId,
   userType,
@@ -43,4 +47,36 @@ const getAuditLogs = async ({ entityId }) => {
   }
 };
 
-module.exports = { addAuditLog, getAuditLogs };
+const getEntityName = async ({ entityType, entityId }) => {
+  try {
+    let response;
+    let entity;
+    switch (entityType) {
+      case 'application':
+        entity = await Application.findById(entityId).lean();
+        response = entity.applicationId;
+        break;
+      case 'claim':
+        break;
+      case 'client':
+        entity = await Client.findById(entityId).lean();
+        response = entity.name;
+        break;
+      case 'debtor':
+        entity = await Debtor.findById(entityId).lean();
+        response = entity.entityName;
+        break;
+      case 'overdue':
+        break;
+      case 'user':
+        entity = await User.findById(entityId).lean();
+        response = entity.name;
+        break;
+    }
+    return response;
+  } catch (e) {
+    Logger.log.error('Error occurred in get entity name ', e.message || e);
+  }
+};
+
+module.exports = { addAuditLog, getAuditLogs, getEntityName };

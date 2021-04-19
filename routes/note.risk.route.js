@@ -12,7 +12,7 @@ const Application = mongoose.model('application');
  * Local Imports
  * */
 const Logger = require('./../services/logger');
-const { addAuditLog } = require('./../helper/audit-log.helper');
+const { addAuditLog, getEntityName } = require('./../helper/audit-log.helper');
 
 /**
  * Get Note List
@@ -324,13 +324,17 @@ router.post('/', async function (req, res) {
       createdById: req.user._id,
     });
     await note.save();
+    const entityName = await getEntityName({
+      entityId: req.body.entityId,
+      entityType: req.body.noteFor.toLowerCase(),
+    });
     await addAuditLog({
       entityType: 'note',
       entityRefId: note._id,
       actionType: 'add',
       userType: 'user',
       userRefId: req.user._id,
-      logDescription: 'Note created successfully',
+      logDescription: `A new note for ${entityName} is successfully created by ${req.user.name}`,
     });
     res
       .status(200)
@@ -365,13 +369,18 @@ router.put('/:noteId', async function (req, res) {
     if (req.body.hasOwnProperty('isPublic'))
       updateObj.isPublic = req.body.isPublic;
     await Note.updateOne({ _id: req.params.noteId }, updateObj);
+    const note = await Note.findById(req.params.noteId).lean();
+    const entityName = await getEntityName({
+      entityId: note.entityId,
+      entityType: note.noteFor.toLowerCase(),
+    });
     await addAuditLog({
       entityType: 'note',
-      entityRefId: req.params.noteId,
+      entityRefId: note._id,
       actionType: 'edit',
       userType: 'user',
       userRefId: req.user._id,
-      logDescription: 'Note updated successfully',
+      logDescription: `A note for ${entityName} is successfully updated by ${req.user.name}`,
     });
     res
       .status(200)
@@ -401,13 +410,18 @@ router.delete('/:noteId', async function (req, res) {
   }
   try {
     await Note.updateOne({ _id: req.params.noteId }, { isDeleted: true });
+    const note = await Note.findById(req.params.noteId).lean();
+    const entityName = await getEntityName({
+      entityId: note.entityId,
+      entityType: note.noteFor.toLowerCase(),
+    });
     await addAuditLog({
       entityType: 'note',
-      entityRefId: req.params.noteId,
+      entityRefId: note._id,
       actionType: 'delete',
       userType: 'user',
       userRefId: req.user._id,
-      logDescription: 'Note deleted successfully',
+      logDescription: `A note for ${entityName} is successfully deleted by ${req.user.name}`,
     });
     res
       .status(200)

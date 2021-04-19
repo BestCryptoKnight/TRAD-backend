@@ -23,7 +23,7 @@ const {
   createZipFile,
   downloadDocument,
 } = require('./../helper/static-file.helper');
-const { addAuditLog } = require('./../helper/audit-log.helper');
+const { addAuditLog, getEntityName } = require('./../helper/audit-log.helper');
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
@@ -486,13 +486,17 @@ router.post('/upload', upload.single('document'), async function (req, res) {
       uploadById: req.user._id,
       uploadByType: 'user',
     });
+    const entityName = await getEntityName({
+      entityId: req.body.entityRefId,
+      entityType: req.body.documentFor.toLowerCase(),
+    });
     await addAuditLog({
       entityType: 'document',
       entityRefId: document._id,
+      actionType: 'add',
       userType: 'user',
       userRefId: req.user._id,
-      actionType: 'add',
-      logDescription: 'Document uploaded successfully',
+      logDescription: `A new document for ${entityName} is successfully uploaded by ${req.user.name}`,
     });
     const documentData = await Document.findById(document._id)
       .populate({
@@ -589,13 +593,17 @@ router.delete('/:documentId', async function (req, res) {
       { _id: req.params.documentId },
       { isDeleted: true },
     );
+    const entityName = await getEntityName({
+      entityId: document.entityRefId,
+      entityType: document.documentFor.toLowerCase(),
+    });
     await addAuditLog({
       entityType: 'document',
-      entityRefId: req.params.documentId,
+      entityRefId: document._id,
+      actionType: 'delete',
       userType: 'user',
       userRefId: req.user._id,
-      actionType: 'delete',
-      logDescription: 'Document deleted successfully',
+      logDescription: `A document for ${entityName} is successfully deleted by ${req.user.name}`,
     });
     res
       .status(200)

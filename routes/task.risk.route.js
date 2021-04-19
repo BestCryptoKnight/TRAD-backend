@@ -23,7 +23,7 @@ const {
 } = require('./../helper/task.helper');
 const { getClientList } = require('./../helper/client.helper');
 const { getAccessBaseUserList } = require('./../helper/user.helper');
-const { addAuditLog } = require('./../helper/audit-log.helper');
+const { addAuditLog, getEntityName } = require('./../helper/audit-log.helper');
 
 /**
  * Get Column Names
@@ -421,8 +421,28 @@ router.post('/', async function (req, res) {
     if (req.body.priority) {
       data.priority = req.body.priority.toUpperCase();
     }
-    await createTask(data);
+    const task = await createTask(data);
     //TODO add audit log
+    let entityName;
+    if ((req.body.entityType || req.body.taskFrom) && req.body.entityId) {
+      entityName = await getEntityName({
+        entityId: req.body.entityId,
+        entityType: req.body.entityType
+          ? req.body.entityType.toLowerCase()
+          : req.body.taskFrom.toLowerCase(),
+      });
+    }
+    await addAuditLog({
+      entityType: 'task',
+      entityRefId: task._id,
+      actionType: 'add',
+      userType: 'user',
+      userRefId: req.user._id,
+      logDescription:
+        `A new task` + entityName
+          ? `for ${entityName} `
+          : ' ' + `is successfully created by ${req.user.name}`,
+    });
     res
       .status(200)
       .send({ status: 'SUCCESS', message: 'Task created successfully' });
@@ -521,6 +541,25 @@ router.put('/:taskId', async function (req, res) {
       updateObj.completedDate = req.body.isCompleted ? new Date() : undefined;
     }
     await Task.updateOne({ _id: req.params.taskId }, updateObj);
+    const task = await Task.findById(req.params.taskId).lean();
+    let entityName;
+    if (task.entityType && task.entityId) {
+      entityName = await getEntityName({
+        entityId: task.entityId,
+        entityType: task.entityType.toLowerCase(),
+      });
+    }
+    await addAuditLog({
+      entityType: 'task',
+      entityRefId: task._id,
+      actionType: 'edit',
+      userType: 'user',
+      userRefId: req.user._id,
+      logDescription:
+        `A task` + entityName
+          ? `for ${entityName} `
+          : ' ' + `is successfully updated by ${req.user.name}`,
+    });
     res
       .status(200)
       .send({ status: 'SUCCESS', message: 'Task updated successfully' });
@@ -549,6 +588,25 @@ router.delete('/:taskId', async function (req, res) {
   }
   try {
     await Task.updateOne({ _id: req.params.taskId }, { isDeleted: true });
+    const task = await Task.findById(req.params.taskId).lean();
+    let entityName;
+    if (task.entityType && task.entityId) {
+      entityName = await getEntityName({
+        entityId: task.entityId,
+        entityType: task.entityType.toLowerCase(),
+      });
+    }
+    await addAuditLog({
+      entityType: 'task',
+      entityRefId: task._id,
+      actionType: 'delete',
+      userType: 'user',
+      userRefId: req.user._id,
+      logDescription:
+        `A task` + entityName
+          ? `for ${entityName} `
+          : ' ' + `is successfully updated by ${req.user.name}`,
+    });
     res
       .status(200)
       .send({ status: 'SUCCESS', message: 'Task deleted successfully' });
