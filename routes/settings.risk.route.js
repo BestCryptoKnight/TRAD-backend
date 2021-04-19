@@ -14,6 +14,7 @@ const User = mongoose.model('user');
  * */
 const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
+const { getAccessBaseUserList } = require('./../helper/user.helper');
 
 /**
  * Get Column Names
@@ -68,6 +69,32 @@ router.get('/column-name', async function (req, res) {
       'Error occurred in get audit-logs column names',
       e.message || e,
     );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Get User List
+ */
+router.get('/user-list', async function (req, res) {
+  try {
+    const hasFullAccess = !!(
+      req.accessTypes && req.accessTypes.indexOf('full-access') !== -1
+    );
+    const users = await getAccessBaseUserList({
+      userId: req.user._id,
+      hasFullAccess: hasFullAccess,
+    });
+    const userIds = users.map((i) => i._id.toString());
+    if (!userIds.includes(req.user._id.toString())) {
+      users.push({ _id: req.user._id, name: req.user.name });
+    }
+    res.status(200).send({ status: 'SUCCESS', data: users });
+  } catch (e) {
+    Logger.log.error('Error occurred in get user list ', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
