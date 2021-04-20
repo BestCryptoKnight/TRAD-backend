@@ -11,6 +11,7 @@ const Organization = mongoose.model('organization');
  * Local Imports
  * */
 const Logger = require('./../services/logger');
+const { addAuditLog } = require('./audit-log.helper');
 
 const getClientDebtorList = async ({
   hasFullAccess = false,
@@ -66,7 +67,13 @@ const getDebtorList = async () => {
   }
 };
 
-const createDebtor = async ({ requestBody, organization, isDebtorExists }) => {
+const createDebtor = async ({
+  requestBody,
+  organization,
+  isDebtorExists,
+  userId,
+  userName,
+}) => {
   try {
     let update = {};
     if (requestBody.address && Object.keys(requestBody.address).length !== 0) {
@@ -173,6 +180,14 @@ const createDebtor = async ({ requestBody, organization, isDebtorExists }) => {
       clientId: requestBody.clientId,
       debtorId: debtor._id,
     }).lean();
+    await addAuditLog({
+      entityType: 'debtor',
+      entityRefId: debtor._id,
+      actionType: 'add',
+      userType: 'user',
+      userRefId: userId,
+      logDescription: `A debtor ${debtor.entityName} is successfully updated by ${userName}`,
+    });
     return { debtor, clientDebtor };
   } catch (e) {
     Logger.log.error('Error occurred in creating debtor ', e);

@@ -22,7 +22,6 @@ const { addAuditLog } = require('./../helper/audit-log.helper');
 const { getUserList } = require('./../helper/user.helper');
 const { getClientDebtorDetails } = require('./../helper/client-debtor.helper');
 
-//client
 /**
  * Search Client from RSS
  */
@@ -736,7 +735,6 @@ router.get('/credit-limit/:clientId', async function (req, res) {
   }
 });
 
-//client
 /**
  * List Clients
  */
@@ -968,7 +966,6 @@ router.get('/', async function (req, res) {
   }
 });
 
-//client
 /**
  * Get Client
  */
@@ -1001,7 +998,6 @@ router.get('/:clientId', async function (req, res) {
   }
 });
 
-//client
 /**
  * Add Client from RSS
  */
@@ -1090,7 +1086,6 @@ router.post('/', async function (req, res) {
   }
 });
 
-//client
 /**
  * Sync Client from RSS - Update
  */
@@ -1434,7 +1429,6 @@ router.put('/:clientId', async function (req, res) {
   }
 });
 
-//client
 /**
  * Delete Client
  */

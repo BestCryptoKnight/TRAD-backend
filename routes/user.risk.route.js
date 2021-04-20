@@ -343,7 +343,6 @@ router.get('/:userId', async function (req, res) {
  * Get the List of User
  */
 router.get('/', async function (req, res) {
-  Logger.log.info('In list user call');
   try {
     const module = StaticFile.modules.find((i) => i.name === 'user');
     const userColumn = req.user.manageColumns.find(
@@ -352,6 +351,9 @@ router.get('/', async function (req, res) {
     let queryFilter = {
       isDeleted: false,
     };
+    if (req.accessTypes && req.accessTypes.indexOf('full-access') === -1) {
+      queryFilter._id = req.user._id;
+    }
     let sortingOptions = {};
     if (req.query.sortBy && req.query.sortOrder) {
       sortingOptions[req.query.sortBy] = req.query.sortOrder;

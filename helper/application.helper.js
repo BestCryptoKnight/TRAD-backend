@@ -283,6 +283,7 @@ const storeCompanyDetails = async ({
   requestBody,
   createdBy,
   createdByType,
+  createdByName,
 }) => {
   try {
     const organization = await Organization.findOne({ isDeleted: false })
@@ -317,6 +318,8 @@ const storeCompanyDetails = async ({
       requestBody,
       organization,
       isDebtorExists,
+      userId: createdBy,
+      userName: createdByName,
     });
     const applicationDetails = {
       clientId: requestBody.clientId,

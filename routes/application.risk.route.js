@@ -1043,6 +1043,7 @@ router.put('/', async function (req, res) {
           requestBody: req.body,
           createdByType: 'user',
           createdBy: req.user._id,
+          createdByName: req.user.name,
         });
         break;
       case 'person':
