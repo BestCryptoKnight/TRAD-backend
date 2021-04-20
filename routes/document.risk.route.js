@@ -585,9 +585,9 @@ router.delete('/:documentId', async function (req, res) {
     });
   }
   try {
-    const document = await Document.findOne({ _id: req.params.documentId })
-      .select('keyPath')
-      .lean();
+    const document = await Document.findOne({
+      _id: req.params.documentId,
+    }).lean();
     await deleteFile({ filePath: document.keyPath });
     await Document.updateOne(
       { _id: req.params.documentId },
@@ -607,7 +607,7 @@ router.delete('/:documentId', async function (req, res) {
     });
     res
       .status(200)
-      .send({ status: 'SUCCESS', message: 'Document deleted successfully.' });
+      .send({ status: 'SUCCESS', message: 'Document deleted successfully' });
   } catch (e) {
     Logger.log.error('Error occurred in delete document ', e.message || e);
     res.status(500).send({

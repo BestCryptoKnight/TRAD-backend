@@ -294,7 +294,7 @@ router.post('/verify-otp', async (req, res) => {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Something went wrong, please try the process from beginning',
+      message: 'Require fields are missing',
     });
   }
   try {

@@ -362,7 +362,13 @@ router.get('/user-details/:userId', async function (req, res) {
       });
     });
     res.status(200).send({ status: 'SUCCESS', data: response });
-  } catch (e) {}
+  } catch (e) {
+    Logger.log.error('Error occurred in get insurer details ', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
 });
 
 /**

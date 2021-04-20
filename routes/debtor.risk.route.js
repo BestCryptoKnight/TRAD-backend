@@ -1191,7 +1191,7 @@ router.put('/stakeholder/:debtorId/:stakeholderId', async function (req, res) {
     console.log('stakeholder : ', update);
     res.status(200).send({
       status: 'SUCCESS',
-      message: 'Stakeholder added successfully',
+      message: 'Stakeholder updated successfully',
     });
   } catch (e) {
     Logger.log.error('Error occurred in add stakeholder ', e.message || e);

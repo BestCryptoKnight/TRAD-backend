@@ -732,7 +732,7 @@ router.delete('/:userId', async function (req, res) {
     });
     res
       .status(200)
-      .send({ status: 'SUCCESS', message: 'User deleted successfully.' });
+      .send({ status: 'SUCCESS', message: 'User deleted successfully' });
   } catch (e) {
     Logger.log.error('Error occurred.', e.message || e);
     res.status(500).send({
