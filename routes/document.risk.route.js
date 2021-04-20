@@ -593,18 +593,20 @@ router.delete('/:documentId', async function (req, res) {
       { _id: req.params.documentId },
       { isDeleted: true },
     );
-    const entityName = await getEntityName({
-      entityId: document.entityRefId,
-      entityType: document.documentFor.toLowerCase(),
-    });
-    await addAuditLog({
-      entityType: 'document',
-      entityRefId: document._id,
-      actionType: 'delete',
-      userType: 'user',
-      userRefId: req.user._id,
-      logDescription: `A document for ${entityName} is successfully deleted by ${req.user.name}`,
-    });
+    if (document.entityRefId && document.entityType) {
+      const entityName = await getEntityName({
+        entityId: document.entityRefId,
+        entityType: document.entityType.toLowerCase(),
+      });
+      await addAuditLog({
+        entityType: 'document',
+        entityRefId: document._id,
+        actionType: 'delete',
+        userType: 'user',
+        userRefId: req.user._id,
+        logDescription: `A document for ${entityName} is successfully deleted by ${req.user.name}`,
+      });
+    }
     res
       .status(200)
       .send({ status: 'SUCCESS', message: 'Document deleted successfully' });
