@@ -457,14 +457,6 @@ router.get('/details/:applicationId', async function (req, res) {
             for (let key in partner.residentialAddress) {
               partner[key] = partner.residentialAddress[key];
             }
-            if (partner.country) {
-              partner.country = [
-                {
-                  value: partner.country.code,
-                  label: partner.country.name,
-                },
-              ];
-            }
             if (partner.state) {
               const state =
                 partner.country.code === 'AUS'
@@ -494,6 +486,14 @@ router.get('/details/:applicationId', async function (req, res) {
                     streetType && streetType.name
                       ? streetType.name
                       : partner.streetType,
+                },
+              ];
+            }
+            if (partner.country) {
+              partner.country = [
+                {
+                  value: partner.country.code,
+                  label: partner.country.name,
                 },
               ];
             }
@@ -544,8 +544,29 @@ router.get('/details/:applicationId', async function (req, res) {
         ];
         for (let key in application.debtorId) {
           if (key === 'address') {
+            const state =
+              application.debtorId.address.country.code === 'AUS'
+                ? StaticData.australianStates.find((i) => {
+                    if (i._id === application.debtorId.address.state) return i;
+                  })
+                : application.debtorId.address.country.code === 'NZL'
+                ? StaticData.newZealandStates.find((i) => {
+                    if (i._id === application.debtorId.address.state) return i;
+                  })
+                : { name: application.debtorId.address.state };
+            application.debtorId.address.state =
+              state && state.name
+                ? state.name
+                : application.debtorId.address.state;
             application.debtorId.address.country =
               application.debtorId.address.country.name;
+            const streetType = StaticData.streetType.find((i) => {
+              if (i._id === application.debtorId.address.streetType) return i;
+            });
+            application.debtorId.address.streetType =
+              streetType && streetType.name
+                ? streetType.name
+                : application.debtorId.address.streetType;
             response[key] = Object.values(application.debtorId[key])
               .toString()
               .replace(/,,/g, ',');
