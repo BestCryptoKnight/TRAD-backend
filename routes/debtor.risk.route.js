@@ -1372,7 +1372,43 @@ router.put('/:debtorId', async function (req, res) {
 });
 
 /**
- * Delete Client-Debtor
+ * Delete Debtor Stakeholder
+ */
+router.delete('/stakeholder', async function (req, res) {
+  if (
+    !req.query.debtorId ||
+    !mongoose.Types.ObjectId.isValid(req.query.debtorId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    await DebtorDirector.update(
+      { debtorId: req.query.debtorId },
+      { isDeleted: true },
+      { multi: true },
+    );
+    res.status(200).send({
+      status: 'SUCCESS',
+      message: 'Debtor stakeholder deleted successfully',
+    });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in delete debtor-director ',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Delete Debtor-Stakeholder
  */
 router.delete('/stakeholder/:stakeholderId', async function (req, res) {
   if (
