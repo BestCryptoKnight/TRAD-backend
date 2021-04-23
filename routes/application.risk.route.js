@@ -606,7 +606,7 @@ router.get('/details/:applicationId', async function (req, res) {
           name: 'debtorId',
           label: 'Debtor Name',
           type: 'modal',
-          request: { method: 'GET', url: 'debtor/drawer-details' },
+          request: { method: 'GET', url: 'debtor/drawer' },
         },
       ];
     }

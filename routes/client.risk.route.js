@@ -689,7 +689,7 @@ router.get('/credit-limit/:clientId', async function (req, res) {
         debtor.state = debtor.address.state;
       }
       if (debtorColumn.columns.includes('country')) {
-        debtor.country = debtor.address.country;
+        debtor.country = debtor.address.country.name;
       }
       if (debtorColumn.columns.includes('postCode')) {
         debtor.postCode = debtor.address.postCode;
