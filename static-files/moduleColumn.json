@@ -189,6 +189,11 @@
           "type": "modal",
           "request": { "method": "GET", "url": "debtor/drawer-details" }
         },
+        {
+          "name": "applicationId",
+          "label": "Application ID",
+          "type": "string"
+        },
         { "name": "entityType", "label": "Entity Type", "type": "string" },
         { "name": "creditLimit", "label": "Credit Limit", "type": "number" },
         {
@@ -401,6 +406,11 @@
           "label": "Client Name",
           "type": "modal",
           "request": { "method": "GET", "url": "client/details" }
+        },
+        {
+          "name": "applicationId",
+          "label": "Application ID",
+          "type": "string"
         },
         { "name": "entityType", "label": "Entity Type", "type": "string" },
         { "name": "creditLimit", "label": "Credit Limit", "type": "number" },
