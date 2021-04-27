@@ -1066,6 +1066,7 @@ router.put('/', async function (req, res) {
           createdByType: 'user',
           createdBy: req.user._id,
           createdByName: req.user.name,
+          clientId: req.body.clientId,
         });
         break;
       case 'person':

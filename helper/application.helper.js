@@ -284,10 +284,9 @@ const storeCompanyDetails = async ({
   createdBy,
   createdByType,
   createdByName,
-  clientId = null,
+  clientId,
 }) => {
   try {
-    const clientId = clientId ? clientId : requestBody.clientId;
     const organization = await Organization.findOne({ isDeleted: false })
       .select('entityCount')
       .lean();
