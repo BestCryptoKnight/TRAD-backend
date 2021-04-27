@@ -15,6 +15,8 @@ const Debtor = mongoose.model('debtor');
 const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
 const StaticData = require('./../static-files/staticData.json');
+const { getClientDebtorDetails } = require('./../helper/client-debtor.helper');
+const { getDebtorFullAddress } = require('./../helper/debtor.helper');
 
 /**
  * Get Column Names
@@ -102,6 +104,13 @@ router.get('/', async function (req, res) {
       },
     ];
     debtorColumn.columns.push('address');
+    if (req.query.entityType) {
+      aggregationQuery.push({
+        $match: {
+          'debtorId.entityType': req.query.entityType,
+        },
+      });
+    }
     const fields = debtorColumn.columns.map((i) => {
       if (
         i !== 'creditLimit' &&
@@ -109,7 +118,6 @@ router.get('/', async function (req, res) {
         i !== 'updatedAt' &&
         i !== 'isActive'
       ) {
-        console.log('i : ', i);
         i = 'debtorId.' + i;
       }
       return [i, 1];
@@ -164,11 +172,6 @@ router.get('/', async function (req, res) {
         for (let key in debtor.debtorId) {
           debtor[key] = debtor.debtorId[key];
         }
-        if (debtorColumn.columns.includes('fullAddress')) {
-          debtor.fullAddress = Object.values(debtor.debtorId.address)
-            .toString()
-            .replace(/,,/g, ',');
-        }
         if (debtorColumn.columns.includes('property')) {
           debtor.property = debtor.debtorId.address.property;
         }
@@ -196,6 +199,11 @@ router.get('/', async function (req, res) {
         if (debtorColumn.columns.includes('postCode')) {
           debtor.postCode = debtor.debtorId.address.postCode;
         }
+        if (debtorColumn.columns.includes('fullAddress')) {
+          debtor.fullAddress = getDebtorFullAddress({
+            address: debtor.debtorId.address,
+          });
+        }
         delete debtor.address;
       }
       delete debtor.debtorId;
@@ -217,6 +225,52 @@ router.get('/', async function (req, res) {
     });
   } catch (e) {
     Logger.log.error('Error occurred in get client-debtor details ', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Get Debtor Modal details
+ */
+router.get('/drawer/:debtorId', async function (req, res) {
+  if (
+    !req.params.debtorId ||
+    !mongoose.Types.ObjectId.isValid(req.params.debtorId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing',
+    });
+  }
+  try {
+    let module = StaticFile.modules.find((i) => i.name === 'debtor');
+    module = JSON.parse(JSON.stringify(module));
+    const debtor = await Debtor.findOne({
+      _id: req.params.debtorId,
+    })
+      .select({ _id: 0, isDeleted: 0, createdAt: 0, updatedAt: 0 })
+      .lean();
+    if (!debtor) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'NO_DEBTOR_FOUND',
+        message: 'No debtor found',
+      });
+    }
+    const response = await getClientDebtorDetails({
+      debtor: { debtorId: debtor },
+      manageColumns: module.manageColumns,
+    });
+    res.status(200).send({ status: 'SUCCESS', data: response });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in get debtor modal details ',
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

@@ -21,6 +21,7 @@ const StaticFile = require('./../static-files/moduleColumn');
 const { addAuditLog } = require('./../helper/audit-log.helper');
 const { getUserList } = require('./../helper/user.helper');
 const { getClientDebtorDetails } = require('./../helper/client-debtor.helper');
+const { getDebtorFullAddress } = require('./../helper/debtor.helper');
 
 /**
  * Search Client from RSS
@@ -662,11 +663,6 @@ router.get('/credit-limit/:clientId', async function (req, res) {
         }
         delete debtor.debtorId;
       }
-      if (debtorColumn.columns.includes('fullAddress')) {
-        debtor.fullAddress = Object.values(debtor.address)
-          .toString()
-          .replace(/,,/g, ',');
-      }
       if (debtorColumn.columns.includes('property')) {
         debtor.property = debtor.address.property;
       }
@@ -693,6 +689,9 @@ router.get('/credit-limit/:clientId', async function (req, res) {
       }
       if (debtorColumn.columns.includes('postCode')) {
         debtor.postCode = debtor.address.postCode;
+      }
+      if (debtorColumn.columns.includes('fullAddress')) {
+        debtor.fullAddress = getDebtorFullAddress({ address: debtor.address });
       }
       if (debtor.entityType) {
         debtor.entityType = debtor.entityType
@@ -918,11 +917,6 @@ router.get('/', async function (req, res) {
         if (clientColumn.columns.includes('insurerId') && user.insurerId) {
           user.insurerId = user.insurerId[0] ? user.insurerId[0].name : '';
         }
-        if (clientColumn.columns.includes('fullAddress')) {
-          user.fullAddress = Object.values(user.address)
-            .toString()
-            .replace(/,,/g, ',');
-        }
         if (clientColumn.columns.includes('addressLine')) {
           user.addressLine = user.address.addressLine;
         }
@@ -937,6 +931,9 @@ router.get('/', async function (req, res) {
         }
         if (clientColumn.columns.includes('zipCode')) {
           user.zipCode = user.address.zipCode;
+        }
+        if (clientColumn.columns.includes('fullAddress')) {
+          user.fullAddress = getDebtorFullAddress({ address: user.address });
         }
         delete user.address;
       });

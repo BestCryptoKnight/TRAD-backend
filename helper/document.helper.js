@@ -93,9 +93,22 @@ const getApplicationDocumentList = async ({ entityId }) => {
 const getSpecificEntityDocumentList = async ({
   entityId,
   clientId,
-  userId,
+  userId = null,
 }) => {
   try {
+    const conditions = [
+      {
+        uploadByType: 'client-user',
+        uploadById: mongoose.Types.ObjectId(clientId),
+      },
+      { uploadByType: 'user', isPublic: true },
+    ];
+    if (userId) {
+      conditions.push({
+        uploadByType: 'user',
+        uploadById: mongoose.Types.ObjectId(userId),
+      });
+    }
     const query = [
       {
         $match: {
@@ -105,17 +118,7 @@ const getSpecificEntityDocumentList = async ({
               entityRefId: mongoose.Types.ObjectId(entityId),
             },
             {
-              $or: [
-                {
-                  uploadByType: 'client-user',
-                  uploadById: mongoose.Types.ObjectId(clientId),
-                },
-                { uploadByType: 'user', isPublic: true },
-                {
-                  uploadByType: 'user',
-                  uploadById: mongoose.Types.ObjectId(userId),
-                },
-              ],
+              $or: conditions,
             },
           ],
         },

@@ -12,6 +12,7 @@ const Organization = mongoose.model('organization');
  * */
 const Logger = require('./../services/logger');
 const { addAuditLog } = require('./audit-log.helper');
+const StaticData = require('./../static-files/staticData.json');
 
 const getClientDebtorList = async ({
   hasFullAccess = false,
@@ -194,4 +195,41 @@ const createDebtor = async ({
   }
 };
 
-module.exports = { getDebtorList, createDebtor };
+const getDebtorFullAddress = ({ address }) => {
+  try {
+    let fullAddress;
+    if (address.state) {
+      const state =
+        address.country.code === 'AUS' ||
+        (typeof address.country === 'string' && address.country === 'Australia')
+          ? StaticData.australianStates.find((i) => {
+              if (i._id === address.state) return i;
+            })
+          : address.country.code === 'NZL'
+          ? StaticData.newZealandStates.find((i) => {
+              if (i._id === address.state) return i;
+            })
+          : { name: address.state };
+      address.state = state && state.name ? state.name : address.state;
+    }
+    if (address.streetType) {
+      const streetType = StaticData.streetType.find((i) => {
+        if (i._id === address.streetType) return i;
+      });
+      address.streetType =
+        streetType && streetType.name ? streetType.name : address.streetType;
+    }
+    if (address.country && address.country.name) {
+      address.country = address.country.name;
+    }
+    fullAddress = Object.values(address).toString().replace(/,,/g, ',');
+    return fullAddress;
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in get debtor full address ',
+      e.message || e,
+    );
+  }
+};
+
+module.exports = { getDebtorList, createDebtor, getDebtorFullAddress };

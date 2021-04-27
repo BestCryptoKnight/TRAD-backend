@@ -126,11 +126,7 @@ const getApplicationList = async ({
       });
     }
 
-    if (
-      applicationColumn.includes('outstandingAmount') ||
-      requestedQuery.debtorId ||
-      applicationColumn.includes('debtorId')
-    ) {
+    if (applicationColumn.includes('outstandingAmount')) {
       query.push(
         {
           $lookup: {
@@ -174,6 +170,9 @@ const getApplicationList = async ({
       }
       return [i, 1];
     });
+    if (applicationColumn.includes('debtorId')) {
+      fields.push(['debtorId._id', 1]);
+    }
     if (!applicationColumn.includes('outstandingAmount')) {
       fields.push(['clientDebtorId', 1]);
     }
@@ -224,6 +223,7 @@ const getApplicationList = async ({
     const applications = await Application.aggregate(query).allowDiskUse(true);
     if (applications && applications.length !== 0) {
       applications[0].paginatedResult.forEach((application) => {
+        console.log(application);
         if (applicationColumn.includes('entityType')) {
           application.entityType = application.debtorId.entityType
             .replace(/_/g, ' ')
@@ -239,7 +239,7 @@ const getApplicationList = async ({
         }
         if (applicationColumn.includes('debtorId')) {
           application.debtorId = {
-            id: application.clientDebtorId._id,
+            id: application.debtorId._id,
             value: application.debtorId.entityName,
           };
         }
@@ -284,12 +284,14 @@ const storeCompanyDetails = async ({
   createdBy,
   createdByType,
   createdByName,
+  clientId = null,
 }) => {
   try {
+    const clientId = clientId ? clientId : requestBody.clientId;
     const organization = await Organization.findOne({ isDeleted: false })
       .select('entityCount')
       .lean();
-    const client = await Client.findOne({ _id: requestBody.clientId }).lean();
+    const client = await Client.findOne({ _id: clientId }).lean();
     let isDebtorExists = true;
     if (!requestBody.applicationId) {
       const debtorData = await Debtor.findOne({
@@ -297,7 +299,7 @@ const storeCompanyDetails = async ({
       }).lean();
       if (debtorData) {
         const application = await Application.findOne({
-          clientId: requestBody.clientId,
+          clientId: clientId,
           debtorId: debtorData._id,
           status: {
             $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED'],
@@ -322,7 +324,7 @@ const storeCompanyDetails = async ({
       userName: createdByName,
     });
     const applicationDetails = {
-      clientId: requestBody.clientId,
+      clientId: clientId,
       debtorId: debtor._id,
       clientDebtorId: clientDebtor._id,
       applicationStage: 1,
@@ -360,27 +362,16 @@ const storeCompanyDetails = async ({
         };
       }
     }
-    if (
-      requestBody.hasOwnProperty('wipeOutDetails') &&
-      requestBody.wipeOutDetails
-    ) {
-      await DebtorDirector.update(
-        { debtorId: debtor._id },
-        { isDeleted: true },
-        { multi: true },
-      );
-    } else {
-      const partners = await DebtorDirector.find({
-        debtorId: debtor._id,
-        isDeleted: false,
-      })
-        .select({ __v: 0, updatedAt: 0, createdAt: 0, isDeleted: 0 })
-        .lean();
-      partners.forEach((data) => {
-        data.isDisabled = true;
-      });
-      application.partners = partners;
-    }
+    const partners = await DebtorDirector.find({
+      debtorId: debtor._id,
+      isDeleted: false,
+    })
+      .select({ __v: 0, updatedAt: 0, createdAt: 0, isDeleted: 0 })
+      .lean();
+    partners.forEach((data) => {
+      data.isDisabled = true;
+    });
+    application.partners = partners;
     return application;
   } catch (e) {
     Logger.log.error('Error occurred in store company details ', e);
@@ -523,7 +514,7 @@ const storePartnerDetails = async ({ requestBody }) => {
     promises.push(
       Application.updateOne(
         { _id: requestBody.applicationId },
-        { applicationStage: 2 },
+        { $inc: { applicationStage: 1 } },
       ),
     );
     await Promise.all(promises);
@@ -542,7 +533,7 @@ const storeCreditLimitDetails = async ({ requestBody }) => {
       creditLimit: requestBody.creditLimit,
       isExtendedPaymentTerms: requestBody.isExtendedPaymentTerms,
       isPassedOverdueAmount: requestBody.isPassedOverdueAmount,
-      applicationStage: 3,
+      $inc: { applicationStage: 1 },
     };
     if (requestBody.extendedPaymentTermsDetails)
       update.extendedPaymentTermsDetails =

@@ -46,7 +46,7 @@
           "name": "debtorId",
           "label": "Debtor Name",
           "type": "modal",
-          "request": { "method": "GET", "url": "debtor/drawer-details" }
+          "request": { "method": "GET", "url": "debtor/drawer" }
         },
         { "name": "entityType", "label": "Entity Type", "type": "string" },
         { "name": "creditLimit", "label": "Credit Limit", "type": "number" },
@@ -187,7 +187,7 @@
           "name": "debtorId",
           "label": "Debtor Name",
           "type": "modal",
-          "request": { "method": "GET", "url": "debtor/drawer-details" }
+          "request": { "method": "GET", "url": "debtor/drawer" }
         },
         {
           "name": "applicationId",

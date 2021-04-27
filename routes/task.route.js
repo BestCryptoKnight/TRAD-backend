@@ -6,6 +6,10 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const ClientUser = mongoose.model('client-user');
 const Task = mongoose.model('task');
+const User = mongoose.model('user');
+const Client = mongoose.model('client');
+const Debtor = mongoose.model('debtor');
+const Application = mongoose.model('application');
 
 /*
  * Local Imports
@@ -101,6 +105,7 @@ router.get('/user-list', async function (req, res) {
   try {
     const users = await getUserClientList({
       clientId: req.user.clientId,
+      isForAssignee: true,
     });
     res.status(200).send({ status: 'SUCCESS', data: users });
   } catch (e) {
@@ -163,6 +168,91 @@ router.get('/entity-list', async function (req, res) {
 });
 
 /**
+ * Get Task Details
+ */
+router.get('/details/:taskId', async function (req, res) {
+  if (
+    !req.params.taskId ||
+    !mongoose.Types.ObjectId.isValid(req.params.taskId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing',
+    });
+  }
+  try {
+    const task = await Task.findById(req.params.taskId)
+      .select({ __v: 0, isDeleted: 0, createdAt: 0, updatedAt: 0 })
+      .lean();
+    if (task.priority) {
+      task.priority = [
+        {
+          value: task.priority,
+          label:
+            task.priority.charAt(0).toUpperCase() +
+            task.priority.slice(1).toLowerCase(),
+        },
+      ];
+    }
+    let value;
+    if (task.assigneeId) {
+      if (task.assigneeType === 'user') {
+        const user = await User.findById(task.assigneeId).lean();
+        value = user.name;
+      } else {
+        const user = await ClientUser.findById(task.assigneeId).lean();
+        value = user.name;
+      }
+      task.assigneeId = [
+        {
+          label: value,
+          value: task.assigneeId,
+        },
+      ];
+    }
+    if (task.entityId && task.entityType) {
+      let response;
+      if (task.entityType === 'client') {
+        response = await Client.findById(task.entityId).lean();
+        value = response.name;
+      } else if (task.entityType === 'application') {
+        response = await Application.findById(task.entityId).lean();
+        value = response.applicationId;
+      } else if (task.entityType === 'debtor') {
+        response = await Debtor.findById(task.entityId).lean();
+        value = response.entityName;
+      } else if (task.entityType === 'user') {
+        response = await User.findById(task.entityId).lean();
+        value = response.name;
+      }
+      task.entityId = [
+        {
+          value: task.entityId,
+          label: value,
+        },
+      ];
+    }
+    if (task.entityType) {
+      task.entityType = [
+        {
+          value: task.entityType,
+          label:
+            task.entityType.charAt(0).toUpperCase() + task.entityType.slice(1),
+        },
+      ];
+    }
+    res.status(200).send({ status: 'SUCCESS', data: task });
+  } catch (e) {
+    Logger.log.error('Error occurred get task details ', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
  * Get Task List
  */
 router.get('/', async function (req, res) {
@@ -178,11 +268,15 @@ router.get('/', async function (req, res) {
       hasFullAccess: false,
       userId: req.user._id,
     });
-    const [tasks, total] = await Promise.all([
-      Task.aggregate(query).allowDiskUse(true),
-      Task.countDocuments(queryFilter).lean(),
-    ]);
-    const headers = [];
+    const tasks = await Task.aggregate(query).allowDiskUse(true);
+    const headers = [
+      {
+        name: 'isCompleted',
+        label: 'Completed',
+        type: 'boolean',
+        request: { method: 'PUT', url: 'task' },
+      },
+    ];
     for (let i = 0; i < module.manageColumns.length; i++) {
       if (taskColumn.columns.includes(module.manageColumns[i].name)) {
         if (module.manageColumns[i].name === 'entityId') {
@@ -190,8 +284,8 @@ router.get('/', async function (req, res) {
           module.manageColumns[i].request = {
             method: 'GET',
             'client-user': 'client/user-details',
-            debtor: 'debtor',
-            application: 'application',
+            debtor: 'debtor/drawer',
+            application: 'application/drawer-details',
             claim: 'claim',
             overdue: 'overdue',
           };
@@ -199,17 +293,27 @@ router.get('/', async function (req, res) {
         headers.push(module.manageColumns[i]);
       }
     }
+    let response = [];
     if (tasks && tasks.length !== 0) {
-      tasks.forEach((task) => {
+      response = tasks[0]['paginatedResult']
+        ? tasks[0]['paginatedResult']
+        : tasks;
+      response.forEach((task) => {
+        if (task.entityType) {
+          task.entityType =
+            task.entityType.charAt(0).toUpperCase() + task.entityType.slice(1);
+        }
         if (taskColumn.columns.includes('assigneeId')) {
-          task.assigneeId = task.assigneeId[0] ? task.assigneeId[0] : '';
+          task.assigneeId = task.assigneeId.name[0]
+            ? task.assigneeId.name[0]
+            : '';
         }
         if (taskColumn.columns.includes('entityId')) {
           task.entityId =
-            task.entityId.name && task.entityId._id
+            task.entityId && task.entityId.name && task.entityId._id
               ? {
                   _id: task.entityId._id[0],
-                  name: task.entityId.name[0],
+                  value: task.entityId.name[0],
                   type: task.entityId.type,
                 }
               : '';
@@ -219,10 +323,16 @@ router.get('/', async function (req, res) {
         }
       });
     }
+    const total =
+      tasks.length !== 0 &&
+      tasks[0]['totalCount'] &&
+      tasks[0]['totalCount'].length !== 0
+        ? tasks[0]['totalCount'][0]['count']
+        : 0;
     res.status(200).send({
       status: 'SUCCESS',
       data: {
-        docs: tasks,
+        docs: response,
         headers,
         total,
         page: parseInt(req.query.page),
@@ -267,7 +377,7 @@ router.post('/', async function (req, res) {
       entityType: req.body.entityType.toLowerCase(),
       entityId: req.body.entityId.split('|')[1],
       createdByType: 'client-user',
-      createdById: req.user._id,
+      createdById: req.user.clientId,
       assigneeType: req.body.entityId.split('|')[0],
       assigneeId: req.body.assigneeId,
       dueDate: req.body.dueDate,

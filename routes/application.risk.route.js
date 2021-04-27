@@ -329,6 +329,7 @@ router.get('/details/:applicationId', async function (req, res) {
     }
     const directors = await DebtorDirector.find({
       debtorId: application.debtorId,
+      isDeleted: false,
     })
       .select({ createdAt: 0, updatedAt: 0, __v: 0 })
       .lean();
@@ -1076,7 +1077,7 @@ router.put('/', async function (req, res) {
       case 'documents':
         await Application.updateOne(
           { _id: req.body.applicationId },
-          { $set: { applicationStage: 4 } },
+          { $inc: { applicationStage: 1 } },
         );
         response = await Application.findById(req.body.applicationId)
           .select('_id applicationStage')
@@ -1085,7 +1086,7 @@ router.put('/', async function (req, res) {
       case 'confirmation':
         await Application.updateOne(
           { _id: req.body.applicationId },
-          { $set: { status: 'SUBMITTED', applicationStage: 5 } },
+          { $set: { status: 'SUBMITTED', $inc: { applicationStage: 1 } } },
         );
         message = 'Application submitted successfully.';
         const application = await Application.findById(
