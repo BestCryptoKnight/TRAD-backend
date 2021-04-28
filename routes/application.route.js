@@ -1050,9 +1050,19 @@ router.put('/', async function (req, res) {
         response = await storeCreditLimitDetails({ requestBody: req.body });
         break;
       case 'documents':
+        response = await Application.findById(req.body.applicationId)
+          .populate({ path: 'debtorId', select: 'entityType' })
+          .select('_id applicationStage debtorId')
+          .lean();
+        const entityTypes = ['TRUST', 'PARTNERSHIP'];
+        const applicationStage = !entityTypes.includes(
+          response.debtorId.entityType,
+        )
+          ? 3
+          : 4;
         await Application.updateOne(
           { _id: req.body.applicationId },
-          { $inc: { applicationStage: 1 } },
+          { applicationStage: applicationStage },
         );
         response = await Application.findById(req.body.applicationId)
           .select('_id applicationStage')

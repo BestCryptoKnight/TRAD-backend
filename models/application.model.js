@@ -37,6 +37,7 @@ const applicationSchema = new Schema(
     extendedPaymentTermsDetails: { type: Schema.Types.String },
     isPassedOverdueAmount: { type: Schema.Types.Boolean },
     passedOverdueDetails: { type: Schema.Types.String },
+    note: { type: Schema.Types.String },
     applicationStage: { type: Schema.Types.Number },
     createdByType: {
       type: Schema.Types.String,

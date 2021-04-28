@@ -513,7 +513,7 @@ const storePartnerDetails = async ({ requestBody }) => {
     promises.push(
       Application.updateOne(
         { _id: requestBody.applicationId },
-        { $inc: { applicationStage: 1 } },
+        { applicationStage: 2 },
       ),
     );
     await Promise.all(promises);
@@ -528,11 +528,18 @@ const storePartnerDetails = async ({ requestBody }) => {
 
 const storeCreditLimitDetails = async ({ requestBody }) => {
   try {
+    let application = await Application.findById(requestBody.applicationId)
+      .populate({ path: 'debtorId', select: 'entityType' })
+      .select('_id applicationStage debtorId')
+      .lean();
+    const entityTypes = ['TRUST', 'PARTNERSHIP'];
     const update = {
       creditLimit: requestBody.creditLimit,
       isExtendedPaymentTerms: requestBody.isExtendedPaymentTerms,
       isPassedOverdueAmount: requestBody.isPassedOverdueAmount,
-      $inc: { applicationStage: 1 },
+      applicationStage: !entityTypes.includes(application.debtorId.entityType)
+        ? 2
+        : 3,
     };
     if (requestBody.extendedPaymentTermsDetails)
       update.extendedPaymentTermsDetails =
@@ -540,7 +547,7 @@ const storeCreditLimitDetails = async ({ requestBody }) => {
     if (requestBody.passedOverdueDetails)
       update.passedOverdueDetails = requestBody.passedOverdueDetails;
     await Application.updateOne({ _id: requestBody.applicationId }, update);
-    const application = await Application.findById(requestBody.applicationId)
+    application = await Application.findById(requestBody.applicationId)
       .select('_id applicationStage')
       .lean();
     return application;
