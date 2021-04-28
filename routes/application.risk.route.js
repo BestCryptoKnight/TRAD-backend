@@ -1023,7 +1023,12 @@ router.put('/', async function (req, res) {
     req.body.stepper === 'company' &&
     (!req.body.clientId ||
       !req.body.address ||
+      !req.body.address.streetType ||
+      !req.body.address.state ||
+      !req.body.address.country ||
+      !req.body.address.postCode ||
       !req.body.entityType ||
+      (!req.body.abn && !req.body.acn) ||
       !req.body.entityName)
   ) {
     return res.status(400).send({

@@ -74,47 +74,44 @@ const createDebtor = async ({
   isDebtorExists,
   userId,
   userName,
+  clientId,
 }) => {
   try {
     let update = {};
     if (requestBody.address && Object.keys(requestBody.address).length !== 0) {
       update.address = {};
-      if (
+      update.address.property =
         requestBody.address.property &&
         requestBody.address.property.length !== 0
-      ) {
-        update.address.property = requestBody.address.property;
-      }
-      if (
+          ? requestBody.address.property
+          : undefined;
+      update.address.unitNumber =
         requestBody.address.unitNumber &&
         requestBody.address.unitNumber.length !== 0
-      ) {
-        update.address.unitNumber = requestBody.address.unitNumber;
-      }
+          ? requestBody.address.unitNumber
+          : undefined;
       if (
         requestBody.address.streetNumber &&
         requestBody.address.streetNumber.length !== 0
       ) {
         update.address.streetNumber = requestBody.address.streetNumber;
       }
-      if (
+      update.address.streetName =
         requestBody.address.streetName &&
         requestBody.address.streetName.length !== 0
-      ) {
-        update.address.streetName = requestBody.address.streetName;
-      }
+          ? requestBody.address.streetName
+          : undefined;
       if (
         requestBody.address.streetType &&
         requestBody.address.streetType.length !== 0
       ) {
         update.address.streetType = requestBody.address.streetType;
       }
-      if (
-        requestBody.address.suburb &&
-        requestBody.address.suburb.length !== 0
-      ) {
-        update.address.suburb = requestBody.address.suburb;
-      }
+      update.address.suburb =
+        requestBody.address.suburb && requestBody.address.suburb.length !== 0
+          ? requestBody.address.suburb
+          : undefined;
+
       if (requestBody.address.state && requestBody.address.state.length !== 0) {
         update.address.state = requestBody.address.state;
       }
@@ -131,24 +128,16 @@ const createDebtor = async ({
       ) {
         update.address.postCode = requestBody.address.postCode;
       }
-      /*update.address = {
-        property: requestBody.address.property,
-        unitNumber: requestBody.address.unitNumber,
-        streetNumber: requestBody.address.streetNumber,
-        streetName: requestBody.address.streetName,
-        streetType: requestBody.address.streetType,
-        suburb: requestBody.address.suburb,
-        state: requestBody.address.state,
-        country: requestBody.address.country,
-        postCode: requestBody.address.postCode,
-      };*/
     }
     if (requestBody.entityType) update.entityType = requestBody.entityType;
-    if (requestBody.contactNumber)
-      update.contactNumber = requestBody.contactNumber;
-    if (requestBody.tradingName) update.tradingName = requestBody.tradingName;
+    update.contactNumber = requestBody.contactNumber
+      ? requestBody.contactNumber
+      : undefined;
+    update.tradingName = requestBody.tradingName
+      ? requestBody.tradingName
+      : undefined;
     if (requestBody.entityName) update.entityName = requestBody.entityName;
-    if (requestBody.acn) update.acn = requestBody.acn;
+    update.acn = requestBody.acn ? requestBody.acn : undefined;
     if (requestBody.abn) update.abn = requestBody.abn;
     if (requestBody.isActive) update.isActive = requestBody.isActive;
     if (!isDebtorExists) {
@@ -168,9 +157,9 @@ const createDebtor = async ({
       $or: [{ abn: requestBody.abn }, { acn: requestBody.acn }],
     }).lean();
     await ClientDebtor.updateOne(
-      { clientId: requestBody.clientId, debtorId: debtor._id },
+      { clientId: clientId, debtorId: debtor._id },
       {
-        clientId: requestBody.clientId,
+        clientId: clientId,
         debtorId: debtor._id,
         isActive: true,
         outstandingAmount: requestBody.outstandingAmount,
@@ -178,7 +167,7 @@ const createDebtor = async ({
       { upsert: true },
     );
     const clientDebtor = await ClientDebtor.findOne({
-      clientId: requestBody.clientId,
+      clientId: clientId,
       debtorId: debtor._id,
     }).lean();
     await addAuditLog({

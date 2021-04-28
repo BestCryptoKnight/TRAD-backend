@@ -70,7 +70,7 @@ const getDebtorList = async ({
     const debtorIds = [];
     const response = [];
     debtors.forEach((i) => {
-      if (!debtorIds.includes(i.debtorId)) {
+      if (i.debtorId && !debtorIds.includes(i.debtorId)) {
         response.push({
           _id: i.debtorId._id,
           name: i.debtorId.entityName,
@@ -80,7 +80,7 @@ const getDebtorList = async ({
     });
     return response;
   } catch (e) {
-    Logger.log.error('Error occurred in get debtor list ', e.message || e);
+    Logger.log.error('Error occurred in get debtor list ', e);
   }
 };
 

@@ -321,6 +321,7 @@ const storeCompanyDetails = async ({
       isDebtorExists,
       userId: createdBy,
       userName: createdByName,
+      clientId,
     });
     const applicationDetails = {
       clientId: clientId,
@@ -425,6 +426,9 @@ const storePartnerDetails = async ({ requestBody }) => {
           !requestBody.partners[i].address ||
           !requestBody.partners[i].address.state ||
           !requestBody.partners[i].address.postCode ||
+          !requestBody.partners[i].address.streetName ||
+          !requestBody.partners[i].address.streetType ||
+          !requestBody.partners[i].address.suburb ||
           !requestBody.partners[i].address.streetNumber
         ) {
           return {
@@ -446,8 +450,12 @@ const storePartnerDetails = async ({ requestBody }) => {
           Object.keys(requestBody.partners[i].address).length !== 0
         ) {
           update.residentialAddress = {
-            property: requestBody.partners[i].address.property,
-            unitNumber: requestBody.partners[i].address.unitNumber,
+            property: requestBody.partners[i].address.property
+              ? requestBody.partners[i].address.property
+              : undefined,
+            unitNumber: requestBody.partners[i].address.unitNumber
+              ? requestBody.partners[i].address.unitNumber
+              : undefined,
             streetNumber: requestBody.partners[i].address.streetNumber,
             streetName: requestBody.partners[i].address.streetName,
             streetType: requestBody.partners[i].address.streetType,
@@ -457,12 +465,14 @@ const storePartnerDetails = async ({ requestBody }) => {
             postCode: requestBody.partners[i].address.postCode,
           };
         }
-        if (requestBody.partners[i].title)
-          update.title = requestBody.partners[i].title;
+        update.title = requestBody.partners[i].title
+          ? requestBody.partners[i].title
+          : undefined;
         if (requestBody.partners[i].firstName)
           update.firstName = requestBody.partners[i].firstName;
-        if (requestBody.partners[i].middleName)
-          update.middleName = requestBody.partners[i].middleName;
+        update.middleName = requestBody.partners[i].middleName
+          ? requestBody.partners[i].middleName
+          : undefined;
         if (requestBody.partners[i].lastName)
           update.lastName = requestBody.partners[i].lastName;
         if (requestBody.partners[i].dateOfBirth)
@@ -541,11 +551,13 @@ const storeCreditLimitDetails = async ({ requestBody }) => {
         ? 2
         : 3,
     };
-    if (requestBody.extendedPaymentTermsDetails)
-      update.extendedPaymentTermsDetails =
-        requestBody.extendedPaymentTermsDetails;
-    if (requestBody.passedOverdueDetails)
-      update.passedOverdueDetails = requestBody.passedOverdueDetails;
+    update.note = requestBody.note ? requestBody.note : '';
+    update.extendedPaymentTermsDetails = requestBody.extendedPaymentTermsDetails
+      ? requestBody.extendedPaymentTermsDetails
+      : '';
+    update.passedOverdueDetails = requestBody.passedOverdueDetails
+      ? requestBody.passedOverdueDetails
+      : '';
     await Application.updateOne({ _id: requestBody.applicationId }, update);
     application = await Application.findById(requestBody.applicationId)
       .select('_id applicationStage')
