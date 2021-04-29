@@ -1023,7 +1023,7 @@ router.put('/', async function (req, res) {
     req.body.stepper === 'company' &&
     (!req.body.clientId ||
       !req.body.address ||
-      !req.body.address.streetType ||
+      !req.body.address.streetNumber ||
       !req.body.address.state ||
       !req.body.address.country ||
       !req.body.address.postCode ||
