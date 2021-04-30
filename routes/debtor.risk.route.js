@@ -1110,14 +1110,18 @@ router.put('/stakeholder/:debtorId/:stakeholderId', async function (req, res) {
     });
   }
   if (
-    !req.body.title ||
-    !req.body.firstName ||
-    !req.body.lastName ||
-    (!req.body.dateOfBirth && !req.body.driverLicenceNumber) ||
-    !req.body.address ||
-    !req.body.address.state ||
-    !req.body.address.postCode ||
-    !req.body.address.streetNumber
+    req.body.type === 'individual' &&
+    (!req.body.title ||
+      !req.body.firstName ||
+      !req.body.lastName ||
+      (!req.body.dateOfBirth && !req.body.driverLicenceNumber) ||
+      !req.body.address ||
+      !req.body.address.state ||
+      !req.body.address.streetName ||
+      !req.body.address.streetType ||
+      !req.body.address.suburb ||
+      !req.body.address.postCode ||
+      !req.body.address.streetNumber)
   ) {
     return res.status(400).send({
       status: 'ERROR',
@@ -1162,7 +1166,6 @@ router.put('/stakeholder/:debtorId/:stakeholderId', async function (req, res) {
       debtorId: debtor._id,
     });
     await DebtorDirector.updateOne({ _id: req.params.stakeholderId }, update);
-    console.log('stakeholder : ', update);
     res.status(200).send({
       status: 'SUCCESS',
       message: 'Stakeholder updated successfully',
