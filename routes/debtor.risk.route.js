@@ -1062,44 +1062,17 @@ router.post('/stakeholder/:debtorId', async function (req, res) {
     });
   }
   try {
-    const [debtor, stakeholders] = await Promise.all([
-      Debtor.findById(req.params.debtorId).lean(),
-      DebtorDirector.find({ debtorId: req.params.debtorId })
-        .select('_id type')
-        .lean(),
-    ]);
-    let individualCount = 0;
-    let companyCount = 0;
-    req.body.type === 'company' ? companyCount++ : individualCount++;
-    stakeholders.forEach((data) =>
-      data.type.toLowerCase() === 'company'
-        ? companyCount++
-        : individualCount++,
-    );
-    const isValidate = partnerDetailsValidation({
-      entityType: debtor.entityType,
-      individualCount,
-      companyCount,
-    });
-    if (!isValidate) {
-      return res.status(400).send({
-        status: 'ERROR',
-        messageCode: 'INSUFFICIENT_DATA',
-        message: 'Insufficient stakeholder details',
-      });
-    }
     const data = await storeStakeholderDetails({
       stakeholder: req.body,
-      debtorId: debtor._id,
+      debtorId: req.params.debtorId,
     });
-    const stakeholder = await DebtorDirector.create(data);
-    console.log('stakeholder : ', stakeholder);
+    await DebtorDirector.create(data);
     res.status(200).send({
       status: 'SUCCESS',
       message: 'Stakeholder added successfully',
     });
   } catch (e) {
-    Logger.log.error('Error occurred in add stakeholder ', e.message || e);
+    Logger.log.error('Error occurred in add stakeholder ', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
