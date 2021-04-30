@@ -10,6 +10,7 @@ const Client = mongoose.model('client ');
 const Document = mongoose.model('document');
 const ClientDebtor = mongoose.model('client-debtor');
 const Application = mongoose.model('application');
+const DocumentType = mongoose.model('document-type');
 
 /*
  * Local Imports
@@ -145,6 +146,35 @@ router.get('/download', async function (req, res) {
     }
   } catch (e) {
     Logger.log.error('Error occurred in download document ', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Get Document Type List
+ */
+router.get('/type-list', async function (req, res) {
+  if (!req.query.listFor) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const query = {
+      isDeleted: false,
+      documentFor: req.query.listFor.toLowerCase(),
+    };
+    const documentTypes = await DocumentType.find(query)
+      .select('_id documentTitle')
+      .lean();
+    res.status(200).send({ status: 'SUCCESS', data: documentTypes });
+  } catch (e) {
+    Logger.log.error('Error occurred in get document types ', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

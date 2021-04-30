@@ -1045,14 +1045,15 @@ router.post('/stakeholder/:debtorId', async function (req, res) {
     });
   }
   if (
-    !req.body.title ||
-    !req.body.firstName ||
-    !req.body.lastName ||
-    (!req.body.dateOfBirth && !req.body.driverLicenceNumber) ||
-    !req.body.address ||
-    !req.body.address.state ||
-    !req.body.address.postCode ||
-    !req.body.address.streetNumber
+    req.body.type === 'individual' &&
+    (!req.body.title ||
+      !req.body.firstName ||
+      !req.body.lastName ||
+      (!req.body.dateOfBirth && !req.body.driverLicenceNumber) ||
+      !req.body.address ||
+      !req.body.address.state ||
+      !req.body.address.postCode ||
+      !req.body.address.streetNumber)
   ) {
     return res.status(400).send({
       status: 'ERROR',

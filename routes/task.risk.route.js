@@ -227,13 +227,14 @@ router.get('/details/:taskId', async function (req, res) {
       let response;
       if (task.entityType === 'client') {
         response = await Client.findById(task.entityId).lean();
-        value = response.name;
+        value = response && response.name ? response.name : '';
       } else if (task.entityType === 'application') {
         response = await Application.findById(task.entityId).lean();
-        value = response.applicationId;
+        value =
+          response && response.applicationId ? response.applicationId : '';
       } else if (task.entityType === 'debtor') {
         response = await Debtor.findById(task.entityId).lean();
-        value = response.entityName;
+        value = response && response.entityName ? response.entityName : '';
       }
       task.entityId = [
         {
@@ -253,7 +254,7 @@ router.get('/details/:taskId', async function (req, res) {
     }
     res.status(200).send({ status: 'SUCCESS', data: task });
   } catch (e) {
-    Logger.log.error('Error occurred get task details ', e.message || e);
+    Logger.log.error('Error occurred get task details ', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
