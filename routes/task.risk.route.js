@@ -203,25 +203,21 @@ router.get('/details/:taskId', async function (req, res) {
       .select({ __v: 0, isDeleted: 0, createdAt: 0, updatedAt: 0 })
       .lean();
     if (task.priority) {
-      task.priority = [
-        {
-          value: task.priority,
-          label:
-            task.priority.charAt(0).toUpperCase() +
-            task.priority.slice(1).toLowerCase(),
-        },
-      ];
+      task.priority = {
+        value: task.priority,
+        label:
+          task.priority.charAt(0).toUpperCase() +
+          task.priority.slice(1).toLowerCase(),
+      };
     }
     let value;
     if (task.assigneeId) {
       const user = await User.findById(task.assigneeId).lean();
       value = user.name;
-      task.assigneeId = [
-        {
-          label: user.name,
-          value: task.assigneeId,
-        },
-      ];
+      task.assigneeId = {
+        label: user.name,
+        value: task.assigneeId,
+      };
     }
     if (task.entityId && task.entityType) {
       let response;
@@ -236,21 +232,17 @@ router.get('/details/:taskId', async function (req, res) {
         response = await Debtor.findById(task.entityId).lean();
         value = response && response.entityName ? response.entityName : '';
       }
-      task.entityId = [
-        {
-          value: task.entityId,
-          label: value,
-        },
-      ];
+      task.entityId = {
+        value: task.entityId,
+        label: value,
+      };
     }
     if (task.entityType) {
-      task.entityType = [
-        {
-          value: task.entityType,
-          label:
-            task.entityType.charAt(0).toUpperCase() + task.entityType.slice(1),
-        },
-      ];
+      task.entityType = {
+        value: task.entityType,
+        label:
+          task.entityType.charAt(0).toUpperCase() + task.entityType.slice(1),
+      };
     }
     res.status(200).send({ status: 'SUCCESS', data: task });
   } catch (e) {
