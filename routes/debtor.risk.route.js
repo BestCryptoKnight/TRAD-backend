@@ -689,46 +689,36 @@ router.get('/details/:debtorId', async function (req, res) {
         delete debtor.address;
       }
       if (debtor.country) {
-        debtor.country = [
-          {
-            label: debtor.country.name,
-            value: debtor.country.code,
-          },
-        ];
+        debtor.country = {
+          label: debtor.country.name,
+          value: debtor.country.code,
+        };
       }
       if (debtor.entityType) {
-        debtor.entityType = [
-          {
-            label: debtor.entityType
-              .replace(/_/g, ' ')
-              .replace(/\w\S*/g, function (txt) {
-                return (
-                  txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
-                );
-              }),
-            value: debtor.entityType,
-          },
-        ];
+        debtor.entityType = {
+          label: debtor.entityType
+            .replace(/_/g, ' ')
+            .replace(/\w\S*/g, function (txt) {
+              return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+            }),
+          value: debtor.entityType,
+        };
       }
       if (debtor.entityName) {
-        debtor.entityName = [
-          {
-            label: debtor.entityName,
-            value: debtor.entityName,
-          },
-        ];
+        debtor.entityName = {
+          label: debtor.entityName,
+          value: debtor.entityName,
+        };
       }
       if (debtor.state) {
         const state = StaticData.australianStates.find((i) => {
           if (i._id === debtor.state) return i;
         });
         if (state) {
-          debtor.state = [
-            {
-              label: state.name,
-              value: debtor.state,
-            },
-          ];
+          debtor.state = {
+            label: state.name,
+            value: debtor.state,
+          };
         }
       }
       if (debtor.streetType) {
@@ -736,12 +726,10 @@ router.get('/details/:debtorId', async function (req, res) {
           if (i._id === debtor.streetType) return i;
         });
         if (streetType) {
-          debtor.streetType = [
-            {
-              label: streetType.name,
-              value: debtor.streetType,
-            },
-          ];
+          debtor.streetType = {
+            label: streetType.name,
+            value: debtor.streetType,
+          };
         }
       }
     }
