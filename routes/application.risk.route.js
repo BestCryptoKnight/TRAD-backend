@@ -772,32 +772,28 @@ router.get('/search-entity/:searchString', async function (req, res) {
           const entityType = await resolveEntityType({
             entityType: entityDetails.entityType.entityDescription,
           });
-          response.entityType = [
-            {
-              label: entityType
-                .replace(/_/g, ' ')
-                .replace(/\w\S*/g, function (txt) {
-                  return (
-                    txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
-                  );
-                }),
-              value: entityType,
-            },
-          ];
+          response.entityType = {
+            label: entityType
+              .replace(/_/g, ' ')
+              .replace(/\w\S*/g, function (txt) {
+                return (
+                  txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+                );
+              }),
+            value: entityType,
+          };
         }
         if (entityDetails.goodsAndServicesTax)
           response.gstStatus = entityDetails.goodsAndServicesTax.effectiveFrom;
         if (entityDetails.mainName)
-          response.entityName = [
-            {
-              label: Array.isArray(entityDetails.mainName)
-                ? entityDetails.mainName[0].organisationName
-                : entityDetails.mainName.organisationName,
-              value: Array.isArray(entityDetails.mainName)
-                ? entityDetails.mainName[0].organisationName
-                : entityDetails.mainName.organisationName,
-            },
-          ];
+          response.entityName = {
+            label: Array.isArray(entityDetails.mainName)
+              ? entityDetails.mainName[0].organisationName
+              : entityDetails.mainName.organisationName,
+            value: Array.isArray(entityDetails.mainName)
+              ? entityDetails.mainName[0].organisationName
+              : entityDetails.mainName.organisationName,
+          };
         const tradingName =
           entityDetails.mainTradingName || entityDetails.businessName;
         if (tradingName)
