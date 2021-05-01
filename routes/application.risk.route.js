@@ -779,79 +779,82 @@ router.get('/search-entity/:searchString', async function (req, res) {
       const entityDetails =
         entityData.response.businessEntity202001 ||
         entityData.response.businessEntity201408;
-      console.log(entityDetails);
-      if (entityDetails.ABN) response.abn = entityDetails.ABN.identifierValue;
-      if (
-        entityDetails.entityStatus &&
-        entityDetails.entityStatus.entityStatusCode
-      )
-        response.isActive = entityDetails.entityStatus.entityStatusCode;
-      if (
-        entityDetails.entityStatus &&
-        entityDetails.entityStatus.effectiveFrom
-      )
-        response.registeredDate = entityDetails.entityStatus.effectiveFrom;
-      if (entityDetails.ASICNumber)
-        response.acn =
-          typeof entityDetails.ASICNumber === 'string'
-            ? entityDetails.ASICNumber
-            : '';
-      if (entityDetails.entityType) {
-        const entityType = await resolveEntityType({
-          entityType: entityDetails.entityType.entityDescription,
-        });
-        response.entityType = [
-          {
-            label: entityType
-              .replace(/_/g, ' ')
-              .replace(/\w\S*/g, function (txt) {
-                return (
-                  txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
-                );
-              }),
-            value: entityType,
-          },
-        ];
+      if (entityDetails) {
+        if (entityDetails.ABN) response.abn = entityDetails.ABN.identifierValue;
+        if (
+          entityDetails.entityStatus &&
+          entityDetails.entityStatus.entityStatusCode
+        )
+          response.isActive = entityDetails.entityStatus.entityStatusCode;
+        if (
+          entityDetails.entityStatus &&
+          entityDetails.entityStatus.effectiveFrom
+        )
+          response.registeredDate = entityDetails.entityStatus.effectiveFrom;
+        if (entityDetails.ASICNumber)
+          response.acn =
+            typeof entityDetails.ASICNumber === 'string'
+              ? entityDetails.ASICNumber
+              : '';
+        if (entityDetails.entityType) {
+          const entityType = await resolveEntityType({
+            entityType: entityDetails.entityType.entityDescription,
+          });
+          response.entityType = [
+            {
+              label: entityType
+                .replace(/_/g, ' ')
+                .replace(/\w\S*/g, function (txt) {
+                  return (
+                    txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+                  );
+                }),
+              value: entityType,
+            },
+          ];
+        }
+        if (entityDetails.goodsAndServicesTax)
+          response.gstStatus = entityDetails.goodsAndServicesTax.effectiveFrom;
+        if (entityDetails.mainName)
+          response.entityName = [
+            {
+              label: Array.isArray(entityDetails.mainName)
+                ? entityDetails.mainName[0].organisationName
+                : entityDetails.mainName.organisationName,
+              value: Array.isArray(entityDetails.mainName)
+                ? entityDetails.mainName[0].organisationName
+                : entityDetails.mainName.organisationName,
+            },
+          ];
+        const tradingName =
+          entityDetails.mainTradingName || entityDetails.businessName;
+        if (tradingName)
+          response.tradingName =
+            tradingName.organisationName ||
+            typeof tradingName.organisationName === 'string'
+              ? tradingName.organisationName
+              : tradingName[0].organisationName;
+        if (entityDetails.mainBusinessPhysicalAddress[0]) {
+          const state = StaticData.australianStates.find((i) => {
+            if (
+              i._id === entityDetails.mainBusinessPhysicalAddress[0].stateCode
+            )
+              return i;
+          });
+          response.state = [
+            {
+              label:
+                state && state.name
+                  ? state.name
+                  : entityDetails.mainBusinessPhysicalAddress[0].stateCode,
+              value: entityDetails.mainBusinessPhysicalAddress[0].stateCode,
+            },
+          ];
+        }
+        if (entityDetails.mainBusinessPhysicalAddress[0])
+          response.postCode =
+            entityDetails.mainBusinessPhysicalAddress[0].postcode;
       }
-      if (entityDetails.goodsAndServicesTax)
-        response.gstStatus = entityDetails.goodsAndServicesTax.effectiveFrom;
-      if (entityDetails.mainName)
-        response.entityName = [
-          {
-            label: Array.isArray(entityDetails.mainName)
-              ? entityDetails.mainName[0].organisationName
-              : entityDetails.mainName.organisationName,
-            value: Array.isArray(entityDetails.mainName)
-              ? entityDetails.mainName[0].organisationName
-              : entityDetails.mainName.organisationName,
-          },
-        ];
-      const tradingName =
-        entityDetails.mainTradingName || entityDetails.businessName;
-      if (tradingName)
-        response.tradingName =
-          tradingName.organisationName ||
-          typeof tradingName.organisationName === 'string'
-            ? tradingName.organisationName
-            : tradingName[0].organisationName;
-      if (entityDetails.mainBusinessPhysicalAddress[0]) {
-        const state = StaticData.australianStates.find((i) => {
-          if (i._id === entityDetails.mainBusinessPhysicalAddress[0].stateCode)
-            return i;
-        });
-        response.state = [
-          {
-            label:
-              state && state.name
-                ? state.name
-                : entityDetails.mainBusinessPhysicalAddress[0].stateCode,
-            value: entityDetails.mainBusinessPhysicalAddress[0].stateCode,
-          },
-        ];
-      }
-      if (entityDetails.mainBusinessPhysicalAddress[0])
-        response.postCode =
-          entityDetails.mainBusinessPhysicalAddress[0].postcode;
     }
     res.status(200).send({
       status: 'SUCCESS',
@@ -923,7 +926,10 @@ router.get('/search-entity-list/:searchString', async function (req, res) {
             entityData.value = fieldName.organisationName;
           }
           if (data.mainBusinessPhysicalAddress) {
-            entityData.state = data.mainBusinessPhysicalAddress.stateCode;
+            entityData.state =
+              typeof data.mainBusinessPhysicalAddress.stateCode === 'string'
+                ? data.mainBusinessPhysicalAddress.stateCode
+                : '';
             entityData.postCode = data.mainBusinessPhysicalAddress.postcode;
           }
           response.push(entityData);
