@@ -424,6 +424,7 @@ router.get('/details/:applicationId', async function (req, res) {
           extendedPaymentTermsDetails: application.extendedPaymentTermsDetails,
           isPassedOverdueAmount: application.isPassedOverdueAmount,
           passedOverdueDetails: application.passedOverdueDetails,
+          note: application.note,
         };
       }
       if (directors && directors.length !== 0) {
@@ -565,6 +566,7 @@ router.get('/details/:applicationId', async function (req, res) {
         application.extendedPaymentTermsDetails;
       response.isPassedOverdueAmount = application.isPassedOverdueAmount;
       response.passedOverdueDetails = application.passedOverdueDetails;
+      response.note = application.note;
       response.applicationStatus = StaticData.applicationStatus.filter(
         (data) => data.value !== 'DRAFT',
       );
@@ -809,15 +811,13 @@ router.get('/search-entity/:searchString', async function (req, res) {
             )
               return i;
           });
-          response.state = [
-            {
-              label:
-                state && state.name
-                  ? state.name
-                  : entityDetails.mainBusinessPhysicalAddress[0].stateCode,
-              value: entityDetails.mainBusinessPhysicalAddress[0].stateCode,
-            },
-          ];
+          response.state = {
+            label:
+              state && state.name
+                ? state.name
+                : entityDetails.mainBusinessPhysicalAddress[0].stateCode,
+            value: entityDetails.mainBusinessPhysicalAddress[0].stateCode,
+          };
         }
         if (entityDetails.mainBusinessPhysicalAddress[0])
           response.postCode =

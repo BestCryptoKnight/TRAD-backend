@@ -279,6 +279,95 @@ router.get('/drawer/:debtorId', async function (req, res) {
 });
 
 /**
+ * Get Debtor Details
+ */
+router.get('/details/:debtorId', async function (req, res) {
+  if (!req.params.debtorId) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const application = await Application.findOne({
+      debtorId: req.params.debtorId,
+      clientId: req.user.clientId,
+      status: { $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED'] },
+    }).lean();
+    if (application) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'APPLICATION_ALREADY_EXISTS',
+        message: 'Application already exists.',
+      });
+    }
+    const debtor = await Debtor.findById(req.params.debtorId)
+      .select({ isDeleted: 0, createdAt: 0, updatedAt: 0, __v: 0 })
+      .lean();
+    if (debtor) {
+      if (debtor.address) {
+        for (let key in debtor.address) {
+          debtor[key] = debtor.address[key];
+        }
+        delete debtor.address;
+      }
+      if (debtor.country) {
+        debtor.country = {
+          label: debtor.country.name,
+          value: debtor.country.code,
+        };
+      }
+      if (debtor.entityType) {
+        debtor.entityType = {
+          label: debtor.entityType
+            .replace(/_/g, ' ')
+            .replace(/\w\S*/g, function (txt) {
+              return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+            }),
+          value: debtor.entityType,
+        };
+      }
+      if (debtor.entityName) {
+        debtor.entityName = {
+          label: debtor.entityName,
+          value: debtor.entityName,
+        };
+      }
+      if (debtor.state) {
+        const state = StaticData.australianStates.find((i) => {
+          if (i._id === debtor.state) return i;
+        });
+        if (state) {
+          debtor.state = {
+            label: state.name,
+            value: debtor.state,
+          };
+        }
+      }
+      if (debtor.streetType) {
+        const streetType = StaticData.streetType.find((i) => {
+          if (i._id === debtor.streetType) return i;
+        });
+        if (streetType) {
+          debtor.streetType = {
+            label: streetType.name,
+            value: debtor.streetType,
+          };
+        }
+      }
+    }
+    res.status(200).send({ status: 'SUCCESS', data: debtor });
+  } catch (e) {
+    Logger.log.error('Error occurred in get debtor details ', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
  * Update Column Names
  */
 router.put('/column-name', async function (req, res) {
