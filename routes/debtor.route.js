@@ -77,6 +77,30 @@ router.get('/column-name', async function (req, res) {
 });
 
 /**
+ * Get Entity Type List
+ * */
+router.get('/entity-list', async function (req, res) {
+  try {
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: {
+        streetType: StaticData.streetType,
+        australianStates: StaticData.australianStates,
+        entityType: StaticData.entityType,
+        newZealandStates: StaticData.newZealandStates,
+        countryList: StaticData.countryList,
+      },
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in get entity type list', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
  * Get Debtor list
  */
 router.get('/', async function (req, res) {
@@ -165,7 +189,15 @@ router.get('/', async function (req, res) {
     const headers = [];
     for (let i = 0; i < module.manageColumns.length; i++) {
       if (debtorColumn.columns.includes(module.manageColumns[i].name)) {
-        headers.push(module.manageColumns[i]);
+        if (module.manageColumns[i].name === 'entityName') {
+          headers.push({
+            name: module.manageColumns[i].name,
+            label: module.manageColumns[i].label,
+            type: 'string',
+          });
+        } else {
+          headers.push(module.manageColumns[i]);
+        }
       }
     }
     debtors[0].paginatedResult.forEach((debtor) => {
@@ -204,6 +236,13 @@ router.get('/', async function (req, res) {
           debtor.fullAddress = getDebtorFullAddress({
             address: debtor.debtorId.address,
           });
+        }
+        if (debtorColumn.columns.includes('entityType')) {
+          debtor.entityType = debtor.debtorId.entityType
+            .replace(/_/g, ' ')
+            .replace(/\w\S*/g, function (txt) {
+              return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+            });
         }
         delete debtor.address;
       }
