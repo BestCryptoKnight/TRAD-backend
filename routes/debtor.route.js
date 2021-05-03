@@ -8,6 +8,7 @@ const ClientUser = mongoose.model('client-user');
 const Client = mongoose.model('client');
 const ClientDebtor = mongoose.model('client-debtor');
 const Debtor = mongoose.model('debtor');
+const Application = mongoose.model('application');
 
 /*
  * Local Imports
