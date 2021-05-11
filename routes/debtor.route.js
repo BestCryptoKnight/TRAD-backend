@@ -129,6 +129,7 @@ router.get('/', async function (req, res) {
       },
     ];
     debtorColumn.columns.push('address');
+    debtorColumn.columns.push('_id');
     if (req.query.entityType) {
       aggregationQuery.push({
         $match: {
@@ -407,7 +408,10 @@ router.get('/:debtorId', async function (req, res) {
     });
   }
   try {
-    let debtor = await ClientDebtor.findById(req.params.debtorId)
+    let debtor = await ClientDebtor.findOne({
+      debtorId: req.params.debtorId,
+      clientId: req.user.clientId,
+    })
       .populate({
         path: 'debtorId',
         select: { isDeleted: 0, createdAt: 0, updatedAt: 0, __v: 0 },
