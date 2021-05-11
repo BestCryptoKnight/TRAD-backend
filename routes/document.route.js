@@ -246,10 +246,9 @@ router.get('/:entityId', async function (req, res) {
         ],
       };
     } else if (req.query.documentFor === 'debtor') {
-      const [applications, debtor] = await Promise.all([
-        Application.find({ debtorId: req.params.entityId }).lean(),
-        ClientDebtor.findOne({ debtorId: req.params.entityId }).lean(),
-      ]);
+      const applications = await Application.find({
+        debtorId: req.params.entityId,
+      }).lean();
       const applicationIds = applications.map((i) =>
         mongoose.Types.ObjectId(i._id),
       );
@@ -258,15 +257,11 @@ router.get('/:entityId', async function (req, res) {
           entityRefId: { $in: applicationIds },
         },
         { uploadByType: 'user', isPublic: true },
-        {
-          uploadByType: 'user',
-          uploadById: mongoose.Types.ObjectId(req.user._id),
-        },
       ];
-      if (debtor && debtor.clientId) {
+      if (req.user.clientId) {
         conditions.push({
           uploadByType: 'client-user',
-          uploadById: mongoose.Types.ObjectId(debtor.clientId),
+          uploadById: mongoose.Types.ObjectId(req.user.clientId),
         });
       }
       query = {

@@ -137,8 +137,10 @@ const aggregationQuery = async ({
       queryFilter.entityId = mongoose.Types.ObjectId(
         requestedQuery.requestedEntityId,
       );
+    } else if (!hasFullAccess && !isForRisk) {
+      queryFilter.entityId = mongoose.Types.ObjectId(userId);
     }
-    if (!hasFullAccess && !listCreatedBy) {
+    if (!hasFullAccess && !listCreatedBy && isForRisk) {
       queryFilter.assigneeId = mongoose.Types.ObjectId(userId);
     }
     if (listCreatedBy) {

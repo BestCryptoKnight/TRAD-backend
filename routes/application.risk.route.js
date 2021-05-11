@@ -430,7 +430,6 @@ router.get('/details/:applicationId', async function (req, res) {
       if (directors && directors.length !== 0) {
         response.partners = directors;
         response.partners.forEach((partner) => {
-          partner.isDisabled = true;
           if (partner.type === 'individual') {
             if (partner.title) {
               partner.title = {
@@ -822,6 +821,12 @@ router.get('/search-entity/:searchString', async function (req, res) {
         if (entityDetails.mainBusinessPhysicalAddress[0])
           response.postCode =
             entityDetails.mainBusinessPhysicalAddress[0].postcode;
+      } else {
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'NO_DATA_FOUND',
+          message: 'No data found',
+        });
       }
     }
     res.status(200).send({

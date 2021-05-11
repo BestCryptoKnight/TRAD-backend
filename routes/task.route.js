@@ -256,17 +256,26 @@ router.get('/details/:taskId', async function (req, res) {
  * Get Task List
  */
 router.get('/', async function (req, res) {
+  if (!req.query.columnFor) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require field is missing.',
+    });
+  }
   try {
-    const module = StaticFile.modules.find((i) => i.name === 'task');
-    const taskColumn = req.user.manageColumns.find(
-      (i) => i.moduleName === 'task',
+    const module = StaticFile.modules.find(
+      (i) => i.name === req.query.columnFor,
     );
-    const { query, queryFilter } = await aggregationQuery({
+    const taskColumn = req.user.manageColumns.find(
+      (i) => i.moduleName === req.query.columnFor,
+    );
+    const query = await aggregationQuery({
       taskColumn: taskColumn.columns,
       requestedQuery: req.query,
       isForRisk: false,
       hasFullAccess: false,
-      userId: req.user._id,
+      userId: req.user.clientId,
     });
     const tasks = await Task.aggregate(query).allowDiskUse(true);
     const headers = [

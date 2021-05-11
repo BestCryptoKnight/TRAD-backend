@@ -487,7 +487,7 @@ router.post('/upload', upload.single('document'), async function (req, res) {
       uploadByType: 'user',
     });
     const entityName = await getEntityName({
-      entityId: req.body.entityRefId,
+      entityId: req.body.entityId,
       entityType: req.body.documentFor.toLowerCase(),
     });
     await addAuditLog({
@@ -588,7 +588,9 @@ router.delete('/:documentId', async function (req, res) {
     const document = await Document.findOne({
       _id: req.params.documentId,
     }).lean();
-    await deleteFile({ filePath: document.keyPath });
+    if (document.keyPath) {
+      await deleteFile({ filePath: document.keyPath });
+    }
     await Document.updateOne(
       { _id: req.params.documentId },
       { isDeleted: true },

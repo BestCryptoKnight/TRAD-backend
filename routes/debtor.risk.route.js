@@ -22,6 +22,12 @@ const {
   getStakeholderDetails,
   storeStakeholderDetails,
 } = require('./../helper/stakeholder.helper');
+const {
+  getEntityDetailsByABN,
+  getEntityDetailsByACN,
+  getEntityListByName,
+  resolveEntityType,
+} = require('./../helper/abr.helper');
 const { partnerDetailsValidation } = require('./../helper/application.helper');
 const { addAuditLog, getEntityName } = require('./../helper/audit-log.helper');
 
@@ -106,11 +112,19 @@ router.get('/entity-list', async function (req, res) {
     res.status(200).send({
       status: 'SUCCESS',
       data: {
-        streetType: StaticData.streetType,
-        australianStates: StaticData.australianStates,
-        entityType: StaticData.entityType,
-        newZealandStates: StaticData.newZealandStates,
-        countryList: StaticData.countryList,
+        streetType: { field: 'streetType', data: StaticData.streetType },
+        australianStates: { field: 'state', data: StaticData.australianStates },
+        newZealandStates: { field: 'state', data: StaticData.newZealandStates },
+        entityType: { field: 'entityType', data: StaticData.entityType },
+        companyEntityType: {
+          field: 'entityType',
+          data: StaticData.companyEntityType,
+        },
+        applicationStatus: {
+          field: 'applicationStatus',
+          data: StaticData.applicationStatus,
+        },
+        countryList: { field: 'country', data: StaticData.countryList },
       },
     });
   } catch (e) {
@@ -336,46 +350,36 @@ router.get('/stakeholder-details/:stakeholderId', async function (req, res) {
         delete stakeholder.residentialAddress;
       }
       if (stakeholder.country) {
-        stakeholder.country = [
-          {
-            label: stakeholder.country.name,
-            value: stakeholder.country.code,
-          },
-        ];
+        stakeholder.country = {
+          label: stakeholder.country.name,
+          value: stakeholder.country.code,
+        };
       }
       if (stakeholder.entityType) {
-        stakeholder.entityType = [
-          {
-            label: stakeholder.entityType
-              .replace(/_/g, ' ')
-              .replace(/\w\S*/g, function (txt) {
-                return (
-                  txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
-                );
-              }),
-            value: stakeholder.entityType,
-          },
-        ];
+        stakeholder.entityType = {
+          label: stakeholder.entityType
+            .replace(/_/g, ' ')
+            .replace(/\w\S*/g, function (txt) {
+              return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+            }),
+          value: stakeholder.entityType,
+        };
       }
       if (stakeholder.entityName) {
-        stakeholder.entityName = [
-          {
-            label: stakeholder.entityName,
-            value: stakeholder.entityName,
-          },
-        ];
+        stakeholder.entityName = {
+          label: stakeholder.entityName,
+          value: stakeholder.entityName,
+        };
       }
       if (stakeholder.state) {
         const state = StaticData.australianStates.find((i) => {
           if (i._id === stakeholder.state) return i;
         });
         if (state) {
-          stakeholder.state = [
-            {
-              label: state.name,
-              value: stakeholder.state,
-            },
-          ];
+          stakeholder.state = {
+            label: state.name,
+            value: stakeholder.state,
+          };
         }
       }
       if (stakeholder.streetType) {
@@ -383,12 +387,10 @@ router.get('/stakeholder-details/:stakeholderId', async function (req, res) {
           if (i._id === stakeholder.streetType) return i;
         });
         if (streetType) {
-          stakeholder.streetType = [
-            {
-              label: streetType.name,
-              value: stakeholder.streetType,
-            },
-          ];
+          stakeholder.streetType = {
+            label: streetType.name,
+            value: stakeholder.streetType,
+          };
         }
       }
     }
@@ -900,6 +902,200 @@ router.get('/credit-limit/:debtorId', async function (req, res) {
       'Error occurred in get client-debtor details ',
       e.message || e,
     );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Search from ABN/ACN Number
+ */
+router.get('/search-entity/:searchString', async function (req, res) {
+  if (!req.params.searchString) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    let entityData;
+    if (req.params.searchString.length < 10) {
+      entityData = await getEntityDetailsByACN({
+        searchString: req.params.searchString,
+      });
+    } else {
+      entityData = await getEntityDetailsByABN({
+        searchString: req.params.searchString,
+      });
+    }
+    let response = {};
+    if (entityData && entityData.response) {
+      const entityDetails =
+        entityData.response.businessEntity202001 ||
+        entityData.response.businessEntity201408;
+      if (entityDetails) {
+        if (entityDetails.entityType) {
+          const entityType = await resolveEntityType({
+            entityType: entityDetails.entityType.entityDescription,
+          });
+          const entityTypes = [
+            'PROPRIETARY_LIMITED',
+            'LIMITED',
+            'CORPORATION',
+            'INCORPORATED',
+            'NO_LIABILITY',
+            'PROPRIETARY',
+            'REGISTERED_BODY',
+          ];
+          if (!entityTypes.includes(entityType)) {
+            return res.status(400).send({
+              status: 'ERROR',
+              messageCode: 'INVALID_ENTITY_TYPE',
+              message: 'Invalid entity type',
+            });
+          }
+          response.entityType = {
+            label: entityType
+              .replace(/_/g, ' ')
+              .replace(/\w\S*/g, function (txt) {
+                return (
+                  txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+                );
+              }),
+            value: entityType,
+          };
+        }
+        if (entityDetails.ABN) response.abn = entityDetails.ABN.identifierValue;
+        if (
+          entityDetails.entityStatus &&
+          entityDetails.entityStatus.entityStatusCode
+        )
+          response.isActive = entityDetails.entityStatus.entityStatusCode;
+        if (
+          entityDetails.entityStatus &&
+          entityDetails.entityStatus.effectiveFrom
+        )
+          response.registeredDate = entityDetails.entityStatus.effectiveFrom;
+        if (entityDetails.ASICNumber)
+          response.acn =
+            typeof entityDetails.ASICNumber === 'string'
+              ? entityDetails.ASICNumber
+              : '';
+        if (entityDetails.goodsAndServicesTax)
+          response.gstStatus = entityDetails.goodsAndServicesTax.effectiveFrom;
+        if (entityDetails.mainName)
+          response.entityName = {
+            label: Array.isArray(entityDetails.mainName)
+              ? entityDetails.mainName[0].organisationName
+              : entityDetails.mainName.organisationName,
+            value: Array.isArray(entityDetails.mainName)
+              ? entityDetails.mainName[0].organisationName
+              : entityDetails.mainName.organisationName,
+          };
+        const tradingName =
+          entityDetails.mainTradingName || entityDetails.businessName;
+        if (tradingName)
+          response.tradingName =
+            tradingName.organisationName ||
+            typeof tradingName.organisationName === 'string'
+              ? tradingName.organisationName
+              : tradingName[0].organisationName;
+        if (entityDetails.mainBusinessPhysicalAddress[0]) {
+          const state = StaticData.australianStates.find((i) => {
+            if (
+              i._id === entityDetails.mainBusinessPhysicalAddress[0].stateCode
+            )
+              return i;
+          });
+          response.state = {
+            label:
+              state && state.name
+                ? state.name
+                : entityDetails.mainBusinessPhysicalAddress[0].stateCode,
+            value: entityDetails.mainBusinessPhysicalAddress[0].stateCode,
+          };
+        }
+        if (entityDetails.mainBusinessPhysicalAddress[0])
+          response.postCode =
+            entityDetails.mainBusinessPhysicalAddress[0].postcode;
+      } else {
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'NO_DATA_FOUND',
+          message: 'No data found',
+        });
+      }
+    }
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: response,
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in search by ABN number  ', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Search from Entity Name
+ */
+router.get('/search-entity-list', async function (req, res) {
+  if (!req.query.searchString) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    let entityList = await getEntityListByName({
+      searchString: req.query.searchString,
+    });
+    let response = [];
+    let entityData = {};
+    if (
+      entityList.ABRPayloadSearchResults.response &&
+      entityList.ABRPayloadSearchResults.response.searchResultsList &&
+      entityList.ABRPayloadSearchResults.response.searchResultsList
+        .searchResultsRecord.length !== 0
+    ) {
+      entityList.ABRPayloadSearchResults.response.searchResultsList.searchResultsRecord.forEach(
+        (data) => {
+          entityData = {};
+          if (data.ABN) entityData.abn = data.ABN.identifierValue;
+          if (data.ABN) entityData.status = data.ABN.identifierStatus;
+          let fieldName =
+            data.mainName ||
+            data.businessName ||
+            data.otherTradingName ||
+            data.mainTradingName;
+          if (fieldName) {
+            entityData.label = fieldName.organisationName;
+            entityData.value = fieldName.organisationName;
+          }
+          if (data.mainBusinessPhysicalAddress) {
+            entityData.state =
+              typeof data.mainBusinessPhysicalAddress.stateCode === 'string'
+                ? data.mainBusinessPhysicalAddress.stateCode
+                : '';
+            entityData.postCode = data.mainBusinessPhysicalAddress.postcode;
+          }
+          response.push(entityData);
+        },
+      );
+    }
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: response,
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in search by ABN number  ', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

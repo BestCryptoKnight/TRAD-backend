@@ -48,7 +48,7 @@ const uploadDocument = ({
       });
       console.log('s3Response : ', s3Response);
       const document = await Document.create({
-        keyPath: s3Response.key,
+        keyPath: s3Response.key || s3Response.Key,
         documentTypeId,
         description,
         originalFileName,

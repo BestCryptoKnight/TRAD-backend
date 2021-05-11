@@ -313,59 +313,50 @@ router.get('/details/:applicationId', async function (req, res) {
       .select({ createdAt: 0, updatedAt: 0, __v: 0 })
       .lean();
     let response = {};
-    response.status = [
-      {
-        label: application.status
-          .replace(/_/g, ' ')
-          .replace(/\w\S*/g, function (txt) {
-            return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
-          }),
-        value: application.status,
-      },
-    ];
+    response.status = {
+      label: application.status
+        .replace(/_/g, ' ')
+        .replace(/\w\S*/g, function (txt) {
+          return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+        }),
+      value: application.status,
+    };
     if (application.status === 'DRAFT') {
       response._id = application._id;
       response.applicationStage = application.applicationStage;
       response.company = {};
       if (application.clientId) {
-        response.company.clientId = [
-          {
-            value: application.clientId._id,
-            label: application.clientId.name,
-          },
-        ];
+        response.company.clientId = {
+          value: application.clientId._id,
+          label: application.clientId.name,
+        };
       }
       if (application.debtorId) {
-        response.company.debtorId = [
-          {
-            value: application.debtorId._id,
-            label: application.debtorId.entityName,
-          },
-        ];
+        response.company.debtorId = {
+          value: application.debtorId._id,
+          label: application.debtorId.entityName,
+        };
+
         for (let key in application.debtorId) {
           response.company[key] = application.debtorId[key];
         }
         if (response.company.entityName) {
-          response.company.entityName = [
-            {
-              value: application.debtorId._id,
-              label: response.company.entityName,
-            },
-          ];
+          response.company.entityName = {
+            value: application.debtorId._id,
+            label: response.company.entityName,
+          };
         }
         if (response.company.entityType) {
-          response.company.entityType = [
-            {
-              value: response.company.entityType,
-              label: response.company.entityType
-                .replace(/_/g, ' ')
-                .replace(/\w\S*/g, function (txt) {
-                  return (
-                    txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
-                  );
-                }),
-            },
-          ];
+          response.company.entityType = {
+            value: response.company.entityType,
+            label: response.company.entityType
+              .replace(/_/g, ' ')
+              .replace(/\w\S*/g, function (txt) {
+                return (
+                  txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+                );
+              }),
+          };
         }
         for (let key in response.company.address) {
           response.company[key] = response.company.address[key];
@@ -381,34 +372,28 @@ router.get('/details/:applicationId', async function (req, res) {
                   if (i._id === response.company.state) return i;
                 })
               : { name: response.company.state };
-          response.company.state = [
-            {
-              value: response.company.state,
-              label: state && state.name ? state.name : response.company.state,
-            },
-          ];
+          response.company.state = {
+            value: response.company.state,
+            label: state && state.name ? state.name : response.company.state,
+          };
         }
         if (response.company.country) {
-          response.company.country = [
-            {
-              value: response.company.country.code,
-              label: response.company.country.name,
-            },
-          ];
+          response.company.country = {
+            value: response.company.country.code,
+            label: response.company.country.name,
+          };
         }
         if (response.company.streetType) {
           const streetType = StaticData.streetType.find((i) => {
             if (i._id === response.company.streetType) return i;
           });
-          response.company.streetType = [
-            {
-              value: response.company.streetType,
-              label:
-                streetType && streetType.name
-                  ? streetType.name
-                  : response.company.streetType,
-            },
-          ];
+          response.company.streetType = {
+            value: response.company.streetType,
+            label:
+              streetType && streetType.name
+                ? streetType.name
+                : response.company.streetType,
+          };
         }
         delete response.company.address;
       }
@@ -419,6 +404,7 @@ router.get('/details/:applicationId', async function (req, res) {
           extendedPaymentTermsDetails: application.extendedPaymentTermsDetails,
           isPassedOverdueAmount: application.isPassedOverdueAmount,
           passedOverdueDetails: application.passedOverdueDetails,
+          note: application.note,
         };
       }
       if (directors && directors.length !== 0) {
@@ -427,12 +413,10 @@ router.get('/details/:applicationId', async function (req, res) {
           partner.isDisabled = true;
           if (partner.type === 'individual') {
             if (partner.title) {
-              partner.title = [
-                {
-                  value: partner.title,
-                  label: partner.title,
-                },
-              ];
+              partner.title = {
+                value: partner.title,
+                label: partner.title,
+              };
             }
             for (let key in partner.residentialAddress) {
               partner[key] = partner.residentialAddress[key];
@@ -448,54 +432,44 @@ router.get('/details/:applicationId', async function (req, res) {
                       if (i._id === partner.state) return i;
                     })
                   : { name: partner.state };
-              partner.state = [
-                {
-                  value: partner.state,
-                  label: state && state.name ? state.name : partner.state,
-                },
-              ];
+              partner.state = {
+                value: partner.state,
+                label: state && state.name ? state.name : partner.state,
+              };
             }
             if (partner.streetType) {
               const streetType = StaticData.streetType.find((i) => {
                 if (i._id === partner.streetType) return i;
               });
-              partner.streetType = [
-                {
-                  value: partner.streetType,
-                  label:
-                    streetType && streetType.name
-                      ? streetType.name
-                      : partner.streetType,
-                },
-              ];
+              partner.streetType = {
+                value: partner.streetType,
+                label:
+                  streetType && streetType.name
+                    ? streetType.name
+                    : partner.streetType,
+              };
             }
             if (partner.country) {
-              partner.country = [
-                {
-                  value: partner.country.code,
-                  label: partner.country.name,
-                },
-              ];
+              partner.country = {
+                value: partner.country.code,
+                label: partner.country.name,
+              };
             }
             delete partner.residentialAddress;
           } else {
             if (partner.entityName) {
-              partner.entityName = [
-                {
-                  value: application.debtorId._id,
-                  label: partner.entityName,
-                },
-              ];
+              partner.entityName = {
+                value: application.debtorId._id,
+                label: partner.entityName,
+              };
             }
             if (partner.entityType) {
-              partner.entityType = [
-                {
-                  value: partner.entityType,
-                  label:
-                    partner.entityType.charAt(0).toUpperCase() +
-                    partner.entityType.slice(1).toLowerCase(),
-                },
-              ];
+              partner.entityType = {
+                value: partner.entityType,
+                label:
+                  partner.entityType.charAt(0).toUpperCase() +
+                  partner.entityType.slice(1).toLowerCase(),
+              };
             }
           }
         });
@@ -572,6 +546,7 @@ router.get('/details/:applicationId', async function (req, res) {
         application.extendedPaymentTermsDetails;
       response.isPassedOverdueAmount = application.isPassedOverdueAmount;
       response.passedOverdueDetails = application.passedOverdueDetails;
+      response.note = application.note;
       response.applicationStatus = StaticData.applicationStatus.filter(
         (data) => data.value !== 'DRAFT',
       );
@@ -753,29 +728,28 @@ router.get('/search-entity/:searchString', async function (req, res) {
       const entityDetails =
         entityData.response.businessEntity202001 ||
         entityData.response.businessEntity201408;
-      console.log(entityDetails);
-      if (entityDetails.ABN) response.abn = entityDetails.ABN.identifierValue;
-      if (
-        entityDetails.entityStatus &&
-        entityDetails.entityStatus.entityStatusCode
-      )
-        response.isActive = entityDetails.entityStatus.entityStatusCode;
-      if (
-        entityDetails.entityStatus &&
-        entityDetails.entityStatus.effectiveFrom
-      )
-        response.registeredDate = entityDetails.entityStatus.effectiveFrom;
-      if (entityDetails.ASICNumber)
-        response.acn =
-          typeof entityDetails.ASICNumber === 'string'
-            ? entityDetails.ASICNumber
-            : '';
-      if (entityDetails.entityType) {
-        const entityType = await resolveEntityType({
-          entityType: entityDetails.entityType.entityDescription,
-        });
-        response.entityType = [
-          {
+      if (entityDetails) {
+        if (entityDetails.ABN) response.abn = entityDetails.ABN.identifierValue;
+        if (
+          entityDetails.entityStatus &&
+          entityDetails.entityStatus.entityStatusCode
+        )
+          response.isActive = entityDetails.entityStatus.entityStatusCode;
+        if (
+          entityDetails.entityStatus &&
+          entityDetails.entityStatus.effectiveFrom
+        )
+          response.registeredDate = entityDetails.entityStatus.effectiveFrom;
+        if (entityDetails.ASICNumber)
+          response.acn =
+            typeof entityDetails.ASICNumber === 'string'
+              ? entityDetails.ASICNumber
+              : '';
+        if (entityDetails.entityType) {
+          const entityType = await resolveEntityType({
+            entityType: entityDetails.entityType.entityDescription,
+          });
+          response.entityType = {
             label: entityType
               .replace(/_/g, ' ')
               .replace(/\w\S*/g, function (txt) {
@@ -784,48 +758,52 @@ router.get('/search-entity/:searchString', async function (req, res) {
                 );
               }),
             value: entityType,
-          },
-        ];
-      }
-      if (entityDetails.goodsAndServicesTax)
-        response.gstStatus = entityDetails.goodsAndServicesTax.effectiveFrom;
-      if (entityDetails.mainName)
-        response.entityName = [
-          {
+          };
+        }
+        if (entityDetails.goodsAndServicesTax)
+          response.gstStatus = entityDetails.goodsAndServicesTax.effectiveFrom;
+        if (entityDetails.mainName)
+          response.entityName = {
             label: Array.isArray(entityDetails.mainName)
               ? entityDetails.mainName[0].organisationName
               : entityDetails.mainName.organisationName,
             value: Array.isArray(entityDetails.mainName)
               ? entityDetails.mainName[0].organisationName
               : entityDetails.mainName.organisationName,
-          },
-        ];
-      const tradingName =
-        entityDetails.mainTradingName || entityDetails.businessName;
-      if (tradingName)
-        response.tradingName =
-          tradingName.organisationName ||
-          typeof tradingName.organisationName === 'string'
-            ? tradingName.organisationName
-            : tradingName[0].organisationName;
-      if (entityDetails.mainBusinessPhysicalAddress[0]) {
-        const state = StaticData.australianStates.find((i) => {
-          if (i._id === entityDetails.mainBusinessPhysicalAddress[0].stateCode)
-            return i;
-        });
-        response.state = [
-          {
+          };
+        const tradingName =
+          entityDetails.mainTradingName || entityDetails.businessName;
+        if (tradingName)
+          response.tradingName =
+            tradingName.organisationName ||
+            typeof tradingName.organisationName === 'string'
+              ? tradingName.organisationName
+              : tradingName[0].organisationName;
+        if (entityDetails.mainBusinessPhysicalAddress[0]) {
+          const state = StaticData.australianStates.find((i) => {
+            if (
+              i._id === entityDetails.mainBusinessPhysicalAddress[0].stateCode
+            )
+              return i;
+          });
+          response.state = {
             label:
               state && state.name
                 ? state.name
                 : entityDetails.mainBusinessPhysicalAddress[0].stateCode,
             value: entityDetails.mainBusinessPhysicalAddress[0].stateCode,
-          },
-        ];
+          };
+        }
+        if (entityDetails.mainBusinessPhysicalAddress[0])
+          response.postCode =
+            entityDetails.mainBusinessPhysicalAddress[0].postcode;
+      } else {
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'NO_DATA_FOUND',
+          message: 'No data found',
+        });
       }
-      if (entityDetails.mainBusinessPhysicalAddress[0])
-        response.postCode =
-          entityDetails.mainBusinessPhysicalAddress[0].postcode;
     }
     res.status(200).send({
       status: 'SUCCESS',

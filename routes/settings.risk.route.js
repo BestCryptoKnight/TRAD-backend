@@ -514,14 +514,12 @@ router.get('/document-type-details/:documentTypeId', async function (req, res) {
       .select('_id documentFor documentTitle')
       .lean();
     if (documentType.documentFor) {
-      documentType.documentFor = [
-        {
-          label:
-            documentType.documentFor.charAt(0).toUpperCase() +
-            documentType.documentFor.slice(1),
-          value: documentType.documentFor,
-        },
-      ];
+      documentType.documentFor = {
+        label:
+          documentType.documentFor.charAt(0).toUpperCase() +
+          documentType.documentFor.slice(1),
+        value: documentType.documentFor,
+      };
     }
     res.status(200).send({
       status: 'SUCCESS',

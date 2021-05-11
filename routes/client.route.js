@@ -99,6 +99,9 @@ router.get('/user', async function (req, res) {
     req.query.sortOrder = req.query.sortOrder || 'desc';
     req.query.limit = req.query.limit || 5;
     req.query.page = req.query.page || 1;
+    if (req.query.hasOwnProperty('isDecisionMaker')) {
+      queryFilter.isDecisionMaker = req.query.isDecisionMaker;
+    }
     if (req.query.search) {
       queryFilter.name = { $regex: `${req.query.search}`, $options: 'i' };
     }
@@ -138,8 +141,12 @@ router.get('/user', async function (req, res) {
     const headers = [];
     for (let i = 0; i < module.manageColumns.length; i++) {
       if (clientColumn.columns.includes(module.manageColumns[i].name)) {
-        if (module.manageColumns[i].name === 'name')
+        if (module.manageColumns[i].name === 'hasPortalAccess') {
           module.manageColumns[i].type = 'string';
+        }
+        if (module.manageColumns[i].name === 'name') {
+          module.manageColumns[i].type = 'string';
+        }
         delete module.manageColumns[i].request;
         delete module.manageColumns[i].isDisabled;
         headers.push(module.manageColumns[i]);

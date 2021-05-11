@@ -597,8 +597,9 @@ router.put('/:userId', async function (req, res) {
     if (req.body.name) updateObj.name = req.body.name;
     if (req.body.maxCreditLimit)
       updateObj.maxCreditLimit = req.body.maxCreditLimit;
-    if (req.body.contactNumber)
-      updateObj.contactNumber = req.body.contactNumber;
+    updateObj.contactNumber = req.body.contactNumber
+      ? req.body.contactNumber
+      : '';
     if (req.body.role) updateObj.role = req.body.role;
     if (req.body.moduleAccess) updateObj.moduleAccess = req.body.moduleAccess;
     let promises = [];
