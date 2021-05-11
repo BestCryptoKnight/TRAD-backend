@@ -384,11 +384,11 @@ router.post('/', async function (req, res) {
       title: req.body.title,
       description: req.body.description,
       entityType: req.body.entityType.toLowerCase(),
-      entityId: req.body.entityId.split('|')[1],
+      entityId: req.body.entityId,
       createdByType: 'client-user',
       createdById: req.user.clientId,
-      assigneeType: req.body.entityId.split('|')[0],
-      assigneeId: req.body.assigneeId,
+      assigneeType: req.body.assigneeId.split('|')[0],
+      assigneeId: req.body.assigneeId.split('|')[1],
       dueDate: req.body.dueDate,
     });
     //TODO add audit log
