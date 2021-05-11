@@ -294,7 +294,7 @@
             "url": "document/download?action=view&documentIds="
           }
         },
-        { "name": "uploadById", "label": "Upload By", "type": "string" },
+        { "name": "uploadById", "label": "Uploaded By", "type": "string" },
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
@@ -486,7 +486,7 @@
             "url": "document/download?action=view&documentIds="
           }
         },
-        { "name": "uploadById", "label": "Upload By", "type": "string" },
+        { "name": "uploadById", "label": "Uploaded By", "type": "string" },
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],

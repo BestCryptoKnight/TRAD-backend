@@ -270,6 +270,7 @@ router.get('/', async function (req, res) {
     const taskColumn = req.user.manageColumns.find(
       (i) => i.moduleName === req.query.columnFor,
     );
+    taskColumn.columns.push('isCompleted');
     const query = await aggregationQuery({
       taskColumn: taskColumn.columns,
       requestedQuery: req.query,
