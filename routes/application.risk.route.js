@@ -1043,6 +1043,21 @@ router.put('/', async function (req, res) {
   try {
     let response;
     let message;
+    if (req.body.applicationId) {
+      const application = await Application.findOne({
+        _id: req.body.applicationId,
+        status: {
+          $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED', 'DRAFT'],
+        },
+      }).lean();
+      if (application) {
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'APPLICATION_ALREADY_EXISTS',
+          message: 'Application already exists',
+        });
+      }
+    }
     switch (req.body.stepper) {
       case 'company':
         response = await storeCompanyDetails({
