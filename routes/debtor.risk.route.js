@@ -671,7 +671,9 @@ router.get('/details/:debtorId', async function (req, res) {
     const application = await Application.findOne({
       debtorId: req.params.debtorId,
       clientId: req.query.clientId,
-      status: { $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED'] },
+      status: {
+        $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED', 'DRAFT'],
+      },
     }).lean();
     if (application) {
       return res.status(400).send({

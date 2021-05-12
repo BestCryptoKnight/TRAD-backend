@@ -1043,21 +1043,6 @@ router.put('/', async function (req, res) {
   try {
     let response;
     let message;
-    if (req.body.applicationId) {
-      const application = await Application.findOne({
-        _id: req.body.applicationId,
-        status: {
-          $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED', 'DRAFT'],
-        },
-      }).lean();
-      if (application) {
-        return res.status(400).send({
-          status: 'ERROR',
-          messageCode: 'APPLICATION_ALREADY_EXISTS',
-          message: 'Application already exists',
-        });
-      }
-    }
     switch (req.body.stepper) {
       case 'company':
         response = await storeCompanyDetails({
@@ -1094,14 +1079,30 @@ router.put('/', async function (req, res) {
           .lean();
         break;
       case 'confirmation':
+        const application = await Application.findOne({
+          _id: req.body.applicationId,
+          status: {
+            $nin: [
+              'DECLINED',
+              'CANCELLED',
+              'WITHDRAWN',
+              'SURRENDERED',
+              'DRAFT',
+            ],
+          },
+        }).lean();
+        if (application) {
+          return res.status(400).send({
+            status: 'ERROR',
+            messageCode: 'APPLICATION_ALREADY_EXISTS',
+            message: 'Application already exists',
+          });
+        }
         await Application.updateOne(
           { _id: req.body.applicationId },
           { $set: { status: 'SUBMITTED', $inc: { applicationStage: 1 } } },
         );
         message = 'Application submitted successfully.';
-        const application = await Application.findById(
-          req.body.applicationId,
-        ).lean();
         await addAuditLog({
           entityType: 'application',
           entityRefId: application._id,
