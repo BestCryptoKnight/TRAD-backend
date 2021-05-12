@@ -13,6 +13,7 @@ const DebtorDirector = mongoose.model('debtor-director');
  * */
 const Logger = require('./../services/logger');
 const { createDebtor } = require('./debtor.helper');
+const { getEntityDetailsByABN } = require('./abr.helper');
 
 //TODO add filter for expiry-date + credit-limit
 const getApplicationList = async ({
@@ -313,6 +314,22 @@ const storeCompanyDetails = async ({
         }
       } else {
         isDebtorExists = false;
+      }
+    }
+    if (requestBody.address.country.code === 'AUS' && requestBody.abn) {
+      const entityData = await getEntityDetailsByABN({
+        searchString: requestBody.abn,
+      });
+      if (
+        !entityData ||
+        !entityData.response ||
+        !entityData.response.businessEntity202001
+      ) {
+        return {
+          status: 'ERROR',
+          messageCode: 'INVALID_ABN_NUMBER',
+          message: 'Invalid ABN number',
+        };
       }
     }
     const { debtor, clientDebtor } = await createDebtor({
