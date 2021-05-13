@@ -1082,13 +1082,7 @@ router.put('/', async function (req, res) {
         const application = await Application.findOne({
           _id: req.body.applicationId,
           status: {
-            $nin: [
-              'DECLINED',
-              'CANCELLED',
-              'WITHDRAWN',
-              'SURRENDERED',
-              'DRAFT',
-            ],
+            $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED'],
           },
         }).lean();
         if (application) {
