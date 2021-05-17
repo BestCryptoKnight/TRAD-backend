@@ -83,6 +83,7 @@ const storeStakeholderDetails = async ({ stakeholder, debtorId }) => {
     const update = {
       isDeleted: false,
     };
+    let query = {};
     update.type = stakeholder.type.toLowerCase();
     update.debtorId = debtorId;
     if (stakeholder.type.toLowerCase() === 'individual') {
@@ -162,15 +163,26 @@ const storeStakeholderDetails = async ({ stakeholder, debtorId }) => {
       if (stakeholder.hasOwnProperty('allowToCheckCreditHistory'))
         update.allowToCheckCreditHistory =
           stakeholder.allowToCheckCreditHistory;
+      query = {
+        $or: [
+          {
+            driverLicenceNumber: stakeholder.driverLicenceNumber,
+          },
+          { dateOfBirth: stakeholder.dateOfBirth },
+        ],
+      };
     } else {
       if (stakeholder.abn) update.abn = stakeholder.abn;
       if (stakeholder.acn) update.acn = stakeholder.acn;
       if (stakeholder.entityType) update.entityType = stakeholder.entityType;
       if (stakeholder.entityName) update.entityName = stakeholder.entityName;
       if (stakeholder.tradingName) update.tradingName = stakeholder.tradingName;
+      query = {
+        $or: [{ abn: stakeholder.abn }, { acn: stakeholder.acn }],
+      };
     }
     console.log('update ', update);
-    return update;
+    return { query, update };
   } catch (e) {
     Logger.log.error(
       'Error occurred in store stakeholder details ',

@@ -314,9 +314,8 @@ router.get('/', async function (req, res) {
             task.entityType.charAt(0).toUpperCase() + task.entityType.slice(1);
         }
         if (taskColumn.columns.includes('assigneeId')) {
-          task.assigneeId = task.assigneeId.name[0]
-            ? task.assigneeId.name[0]
-            : '';
+          task.assigneeId =
+            task.assigneeId && task.assigneeId.name ? task.assigneeId.name : '';
         }
         if (taskColumn.columns.includes('entityId')) {
           task.entityId =
@@ -329,7 +328,10 @@ router.get('/', async function (req, res) {
               : '';
         }
         if (taskColumn.columns.includes('createdById')) {
-          task.createdById = task.createdById[0] ? task.createdById[0] : '';
+          task.createdById =
+            task.createdById[0] && task.createdById[0].name
+              ? task.createdById[0].name
+              : '';
         }
       });
     }

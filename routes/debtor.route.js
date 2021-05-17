@@ -331,6 +331,20 @@ router.get('/details/:debtorId', async function (req, res) {
     });
   }
   try {
+    const application = await Application.findOne({
+      debtorId: req.params.debtorId,
+      clientId: req.user.clientId,
+      status: {
+        $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED', 'DRAFT'],
+      },
+    }).lean();
+    if (application) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'APPLICATION_ALREADY_EXISTS',
+        message: 'Application already exists.',
+      });
+    }
     const debtor = await Debtor.findById(req.params.debtorId)
       .select({ isDeleted: 0, createdAt: 0, updatedAt: 0, __v: 0 })
       .lean();

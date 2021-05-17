@@ -138,6 +138,9 @@ const createDebtor = async ({
       : undefined;
     if (requestBody.entityName) update.entityName = requestBody.entityName;
     update.acn = requestBody.acn ? requestBody.acn : undefined;
+    update.registrationNumber = requestBody.registrationNumber
+      ? requestBody.registrationNumber
+      : undefined;
     if (requestBody.abn) update.abn = requestBody.abn;
     if (requestBody.isActive) update.isActive = requestBody.isActive;
     if (!isDebtorExists) {
@@ -149,12 +152,22 @@ const createDebtor = async ({
       );
     }
     await Debtor.updateOne(
-      { $or: [{ abn: requestBody.abn }, { acn: requestBody.acn }] },
+      {
+        $or: [
+          { abn: requestBody.abn },
+          { acn: requestBody.acn },
+          { registrationNumber: requestBody.registrationNumber },
+        ],
+      },
       update,
       { upsert: true },
     );
     const debtor = await Debtor.findOne({
-      $or: [{ abn: requestBody.abn }, { acn: requestBody.acn }],
+      $or: [
+        { abn: requestBody.abn },
+        { acn: requestBody.acn },
+        { registrationNumber: requestBody.registrationNumber },
+      ],
     }).lean();
     await ClientDebtor.updateOne(
       { clientId: clientId, debtorId: debtor._id },

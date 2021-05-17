@@ -111,6 +111,17 @@ router.put('/change-password', authenticate, async (req, res) => {
       clientUser.password,
     );
     if (isMatch) {
+      const isLastUsedPassword = await clientUser.comparePassword(
+        newPassword,
+        clientUser.password,
+      );
+      if (isLastUsedPassword) {
+        return res.status(400).send({
+          status: 'BAD_REQUEST',
+          messageCode: 'SAME_OLD_PASSWORD',
+          message: "User can't set last used password",
+        });
+      }
       clientUser.password = newPassword;
       await clientUser.save();
       Logger.log.info('Password changed successfully');
@@ -334,6 +345,17 @@ router.post('/reset-password', async (req, res) => {
               message: 'No user for the given mail id found',
             });
           } else {
+            const isLastUsedPassword = await clientUser.comparePassword(
+              req.body.password,
+              clientUser.password,
+            );
+            if (isLastUsedPassword) {
+              return res.status(400).send({
+                status: 'BAD_REQUEST',
+                messageCode: 'SAME_OLD_PASSWORD',
+                message: "User can't set last used password",
+              });
+            }
             clientUser.password = req.body.password;
             clientUser.jwtToken = [];
             await clientUser.save();

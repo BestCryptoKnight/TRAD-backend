@@ -1240,11 +1240,11 @@ router.post('/stakeholder/:debtorId', async function (req, res) {
     });
   }
   try {
-    const data = await storeStakeholderDetails({
+    const { query, update } = await storeStakeholderDetails({
       stakeholder: req.body,
       debtorId: req.params.debtorId,
     });
-    await DebtorDirector.create(data);
+    await DebtorDirector.updateOne(query, update, { upsert: true });
     res.status(200).send({
       status: 'SUCCESS',
       message: 'Stakeholder added successfully',
@@ -1339,7 +1339,7 @@ router.put('/stakeholder/:debtorId/:stakeholderId', async function (req, res) {
         message: 'Insufficient stakeholder details',
       });
     }
-    const update = await storeStakeholderDetails({
+    const { query, update } = await storeStakeholderDetails({
       stakeholder: req.body,
       debtorId: debtor._id,
     });

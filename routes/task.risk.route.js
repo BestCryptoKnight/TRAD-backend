@@ -24,6 +24,7 @@ const {
 const { getClientList } = require('./../helper/client.helper');
 const { getAccessBaseUserList } = require('./../helper/user.helper');
 const { addAuditLog, getEntityName } = require('./../helper/audit-log.helper');
+const { addNotification } = require('./../helper/notification.helper');
 
 /**
  * Get Column Names
@@ -328,9 +329,8 @@ router.get('/', async function (req, res) {
             task.entityType.charAt(0).toUpperCase() + task.entityType.slice(1);
         }
         if (taskColumn.columns.includes('assigneeId')) {
-          task.assigneeId = task.assigneeId.name[0]
-            ? task.assigneeId.name[0]
-            : '';
+          task.assigneeId =
+            task.assigneeId && task.assigneeId.name ? task.assigneeId.name : '';
         }
         if (taskColumn.columns.includes('entityId')) {
           task.entityId =
@@ -343,7 +343,10 @@ router.get('/', async function (req, res) {
               : '';
         }
         if (taskColumn.columns.includes('createdById')) {
-          task.createdById = task.createdById[0] ? task.createdById[0] : '';
+          task.createdById =
+            task.createdById[0] && task.createdById[0].name
+              ? task.createdById[0].name
+              : '';
         }
       });
     }
@@ -425,17 +428,25 @@ router.post('/', async function (req, res) {
           : req.body.taskFrom.toLowerCase(),
       });
     }
+    const message =
+      'A new task' +
+      (entityName ? ` for ${entityName} ` : ' ') +
+      `is successfully created by ${req.user.name}`;
     await addAuditLog({
       entityType: 'task',
       entityRefId: task._id,
       actionType: 'add',
       userType: 'user',
       userRefId: req.user._id,
-      logDescription:
-        `A new task` + entityName
-          ? `for ${entityName} `
-          : ' ' + `is successfully created by ${req.user.name}`,
+      logDescription: message,
     });
+    if (req.body.assigneeId.toString() !== req.user._id.toString()) {
+      await addNotification({
+        userId: req.body.assigneeId,
+        userType: 'user',
+        description: message,
+      });
+    }
     res
       .status(200)
       .send({ status: 'SUCCESS', message: 'Task created successfully' });
@@ -542,17 +553,25 @@ router.put('/:taskId', async function (req, res) {
         entityType: task.entityType.toLowerCase(),
       });
     }
+    const message =
+      'A task' +
+      (entityName ? ` for ${entityName} ` : ' ') +
+      `is successfully updated by ${req.user.name}`;
     await addAuditLog({
       entityType: 'task',
       entityRefId: task._id,
       actionType: 'edit',
       userType: 'user',
       userRefId: req.user._id,
-      logDescription:
-        `A task` + entityName
-          ? `for ${entityName} `
-          : ' ' + `is successfully updated by ${req.user.name}`,
+      logDescription: message,
     });
+    if (req.body.assigneeId.toString() !== req.user._id.toString()) {
+      await addNotification({
+        userId: req.body.assigneeId,
+        userType: 'user',
+        description: message,
+      });
+    }
     res
       .status(200)
       .send({ status: 'SUCCESS', message: 'Task updated successfully' });

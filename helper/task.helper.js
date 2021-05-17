@@ -314,9 +314,9 @@ const aggregationQuery = async ({
             as: 'assigneeId',
           },
         },
-        /*{
+        {
           $unwind: '$assigneeId',
-        },*/
+        },
       );
     } else {
       query.push(

@@ -485,9 +485,13 @@ router.get('/details/:applicationId', async function (req, res) {
             if (partner.entityType) {
               partner.entityType = {
                 value: partner.entityType,
-                label:
-                  partner.entityType.charAt(0).toUpperCase() +
-                  partner.entityType.slice(1).toLowerCase(),
+                label: partner.entityType
+                  .replace(/_/g, ' ')
+                  .replace(/\w\S*/g, function (txt) {
+                    return (
+                      txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+                    );
+                  }),
               };
             }
           }
@@ -644,72 +648,10 @@ router.get('/modules/:applicationId', async function (req, res) {
 });
 
 /**
- * Get Specific Entity's Application
- */
-router.get('/:entityId', async function (req, res) {
-  if (
-    !req.params.entityId ||
-    !req.query.listFor ||
-    !mongoose.Types.ObjectId.isValid(req.params.entityId)
-  ) {
-    return res.status(400).send({
-      status: 'ERROR',
-      messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Require fields are missing.',
-    });
-  }
-  try {
-    let queryFilter = {
-      isDeleted: false,
-    };
-    switch (req.query.listFor) {
-      case 'client-application':
-        queryFilter.clientId = mongoose.Types.ObjectId(req.params.entityId);
-        break;
-      case 'debtor-application':
-        queryFilter.debtorId = mongoose.Types.ObjectId(req.params.entityId);
-        break;
-      default:
-        return res.status(400).send({
-          status: 'ERROR',
-          messageCode: 'BAD_REQUEST',
-          message: 'Please pass correct fields',
-        });
-    }
-    const module = StaticFile.modules.find((i) => i.name === req.query.listFor);
-    const applicationColumn = req.user.manageColumns.find(
-      (i) => i.moduleName === req.query.listFor,
-    );
-    const response = await getApplicationList({
-      hasFullAccess: false,
-      applicationColumn: applicationColumn.columns,
-      isForRisk: true,
-      requestedQuery: req.query,
-      queryFilter: queryFilter,
-      moduleColumn: module.manageColumns,
-      userId: req.user._id,
-    });
-    res.status(200).send({
-      status: 'SUCCESS',
-      data: response,
-    });
-  } catch (e) {
-    Logger.log.error(
-      'Error occurred while getting specific entity applications ',
-      e.message || e,
-    );
-    res.status(500).send({
-      status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
-    });
-  }
-});
-
-/**
  * Search from ABN/ACN Number
  */
-router.get('/search-entity/:searchString', async function (req, res) {
-  if (!req.params.searchString || !req.query.clientId) {
+router.get('/search-entity', async function (req, res) {
+  if (!req.query.searchString || !req.query.clientId) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -718,7 +660,7 @@ router.get('/search-entity/:searchString', async function (req, res) {
   }
   try {
     const debtor = await Debtor.findOne({
-      $or: [{ abn: req.params.searchString }, { acn: req.params.searchString }],
+      $or: [{ abn: req.query.searchString }, { acn: req.query.searchString }],
     }).lean();
     if (debtor) {
       const application = await Application.findOne({
@@ -737,14 +679,14 @@ router.get('/search-entity/:searchString', async function (req, res) {
       }
     }
     let entityData;
-    if (req.params.searchString.length < 10) {
+    if (req.query.searchString.length < 10) {
       console.log('Get entity details from ACN number :: ');
       entityData = await getEntityDetailsByACN({
-        searchString: req.params.searchString,
+        searchString: req.query.searchString,
       });
     } else {
       entityData = await getEntityDetailsByABN({
-        searchString: req.params.searchString,
+        searchString: req.query.searchString,
       });
     }
     let response = {};
@@ -845,8 +787,8 @@ router.get('/search-entity/:searchString', async function (req, res) {
 /**
  * Search from Entity Name
  */
-router.get('/search-entity-list/:searchString', async function (req, res) {
-  if (!req.params.searchString || !req.query.clientId) {
+router.get('/search-entity-list', async function (req, res) {
+  if (!req.query.searchString || !req.query.clientId) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -854,27 +796,8 @@ router.get('/search-entity-list/:searchString', async function (req, res) {
     });
   }
   try {
-    const debtor = await Debtor.findOne({
-      $or: [{ abn: req.params.searchString }, { acn: req.params.searchString }],
-    }).lean();
-    if (debtor) {
-      const application = await Application.findOne({
-        clientId: req.query.clientId,
-        debtorId: debtor._id,
-        status: {
-          $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED', 'DRAFT'],
-        },
-      }).lean();
-      if (application) {
-        return res.status(400).send({
-          status: 'ERROR',
-          messageCode: 'APPLICATION_ALREADY_EXISTS',
-          message: 'Application already exists.',
-        });
-      }
-    }
     let entityList = await getEntityListByName({
-      searchString: req.params.searchString,
+      searchString: req.query.searchString,
     });
     let response = [];
     let entityData = {};
@@ -882,32 +805,42 @@ router.get('/search-entity-list/:searchString', async function (req, res) {
       entityList.ABRPayloadSearchResults.response &&
       entityList.ABRPayloadSearchResults.response.searchResultsList &&
       entityList.ABRPayloadSearchResults.response.searchResultsList
+        .searchResultsRecord &&
+      entityList.ABRPayloadSearchResults.response.searchResultsList
         .searchResultsRecord.length !== 0
     ) {
-      entityList.ABRPayloadSearchResults.response.searchResultsList.searchResultsRecord.forEach(
-        (data) => {
-          entityData = {};
-          if (data.ABN) entityData.abn = data.ABN.identifierValue;
-          if (data.ABN) entityData.status = data.ABN.identifierStatus;
-          let fieldName =
-            data.mainName ||
-            data.businessName ||
-            data.otherTradingName ||
-            data.mainTradingName;
-          if (fieldName) {
-            entityData.label = fieldName.organisationName;
-            entityData.value = fieldName.organisationName;
-          }
-          if (data.mainBusinessPhysicalAddress) {
-            entityData.state =
-              typeof data.mainBusinessPhysicalAddress.stateCode === 'string'
-                ? data.mainBusinessPhysicalAddress.stateCode
-                : '';
-            entityData.postCode = data.mainBusinessPhysicalAddress.postcode;
-          }
-          response.push(entityData);
-        },
-      );
+      const entities = Array.isArray(
+        entityList.ABRPayloadSearchResults.response.searchResultsList
+          .searchResultsRecord,
+      )
+        ? entityList.ABRPayloadSearchResults.response.searchResultsList
+            .searchResultsRecord
+        : [
+            entityList.ABRPayloadSearchResults.response.searchResultsList
+              .searchResultsRecord,
+          ];
+      entities.forEach((data) => {
+        entityData = {};
+        if (data.ABN) entityData.abn = data.ABN.identifierValue;
+        if (data.ABN) entityData.status = data.ABN.identifierStatus;
+        let fieldName =
+          data.mainName ||
+          data.businessName ||
+          data.otherTradingName ||
+          data.mainTradingName;
+        if (fieldName) {
+          entityData.label = fieldName.organisationName;
+          entityData.value = fieldName.organisationName;
+        }
+        if (data.mainBusinessPhysicalAddress) {
+          entityData.state =
+            typeof data.mainBusinessPhysicalAddress.stateCode === 'string'
+              ? data.mainBusinessPhysicalAddress.stateCode
+              : '';
+          entityData.postCode = data.mainBusinessPhysicalAddress.postcode;
+        }
+        response.push(entityData);
+      });
     }
     res.status(200).send({
       status: 'SUCCESS',
@@ -915,6 +848,68 @@ router.get('/search-entity-list/:searchString', async function (req, res) {
     });
   } catch (e) {
     Logger.log.error('Error occurred in search by ABN number  ', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Get Specific Entity's Application
+ */
+router.get('/:entityId', async function (req, res) {
+  if (
+    !req.params.entityId ||
+    !req.query.listFor ||
+    !mongoose.Types.ObjectId.isValid(req.params.entityId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    let queryFilter = {
+      isDeleted: false,
+    };
+    switch (req.query.listFor) {
+      case 'client-application':
+        queryFilter.clientId = mongoose.Types.ObjectId(req.params.entityId);
+        break;
+      case 'debtor-application':
+        queryFilter.debtorId = mongoose.Types.ObjectId(req.params.entityId);
+        break;
+      default:
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'BAD_REQUEST',
+          message: 'Please pass correct fields',
+        });
+    }
+    const module = StaticFile.modules.find((i) => i.name === req.query.listFor);
+    const applicationColumn = req.user.manageColumns.find(
+      (i) => i.moduleName === req.query.listFor,
+    );
+    const response = await getApplicationList({
+      hasFullAccess: false,
+      applicationColumn: applicationColumn.columns,
+      isForRisk: true,
+      requestedQuery: req.query,
+      queryFilter: queryFilter,
+      moduleColumn: module.manageColumns,
+      userId: req.user._id,
+    });
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: response,
+    });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred while getting specific entity applications ',
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -1007,7 +1002,7 @@ router.put('/', async function (req, res) {
       !req.body.address.country ||
       !req.body.address.postCode ||
       !req.body.entityType ||
-      (!req.body.abn && !req.body.acn) ||
+      (!req.body.abn && !req.body.acn && !req.body.registrationNumber) ||
       !req.body.entityName)
   ) {
     return res.status(400).send({

@@ -13,6 +13,7 @@ const debtorSchema = new Schema(
     debtorCode: Schema.Types.String,
     abn: { type: Schema.Types.String },
     acn: { type: Schema.Types.String },
+    registrationNumber: { type: Schema.Types.String },
     entityName: { type: Schema.Types.String },
     tradingName: { type: Schema.Types.String },
     entityType: {

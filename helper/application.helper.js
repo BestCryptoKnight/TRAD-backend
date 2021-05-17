@@ -224,7 +224,6 @@ const getApplicationList = async ({
     const applications = await Application.aggregate(query).allowDiskUse(true);
     if (applications && applications.length !== 0) {
       applications[0].paginatedResult.forEach((application) => {
-        console.log(application);
         if (applicationColumn.includes('entityType')) {
           application.entityType = application.debtorId.entityType
             .replace(/_/g, ' ')
@@ -295,7 +294,11 @@ const storeCompanyDetails = async ({
     let isDebtorExists = true;
     if (!requestBody.applicationId) {
       const debtorData = await Debtor.findOne({
-        $or: [{ abn: requestBody.abn }, { acn: requestBody.acn }],
+        $or: [
+          { abn: requestBody.abn },
+          { acn: requestBody.acn },
+          { registrationNumber: requestBody.registrationNumber },
+        ],
       }).lean();
       if (debtorData) {
         const application = await Application.findOne({
