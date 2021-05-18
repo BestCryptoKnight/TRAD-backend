@@ -16,8 +16,12 @@ const Logger = require('./../services/logger');
  */
 router.get('/', async function (req, res) {
   try {
-    const month = req.query.month || new Date().getMonth() + 1;
-    const year = req.query.year || new Date().getFullYear();
+    const month = req.query.month
+      ? parseInt(req.query.month)
+      : new Date().getMonth() + 1;
+    const year = req.query.year
+      ? parseInt(req.query.year)
+      : new Date().getFullYear();
     req.query.page = req.query.page || 1;
     req.query.limit = req.query.limit || 10;
     const query = [
@@ -92,7 +96,10 @@ router.get('/', async function (req, res) {
   }
 });
 
-router.get('/markAsRead/:notificationId', async function (req, res) {
+/**
+ * Update notification status
+ */
+router.put('/markAsRead/:notificationId', async function (req, res) {
   if (
     !req.params.notificationId ||
     !mongoose.Types.ObjectId.isValid(req.params.notificationId)
