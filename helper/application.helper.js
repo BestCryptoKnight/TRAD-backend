@@ -293,13 +293,15 @@ const storeCompanyDetails = async ({
     const client = await Client.findOne({ _id: clientId }).lean();
     let isDebtorExists = true;
     if (!requestBody.applicationId) {
-      const debtorData = await Debtor.findOne({
-        $or: [
-          { abn: requestBody.abn },
-          { acn: requestBody.acn },
-          { registrationNumber: requestBody.registrationNumber },
-        ],
-      }).lean();
+      let query;
+      if (requestBody.registrationNumber) {
+        query = { registrationNumber: requestBody.registrationNumber };
+      } else {
+        query = {
+          $or: [{ abn: requestBody.abn }, { acn: requestBody.acn }],
+        };
+      }
+      const debtorData = await Debtor.findOne(query).lean();
       if (debtorData) {
         const application = await Application.findOne({
           clientId: clientId,

@@ -151,24 +151,16 @@ const createDebtor = async ({
         { $inc: { 'entityCount.debtor': 1 } },
       );
     }
-    await Debtor.updateOne(
-      {
-        $or: [
-          { abn: requestBody.abn },
-          { acn: requestBody.acn },
-          { registrationNumber: requestBody.registrationNumber },
-        ],
-      },
-      update,
-      { upsert: true },
-    );
-    const debtor = await Debtor.findOne({
-      $or: [
-        { abn: requestBody.abn },
-        { acn: requestBody.acn },
-        { registrationNumber: requestBody.registrationNumber },
-      ],
-    }).lean();
+    let query;
+    if (requestBody.registrationNumber) {
+      query = { registrationNumber: requestBody.registrationNumber };
+    } else {
+      query = {
+        $or: [{ abn: requestBody.abn }, { acn: requestBody.acn }],
+      };
+    }
+    await Debtor.updateOne(query, update, { upsert: true });
+    const debtor = await Debtor.findOne(query).lean();
     await ClientDebtor.updateOne(
       { clientId: clientId, debtorId: debtor._id },
       {

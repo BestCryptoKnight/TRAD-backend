@@ -771,6 +771,7 @@ router.get('/credit-limit/:debtorId', async function (req, res) {
     const queryFilter = {
       isActive: true,
       debtorId: mongoose.Types.ObjectId(req.params.debtorId),
+      creditLimit: { $exists: true, $ne: null },
     };
     const aggregationQuery = [
       {
