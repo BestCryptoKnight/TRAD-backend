@@ -858,29 +858,42 @@ router.get('/search-entity-list/:searchString', async function (req, res) {
       entityList.ABRPayloadSearchResults.response &&
       entityList.ABRPayloadSearchResults.response.searchResultsList &&
       entityList.ABRPayloadSearchResults.response.searchResultsList
+        .searchResultsRecord &&
+      entityList.ABRPayloadSearchResults.response.searchResultsList
         .searchResultsRecord.length !== 0
     ) {
-      entityList.ABRPayloadSearchResults.response.searchResultsList.searchResultsRecord.forEach(
-        (data) => {
-          entityData = {};
-          if (data.ABN) entityData.abn = data.ABN.identifierValue;
-          if (data.ABN) entityData.status = data.ABN.identifierStatus;
-          let fieldName =
-            data.mainName ||
-            data.businessName ||
-            data.otherTradingName ||
-            data.mainTradingName;
-          if (fieldName) {
-            entityData.label = fieldName.organisationName;
-            entityData.value = fieldName.organisationName;
-          }
-          if (data.mainBusinessPhysicalAddress) {
-            entityData.state = data.mainBusinessPhysicalAddress.stateCode;
-            entityData.postCode = data.mainBusinessPhysicalAddress.postcode;
-          }
-          response.push(entityData);
-        },
-      );
+      const entities = Array.isArray(
+        entityList.ABRPayloadSearchResults.response.searchResultsList
+          .searchResultsRecord,
+      )
+        ? entityList.ABRPayloadSearchResults.response.searchResultsList
+            .searchResultsRecord
+        : [
+            entityList.ABRPayloadSearchResults.response.searchResultsList
+              .searchResultsRecord,
+          ];
+      entities.forEach((data) => {
+        entityData = {};
+        if (data.ABN) entityData.abn = data.ABN.identifierValue;
+        if (data.ABN) entityData.status = data.ABN.identifierStatus;
+        let fieldName =
+          data.mainName ||
+          data.businessName ||
+          data.otherTradingName ||
+          data.mainTradingName;
+        if (fieldName) {
+          entityData.label = fieldName.organisationName;
+          entityData.value = fieldName.organisationName;
+        }
+        if (data.mainBusinessPhysicalAddress) {
+          entityData.state =
+            typeof data.mainBusinessPhysicalAddress.stateCode === 'string'
+              ? data.mainBusinessPhysicalAddress.stateCode
+              : '';
+          entityData.postCode = data.mainBusinessPhysicalAddress.postcode;
+        }
+        response.push(entityData);
+      });
     }
     res.status(200).send({
       status: 'SUCCESS',
