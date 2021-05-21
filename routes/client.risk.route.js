@@ -38,16 +38,18 @@ router.get('/search-from-crm', async function (req, res) {
   try {
     let searchKeyword = req.query.searchKeyword;
     let clients = await RssHelper.getClients({ searchKeyword });
-    let clientIds = clients.map((client) => client.id);
-    let dbClients = await Client.find({
-      isDeleted: false,
-      crmClientId: { $in: clientIds },
-    }).select({ crmClientId: 1 });
     let responseArr = [];
-    dbClients = dbClients.map((dbClient) => dbClient.crmClientId);
-    for (let i = 0; i < clients.length; i++) {
-      if (dbClients.indexOf(clients[i].id.toString()) === -1) {
-        responseArr.push({ crmId: clients[i].id, name: clients[i].name });
+    if (clients) {
+      let clientIds = clients.map((client) => client.id);
+      let dbClients = await Client.find({
+        isDeleted: false,
+        crmClientId: { $in: clientIds },
+      }).select({ crmClientId: 1 });
+      dbClients = dbClients.map((dbClient) => dbClient.crmClientId);
+      for (let i = 0; i < clients.length; i++) {
+        if (dbClients.indexOf(clients[i].id.toString()) === -1) {
+          responseArr.push({ crmId: clients[i].id, name: clients[i].name });
+        }
       }
     }
     res.status(200).send({ status: 'SUCCESS', data: responseArr });

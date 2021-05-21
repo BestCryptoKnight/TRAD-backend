@@ -314,8 +314,16 @@ const getClientContacts = async ({ clientId }) => {
           ? crmContact.record['mobile']
           : crmContact.record['direct'],
         department: crmContact.record['department'],
-        hasLeftCompany: crmContact.record['leftcompany'],
-        isDecisionMaker: crmContact.record['decisionmaker'],
+        hasLeftCompany: !(
+          crmContact.record['leftcompany'] === '0' ||
+          crmContact.record['leftcompany'] === 0 ||
+          crmContact.record['leftcompany'] === null
+        ),
+        isDecisionMaker: !(
+          crmContact.record['decisionmaker'] === '0' ||
+          crmContact.record['decisionmaker'] === 0 ||
+          crmContact.record['decisionmaker'] === null
+        ),
       };
       contacts.push(contact);
     });

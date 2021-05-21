@@ -43,6 +43,7 @@ const clientUserSchema = new Schema(
     ],
     verificationOtp: Schema.Types.Number,
     otpExpireTime: Schema.Types.Date,
+    socketIds: [Schema.Types.String],
   },
   { timestamps: true },
 );

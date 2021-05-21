@@ -23,7 +23,8 @@ const {
   getApplicationList,
 } = require('./../helper/task.helper');
 const { getUserClientList } = require('./../helper/client.helper');
-const { addAuditLog } = require('./../helper/audit-log.helper');
+const { addAuditLog, getEntityName } = require('./../helper/audit-log.helper');
+const { sendNotification } = require('./../helper/socket.helper');
 
 /**
  * Get Column Names
@@ -270,6 +271,9 @@ router.get('/', async function (req, res) {
     const taskColumn = req.user.manageColumns.find(
       (i) => i.moduleName === req.query.columnFor,
     );
+    if (req.query.columnFor === 'task') {
+      req.query.requestedEntityId = req.user.clientId;
+    }
     taskColumn.columns.push('isCompleted');
     const query = await aggregationQuery({
       taskColumn: taskColumn.columns,
@@ -368,10 +372,6 @@ router.post('/', async function (req, res) {
   if (
     !req.body.taskFrom ||
     !req.body.title ||
-    !req.body.description ||
-    !req.body.priority ||
-    !req.body.entityType ||
-    !req.body.entityId ||
     !req.body.assigneeId ||
     !req.body.dueDate
   ) {
@@ -382,18 +382,27 @@ router.post('/', async function (req, res) {
     });
   }
   try {
-    await createTask({
-      priority: req.body.priority.toUpperCase(),
+    const data = {
       title: req.body.title,
-      description: req.body.description,
-      entityType: req.body.entityType.toLowerCase(),
-      entityId: req.body.entityId,
       createdByType: 'client-user',
       createdById: req.user.clientId,
       assigneeType: req.body.assigneeId.split('|')[0],
       assigneeId: req.body.assigneeId.split('|')[1],
       dueDate: req.body.dueDate,
-    });
+    };
+    if (req.body.entityType) {
+      data.entityType = req.body.entityType.toLowerCase();
+    }
+    if (req.body.entityId) {
+      data.entityId = req.body.entityId;
+    }
+    if (req.body.description) {
+      data.description = req.body.description;
+    }
+    if (req.body.priority) {
+      data.priority = req.body.priority.toUpperCase();
+    }
+    const task = await createTask(data);
     //TODO add audit log
     res
       .status(200)
@@ -486,7 +495,8 @@ router.put('/:taskId', async function (req, res) {
     if (req.body.entityId) updateObj.entityId = req.body.entityId;
     if (req.body.assigneeId) updateObj.assigneeId = req.body.assigneeId;
     if (req.body.dueDate) updateObj.dueDate = req.body.dueDate;
-    if (req.body.isCompleted) updateObj.isCompleted = req.body.isCompleted;
+    if (req.body.hasOwnProperty('isCompleted'))
+      updateObj.isCompleted = req.body.isCompleted;
     await Task.updateOne({ _id: req.params.taskId }, updateObj);
     res
       .status(200)

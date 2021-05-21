@@ -11,8 +11,13 @@ const Logger = require('./../services/logger');
 
 const addNotification = async ({ userType, userId, description }) => {
   try {
-    await Notification.create({ userType, userId, description });
+    const notification = await Notification.create({
+      userType,
+      userId,
+      description,
+    });
     Logger.log.info('Notification added');
+    return notification;
   } catch (e) {
     Logger.log.error(`Error occurred in add notification `, e.message || e);
   }

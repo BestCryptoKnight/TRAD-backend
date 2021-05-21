@@ -15,6 +15,9 @@ const User = mongoose.model('user');
 const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
 const { getAccessBaseUserList } = require('./../helper/user.helper');
+const { getClientById } = require('./../helper/rss.helper');
+const { getEntityDetailsByABN } = require('./../helper/abr.helper');
+const { fetchCreditReport } = require('./../helper/illion.helper');
 
 /**
  * Get Column Names
@@ -578,6 +581,57 @@ router.get('/origination-details', async function (req, res) {
       'Error occurred in getting organization details ',
       e.message || e,
     );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Test credentials
+ */
+router.get('/test-credentials', async function (req, res) {
+  if (!req.query.apiName) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    let response;
+    switch (req.query.apiName) {
+      case 'rss':
+        response = await getClientById({ clientId: 8869 });
+        break;
+      case 'abn':
+        response = await getEntityDetailsByABN({ searchString: 51069691676 });
+        break;
+      case 'illion':
+        response = await fetchCreditReport({
+          productCode: 'HXBCA',
+          searchValue: 51069691676,
+          searchField: 'ABN',
+        });
+        break;
+      default:
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'BAD_REQUEST',
+          message: 'Please pass correct fields',
+        });
+    }
+    if (response) {
+      res.status(200).send({
+        status: 'SUCCESS',
+        message: 'Credentials tested successfully',
+      });
+    } else {
+      res.status(400).send({ status: 'SUCCESS', message: 'Wrong credentials' });
+    }
+  } catch (e) {
+    Logger.log.error('Error occurred in test rss token', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

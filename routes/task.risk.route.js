@@ -25,6 +25,7 @@ const { getClientList } = require('./../helper/client.helper');
 const { getAccessBaseUserList } = require('./../helper/user.helper');
 const { addAuditLog, getEntityName } = require('./../helper/audit-log.helper');
 const { addNotification } = require('./../helper/notification.helper');
+const { sendNotification } = require('./../helper/socket.helper');
 
 /**
  * Get Column Names
@@ -214,11 +215,13 @@ router.get('/details/:taskId', async function (req, res) {
     let value;
     if (task.assigneeId) {
       const user = await User.findById(task.assigneeId).lean();
-      value = user.name;
-      task.assigneeId = {
-        label: user.name,
-        value: task.assigneeId,
-      };
+      if (user && user.name) {
+        value = user.name;
+        task.assigneeId = {
+          label: user.name,
+          value: task.assigneeId,
+        };
+      }
     }
     if (task.entityId && task.entityType) {
       let response;
@@ -428,24 +431,36 @@ router.post('/', async function (req, res) {
           : req.body.taskFrom.toLowerCase(),
       });
     }
-    const message =
-      'A new task' +
-      (entityName ? ` for ${entityName} ` : ' ') +
-      `is successfully created by ${req.user.name}`;
     await addAuditLog({
       entityType: 'task',
       entityRefId: task._id,
       actionType: 'add',
       userType: 'user',
       userRefId: req.user._id,
-      logDescription: message,
+      logDescription:
+        'A new task' +
+        (entityName ? ` for ${entityName} ` : ' ') +
+        `is successfully created by ${req.user.name}`,
     });
     if (req.body.assigneeId.toString() !== req.user._id.toString()) {
-      await addNotification({
+      const notification = await addNotification({
         userId: req.body.assigneeId,
         userType: 'user',
-        description: message,
+        description:
+          `A new task ${req.body.title}` +
+          (entityName ? ` for ${entityName} ` : ' ') +
+          `is assigned by ${req.user.name}`,
       });
+      if (notification) {
+        sendNotification({
+          notificationObj: {
+            type: 'TASK_ASSIGNED',
+            data: notification,
+          },
+          type: 'user',
+          userId: req.user._id,
+        });
+      }
     }
     res
       .status(200)
@@ -553,24 +568,36 @@ router.put('/:taskId', async function (req, res) {
         entityType: task.entityType.toLowerCase(),
       });
     }
-    const message =
-      'A task' +
-      (entityName ? ` for ${entityName} ` : ' ') +
-      `is successfully updated by ${req.user.name}`;
     await addAuditLog({
       entityType: 'task',
       entityRefId: task._id,
       actionType: 'edit',
       userType: 'user',
       userRefId: req.user._id,
-      logDescription: message,
+      logDescription:
+        'A task' +
+        (entityName ? ` for ${entityName} ` : ' ') +
+        `is successfully updated by ${req.user.name}`,
     });
-    if (req.body.assigneeId.toString() !== req.user._id.toString()) {
-      await addNotification({
-        userId: req.body.assigneeId,
+    if (task.toString() !== req.user._id.toString()) {
+      const notification = await addNotification({
+        userId: task.assigneeId,
         userType: 'user',
-        description: message,
+        description:
+          `A task ${task.title}` +
+          (entityName ? ` for ${entityName} ` : ' ') +
+          `is updated by ${req.user.name}`,
       });
+      if (notification) {
+        sendNotification({
+          notificationObj: {
+            type: 'TASK_UPDATED',
+            data: notification,
+          },
+          type: 'user',
+          userId: req.user._id,
+        });
+      }
     }
     res
       .status(200)

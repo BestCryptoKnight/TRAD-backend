@@ -11,7 +11,7 @@ const Schema = mongoose.Schema;
 const notificationSchema = new Schema(
   {
     isRead: { type: Schema.Types.Boolean, default: false },
-    userType: { type: Schema.Types.String, enum: ['user', 'client'] },
+    userType: { type: Schema.Types.String, enum: ['user', 'client-user'] },
     userId: { type: Schema.Types.ObjectId },
     description: { type: Schema.Types.String },
     isDeleted: { type: Schema.Types.Boolean, default: false },

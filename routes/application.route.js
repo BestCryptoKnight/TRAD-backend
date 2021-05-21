@@ -976,7 +976,14 @@ router.put('/', async function (req, res) {
   }
   if (
     req.body.stepper === 'company' &&
-    (!req.body.address || !req.body.entityType || !req.body.entityName)
+    (!req.body.address ||
+      !req.body.address.streetNumber ||
+      !req.body.address.state ||
+      !req.body.address.country ||
+      !req.body.address.postCode ||
+      !req.body.entityType ||
+      (!req.body.abn && !req.body.acn && !req.body.registrationNumber) ||
+      !req.body.entityName)
   ) {
     return res.status(400).send({
       status: 'ERROR',
@@ -1047,14 +1054,34 @@ router.put('/', async function (req, res) {
           .lean();
         break;
       case 'confirmation':
+        let application = await Application.findOne({
+          _id: req.body.applicationId,
+        }).lean();
+        application = await Application.findOne({
+          debtorId: application.debtorId,
+          clientId: application.clientId,
+          status: {
+            $nin: [
+              'DECLINED',
+              'CANCELLED',
+              'WITHDRAWN',
+              'SURRENDERED',
+              'DRAFT',
+            ],
+          },
+        }).lean();
+        if (application) {
+          return res.status(400).send({
+            status: 'ERROR',
+            messageCode: 'APPLICATION_ALREADY_EXISTS',
+            message: 'Application already exists',
+          });
+        }
         await Application.updateOne(
           { _id: req.body.applicationId },
           { $set: { status: 'SUBMITTED', $inc: { applicationStage: 1 } } },
         );
         message = 'Application submitted successfully.';
-        const application = await Application.findById(
-          req.body.applicationId,
-        ).lean();
         await addAuditLog({
           entityType: 'application',
           entityRefId: application._id,

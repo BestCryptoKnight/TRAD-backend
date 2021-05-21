@@ -1074,10 +1074,20 @@ router.put('/', async function (req, res) {
           .lean();
         break;
       case 'confirmation':
-        const application = await Application.findOne({
+        let application = await Application.findOne({
           _id: req.body.applicationId,
+        }).lean();
+        application = await Application.findOne({
+          debtorId: application.debtorId,
+          clientId: application.clientId,
           status: {
-            $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED'],
+            $nin: [
+              'DECLINED',
+              'CANCELLED',
+              'WITHDRAWN',
+              'SURRENDERED',
+              'DRAFT',
+            ],
           },
         }).lean();
         if (application) {

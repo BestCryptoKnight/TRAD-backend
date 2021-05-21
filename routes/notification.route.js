@@ -23,7 +23,7 @@ router.get('/', async function (req, res) {
       ? parseInt(req.query.year)
       : new Date().getFullYear();
     req.query.page = req.query.page || 1;
-    req.query.limit = req.query.limit || 10;
+    req.query.limit = 15;
     const query = [
       {
         $match: {
@@ -86,6 +86,31 @@ router.get('/', async function (req, res) {
         limit: parseInt(req.query.limit),
         pages: Math.ceil(total / parseInt(req.query.limit)),
       },
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in get notification list ', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Get unread notification list
+ */
+router.get('/list', async function (req, res) {
+  try {
+    const notifications = await Notification.find({
+      isDeleted: false,
+      userId: req.user._id,
+      isRead: false,
+    })
+      .select('_id description createdAt')
+      .lean();
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: notifications,
     });
   } catch (e) {
     Logger.log.error('Error occurred in get notification list ', e);

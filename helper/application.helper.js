@@ -305,7 +305,13 @@ const storeCompanyDetails = async ({
           clientId: clientId,
           debtorId: debtorData._id,
           status: {
-            $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED'],
+            $nin: [
+              'DECLINED',
+              'CANCELLED',
+              'WITHDRAWN',
+              'SURRENDERED',
+              'DRAFT',
+            ],
           },
         }).lean();
         if (application) {
