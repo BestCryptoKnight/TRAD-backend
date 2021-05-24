@@ -14,6 +14,7 @@ const clientDebtorSchema = new Schema(
     debtorId: { type: Schema.Types.ObjectId, ref: 'debtor' },
     isActive: { type: Schema.Types.Boolean, default: true },
     isDeleted: { type: Schema.Types.Boolean, default: false },
+    isEndorsedLimit: { type: Schema.Types.Boolean, default: false },
     creditLimit: { type: Schema.Types.Number },
     outstandingAmount: { type: Schema.Types.Number },
     activeApplicationId: { type: Schema.Types.ObjectId, ref: 'application' },
