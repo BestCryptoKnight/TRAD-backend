@@ -1070,7 +1070,7 @@ router.put('/', async function (req, res) {
         let application = await Application.findOne({
           _id: req.body.applicationId,
         }).lean();
-        application = await Application.findOne({
+        const applicationData = await Application.findOne({
           debtorId: application.debtorId,
           clientId: application.clientId,
           status: {
@@ -1083,7 +1083,7 @@ router.put('/', async function (req, res) {
             ],
           },
         }).lean();
-        if (application) {
+        if (applicationData) {
           return res.status(400).send({
             status: 'ERROR',
             messageCode: 'APPLICATION_ALREADY_EXISTS',
@@ -1120,10 +1120,7 @@ router.put('/', async function (req, res) {
       data: response,
     });
   } catch (e) {
-    Logger.log.error(
-      'Error occurred in generating application ',
-      e.message || e,
-    );
+    Logger.log.error('Error occurred in generating application ', e);
     res.status(500).send({
       status: 'ERROR',
       message: e,

@@ -1077,7 +1077,7 @@ router.put('/', async function (req, res) {
         let application = await Application.findOne({
           _id: req.body.applicationId,
         }).lean();
-        application = await Application.findOne({
+        const applicationData = await Application.findOne({
           debtorId: application.debtorId,
           clientId: application.clientId,
           status: {
@@ -1090,7 +1090,7 @@ router.put('/', async function (req, res) {
             ],
           },
         }).lean();
-        if (application) {
+        if (applicationData) {
           return res.status(400).send({
             status: 'ERROR',
             messageCode: 'APPLICATION_ALREADY_EXISTS',
