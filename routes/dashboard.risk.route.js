@@ -45,7 +45,10 @@ router.get('/user-list', async function (req, res) {
  */
 router.get('/', async function (req, res) {
   try {
-    const users = req.query.users ? req.query.users.split(',') : [req.user._id];
+    const users =
+      req.query.users && req.query.users.length !== 0
+        ? req.query.users
+        : [req.user._id];
     const clients = await Client.find({
       isDeleted: false,
       $or: [

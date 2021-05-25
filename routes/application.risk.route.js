@@ -392,10 +392,12 @@ router.get('/details/:applicationId', async function (req, res) {
                   if (i._id === response.company.state) return i;
                 })
               : { name: response.company.state };
-          response.company.state = {
-            value: response.company.state,
-            label: state && state.name ? state.name : response.company.state,
-          };
+          if (state && state.name && state._id) {
+            response.company.state = {
+              value: response.company.state,
+              label: state && state.name ? state.name : response.company.state,
+            };
+          }
         }
         if (response.company.country) {
           response.company.country = {

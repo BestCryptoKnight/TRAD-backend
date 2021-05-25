@@ -28,7 +28,10 @@ const {
   getEntityListByName,
   resolveEntityType,
 } = require('./../helper/abr.helper');
-const { partnerDetailsValidation } = require('./../helper/application.helper');
+const {
+  partnerDetailsValidation,
+  generateNewApplication,
+} = require('./../helper/application.helper');
 const { addAuditLog, getEntityName } = require('./../helper/audit-log.helper');
 
 /**
@@ -1260,6 +1263,66 @@ router.post('/stakeholder/:debtorId', async function (req, res) {
 });
 
 /**
+ * Update credit-limit
+ */
+router.put('/credit-limit/:debtorId', async function (req, res) {
+  if (
+    !req.params.debtorId ||
+    !mongoose.Types.ObjectId.isValid(req.params.debtorId) ||
+    !req.body.action
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing',
+    });
+  }
+  try {
+    const clientDebtor = await ClientDebtor.findOne({
+      _id: req.params.debtorId,
+    }).lean();
+    if (req.body.action === 'modify') {
+      if (!req.body.creditLimit || !/^\d+$/.test(req.body.creditLimit)) {
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'REQUIRE_FIELD_MISSING',
+          message: 'Require fields are missing',
+        });
+      }
+      await generateNewApplication({
+        clientDebtorId: clientDebtor._id,
+        createdByType: 'user',
+        createdById: req.user._id,
+        creditLimit: req.body.creditLimit,
+      });
+    } else {
+      await ClientDebtor.updateOne(
+        { _id: req.params.debtorId },
+        {
+          creditLimit: undefined,
+          activeApplicationId: undefined,
+          isActive: false,
+        },
+      );
+      await Application.updateOne(
+        { clientDebtorId: clientDebtor._id, status: 'APPROVED' },
+        { status: 'SURRENDERED' },
+      );
+    }
+    res.status(200).send({
+      status: 'SUCCESS',
+      message: 'Credit limit updated successfully',
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in update credit-limit', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
  * Update Stakeholder
  */
 router.put('/stakeholder/:debtorId/:stakeholderId', async function (req, res) {
@@ -1309,37 +1372,6 @@ router.put('/stakeholder/:debtorId/:stakeholderId', async function (req, res) {
     });
   }
   try {
-    const [debtor, stakeholders] = await Promise.all([
-      Debtor.findById(req.params.debtorId).lean(),
-      DebtorDirector.find({ debtorId: req.params.debtorId })
-        .select('_id type')
-        .lean(),
-    ]);
-    let individualCount = 0;
-    let companyCount = 0;
-    stakeholders.forEach((data) => {
-      if (data._id.toString() === req.params.stakeholderId) {
-        req.body.type.toLowerCase() === 'company'
-          ? companyCount++
-          : individualCount++;
-      } else {
-        data.type.toLowerCase() === 'company'
-          ? companyCount++
-          : individualCount++;
-      }
-    });
-    const isValidate = partnerDetailsValidation({
-      entityType: debtor.entityType,
-      individualCount,
-      companyCount,
-    });
-    if (!isValidate) {
-      return res.status(400).send({
-        status: 'ERROR',
-        messageCode: 'INSUFFICIENT_DATA',
-        message: 'Insufficient stakeholder details',
-      });
-    }
     const { query, update } = await storeStakeholderDetails({
       stakeholder: req.body,
       debtorId: debtor._id,

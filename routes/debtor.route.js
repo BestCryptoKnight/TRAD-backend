@@ -5,7 +5,6 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const ClientUser = mongoose.model('client-user');
-const Client = mongoose.model('client');
 const ClientDebtor = mongoose.model('client-debtor');
 const Debtor = mongoose.model('debtor');
 const Application = mongoose.model('application');
@@ -18,6 +17,7 @@ const StaticFile = require('./../static-files/moduleColumn');
 const StaticData = require('./../static-files/staticData.json');
 const { getClientDebtorDetails } = require('./../helper/client-debtor.helper');
 const { getDebtorFullAddress } = require('./../helper/debtor.helper');
+const { generateNewApplication } = require('./../helper/application.helper');
 
 /**
  * Get Column Names
@@ -523,6 +523,66 @@ router.put('/column-name', async function (req, res) {
       .send({ status: 'SUCCESS', message: 'Columns updated successfully' });
   } catch (e) {
     Logger.log.error('Error occurred in update column names', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Update credit-limit
+ */
+router.put('/credit-limit/:debtorId', async function (req, res) {
+  if (
+    !req.params.debtorId ||
+    !mongoose.Types.ObjectId.isValid(req.params.debtorId) ||
+    !req.body.action
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing',
+    });
+  }
+  try {
+    const clientDebtor = await ClientDebtor.findOne({
+      _id: req.params.debtorId,
+    }).lean();
+    if (req.body.action === 'modify') {
+      if (!req.body.creditLimit || !/^\d+$/.test(req.body.creditLimit)) {
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'REQUIRE_FIELD_MISSING',
+          message: 'Require fields are missing',
+        });
+      }
+      await generateNewApplication({
+        clientDebtorId: clientDebtor._id,
+        createdById: req.user.clientId,
+        createdByType: 'client-user',
+        creditLimit: req.body.creditLimit,
+      });
+    } else {
+      await ClientDebtor.updateOne(
+        { _id: req.params.debtorId },
+        {
+          creditLimit: undefined,
+          activeApplicationId: undefined,
+          isActive: false,
+        },
+      );
+      await Application.updateOne(
+        { clientDebtorId: clientDebtor._id, status: 'APPROVED' },
+        { status: 'SURRENDERED' },
+      );
+    }
+    res.status(200).send({
+      status: 'SUCCESS',
+      message: 'Credit limit updated successfully',
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in update credit-limit', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

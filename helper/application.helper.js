@@ -7,6 +7,7 @@ const Organization = mongoose.model('organization');
 const Debtor = mongoose.model('debtor');
 const Client = mongoose.model('client');
 const DebtorDirector = mongoose.model('debtor-director');
+const ClientDebtor = mongoose.model('client-debtor');
 
 /*
  * Local Imports
@@ -226,6 +227,13 @@ const getApplicationList = async ({
       applications[0].paginatedResult.forEach((application) => {
         if (applicationColumn.includes('entityType')) {
           application.entityType = application.debtorId.entityType
+            .replace(/_/g, ' ')
+            .replace(/\w\S*/g, function (txt) {
+              return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+            });
+        }
+        if (applicationColumn.includes('status')) {
+          application.status = application.status
             .replace(/_/g, ' ')
             .replace(/\w\S*/g, function (txt) {
               return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
@@ -636,9 +644,61 @@ const partnerDetailsValidation = ({
     return response;
   } catch (e) {
     Logger.log.error(
-      'Error occurred in partner details validation ',
+      'Error occurred in partner details validation',
       e.message || e,
     );
+  }
+};
+
+const generateNewApplication = async ({
+  clientDebtorId,
+  createdByType,
+  createdById,
+  creditLimit,
+}) => {
+  try {
+    const application = await Application.findOne({
+      clientDebtorId: clientDebtorId,
+      status: 'APPROVED',
+    })
+      .populate('clientId debtorId')
+      .lean();
+    if (application) {
+      const organization = await Organization.findOne({ isDeleted: false })
+        .select('entityCount')
+        .lean();
+      const applicationDetails = {
+        clientId: application.clientId._id,
+        debtorId: application.debtorId._id,
+        clientDebtorId: clientDebtorId,
+        applicationStage: application.applicationStage,
+        creditLimit: creditLimit,
+        isExtendedPaymentTerms: application.isExtendedPaymentTerms,
+        isPassedOverdueAmount: application.isPassedOverdueAmount,
+        extendedPaymentTermsDetails: application.extendedPaymentTermsDetails,
+        passedOverdueDetails: application.passedOverdueDetails,
+        note: application.note,
+        createdByType: createdByType,
+        createdById: createdById,
+      };
+      applicationDetails.applicationId =
+        application.clientId.clientCode +
+        '-' +
+        application.debtorId.debtorCode +
+        '-' +
+        new Date().toISOString().split('T')[0].replace(/-/g, '') +
+        '-' +
+        (organization.entityCount.application + 1).toString().padStart(3, '0');
+      await Organization.updateOne(
+        { isDeleted: false },
+        { $inc: { 'entityCount.application': 1 } },
+      );
+      await Application.create(applicationDetails);
+      //TODO call application automation helper
+    }
+    return application;
+  } catch (e) {
+    Logger.log.error('Error occurred in generate application', e.message || e);
   }
 };
 
@@ -648,4 +708,5 @@ module.exports = {
   storePartnerDetails,
   storeCreditLimitDetails,
   partnerDetailsValidation,
+  generateNewApplication,
 };
