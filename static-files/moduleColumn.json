@@ -521,11 +521,7 @@
           "label": "Outstanding Amount",
           "type": "string"
         },
-        {
-          "name": "creditLimitAction",
-          "label": "Credit Limit Action",
-          "type": "button"
-        },
+
         { "name": "isActive", "label": "Active", "type": "string" }
       ],
       "defaultColumns": ["clientId", "abn", "creditLimit", "creditLimitAction"]

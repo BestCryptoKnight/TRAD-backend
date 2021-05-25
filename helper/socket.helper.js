@@ -6,6 +6,7 @@ var io = socket_io();
 var socketApi = {};
 socketApi.io = io;
 let socketUser = {};
+const Logger = require('./../services/logger');
 
 io.on('connection', async function (socket) {
   console.log('New user connected:', socket.id);
