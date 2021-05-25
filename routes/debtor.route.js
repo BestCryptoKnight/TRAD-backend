@@ -547,7 +547,7 @@ router.put('/credit-limit/:debtorId', async function (req, res) {
   }
   try {
     const clientDebtor = await ClientDebtor.findOne({
-      _id: req.params.debtorId,
+      debtorId: req.params.debtorId,
     }).lean();
     if (req.body.action === 'modify') {
       if (!req.body.creditLimit || !/^\d+$/.test(req.body.creditLimit)) {
@@ -565,7 +565,7 @@ router.put('/credit-limit/:debtorId', async function (req, res) {
       });
     } else {
       await ClientDebtor.updateOne(
-        { _id: req.params.debtorId },
+        { debtorId: req.params.debtorId },
         {
           creditLimit: undefined,
           activeApplicationId: undefined,
