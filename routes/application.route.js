@@ -806,25 +806,31 @@ router.get('/search-entity-list', async function (req, res) {
           ];
       entities.forEach((data) => {
         entityData = {};
-        if (data.ABN) entityData.abn = data.ABN.identifierValue;
-        if (data.ABN) entityData.status = data.ABN.identifierStatus;
-        let fieldName =
-          data.mainName ||
-          data.businessName ||
-          data.otherTradingName ||
-          data.mainTradingName;
-        if (fieldName) {
-          entityData.label = fieldName.organisationName;
-          entityData.value = fieldName.organisationName;
+        if (
+          data.ABN &&
+          data.ABN.identifierStatus &&
+          data.ABN.identifierStatus.toLowerCase() !== 'cancelled'
+        ) {
+          if (data.ABN) entityData.abn = data.ABN.identifierValue;
+          if (data.ABN) entityData.status = data.ABN.identifierStatus;
+          let fieldName =
+            data.mainName ||
+            data.businessName ||
+            data.otherTradingName ||
+            data.mainTradingName;
+          if (fieldName) {
+            entityData.label = fieldName.organisationName;
+            entityData.value = fieldName.organisationName;
+          }
+          if (data.mainBusinessPhysicalAddress) {
+            entityData.state =
+              typeof data.mainBusinessPhysicalAddress.stateCode === 'string'
+                ? data.mainBusinessPhysicalAddress.stateCode
+                : '';
+            entityData.postCode = data.mainBusinessPhysicalAddress.postcode;
+          }
+          response.push(entityData);
         }
-        if (data.mainBusinessPhysicalAddress) {
-          entityData.state =
-            typeof data.mainBusinessPhysicalAddress.stateCode === 'string'
-              ? data.mainBusinessPhysicalAddress.stateCode
-              : '';
-          entityData.postCode = data.mainBusinessPhysicalAddress.postcode;
-        }
-        response.push(entityData);
       });
     }
     res.status(200).send({
