@@ -9,6 +9,8 @@ const ClientUser = mongoose.model('client-user');
 const Application = mongoose.model('application');
 const DebtorDirector = mongoose.model('debtor-director');
 const Debtor = mongoose.model('debtor');
+const ClientDebtor = mongoose.model('client-debtor');
+const Policy = mongoose.model('policy');
 
 /*
  * Local Imports
@@ -1144,6 +1146,57 @@ router.put('/:applicationId', async function (req, res) {
     });
   }
   try {
+    const application = await Application.findOne({
+      _id: req.params.applicationId,
+    }).lean();
+    if (req.body.status === 'APPROVED') {
+      if (!req.body.creditLimit || !/^\d+$/.test(req.body.creditLimit)) {
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'REQUIRE_FIELD_MISSING',
+          message: 'Require fields are missing',
+        });
+      }
+      req.body.creditLimit = parseInt(req.body.creditLimit);
+      const ciPolicy = await Policy.findOne({
+        clientId: application.clientId,
+        product: { $regex: '.*Credit Insurance.*' },
+        inceptionDate: { $lte: new Date() },
+        expiryDate: { $gt: new Date() },
+      })
+        .select(
+          'clientId product policyPeriod discretionaryLimit inceptionDate expiryDate',
+        )
+        .lean();
+      const update = {
+        creditLimit: req.body.creditLimit,
+        isEndorsedLimit: false,
+        activeApplicationId: application._id,
+      };
+      if (
+        ciPolicy &&
+        ciPolicy.discretionaryLimit &&
+        ciPolicy.discretionaryLimit < req.body.creditLimit
+      ) {
+        update.isEndorsedLimit = true;
+      }
+      await ClientDebtor.updateOne({ _id: application.clientDebtorId }, update);
+    } else if (
+      req.body.status === 'DECLINED' ||
+      req.body.status === 'CANCELLED' ||
+      req.body.status === 'WITHDRAWN' ||
+      req.body.status === 'SURRENDERED'
+    ) {
+      await ClientDebtor.updateOne(
+        { _id: req.params.debtorId },
+        {
+          creditLimit: undefined,
+          activeApplicationId: undefined,
+          isActive: false,
+        },
+      );
+    }
+    //TODO notify user
     await Application.updateOne(
       { _id: req.params.applicationId },
       { status: req.body.status },

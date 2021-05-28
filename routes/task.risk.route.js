@@ -20,6 +20,7 @@ const {
   getDebtorList,
   aggregationQuery,
   getApplicationList,
+  insurerList,
 } = require('./../helper/task.helper');
 const { getClientList } = require('./../helper/client.helper');
 const { getAccessBaseUserList } = require('./../helper/user.helper');
@@ -168,6 +169,9 @@ router.get('/entity-list', async function (req, res) {
           hasFullAccess: hasFullAccess,
           isForRisk: true,
         });
+        break;
+      case 'insurer':
+        entityList = await insurerList();
         break;
       default:
         return res.status(400).send({
@@ -347,9 +351,7 @@ router.get('/', async function (req, res) {
         }
         if (taskColumn.columns.includes('createdById')) {
           task.createdById =
-            task.createdById[0] && task.createdById[0].name
-              ? task.createdById[0].name
-              : '';
+            task.createdById && task.createdById[0] ? task.createdById[0] : '';
         }
       });
     }

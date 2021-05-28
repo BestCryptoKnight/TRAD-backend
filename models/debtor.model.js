@@ -48,6 +48,8 @@ const debtorSchema = new Schema(
       },
       postCode: Schema.Types.String,
     },
+    reviewDate: { type: Schema.Types.Date },
+    riskRating: { type: Schema.Types.String },
     isActive: { type: Schema.Types.Boolean, default: false },
     isDeleted: { type: Schema.Types.Boolean, default: false },
   },

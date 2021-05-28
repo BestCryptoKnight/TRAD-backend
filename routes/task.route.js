@@ -297,6 +297,7 @@ router.get('/', async function (req, res) {
           //TODO change url
           module.manageColumns[i].request = {
             method: 'GET',
+            client: 'client/details',
             'client-user': 'client/user-details',
             debtor: 'debtor/drawer',
             application: 'application/drawer-details',
@@ -333,9 +334,7 @@ router.get('/', async function (req, res) {
         }
         if (taskColumn.columns.includes('createdById')) {
           task.createdById =
-            task.createdById[0] && task.createdById[0].name
-              ? task.createdById[0].name
-              : '';
+            task.createdById && task.createdById[0] ? task.createdById[0] : '';
         }
       });
     }

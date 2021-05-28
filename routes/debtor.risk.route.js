@@ -17,7 +17,10 @@ const Application = mongoose.model('application');
 const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
 const StaticData = require('./../static-files/staticData.json');
-const { getClientDebtorDetails } = require('./../helper/client-debtor.helper');
+const {
+  getClientDebtorDetails,
+  convertToCSV,
+} = require('./../helper/client-debtor.helper');
 const {
   getStakeholderDetails,
   storeStakeholderDetails,
@@ -28,11 +31,9 @@ const {
   getEntityListByName,
   resolveEntityType,
 } = require('./../helper/abr.helper');
-const {
-  partnerDetailsValidation,
-  generateNewApplication,
-} = require('./../helper/application.helper');
+const { generateNewApplication } = require('./../helper/application.helper');
 const { addAuditLog, getEntityName } = require('./../helper/audit-log.helper');
+const { getCreditLimitList } = require('./../helper/debtor.helper');
 
 /**
  * Get Column Names
@@ -1110,6 +1111,36 @@ router.get('/search-entity-list', async function (req, res) {
 });
 
 /**
+ * Download credit-limit in CSV
+ */
+router.get('/download/:debtorId', async function (req, res) {
+  if (
+    !req.params.debtorId ||
+    !mongoose.Types.ObjectId.isValid(req.params.debtorId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const creditLimits = await getCreditLimitList({
+      debtorId: req.params.debtorId,
+    });
+    const data = await convertToCSV(creditLimits);
+    res.header('Content-Type', 'text/csv');
+    res.send(data);
+  } catch (e) {
+    Logger.log.error('Error occurred in download in csv', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
  * Get Client-Debtor Details
  */
 router.get('/:debtorId', async function (req, res) {
@@ -1537,6 +1568,9 @@ router.put('/:debtorId', async function (req, res) {
     update.tradingName = req.body.tradingName
       ? req.body.tradingName
       : undefined;
+    if (req.body.reviewDate) {
+      update.reviewDate = req.body.reviewDate;
+    }
     await Debtor.updateOne({ _id: req.params.debtorId }, update);
     await addAuditLog({
       entityType: 'debtor',

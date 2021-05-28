@@ -83,7 +83,8 @@
         "status",
         "entityType",
         "clientId",
-        "debtorId"
+        "debtorId",
+        "updatedAt"
       ]
     },
     {
@@ -100,7 +101,14 @@
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
-      "defaultColumns": ["priority", "title", "description", "entityType"]
+      "defaultColumns": [
+        "priority",
+        "title",
+        "description",
+        "entityType",
+        "assigneeId",
+        "dueDate"
+      ]
     },
     {
       "name": "client",
@@ -140,7 +148,14 @@
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
-      "defaultColumns": ["name", "contactNumber", "website", "abn", "acn"]
+      "defaultColumns": [
+        "name",
+        "contactNumber",
+        "riskAnalystId",
+        "abn",
+        "acn",
+        "state"
+      ]
     },
     {
       "name": "client-user",
@@ -178,7 +193,14 @@
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
-      "defaultColumns": ["name", "contactNumber", "department"]
+      "defaultColumns": [
+        "name",
+        "contactNumber",
+        "department",
+        "hasPortalAccess",
+        "email",
+        "isDecisionMaker"
+      ]
     },
     {
       "name": "client-application",
@@ -214,7 +236,12 @@
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
-      "defaultColumns": ["entityType", "debtorId"]
+      "defaultColumns": [
+        "entityType",
+        "debtorId",
+        "creditLimit",
+        "applicationId"
+      ]
     },
     {
       "name": "client-overdue",
@@ -258,7 +285,14 @@
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
-      "defaultColumns": ["insurerId", "product", "policyPeriod", "expiryDate"]
+      "defaultColumns": [
+        "insurerId",
+        "product",
+        "policyPeriod",
+        "policyCurrency",
+        "inceptionDate",
+        "expiryDate"
+      ]
     },
     {
       "name": "client-task",
@@ -274,7 +308,14 @@
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
-      "defaultColumns": ["priority", "title", "description", "entityType"]
+      "defaultColumns": [
+        "priority",
+        "title",
+        "description",
+        "entityType",
+        "assigneeId",
+        "dueDate"
+      ]
     },
     {
       "name": "client-document",
@@ -300,8 +341,9 @@
       ],
       "defaultColumns": [
         "description",
-        "fileName",
+        "documentTypeId",
         "updatedAt",
+        "uploadById",
         "originalFileName"
       ]
     },
@@ -320,7 +362,17 @@
         { "name": "entityType", "label": "Entity Type", "type": "string" },
         { "name": "abn", "label": "ABN", "type": "string" },
         { "name": "acn", "label": "ACN", "type": "string" },
+        {
+          "name": "registrationNumber",
+          "label": "Registration Number",
+          "type": "string"
+        },
         { "name": "creditLimit", "label": "Credit Limit", "type": "string" },
+        {
+          "name": "isEndorsedLimit",
+          "label": "Endorsed Limit",
+          "type": "endorsedString"
+        },
         {
           "name": "contactNumber",
           "label": "Contact Number",
@@ -337,11 +389,18 @@
         { "name": "state", "label": "Country/State", "type": "string" },
         { "name": "country", "label": "Country", "type": "string" },
         { "name": "postCode", "label": "Postcode/Zip", "type": "string" },
-
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
-      "defaultColumns": ["debtorId", "creditLimit"]
+      "defaultColumns": [
+        "entityName",
+        "abn",
+        "acn",
+        "registrationNumber",
+        "creditLimit",
+        "isEndorsedLimit",
+        "state"
+      ]
     },
     {
       "name": "claim",
@@ -367,14 +426,26 @@
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
-      "defaultColumns": ["priority", "title", "description", "entityType"]
+      "defaultColumns": [
+        "priority",
+        "title",
+        "description",
+        "entityType",
+        "assigneeId",
+        "dueDate"
+      ]
     },
     {
       "name": "debtor",
       "manageColumns": [
+        { "name": "entityName", "label": "Entity Name", "type": "string" },
         { "name": "abn", "label": "ABN", "type": "string" },
         { "name": "acn", "label": "ACN", "type": "string" },
-        { "name": "entityName", "label": "Entity Name", "type": "string" },
+        {
+          "name": "registrationNumber",
+          "label": "Registration Number",
+          "type": "string"
+        },
         { "name": "tradingName", "label": "Trading Name", "type": "string" },
         { "name": "entityType", "label": "Entity Type", "type": "string" },
         { "name": "fullAddress", "label": "Full Address", "type": "string" },
@@ -396,7 +467,13 @@
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
-      "defaultColumns": ["abn", "entityName", "entityType"]
+      "defaultColumns": [
+        "abn",
+        "entityName",
+        "acn",
+        "entityType",
+        "registrationNumber"
+      ]
     },
     {
       "name": "debtor-application",
@@ -432,7 +509,12 @@
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
-      "defaultColumns": ["entityType", "clientId"]
+      "defaultColumns": [
+        "entityType",
+        "clientId",
+        "applicationId",
+        "creditLimit"
+      ]
     },
     {
       "name": "debtor-overdue",
@@ -466,7 +548,14 @@
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
-      "defaultColumns": ["priority", "title", "description", "entityType"]
+      "defaultColumns": [
+        "priority",
+        "title",
+        "description",
+        "entityType",
+        "assigneeId",
+        "dueDate"
+      ]
     },
     {
       "name": "debtor-document",
@@ -490,7 +579,13 @@
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
-      "defaultColumns": ["description", "fileName", "updatedAt"]
+      "defaultColumns": [
+        "description",
+        "documentTypeId",
+        "originalFileName",
+        "uploadById",
+        "createdAt"
+      ]
     },
     {
       "name": "debtor-credit-limit",
@@ -508,6 +603,11 @@
         },
         { "name": "abn", "label": "ABN", "type": "string" },
         { "name": "acn", "label": "ACN", "type": "string" },
+        {
+          "name": "registrationNumber",
+          "label": "Registration Number",
+          "type": "string"
+        },
         { "name": "inceptionDate", "label": "Inception Date", "type": "date" },
         { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
         {
@@ -517,14 +617,25 @@
         },
         { "name": "creditLimit", "label": "Credit Limit", "type": "string" },
         {
+          "name": "isEndorsedLimit",
+          "label": "Endorsed Limit",
+          "type": "endorsedString"
+        },
+        {
           "name": "outstandingAmount",
           "label": "Outstanding Amount",
           "type": "string"
         },
-
         { "name": "isActive", "label": "Active", "type": "string" }
       ],
-      "defaultColumns": ["clientId", "abn", "creditLimit", "creditLimitAction"]
+      "defaultColumns": [
+        "clientId",
+        "abn",
+        "creditLimit",
+        "acn",
+        "registrationNumber",
+        "isEndorsedLimit"
+      ]
     },
     {
       "name": "insurer",
@@ -545,7 +656,13 @@
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
-      "defaultColumns": ["name", "contactNumber", "address"]
+      "defaultColumns": [
+        "name",
+        "contactNumber",
+        "state",
+        "website",
+        "updatedAt"
+      ]
     },
     {
       "name": "insurer-user",
@@ -573,7 +690,14 @@
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
-      "defaultColumns": ["name", "email", "jobTitle", "direct"]
+      "defaultColumns": [
+        "name",
+        "email",
+        "jobTitle",
+        "direct",
+        "contactNumber",
+        "updatedAt"
+      ]
     },
     {
       "name": "insurer-policy",
@@ -599,7 +723,14 @@
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
-      "defaultColumns": ["clientId", "product", "policyPeriod"]
+      "defaultColumns": [
+        "clientId",
+        "product",
+        "policyPeriod",
+        "policyCurrency",
+        "inceptionDate",
+        "expiryDate"
+      ]
     },
     {
       "name": "organization",
@@ -637,6 +768,11 @@
       "manageColumns": [
         { "name": "abn", "label": "ABN", "type": "string" },
         { "name": "acn", "label": "ACN", "type": "string" },
+        {
+          "name": "registrationNumber",
+          "label": "Registration Number",
+          "type": "string"
+        },
         { "name": "title", "label": "Title", "type": "string" },
         {
           "name": "name",
@@ -671,7 +807,16 @@
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
-      "defaultColumns": ["title", "name", "abn", "dateOfBirth", "entityType"]
+      "defaultColumns": [
+        "title",
+        "name",
+        "abn",
+        "acn",
+        "registrationNumber",
+        "dateOfBirth",
+        "entityType",
+        "driverLicenceNumber"
+      ]
     },
     {
       "name": "task",
@@ -687,7 +832,14 @@
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
-      "defaultColumns": ["priority", "title", "description", "entityType"]
+      "defaultColumns": [
+        "priority",
+        "title",
+        "description",
+        "entityType",
+        "assigneeId",
+        "dueDate"
+      ]
     },
     {
       "name": "user",
@@ -709,7 +861,14 @@
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
-      "defaultColumns": ["name", "email", "contactNumber"]
+      "defaultColumns": [
+        "name",
+        "email",
+        "contactNumber",
+        "role",
+        "maxCreditLimit",
+        "updatedAt"
+      ]
     },
     {
       "name": "credit-report",

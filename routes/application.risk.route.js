@@ -9,6 +9,8 @@ const Client = mongoose.model('client');
 const Debtor = mongoose.model('debtor');
 const DebtorDirector = mongoose.model('debtor-director');
 const Application = mongoose.model('application');
+const ClientDebtor = mongoose.model('client-debtor');
+const Policy = mongoose.model('policy');
 
 /*
  * Local Imports
@@ -575,6 +577,7 @@ router.get('/details/:applicationId', async function (req, res) {
       response.applicationStatus = StaticData.applicationStatus.filter(
         (data) => data.value !== 'DRAFT',
       );
+      response._id = application._id;
       response.headers = [
         {
           name: 'clientId',
@@ -1156,6 +1159,57 @@ router.put('/:applicationId', async function (req, res) {
     });
   }
   try {
+    const application = await Application.findOne({
+      _id: req.params.applicationId,
+    }).lean();
+    if (req.body.status === 'APPROVED') {
+      if (!req.body.creditLimit || !/^\d+$/.test(req.body.creditLimit)) {
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'REQUIRE_FIELD_MISSING',
+          message: 'Require fields are missing',
+        });
+      }
+      req.body.creditLimit = parseInt(req.body.creditLimit);
+      const ciPolicy = await Policy.findOne({
+        clientId: application.clientId,
+        product: { $regex: '.*Credit Insurance.*' },
+        inceptionDate: { $lte: new Date() },
+        expiryDate: { $gt: new Date() },
+      })
+        .select(
+          'clientId product policyPeriod discretionaryLimit inceptionDate expiryDate',
+        )
+        .lean();
+      const update = {
+        creditLimit: req.body.creditLimit,
+        isEndorsedLimit: false,
+        activeApplicationId: application._id,
+      };
+      if (
+        ciPolicy &&
+        ciPolicy.discretionaryLimit &&
+        ciPolicy.discretionaryLimit < req.body.creditLimit
+      ) {
+        update.isEndorsedLimit = true;
+      }
+      await ClientDebtor.updateOne({ _id: application.clientDebtorId }, update);
+    } else if (
+      req.body.status === 'DECLINED' ||
+      req.body.status === 'CANCELLED' ||
+      req.body.status === 'WITHDRAWN' ||
+      req.body.status === 'SURRENDERED'
+    ) {
+      await ClientDebtor.updateOne(
+        { _id: req.params.debtorId },
+        {
+          creditLimit: undefined,
+          activeApplicationId: undefined,
+          isActive: false,
+        },
+      );
+    }
+    //TODO notify user
     await Application.updateOne(
       { _id: req.params.applicationId },
       { status: req.body.status },

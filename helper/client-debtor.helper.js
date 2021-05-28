@@ -2,6 +2,7 @@
  * Local Imports
  * */
 const Logger = require('./../services/logger');
+const { Parser } = require('json2csv');
 
 const getClientDebtorDetails = async ({ debtor, manageColumns }) => {
   try {
@@ -63,4 +64,10 @@ const getClientDebtorDetails = async ({ debtor, manageColumns }) => {
   }
 };
 
-module.exports = { getClientDebtorDetails };
+const convertToCSV = (arr) => {
+  const json2csvParser = new Parser();
+  const csv = json2csvParser.parse(arr);
+  return csv;
+};
+
+module.exports = { getClientDebtorDetails, convertToCSV };

@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 const Task = mongoose.model('task');
 const Client = mongoose.model('client');
 const ClientDebtor = mongoose.model('client-debtor');
-const Debtor = mongoose.model('debtor');
+const Insurer = mongoose.model('insurer');
 const Application = mongoose.model('application');
 
 /*
@@ -110,7 +110,16 @@ const getApplicationList = async ({
       .lean();
     return applications;
   } catch (e) {
-    Logger.log.error('Error occurred in get application list ', e.message || e);
+    Logger.log.error('Error occurred in get application list', e.message || e);
+  }
+};
+
+const insurerList = async () => {
+  try {
+    const insurer = await Insurer.find({}).select('_id name').lean();
+    return insurer;
+  } catch (e) {
+    Logger.log.error('Error occurred in get insurer list', e.message || e);
   }
 };
 
@@ -192,6 +201,9 @@ const aggregationQuery = async ({
                 null,
               ],
             },
+            insurerId: {
+              $cond: [{ $eq: ['$entityType', 'insurer'] }, '$entityId', null],
+            },
           },
         },
         {
@@ -243,6 +255,14 @@ const aggregationQuery = async ({
           },
         },
         {
+          $lookup: {
+            from: 'insurers',
+            localField: 'insurerId',
+            foreignField: '_id',
+            as: 'insurerId',
+          },
+        },
+        {
           $addFields: {
             entityId: {
               $cond: [
@@ -284,7 +304,17 @@ const aggregationQuery = async ({
                                   _id: '$userId._id',
                                   type: '$entityType',
                                 },
-                                null,
+                                {
+                                  $cond: [
+                                    { $eq: ['$entityType', 'insurer'] },
+                                    {
+                                      name: '$insurerId.name',
+                                      _id: '$insurerId._id',
+                                      type: '$entityType',
+                                    },
+                                    null,
+                                  ],
+                                },
                               ],
                             },
                           ],
@@ -426,7 +456,7 @@ const aggregationQuery = async ({
         },
         {
           $lookup: {
-            from: 'client-users',
+            from: 'clients',
             localField: 'clientUserId',
             foreignField: '_id',
             as: 'clientUserId',
@@ -512,4 +542,5 @@ module.exports = {
   getDebtorList,
   aggregationQuery,
   getApplicationList,
+  insurerList,
 };

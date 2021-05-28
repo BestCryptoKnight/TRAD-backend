@@ -15,9 +15,13 @@ const Application = mongoose.model('application');
 const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
 const StaticData = require('./../static-files/staticData.json');
-const { getClientDebtorDetails } = require('./../helper/client-debtor.helper');
+const {
+  getClientDebtorDetails,
+  convertToCSV,
+} = require('./../helper/client-debtor.helper');
 const { getDebtorFullAddress } = require('./../helper/debtor.helper');
 const { generateNewApplication } = require('./../helper/application.helper');
+const { getCreditLimitList } = require('./../helper/client.helper');
 
 /**
  * Get Column Names
@@ -404,6 +408,26 @@ router.get('/details/:debtorId', async function (req, res) {
     res.status(200).send({ status: 'SUCCESS', data: debtor });
   } catch (e) {
     Logger.log.error('Error occurred in get debtor details ', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Download credit-limit in CSV
+ */
+router.get('/download', async function (req, res) {
+  try {
+    const creditLimits = await getCreditLimitList({
+      clientId: req.user.clientId,
+    });
+    const data = await convertToCSV(creditLimits);
+    res.header('Content-Type', 'text/csv');
+    res.send(data);
+  } catch (e) {
+    Logger.log.error('Error occurred in download in csv', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

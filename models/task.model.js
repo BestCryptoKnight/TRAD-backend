@@ -26,6 +26,7 @@ const taskSchema = new Schema(
         'application',
         'claim',
         'overdue',
+        'insurer',
       ],
     },
     entityId: { type: Schema.Types.ObjectId },

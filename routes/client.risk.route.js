@@ -21,9 +21,13 @@ const RssHelper = require('./../helper/rss.helper');
 const StaticFile = require('./../static-files/moduleColumn');
 const { addAuditLog } = require('./../helper/audit-log.helper');
 const { getUserList } = require('./../helper/user.helper');
-const { getClientDebtorDetails } = require('./../helper/client-debtor.helper');
+const {
+  getClientDebtorDetails,
+  convertToCSV,
+} = require('./../helper/client-debtor.helper');
 const { getDebtorFullAddress } = require('./../helper/debtor.helper');
 const { generateNewApplication } = require('./../helper/application.helper');
+const { getCreditLimitList } = require('./../helper/client.helper');
 
 /**
  * Search Client from RSS
@@ -732,6 +736,44 @@ router.get('/credit-limit/:clientId', async function (req, res) {
     });
   } catch (e) {
     Logger.log.error('Error occurred in get client-debtor details ', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Download credit-limit in CSV
+ */
+router.get('/download/:clientId', async function (req, res) {
+  if (
+    !req.params.clientId ||
+    !mongoose.Types.ObjectId.isValid(req.params.clientId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const creditLimits = await getCreditLimitList({
+      clientId: req.params.clientId,
+    });
+    console.log(creditLimits);
+    if (creditLimits.length !== 0) {
+      const response = await convertToCSV(creditLimits);
+      res.header('Content-Type', 'text/csv');
+      res.send(response);
+    } else {
+      res.status(200).send({
+        status: 'SUCCESS',
+        message: 'No data found for download file',
+      });
+    }
+  } catch (e) {
+    Logger.log.error('Error occurred in download in csv', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

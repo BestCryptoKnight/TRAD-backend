@@ -144,6 +144,8 @@ const createDebtor = async ({
     if (requestBody.abn) update.abn = requestBody.abn;
     if (requestBody.isActive) update.isActive = requestBody.isActive;
     if (!isDebtorExists) {
+      const date = new Date();
+      update.reviewDate = new Date(date.setMonth(date.getMonth() + 11));
       update.debtorCode =
         'D' + (organization.entityCount.debtor + 1).toString().padStart(4, '0');
       await Organization.updateOne(
@@ -226,4 +228,47 @@ const getDebtorFullAddress = ({ address }) => {
   }
 };
 
-module.exports = { getDebtorList, createDebtor, getDebtorFullAddress };
+const getCreditLimitList = async ({ debtorId }) => {
+  try {
+    const debtors = await ClientDebtor.find({
+      isActive: true,
+      debtorId: mongoose.Types.ObjectId(debtorId),
+      creditLimit: { $exists: true, $ne: null },
+    })
+      .populate('clientId debtorId')
+      .lean();
+    let creditLimits = [];
+    debtors.forEach((debtor) =>
+      creditLimits.push({
+        clientName: debtor.clientId.name,
+        abn: debtor.clientId.abn,
+        acn: debtor.clientId.acn,
+        registrationNumber: debtor.clientId.registrationNumber,
+        creditLimit: debtor.creditLimit,
+        contactNumber: debtor.clientId.contactNumber,
+        inceptionDate:
+          new Date(debtor.clientId.inceptionDate).getDate() +
+          '-' +
+          (new Date(debtor.clientId.inceptionDate).getMonth() + 1) +
+          '-' +
+          new Date(debtor.clientId.inceptionDate).getFullYear(),
+        expiryDate:
+          new Date(debtor.clientId.expiryDate).getDate() +
+          '-' +
+          (new Date(debtor.clientId.expiryDate).getMonth() + 1) +
+          '-' +
+          new Date(debtor.clientId.expiryDate).getFullYear(),
+      }),
+    );
+    return creditLimits;
+  } catch (e) {
+    Logger.log.error('Error occurred in get credit-limit list', e.message || e);
+  }
+};
+
+module.exports = {
+  getDebtorList,
+  createDebtor,
+  getDebtorFullAddress,
+  getCreditLimitList,
+};
