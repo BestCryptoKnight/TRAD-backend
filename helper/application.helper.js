@@ -300,16 +300,19 @@ const storeCompanyDetails = async ({
       .lean();
     const client = await Client.findOne({ _id: clientId }).lean();
     let isDebtorExists = true;
+    let query;
+    if (requestBody.registrationNumber) {
+      query = { registrationNumber: requestBody.registrationNumber };
+    } else if (requestBody.abn) {
+      query = { abn: requestBody.abn };
+    } else {
+      query = { acn: requestBody.acn };
+    }
+    const debtorData = await Debtor.findOne(query).lean();
+    if (!debtorData) {
+      isDebtorExists = false;
+    }
     if (!requestBody.applicationId) {
-      let query;
-      if (requestBody.registrationNumber) {
-        query = { registrationNumber: requestBody.registrationNumber };
-      } else if (requestBody.abn) {
-        query = { abn: requestBody.abn };
-      } else {
-        query = { acn: requestBody.acn };
-      }
-      const debtorData = await Debtor.findOne(query).lean();
       if (debtorData) {
         const application = await Application.findOne({
           clientId: clientId,
@@ -326,8 +329,6 @@ const storeCompanyDetails = async ({
               'Application already exists, please create with another debtor',
           };
         }
-      } else {
-        isDebtorExists = false;
       }
     }
     if (requestBody.address.country.code === 'AUS' && requestBody.abn) {
@@ -361,6 +362,11 @@ const storeCompanyDetails = async ({
       applicationStage: 1,
     };
     let application;
+    if (requestBody.applicationId) {
+      application = await Application.findById(
+        requestBody.applicationId,
+      ).lean();
+    }
     if (!requestBody.applicationId) {
       applicationDetails.applicationId =
         client.clientCode +
@@ -378,6 +384,17 @@ const storeCompanyDetails = async ({
       applicationDetails.createdByType = createdByType;
       application = await Application.create(applicationDetails);
     } else {
+      if (application.applicationId) {
+        const previousId = application.applicationId.split('-');
+        applicationDetails.applicationId =
+          client.clientCode +
+          '-' +
+          debtor.debtorCode +
+          '-' +
+          previousId[2] +
+          '-' +
+          previousId[3];
+      }
       await Application.updateOne(
         { _id: requestBody.applicationId },
         applicationDetails,

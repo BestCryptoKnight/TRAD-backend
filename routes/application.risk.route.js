@@ -812,6 +812,7 @@ router.get('/search-entity-list', async function (req, res) {
     let response = [];
     let entityData = {};
     if (
+      entityList &&
       entityList.ABRPayloadSearchResults.response &&
       entityList.ABRPayloadSearchResults.response.searchResultsList &&
       entityList.ABRPayloadSearchResults.response.searchResultsList

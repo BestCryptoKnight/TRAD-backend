@@ -152,7 +152,7 @@ router.get('/', async function (req, res) {
     req.query.sortBy = req.query.sortBy || '_id';
     req.query.sortOrder = req.query.sortOrder || 'desc';
     let queryFilter = {
-      isActive: true,
+      // isActive: true,
     };
     if (req.accessTypes && req.accessTypes.indexOf('full-access') === -1) {
       const clients = await Client.find({
