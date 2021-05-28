@@ -19,6 +19,7 @@ const Logger = require('./../services/logger');
 const MailHelper = require('./../helper/mailer.helper');
 const RssHelper = require('./../helper/rss.helper');
 const StaticFile = require('./../static-files/moduleColumn');
+const StaticData = require('./../static-files/staticData.json');
 const { addAuditLog } = require('./../helper/audit-log.helper');
 const { getUserList } = require('./../helper/user.helper');
 const {
@@ -971,7 +972,17 @@ router.get('/', async function (req, res) {
           user.city = user.address.city;
         }
         if (clientColumn.columns.includes('state')) {
-          user.state = user.address.state;
+          const state =
+            user.address.country.toLowerCase() === 'australia'
+              ? StaticData.australianStates.find((i) => {
+                  if (i._id === user.address.state) return i;
+                })
+              : user.address.country.toLowerCase() === 'new zealand'
+              ? StaticData.newZealandStates.find((i) => {
+                  if (i._id === user.address.state) return i;
+                })
+              : { name: user.address.state };
+          user.state = state && state.name ? state.name : user.address.state;
         }
         if (clientColumn.columns.includes('country')) {
           user.country = user.address.country;

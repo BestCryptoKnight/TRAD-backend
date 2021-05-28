@@ -1077,6 +1077,7 @@ router.put('/', async function (req, res) {
               'WITHDRAWN',
               'SURRENDERED',
               'DRAFT',
+              'APPROVED',
             ],
           },
         }).lean();

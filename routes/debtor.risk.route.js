@@ -237,7 +237,17 @@ router.get('/', async function (req, res) {
         debtor.suburb = debtor.address.suburb;
       }
       if (debtorColumn.columns.includes('state')) {
-        debtor.state = debtor.address.state;
+        const state =
+          debtor.address.country.code === 'AUS'
+            ? StaticData.australianStates.find((i) => {
+                if (i._id === debtor.address.state) return i;
+              })
+            : debtor.address.country.code === 'NZL'
+            ? StaticData.newZealandStates.find((i) => {
+                if (i._id === debtor.address.state) return i;
+              })
+            : { name: debtor.address.state };
+        debtor.state = state && state.name ? state.name : debtor.address.state;
       }
       if (debtorColumn.columns.includes('country')) {
         debtor.country = debtor.address.country.name;

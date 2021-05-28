@@ -1104,6 +1104,7 @@ router.put('/', async function (req, res) {
               'WITHDRAWN',
               'SURRENDERED',
               'DRAFT',
+              'APPROVED',
             ],
           },
         }).lean();
@@ -1182,6 +1183,12 @@ router.put('/:applicationId', async function (req, res) {
           message: 'Require fields are missing',
         });
       }
+      const applicationData = await Application.findOne({
+        clientId: application.clientId,
+        debtorId: application.debtorId,
+        clientDebtorId: application.clientDebtorId,
+        status: 'APPROVED',
+      }).lean();
       req.body.creditLimit = parseInt(req.body.creditLimit);
       const ciPolicy = await Policy.findOne({
         clientId: application.clientId,
@@ -1206,6 +1213,12 @@ router.put('/:applicationId', async function (req, res) {
         update.isEndorsedLimit = true;
       }
       await ClientDebtor.updateOne({ _id: application.clientDebtorId }, update);
+      if (applicationData && applicationData._id) {
+        await Application.updateOne(
+          { _id: applicationData._id },
+          { status: 'SURRENDERED' },
+        );
+      }
     } else if (
       req.body.status === 'DECLINED' ||
       req.body.status === 'CANCELLED' ||
@@ -1231,10 +1244,7 @@ router.put('/:applicationId', async function (req, res) {
       message: 'Application status updated successfully',
     });
   } catch (e) {
-    Logger.log.error(
-      'Error occurred in generating application ',
-      e.message || e,
-    );
+    Logger.log.error('Error occurred in generating application ', e);
     res.status(500).send({
       status: 'ERROR',
       message: e,
