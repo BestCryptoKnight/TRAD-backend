@@ -315,20 +315,15 @@ const storeCompanyDetails = async ({
           clientId: clientId,
           debtorId: debtorData._id,
           status: {
-            $nin: [
-              'DECLINED',
-              'CANCELLED',
-              'WITHDRAWN',
-              'SURRENDERED',
-              'DRAFT',
-            ],
+            $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED'],
           },
         }).lean();
         if (application) {
           return {
             status: 'ERROR',
             messageCode: 'APPLICATION_ALREADY_EXISTS',
-            message: 'Application already exists',
+            message:
+              'Application already exists, please create with another debtor',
           };
         }
       } else {

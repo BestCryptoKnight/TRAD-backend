@@ -686,8 +686,8 @@ router.get('/:entityId', async function (req, res) {
 /**
  * Search from ABN/ACN Number
  */
-router.get('/search-entity/:searchString', async function (req, res) {
-  if (!req.params.searchString) {
+router.get('/search-entity', async function (req, res) {
+  if (!req.query.searchString) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -696,33 +696,39 @@ router.get('/search-entity/:searchString', async function (req, res) {
   }
   try {
     const debtor = await Debtor.findOne({
-      $or: [{ abn: req.params.searchString }, { acn: req.params.searchString }],
+      $or: [{ abn: req.query.searchString }, { acn: req.query.searchString }],
     }).lean();
+    let responseData = {};
     if (debtor) {
       const application = await Application.findOne({
         clientId: req.user.clientId,
         debtorId: debtor._id,
         status: {
-          $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED', 'DRAFT'],
+          $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED'],
         },
       }).lean();
-      if (application) {
+      if (application && application.status !== 'APPROVED') {
         return res.status(400).send({
           status: 'ERROR',
           messageCode: 'APPLICATION_ALREADY_EXISTS',
-          message: 'Application already exists.',
+          message:
+            'Application already exists, please create with another debtor',
         });
+      } else {
+        responseData.message =
+          'You already have one approved application, do you still want to create another one?';
+        responseData.messageCode = 'APPROVED_APPLICATION_ALREADY_EXISTS';
       }
     }
     let entityData;
-    if (req.params.searchString.length < 10) {
+    if (req.query.searchString.length < 10) {
       console.log('Get entity details from ACN number :: ');
       entityData = await getEntityDetailsByACN({
-        searchString: req.params.searchString,
+        searchString: req.query.searchString,
       });
     } else {
       entityData = await getEntityDetailsByABN({
-        searchString: req.params.searchString,
+        searchString: req.query.searchString,
       });
     }
     let response = {};
@@ -807,10 +813,9 @@ router.get('/search-entity/:searchString', async function (req, res) {
         });
       }
     }
-    res.status(200).send({
-      status: 'SUCCESS',
-      data: response,
-    });
+    responseData.status = 'SUCCESS';
+    responseData.data = response;
+    res.status(200).send(responseData);
   } catch (e) {
     Logger.log.error('Error occurred in search by ABN number  ', e);
     res.status(500).send({
@@ -823,8 +828,8 @@ router.get('/search-entity/:searchString', async function (req, res) {
 /**
  * Search from Entity Name
  */
-router.get('/search-entity-list/:searchString', async function (req, res) {
-  if (!req.params.searchString) {
+router.get('/search-entity-list', async function (req, res) {
+  if (!req.query.searchString) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -832,27 +837,8 @@ router.get('/search-entity-list/:searchString', async function (req, res) {
     });
   }
   try {
-    const debtor = await Debtor.findOne({
-      $or: [{ abn: req.params.searchString }, { acn: req.params.searchString }],
-    }).lean();
-    if (debtor) {
-      const application = await Application.findOne({
-        clientId: req.user.clientId,
-        debtorId: debtor._id,
-        status: {
-          $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED', 'DRAFT'],
-        },
-      }).lean();
-      if (application) {
-        return res.status(400).send({
-          status: 'ERROR',
-          messageCode: 'APPLICATION_ALREADY_EXISTS',
-          message: 'Application already exists.',
-        });
-      }
-    }
     let entityList = await getEntityListByName({
-      searchString: req.params.searchString,
+      searchString: req.query.searchString,
     });
     let response = [];
     let entityData = {};

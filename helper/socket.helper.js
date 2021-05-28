@@ -1,9 +1,16 @@
+/*
+ * Module Imports
+ * */
 const mongoose = require('mongoose');
 const User = mongoose.model('user');
 const ClientUser = mongoose.model('client-user');
-var socket_io = require('socket.io');
-var io = socket_io();
-var socketApi = {};
+const socket_io = require('socket.io');
+
+/*
+ * Local Imports
+ * */
+let io = socket_io();
+let socketApi = {};
 socketApi.io = io;
 let socketUser = {};
 const Logger = require('./../services/logger');
@@ -19,7 +26,7 @@ io.on('connection', async function (socket) {
   socket.on('disconnect', async () => {
     console.log('User disconnected:', socket.id);
     console.log('type', type);
-    await removeSocketIdFromUser(socket.id, type);
+    await removeSocketIdFromUser(socket.id);
     // socketUser = socketUser.filter(user => user.id !== socket.id);
     for (let key in socketUser) {
       if (key.toString() === socket.id) {
@@ -73,20 +80,19 @@ let addSocketIdToUser = (token, socketId, type) => {
   });
 };
 
-let removeSocketIdFromUser = (socketId, type) => {
+let removeSocketIdFromUser = (socketId) => {
   return new Promise(async (resolve, reject) => {
     try {
-      if (type === 'user') {
-        await User.updateOne(
+      await Promise.all([
+        User.updateOne(
           { socketIds: socketId },
           { $pull: { socketIds: socketId } },
-        );
-      } else {
-        await ClientUser.updateOne(
+        ),
+        ClientUser.updateOne(
           { socketIds: socketId },
           { $pull: { socketIds: socketId } },
-        );
-      }
+        ),
+      ]);
       return resolve();
     } catch (err) {
       Logger.log.error(

@@ -667,20 +667,26 @@ router.get('/search-entity', async function (req, res) {
     const debtor = await Debtor.findOne({
       $or: [{ abn: req.query.searchString }, { acn: req.query.searchString }],
     }).lean();
+    let responseData = {};
     if (debtor) {
       const application = await Application.findOne({
         clientId: req.query.clientId,
         debtorId: debtor._id,
         status: {
-          $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED', 'DRAFT'],
+          $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED'],
         },
       }).lean();
-      if (application) {
+      if (application && application.status !== 'APPROVED') {
         return res.status(400).send({
           status: 'ERROR',
           messageCode: 'APPLICATION_ALREADY_EXISTS',
-          message: 'Application already exists.',
+          message:
+            'Application already exists, please create with another debtor',
         });
+      } else {
+        responseData.message =
+          'You already have one approved application, do you still want to create another one?';
+        responseData.messageCode = 'APPROVED_APPLICATION_ALREADY_EXISTS';
       }
     }
     let entityData;
@@ -776,10 +782,9 @@ router.get('/search-entity', async function (req, res) {
         });
       }
     }
-    res.status(200).send({
-      status: 'SUCCESS',
-      data: response,
-    });
+    responseData.status = 'SUCCESS';
+    responseData.data = response;
+    res.status(200).send(responseData);
   } catch (e) {
     Logger.log.error('Error occurred in search by ABN number  ', e);
     res.status(500).send({
@@ -793,7 +798,7 @@ router.get('/search-entity', async function (req, res) {
  * Search from Entity Name
  */
 router.get('/search-entity-list', async function (req, res) {
-  if (!req.query.searchString || !req.query.clientId) {
+  if (!req.query.searchString) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',

@@ -4,11 +4,7 @@
 const express = require('express');
 const router = express.Router();
 let mongoose = require('mongoose');
-const Task = mongoose.model('task');
-const Client = mongoose.model('client');
-const Application = mongoose.model('application');
 const Policy = mongoose.model('policy');
-const ClientDebtor = mongoose.model('client-debtor');
 
 /*
  * Local Imports
@@ -104,8 +100,12 @@ router.get('/', async function (req, res) {
       response['endorsedLimit'] = endorsedLimit;
     }
     response['applicationStatus'] = applicationStatus;
-    response['approvedAmount'] = approvedAmount;
-    response['approvedApplication'] = approvedApplication;
+    response['approvedAmount'] =
+      approvedAmount && approvedAmount.length !== 0 ? approvedAmount[0] : {};
+    response['approvedApplication'] =
+      approvedApplication && approvedApplication.length !== 0
+        ? approvedApplication[0]
+        : {};
     response['resChecksCount'] = resChecks;
     res.status(200).send({ status: 'SUCCESS', data: response });
   } catch (e) {

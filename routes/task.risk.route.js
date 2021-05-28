@@ -460,7 +460,7 @@ router.post('/', async function (req, res) {
             data: notification,
           },
           type: 'user',
-          userId: req.user._id,
+          userId: req.body.assigneeId,
         });
       }
     }
@@ -581,9 +581,9 @@ router.put('/:taskId', async function (req, res) {
         (entityName ? ` for ${entityName} ` : ' ') +
         `is successfully updated by ${req.user.name}`,
     });
-    if (task.toString() !== req.user._id.toString()) {
+    if (task.createdById.toString() !== req.user._id.toString()) {
       const notification = await addNotification({
-        userId: task.assigneeId,
+        userId: task.createdById,
         userType: 'user',
         description:
           `A task ${task.title}` +
@@ -597,7 +597,7 @@ router.put('/:taskId', async function (req, res) {
             data: notification,
           },
           type: 'user',
-          userId: req.user._id,
+          userId: req.createdById,
         });
       }
     }
