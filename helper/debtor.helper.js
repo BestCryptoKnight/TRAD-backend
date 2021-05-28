@@ -78,6 +78,7 @@ const createDebtor = async ({
 }) => {
   try {
     let update = {};
+    console.log('isDebtorExists::', isDebtorExists);
     if (requestBody.address && Object.keys(requestBody.address).length !== 0) {
       update.address = {};
       update.address.property =
@@ -156,10 +157,10 @@ const createDebtor = async ({
     let query;
     if (requestBody.registrationNumber) {
       query = { registrationNumber: requestBody.registrationNumber };
+    } else if (requestBody.abn) {
+      query = { abn: requestBody.abn };
     } else {
-      query = {
-        $or: [{ abn: requestBody.abn }, { acn: requestBody.acn }],
-      };
+      query = { acn: requestBody.acn };
     }
     await Debtor.updateOne(query, update, { upsert: true });
     const debtor = await Debtor.findOne(query).lean();

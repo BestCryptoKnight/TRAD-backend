@@ -304,10 +304,10 @@ const storeCompanyDetails = async ({
       let query;
       if (requestBody.registrationNumber) {
         query = { registrationNumber: requestBody.registrationNumber };
+      } else if (requestBody.abn) {
+        query = { abn: requestBody.abn };
       } else {
-        query = {
-          $or: [{ abn: requestBody.abn }, { acn: requestBody.acn }],
-        };
+        query = { acn: requestBody.acn };
       }
       const debtorData = await Debtor.findOne(query).lean();
       if (debtorData) {

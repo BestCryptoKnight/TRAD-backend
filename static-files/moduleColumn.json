@@ -113,6 +113,7 @@
     {
       "name": "client",
       "manageColumns": [
+        { "name": "clientCode", "label": "Client Code", "type": "string" },
         { "name": "name", "label": "Name", "type": "string" },
         {
           "name": "contactNumber",
@@ -130,7 +131,6 @@
           "type": "string"
         },
         { "name": "insurerId", "label": "Insurer Name", "type": "string" },
-        { "name": "clientCode", "label": "Client Code", "type": "string" },
         { "name": "fullAddress", "label": "Full Address", "type": "string" },
         { "name": "addressLine", "label": "Address Line", "type": "string" },
         { "name": "city", "label": "City", "type": "string" },
@@ -149,6 +149,7 @@
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
       "defaultColumns": [
+        "clientCode",
         "name",
         "contactNumber",
         "riskAnalystId",
@@ -438,6 +439,7 @@
     {
       "name": "debtor",
       "manageColumns": [
+        { "name": "debtorCode", "label": "Debtor Code", "type": "string" },
         { "name": "entityName", "label": "Entity Name", "type": "string" },
         { "name": "abn", "label": "ABN", "type": "string" },
         { "name": "acn", "label": "ACN", "type": "string" },
@@ -468,6 +470,7 @@
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
       "defaultColumns": [
+        "debtorCode",
         "abn",
         "entityName",
         "acn",
