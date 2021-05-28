@@ -44,7 +44,7 @@ const getEndorsedLimit = async ({
     ]).allowDiskUse(true);
     const response = {};
     if (data && data.length !== 0) {
-      response.totalCount = aggregateOfCreditLimit;
+      response.totalCount = parseInt(aggregateOfCreditLimit);
       response.endorsedLimitCount = data[0]['endorsedLimit'];
     }
     return response;
@@ -88,7 +88,7 @@ const getRESChecks = async ({
     ]).allowDiskUse(true);
     const response = {};
     if (data && data.length !== 0) {
-      response.totalCount = noOfResChecks;
+      response.totalCount = parseInt(noOfResChecks);
       response.applicationCount = data[0]['count'];
     }
     return response;

@@ -336,19 +336,25 @@ router.get('/details/:debtorId', async function (req, res) {
     });
   }
   try {
+    let responseData = {};
     const application = await Application.findOne({
       debtorId: req.params.debtorId,
       clientId: req.user.clientId,
       status: {
-        $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED', 'DRAFT'],
+        $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED'],
       },
     }).lean();
-    if (application) {
+    if (application && application.status !== 'APPROVED') {
       return res.status(400).send({
         status: 'ERROR',
         messageCode: 'APPLICATION_ALREADY_EXISTS',
-        message: 'Application already exists.',
+        message:
+          'Application already exists, please create with another debtor',
       });
+    } else {
+      responseData.message =
+        'You already have one approved application, do you still want to create another one?';
+      responseData.messageCode = 'APPROVED_APPLICATION_ALREADY_EXISTS';
     }
     const debtor = await Debtor.findById(req.params.debtorId)
       .select({ isDeleted: 0, createdAt: 0, updatedAt: 0, __v: 0 })
@@ -405,7 +411,9 @@ router.get('/details/:debtorId', async function (req, res) {
         }
       }
     }
-    res.status(200).send({ status: 'SUCCESS', data: debtor });
+    responseData.status = 'SUCCESS';
+    responseData.data = debtor;
+    res.status(200).send(responseData);
   } catch (e) {
     Logger.log.error('Error occurred in get debtor details ', e.message || e);
     res.status(500).send({

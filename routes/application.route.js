@@ -374,10 +374,12 @@ router.get('/details/:applicationId', async function (req, res) {
                   if (i._id === response.company.state) return i;
                 })
               : { name: response.company.state };
-          response.company.state = {
-            value: response.company.state,
-            label: state && state.name ? state.name : response.company.state,
-          };
+          if (state && state.name && state._id) {
+            response.company.state = {
+              value: response.company.state,
+              label: state && state.name ? state.name : response.company.state,
+            };
+          }
         }
         if (response.company.country) {
           response.company.country = {
@@ -626,64 +628,6 @@ router.get('/modules/:applicationId', async function (req, res) {
 });
 
 /**
- * Get Specific Entity's Application
- */
-router.get('/:entityId', async function (req, res) {
-  if (
-    !req.params.entityId ||
-    !req.query.listFor ||
-    !mongoose.Types.ObjectId.isValid(req.params.entityId)
-  ) {
-    return res.status(400).send({
-      status: 'ERROR',
-      messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Require fields are missing.',
-    });
-  }
-  try {
-    let queryFilter = {
-      isDeleted: false,
-    };
-    switch (req.query.listFor) {
-      case 'debtor-application':
-        queryFilter.debtorId = mongoose.Types.ObjectId(req.params.entityId);
-        break;
-      default:
-        return res.status(400).send({
-          status: 'ERROR',
-          messageCode: 'BAD_REQUEST',
-          message: 'Please pass correct fields',
-        });
-    }
-    const module = StaticFile.modules.find((i) => i.name === req.query.listFor);
-    const applicationColumn = req.user.manageColumns.find(
-      (i) => i.moduleName === req.query.listFor,
-    );
-    const response = await getApplicationList({
-      hasFullAccess: false,
-      applicationColumn: applicationColumn.columns,
-      isForRisk: false,
-      requestedQuery: req.query,
-      queryFilter: queryFilter,
-      moduleColumn: module.manageColumns,
-    });
-    res.status(200).send({
-      status: 'SUCCESS',
-      data: response,
-    });
-  } catch (e) {
-    Logger.log.error(
-      'Error occurred while getting specific entity applications ',
-      e.message || e,
-    );
-    res.status(500).send({
-      status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
-    });
-  }
-});
-
-/**
  * Search from ABN/ACN Number
  */
 router.get('/search-entity', async function (req, res) {
@@ -889,6 +833,64 @@ router.get('/search-entity-list', async function (req, res) {
     });
   } catch (e) {
     Logger.log.error('Error occurred in search by ABN number  ', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Get Specific Entity's Application
+ */
+router.get('/:entityId', async function (req, res) {
+  if (
+    !req.params.entityId ||
+    !req.query.listFor ||
+    !mongoose.Types.ObjectId.isValid(req.params.entityId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    let queryFilter = {
+      isDeleted: false,
+    };
+    switch (req.query.listFor) {
+      case 'debtor-application':
+        queryFilter.debtorId = mongoose.Types.ObjectId(req.params.entityId);
+        break;
+      default:
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'BAD_REQUEST',
+          message: 'Please pass correct fields',
+        });
+    }
+    const module = StaticFile.modules.find((i) => i.name === req.query.listFor);
+    const applicationColumn = req.user.manageColumns.find(
+      (i) => i.moduleName === req.query.listFor,
+    );
+    const response = await getApplicationList({
+      hasFullAccess: false,
+      applicationColumn: applicationColumn.columns,
+      isForRisk: false,
+      requestedQuery: req.query,
+      queryFilter: queryFilter,
+      moduleColumn: module.manageColumns,
+    });
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: response,
+    });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred while getting specific entity applications ',
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
