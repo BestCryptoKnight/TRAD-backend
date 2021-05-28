@@ -698,6 +698,7 @@ const generateNewApplication = async ({
         note: application.note,
         createdByType: createdByType,
         createdById: createdById,
+        status: 'SUBMITTED',
       };
       applicationDetails.applicationId =
         application.clientId.clientCode +
