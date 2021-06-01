@@ -10,9 +10,10 @@ const Schema = mongoose.Schema;
  */
 const creditReportSchema = new Schema(
   {
-    debtorId: {
-      type: Schema.Types.ObjectId,
-      ref: 'debtor',
+    entityId: { type: Schema.Types.ObjectId },
+    entityType: {
+      type: Schema.Types.String,
+      enum: ['debtor', 'debtor-director'],
     },
     reportProvider: { type: Schema.Types.String, enum: ['illion', 'equifax'] },
     name: { type: Schema.Types.String },

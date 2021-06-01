@@ -226,7 +226,7 @@ router.get('/client-name', async function (req, res) {
 /**
  * Resend Mail to User
  */
-router.get('send-mail/:userId', async function (req, res) {
+router.get('/send-mail/:userId', async function (req, res) {
   if (
     !req.params.userId ||
     !mongoose.Types.ObjectId.isValid(req.params.userId)

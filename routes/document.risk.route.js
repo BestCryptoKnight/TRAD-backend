@@ -188,8 +188,8 @@ router.get('/:entityId', async function (req, res) {
     let sortingOptions = {};
     req.query.sortBy = req.query.sortBy || '_id';
     req.query.sortOrder = req.query.sortOrder || 'desc';
-    req.query.limit = req.query.limit || 5;
-    req.query.page = req.query.page || 1;
+    // req.query.limit = req.query.limit || 5;
+    // req.query.page = req.query.page || 1;
     sortingOptions[req.query.sortBy] = req.query.sortOrder === 'desc' ? -1 : 1;
 
     if (req.query.documentFor === 'application') {
@@ -383,21 +383,23 @@ router.get('/:entityId', async function (req, res) {
     });
     aggregationQuery.push({ $sort: sortingOptions });
 
-    aggregationQuery.push({
-      $facet: {
-        paginatedResult: [
-          {
-            $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
-          },
-          { $limit: parseInt(req.query.limit) },
-        ],
-        totalCount: [
-          {
-            $count: 'count',
-          },
-        ],
-      },
-    });
+    if (req.query.limit && req.query.page) {
+      aggregationQuery.push({
+        $facet: {
+          paginatedResult: [
+            {
+              $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
+            },
+            { $limit: parseInt(req.query.limit) },
+          ],
+          totalCount: [
+            {
+              $count: 'count',
+            },
+          ],
+        },
+      });
+    }
 
     aggregationQuery.unshift({ $match: query });
 
@@ -405,6 +407,7 @@ router.get('/:entityId', async function (req, res) {
       true,
     );
     const headers = [];
+    let response = [];
     if (module) {
       for (let i = 0; i < module.manageColumns.length; i++) {
         if (documentColumn.columns.includes(module.manageColumns[i].name)) {
@@ -413,7 +416,10 @@ router.get('/:entityId', async function (req, res) {
       }
     }
     if (documents && documents.length !== 0) {
-      documents[0].paginatedResult.forEach((document) => {
+      response = documents[0]['paginatedResult']
+        ? documents[0]['paginatedResult']
+        : documents;
+      response.forEach((document) => {
         if (documentColumn.columns.includes('documentTypeId')) {
           document.documentTypeId = document.documentTypeId.documentTitle || '';
         }
@@ -423,14 +429,15 @@ router.get('/:entityId', async function (req, res) {
       });
     }
     const total =
+      documents.length !== 0 &&
+      documents[0]['totalCount'] &&
       documents[0]['totalCount'].length !== 0
         ? documents[0]['totalCount'][0]['count']
         : 0;
-
     res.status(200).send({
       status: 'SUCCESS',
       data: {
-        docs: documents[0].paginatedResult,
+        docs: response,
         headers,
         total,
         page: parseInt(req.query.page),

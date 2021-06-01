@@ -25,6 +25,7 @@ const {
 const { getUserClientList } = require('./../helper/client.helper');
 const { addAuditLog, getEntityName } = require('./../helper/audit-log.helper');
 const { sendNotification } = require('./../helper/socket.helper');
+const { addNotification } = require('./../helper/notification.helper');
 
 /**
  * Get Column Names
@@ -497,6 +498,45 @@ router.put('/:taskId', async function (req, res) {
     if (req.body.hasOwnProperty('isCompleted'))
       updateObj.isCompleted = req.body.isCompleted;
     await Task.updateOne({ _id: req.params.taskId }, updateObj);
+    const task = await Task.findById(req.params.taskId).lean();
+    let entityName;
+    if (task.entityType && task.entityId) {
+      entityName = await getEntityName({
+        entityId: task.entityId,
+        entityType: task.entityType.toLowerCase(),
+      });
+    }
+    await addAuditLog({
+      entityType: 'task',
+      entityRefId: task._id,
+      actionType: 'edit',
+      userType: 'client-user',
+      userRefId: req.user.clientId,
+      logDescription:
+        'A task' +
+        (entityName ? ` for ${entityName} ` : ' ') +
+        `is successfully updated by ${req.user.name}`,
+    });
+    if (task.createdById.toString() !== req.user._id.toString()) {
+      const notification = await addNotification({
+        userId: task.createdById,
+        userType: task.createdByType,
+        description:
+          `A task ${task.title}` +
+          (entityName ? ` for ${entityName} ` : ' ') +
+          `is updated by ${req.user.name}`,
+      });
+      if (notification) {
+        sendNotification({
+          notificationObj: {
+            type: 'TASK_UPDATED',
+            data: notification,
+          },
+          type: task.createdByType,
+          userId: req.createdById,
+        });
+      }
+    }
     res
       .status(200)
       .send({ status: 'SUCCESS', message: 'Task updated successfully' });

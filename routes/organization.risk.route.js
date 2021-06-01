@@ -23,7 +23,7 @@ router.get('/module', async function (req, res) {
   try {
     let modules = StaticFile.modules;
     modules.forEach((i) => {
-      i.accessTypes = [];
+      i.accessTypes = i.isDefault ? ['read', 'write', 'full-access'] : [];
     });
     res.status(200).send({ status: 'SUCCESS', data: modules });
   } catch (e) {

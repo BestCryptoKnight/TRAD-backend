@@ -465,6 +465,8 @@
           "label": "Contact Number",
           "type": "string"
         },
+        { "name": "riskRating", "label": "Risk Rating", "type": "string" },
+        { "name": "reviewDate", "label": "Review Date", "type": "date" },
         { "name": "isActive", "label": "Active", "type": "string" },
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
@@ -475,7 +477,9 @@
         "entityName",
         "acn",
         "entityType",
-        "registrationNumber"
+        "registrationNumber",
+        "riskRating",
+        "reviewDate"
       ]
     },
     {

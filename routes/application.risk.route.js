@@ -1239,6 +1239,14 @@ router.put('/:applicationId', async function (req, res) {
       { _id: req.params.applicationId },
       { status: req.body.status },
     );
+    await addAuditLog({
+      entityType: 'application',
+      entityRefId: application._id,
+      actionType: 'edit',
+      userType: 'user',
+      userRefId: req.user._id,
+      logDescription: `An application ${application.applicationId} is updated by ${req.user.name}`,
+    });
     res.status(200).send({
       status: 'SUCCESS',
       message: 'Application status updated successfully',
