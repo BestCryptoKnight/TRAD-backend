@@ -351,7 +351,7 @@ router.get('/details/:debtorId', async function (req, res) {
         message:
           'Application already exists, please create with another debtor',
       });
-    } else {
+    } else if (application && application.status === 'APPROVED') {
       responseData.message =
         'You already have one approved application, do you still want to create another one?';
       responseData.messageCode = 'APPROVED_APPLICATION_ALREADY_EXISTS';

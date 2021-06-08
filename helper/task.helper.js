@@ -132,7 +132,7 @@ const aggregationQuery = async ({
   userId,
 }) => {
   try {
-    const queryFilter = {
+    let queryFilter = {
       isDeleted: false,
     };
     let query = [];
@@ -147,10 +147,20 @@ const aggregationQuery = async ({
         requestedQuery.requestedEntityId,
       );
     } else if (!hasFullAccess && !isForRisk) {
-      queryFilter.entityId = mongoose.Types.ObjectId(userId);
+      queryFilter = Object.assign({}, queryFilter, {
+        $or: [
+          { assigneeId: mongoose.Types.ObjectId(userId) },
+          { createdById: mongoose.Types.ObjectId(userId) },
+        ],
+      });
     }
     if (!hasFullAccess && !listCreatedBy && isForRisk) {
-      queryFilter.assigneeId = mongoose.Types.ObjectId(userId);
+      queryFilter = Object.assign({}, queryFilter, {
+        $or: [
+          { assigneeId: mongoose.Types.ObjectId(userId) },
+          { createdById: mongoose.Types.ObjectId(userId) },
+        ],
+      });
     }
     if (listCreatedBy) {
       queryFilter.createdById = mongoose.Types.ObjectId(userId);
@@ -330,25 +340,7 @@ const aggregationQuery = async ({
       );
     }
 
-    if (
-      (taskColumn.includes('assigneeId') || requestedQuery.assigneeId) &&
-      !hasFullAccess &&
-      isForRisk
-    ) {
-      query.push(
-        {
-          $lookup: {
-            from: 'users',
-            localField: 'assigneeId',
-            foreignField: '_id',
-            as: 'assigneeId',
-          },
-        },
-        {
-          $unwind: '$assigneeId',
-        },
-      );
-    } else {
+    if (taskColumn.includes('assigneeId') || requestedQuery.assigneeId) {
       query.push(
         {
           $addFields: {
@@ -374,7 +366,7 @@ const aggregationQuery = async ({
         },
         {
           $lookup: {
-            from: 'client-users',
+            from: 'clients',
             localField: 'clientUserId',
             foreignField: '_id',
             as: 'clientUserId',
@@ -408,25 +400,7 @@ const aggregationQuery = async ({
       });
     }
 
-    if (
-      (taskColumn.includes('createdById') || requestedQuery.createdById) &&
-      !hasFullAccess &&
-      isForRisk
-    ) {
-      query.push(
-        {
-          $lookup: {
-            from: 'users',
-            localField: 'createdById',
-            foreignField: '_id',
-            as: 'createdById',
-          },
-        },
-        /*{
-          $unwind: '$createdById',
-        },*/
-      );
-    } else {
+    if (taskColumn.includes('createdById') || requestedQuery.createdById) {
       query.push(
         {
           $addFields: {

@@ -23,12 +23,12 @@
     "entityIncorporated": {
       "conditionString": "Make sure the company has been incorporated for at least 12 months - ASIC",
       "field": ["incorporationDate"],
-      "value": "at least 12 months"
+      "value": 12
     },
     "courtCharges": {
       "conditionString": "No court actions or legal or collection activity present",
       "field": [],
-      "value": ""
+      "value": true
     },
     "noAdverse": {
       "conditionString": "No adverse against director/s, owner/s or Shareholders",
@@ -54,7 +54,7 @@
         "reports": ["Equifax Report: Commercial Apply (Individuals tab)"],
         "isAutoApproval": true,
         "reportFrom": "equifax",
-        "guideLines": []
+        "guideLines": {}
       },
       "australianCompanies": {
         "reports": [
@@ -63,13 +63,13 @@
         ],
         "isAutoApproval": true,
         "reportFrom": "illion",
-        "guideLines": []
+        "guideLines": {}
       },
       "newZealand": {
         "reports": ["Illion Report: HTML NZ Comm. Bureau Enq (AU Subs)"],
         "isAutoApproval": true,
         "reportFrom": "illion",
-        "guideLines": []
+        "guideLines": {}
       },
       "commonGuideLines": []
     },
@@ -80,7 +80,7 @@
         "reports": ["Equifax Report: Commercial Apply (Individuals tab)"],
         "isAutoApproval": true,
         "reportFrom": "equifax",
-        "guideLines": []
+        "guideLines": {}
       },
       "australianCompanies": {
         "reports": [
@@ -89,15 +89,19 @@
         ],
         "isAutoApproval": true,
         "reportFrom": "illion",
-        "guideLines": []
+        "guideLines": {}
       },
       "newZealand": {
         "reports": ["Illion Report: HTML Payment Analysis with refreshed NZCO"],
         "isAutoApproval": true,
         "reportFrom": "illion",
-        "guideLines": [
-          "The Late Payment Risk Level indicated by D&B cannot be “High”, “Very High” or “Severe” (NZ)"
-        ]
+        "guideLines": {
+          "paymentRiskLevel": {
+            "conditionString": "The Late Payment Risk Level indicated by D&B cannot be “High”, “Very High” or “Severe” (NZ)",
+            "field": ["riskLevel"],
+            "value": ["High", "Very High", "Severe"]
+          }
+        }
       },
       "commonGuideLines": [
         "The Late Payment Risk Level indicated by D&B cannot be “High”, “Very High” or “Severe” (NZ)"

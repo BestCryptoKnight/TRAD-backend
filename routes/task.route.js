@@ -188,14 +188,12 @@ router.get('/details/:taskId', async function (req, res) {
       .select({ __v: 0, isDeleted: 0, createdAt: 0, updatedAt: 0 })
       .lean();
     if (task.priority) {
-      task.priority = [
-        {
-          value: task.priority,
-          label:
-            task.priority.charAt(0).toUpperCase() +
-            task.priority.slice(1).toLowerCase(),
-        },
-      ];
+      task.priority = {
+        value: task.priority,
+        label:
+          task.priority.charAt(0).toUpperCase() +
+          task.priority.slice(1).toLowerCase(),
+      };
     }
     let value;
     if (task.assigneeId) {
@@ -203,15 +201,16 @@ router.get('/details/:taskId', async function (req, res) {
         const user = await User.findById(task.assigneeId).lean();
         value = user.name;
       } else {
-        const user = await ClientUser.findById(task.assigneeId).lean();
-        value = user.name;
+        const user = await ClientUser.findOne({ clientId: task.assigneeId })
+          .populate({ path: 'clientId', select: '_id name' })
+          .lean();
+        value =
+          user && user.clientId && user.clientId.name ? user.clientId.name : '';
       }
-      task.assigneeId = [
-        {
-          label: value,
-          value: task.assigneeId,
-        },
-      ];
+      task.assigneeId = {
+        label: value,
+        value: task.assigneeId,
+      };
     }
     if (task.entityId && task.entityType) {
       let response;
@@ -228,25 +227,21 @@ router.get('/details/:taskId', async function (req, res) {
         response = await User.findById(task.entityId).lean();
         value = response.name;
       }
-      task.entityId = [
-        {
-          value: task.entityId,
-          label: value,
-        },
-      ];
+      task.entityId = {
+        value: task.entityId,
+        label: value,
+      };
     }
     if (task.entityType) {
-      task.entityType = [
-        {
-          value: task.entityType,
-          label:
-            task.entityType.charAt(0).toUpperCase() + task.entityType.slice(1),
-        },
-      ];
+      task.entityType = {
+        value: task.entityType,
+        label:
+          task.entityType.charAt(0).toUpperCase() + task.entityType.slice(1),
+      };
     }
     res.status(200).send({ status: 'SUCCESS', data: task });
   } catch (e) {
-    Logger.log.error('Error occurred get task details ', e.message || e);
+    Logger.log.error('Error occurred get task details ', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -321,7 +316,9 @@ router.get('/', async function (req, res) {
         }
         if (taskColumn.columns.includes('assigneeId')) {
           task.assigneeId =
-            task.assigneeId && task.assigneeId.name ? task.assigneeId.name : '';
+            task.assigneeId && task.assigneeId.name && task.assigneeId.name[0]
+              ? task.assigneeId.name[0]
+              : '';
         }
         if (taskColumn.columns.includes('entityId')) {
           task.entityId =
@@ -506,6 +503,9 @@ router.put('/:taskId', async function (req, res) {
         entityType: task.entityType.toLowerCase(),
       });
     }
+    const client = await Client.findById(req.user.clientId)
+      .select('name')
+      .lean();
     await addAuditLog({
       entityType: 'task',
       entityRefId: task._id,
@@ -515,16 +515,16 @@ router.put('/:taskId', async function (req, res) {
       logDescription:
         'A task' +
         (entityName ? ` for ${entityName} ` : ' ') +
-        `is successfully updated by ${req.user.name}`,
+        `is successfully updated by ${client.name}`,
     });
-    if (task.createdById.toString() !== req.user._id.toString()) {
+    if (task.createdById.toString() !== req.user.clientId.toString()) {
       const notification = await addNotification({
         userId: task.createdById,
         userType: task.createdByType,
         description:
           `A task ${task.title}` +
           (entityName ? ` for ${entityName} ` : ' ') +
-          `is updated by ${req.user.name}`,
+          `is updated by ${client.name}`,
       });
       if (notification) {
         sendNotification({
@@ -533,7 +533,7 @@ router.put('/:taskId', async function (req, res) {
             data: notification,
           },
           type: task.createdByType,
-          userId: req.createdById,
+          userId: task.createdById,
         });
       }
     }

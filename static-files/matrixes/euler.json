@@ -23,12 +23,12 @@
     "entityIncorporated": {
       "conditionString": "Make sure the company has been incorporated for at least 12 months - ASIC",
       "field": ["incorporationDate"],
-      "value": "at least 12 months"
+      "value": 12
     },
     "courtCharges": {
       "conditionString": "No court actions or legal or collection activity present",
       "field": [],
-      "value": ""
+      "value": true
     },
     "noAdverse": {
       "conditionString": "No adverse against director/s, owner/s or Shareholders",
@@ -54,7 +54,7 @@
         "reports": ["Equifax Report: Commercial Apply (Individuals tab)"],
         "isAutoApproval": true,
         "reportFrom": "equifax",
-        "guideLines": []
+        "guideLines": {}
       },
       "australianCompanies": {
         "reports": [
@@ -62,11 +62,11 @@
         ],
         "isAutoApproval": true,
         "reportFrom": "illion",
-        "guideLines": []
+        "guideLines": {}
       },
       "newZealand": {
         "reports": [],
-        "guideLines": []
+        "guideLines": {}
       },
       "commonGuideLines": []
     }

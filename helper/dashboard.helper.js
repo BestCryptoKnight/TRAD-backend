@@ -46,6 +46,9 @@ const getEndorsedLimit = async ({
     if (data && data.length !== 0) {
       response.totalCount = parseInt(aggregateOfCreditLimit);
       response.endorsedLimitCount = data[0]['endorsedLimit'];
+    } else {
+      response.totalCount = 0;
+      response.endorsedLimitCount = 0;
     }
     return response;
   } catch (e) {
@@ -90,6 +93,9 @@ const getRESChecks = async ({
     if (data && data.length !== 0) {
       response.totalCount = parseInt(noOfResChecks);
       response.applicationCount = data[0]['count'];
+    } else {
+      response.totalCount = 0;
+      response.applicationCount = 0;
     }
     return response;
   } catch (e) {

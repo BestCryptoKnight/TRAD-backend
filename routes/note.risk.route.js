@@ -13,6 +13,7 @@ const Application = mongoose.model('application');
  * */
 const Logger = require('./../services/logger');
 const { addAuditLog, getEntityName } = require('./../helper/audit-log.helper');
+const { addNote } = require('./../helper/note.helper');
 
 /**
  * Get Note List
@@ -315,26 +316,14 @@ router.post('/', async function (req, res) {
     });
   }
   try {
-    const note = new Note({
+    await addNote({
       noteFor: req.body.noteFor,
       entityId: req.body.entityId,
       description: req.body.description,
       isPublic: req.body.isPublic,
-      createdByType: 'user',
-      createdById: req.user._id,
-    });
-    await note.save();
-    const entityName = await getEntityName({
-      entityId: req.body.entityId,
-      entityType: req.body.noteFor.toLowerCase(),
-    });
-    await addAuditLog({
-      entityType: 'note',
-      entityRefId: note._id,
-      actionType: 'add',
+      userName: req.user.name,
+      userId: req.user._id,
       userType: 'user',
-      userRefId: req.user._id,
-      logDescription: `A new note for ${entityName} is successfully created by ${req.user.name}`,
     });
     res
       .status(200)

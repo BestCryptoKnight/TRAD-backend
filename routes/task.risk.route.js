@@ -109,14 +109,23 @@ router.get('/user-list', async function (req, res) {
     const hasFullAccess = !!(
       req.accessTypes && req.accessTypes.indexOf('full-access') !== -1
     );
-    const users = await getAccessBaseUserList({
-      userId: req.user._id,
-      hasFullAccess: hasFullAccess,
-    });
+    let [users, clients] = await Promise.all([
+      getAccessBaseUserList({
+        userId: req.user._id,
+        hasFullAccess: hasFullAccess,
+      }),
+      getClientList({
+        userId: req.user._id,
+        hasFullAccess: hasFullAccess,
+      }),
+    ]);
     const userIds = users.map((i) => i._id.toString());
     if (!userIds.includes(req.user._id.toString())) {
       users.push({ _id: req.user._id, name: req.user.name });
     }
+    users.forEach((i) => (i._id = 'user|' + i._id));
+    clients.forEach((i) => (i._id = 'client-user|' + i._id));
+    users = users.concat(clients);
     res.status(200).send({ status: 'SUCCESS', data: users });
   } catch (e) {
     Logger.log.error('Error occurred in get user list ', e.message || e);
@@ -337,7 +346,9 @@ router.get('/', async function (req, res) {
         }
         if (taskColumn.columns.includes('assigneeId')) {
           task.assigneeId =
-            task.assigneeId && task.assigneeId.name ? task.assigneeId.name : '';
+            task.assigneeId && task.assigneeId.name && task.assigneeId.name[0]
+              ? task.assigneeId.name[0]
+              : '';
         }
         if (taskColumn.columns.includes('entityId')) {
           task.entityId =
@@ -406,8 +417,8 @@ router.post('/', async function (req, res) {
       // entityId: req.body.entityId,
       createdByType: 'user',
       createdById: req.user._id,
-      assigneeType: 'user',
-      assigneeId: req.body.assigneeId,
+      assigneeType: req.body.assigneeId.split('|')[0],
+      assigneeId: req.body.assigneeId.split('|')[1],
       dueDate: req.body.dueDate,
     };
     if (req.body.entityType) {
@@ -444,10 +455,10 @@ router.post('/', async function (req, res) {
         (entityName ? ` for ${entityName} ` : ' ') +
         `is successfully created by ${req.user.name}`,
     });
-    if (req.body.assigneeId.toString() !== req.user._id.toString()) {
+    if (task.assigneeId.toString() !== req.user._id.toString()) {
       const notification = await addNotification({
-        userId: req.body.assigneeId,
-        userType: 'user',
+        userId: task.assigneeId,
+        userType: task.assigneeType,
         description:
           `A new task ${req.body.title}` +
           (entityName ? ` for ${entityName} ` : ' ') +
@@ -459,8 +470,8 @@ router.post('/', async function (req, res) {
             type: 'TASK_ASSIGNED',
             data: notification,
           },
-          type: 'user',
-          userId: req.body.assigneeId,
+          type: task.assigneeType,
+          userId: task.assigneeId,
         });
       }
     }
@@ -555,7 +566,10 @@ router.put('/:taskId', async function (req, res) {
     if (req.body.entityType)
       updateObj.entityType = req.body.entityType.toLowerCase();
     if (req.body.entityId) updateObj.entityId = req.body.entityId;
-    if (req.body.assigneeId) updateObj.assigneeId = req.body.assigneeId;
+    if (req.body.assigneeId) {
+      updateObj.assigneeType = req.body.assigneeId.split('|')[0];
+      updateObj.assigneeId = req.body.assigneeId.split('|')[1];
+    }
     if (req.body.dueDate) updateObj.dueDate = req.body.dueDate;
     if (req.body.hasOwnProperty('isCompleted')) {
       updateObj.isCompleted = req.body.isCompleted;
@@ -584,7 +598,7 @@ router.put('/:taskId', async function (req, res) {
     if (task.createdById.toString() !== req.user._id.toString()) {
       const notification = await addNotification({
         userId: task.createdById,
-        userType: 'user',
+        userType: task.createdByType,
         description:
           `A task ${task.title}` +
           (entityName ? ` for ${entityName} ` : ' ') +
@@ -596,8 +610,8 @@ router.put('/:taskId', async function (req, res) {
             type: 'TASK_UPDATED',
             data: notification,
           },
-          type: 'user',
-          userId: req.createdById,
+          type: task.createdByType,
+          userId: task.createdById,
         });
       }
     }

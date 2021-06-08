@@ -6,15 +6,28 @@ const Application = mongoose.model('application');
 const Organization = mongoose.model('organization');
 const Debtor = mongoose.model('debtor');
 const Client = mongoose.model('client');
+const Policy = mongoose.model('policy');
 const DebtorDirector = mongoose.model('debtor-director');
 const ClientDebtor = mongoose.model('client-debtor');
+const Note = mongoose.model('note');
 
 /*
  * Local Imports
  * */
 const Logger = require('./../services/logger');
 const { createDebtor } = require('./debtor.helper');
+const {
+  checkEntityType,
+  identifyInsurer,
+  insurerQBE,
+  insurerBond,
+  insurerTrad,
+  insurerEuler,
+  insurerCoface,
+  insurerAtradius,
+} = require('./automation.helper');
 const { getEntityDetailsByABN } = require('./abr.helper');
+const { addAuditLog } = require('./audit-log.helper');
 
 //TODO add filter for expiry-date + credit-limit
 const getApplicationList = async ({
@@ -590,7 +603,11 @@ const storePartnerDetails = async ({ requestBody }) => {
   }
 };
 
-const storeCreditLimitDetails = async ({ requestBody }) => {
+const storeCreditLimitDetails = async ({
+  requestBody,
+  createdBy,
+  createdByType,
+}) => {
   try {
     let application = await Application.findById(requestBody.applicationId)
       .populate({ path: 'debtorId', select: 'entityType' })
@@ -605,13 +622,43 @@ const storeCreditLimitDetails = async ({ requestBody }) => {
         ? 2
         : 3,
     };
-    update.note = requestBody.note ? requestBody.note : '';
+    // update.note = requestBody.note ? requestBody.note : '';
     update.extendedPaymentTermsDetails = requestBody.extendedPaymentTermsDetails
       ? requestBody.extendedPaymentTermsDetails
       : '';
     update.passedOverdueDetails = requestBody.passedOverdueDetails
       ? requestBody.passedOverdueDetails
       : '';
+    if (requestBody.note) {
+      const note = await Note.findOne({
+        noteFor: 'application',
+        isDeleted: false,
+        entityId: requestBody.applicationId,
+      }).lean();
+      if (note) {
+        await Note.updateOne(
+          { _id: note._id },
+          { description: requestBody.note },
+        );
+      } else {
+        await Note.create({
+          description: requestBody.note,
+          noteFor: 'application',
+          entityId: requestBody.applicationId,
+          createdByType: createdByType,
+          createdById: createdBy,
+        });
+      }
+    } else {
+      await Note.updateOne(
+        {
+          noteFor: 'application',
+          isDeleted: false,
+          entityId: requestBody.applicationId,
+        },
+        { isDeleted: true },
+      );
+    }
     await Application.updateOne({ _id: requestBody.applicationId }, update);
     application = await Application.findById(requestBody.applicationId)
       .select('_id applicationStage')
@@ -668,6 +715,154 @@ const partnerDetailsValidation = ({
   }
 };
 
+const checkForAutomation = async ({ applicationId }) => {
+  try {
+    const application = await Application.findById(applicationId)
+      .populate({ path: 'clientId', populate: { path: 'insurerId' } })
+      .populate('debtorId clientDebtorId')
+      .lean();
+    let continueWithAutomation = true;
+    let blockers = [];
+
+    //TODO uncomment after flag added in client
+    /*if (!application.clientId.isAutoApproveAllowed) {
+      continueWithAutomation = false;
+      blockers.push('Automation is not Allowed')
+    }*/
+
+    if (
+      continueWithAutomation &&
+      application.debtorId.address &&
+      application.debtorId.address.country
+    ) {
+      if (
+        application.debtorId.address.country.code !== 'AUS' &&
+        application.debtorId.address.country.code !== 'NZL'
+      ) {
+        continueWithAutomation = false;
+        blockers.push('Foreign Buyer');
+      }
+    }
+
+    if (continueWithAutomation) {
+      //TODO check product type base on flag/field (RMP/CI)
+      const [ciPolicy, rmpPolicy] = await Promise.all([
+        Policy.findOne({
+          clientId: application.clientId,
+          product: { $regex: '.*Credit Insurance.*' },
+          inceptionDate: { $lte: new Date() },
+          expiryDate: { $gt: new Date() },
+        })
+          .select(
+            'clientId product policyPeriod discretionaryLimit inceptionDate expiryDate',
+          )
+          .lean(),
+        Policy.findOne({
+          clientId: application.clientId,
+          $or: [
+            { product: { $regex: '.*Risk Management Package.*' } },
+            { product: { $regex: '.*Risk Management.*' } },
+          ],
+          inceptionDate: { $lte: new Date() },
+          expiryDate: { $gt: new Date() },
+        })
+          .select(
+            'clientId product policyPeriod discretionaryLimit inceptionDate expiryDate',
+          )
+          .lean(),
+      ]);
+      if (!rmpPolicy) {
+        continueWithAutomation = false;
+        blockers.push('No RMP policy found');
+      }
+      if (!ciPolicy) {
+        continueWithAutomation = false;
+        blockers.push('No CI policy found');
+      }
+      let discretionaryLimit;
+      if (continueWithAutomation) {
+        if (ciPolicy.discretionaryLimit || rmpPolicy.discretionaryLimit) {
+          discretionaryLimit =
+            ciPolicy.discretionaryLimit || rmpPolicy.discretionaryLimit;
+          console.log('discretionaryLimit ', discretionaryLimit);
+        }
+        if (
+          discretionaryLimit &&
+          discretionaryLimit < application.creditLimit
+        ) {
+          continueWithAutomation = false;
+          blockers.push('Credit limit is greater than Discretionary limit');
+        }
+      }
+    }
+
+    //TODO add flag to stop automation (check blockers array)
+    let type;
+    if (continueWithAutomation) {
+      const response = await checkEntityType({
+        debtorId: application.debtorId._id,
+        entityType: application.debtorId.entityType,
+        blockers,
+      });
+      continueWithAutomation = response.continueWithAutomation;
+      blockers = response.blockers;
+      type = response.type;
+    }
+    console.log('continueWithAutomation', continueWithAutomation);
+    console.log('blockers', blockers);
+    let identifiedInsurer;
+    if (continueWithAutomation) {
+      identifiedInsurer = await identifyInsurer({
+        insurerName: application.clientId.insurerId.name,
+      });
+      console.log('identifiedInsurer ', identifiedInsurer);
+      let response;
+      if (identifiedInsurer === 'qbe') {
+        response = await insurerQBE({ application, type: type });
+      } else if (identifiedInsurer === 'bond') {
+        response = await insurerBond({ application, type: type });
+      } else if (identifiedInsurer === 'atradius') {
+        response = await insurerAtradius({ application, type: type });
+      } else if (identifiedInsurer === 'coface') {
+        response = await insurerCoface({ application, type: type });
+      } else if (identifiedInsurer === 'euler') {
+        response = await insurerEuler({ application, type: type });
+      } else if (identifiedInsurer === 'trad') {
+        blockers.push('RMP only insurer');
+        response = await insurerTrad({ application, type: type });
+      }
+      blockers = blockers.concat(response);
+    }
+    const update = {};
+    update.blockers = blockers;
+    if (blockers.length === 0 && identifiedInsurer !== 'euler') {
+      //TODO approve credit limit
+      update.status = 'APPROVED';
+      await ClientDebtor.updateOne(
+        { _id: application.clientDebtorId._id },
+        {
+          creditLimit: application.creditLimit,
+          isEndorsedLimit: false,
+          activeApplicationId: applicationId,
+        },
+      );
+      await addAuditLog({
+        entityType: 'application',
+        entityRefId: applicationId,
+        actionType: 'edit',
+        userType: 'system',
+        logDescription: `An application ${application.applicationId} is approved`,
+      });
+    } else {
+      update.status = 'REVIEW_APPLICATION';
+    }
+    //TODO notify user
+    await Application.updateOne({ _id: applicationId }, update);
+  } catch (e) {
+    Logger.log.error('Error occurred in check for automation ', e);
+  }
+};
+
 const generateNewApplication = async ({
   clientDebtorId,
   createdByType,
@@ -712,7 +907,8 @@ const generateNewApplication = async ({
         { isDeleted: false },
         { $inc: { 'entityCount.application': 1 } },
       );
-      await Application.create(applicationDetails);
+      const application = await Application.create(applicationDetails);
+      checkForAutomation({ applicationId: application._id });
       //TODO call application automation helper
     }
     return application;
@@ -727,5 +923,6 @@ module.exports = {
   storePartnerDetails,
   storeCreditLimitDetails,
   partnerDetailsValidation,
+  checkForAutomation,
   generateNewApplication,
 };

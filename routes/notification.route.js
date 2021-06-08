@@ -28,7 +28,7 @@ router.get('/', async function (req, res) {
       {
         $match: {
           isDeleted: false,
-          userId: mongoose.Types.ObjectId(req.user._id),
+          userId: mongoose.Types.ObjectId(req.user.clientId),
         },
       },
       {
@@ -103,7 +103,7 @@ router.get('/list', async function (req, res) {
   try {
     const notifications = await Notification.find({
       isDeleted: false,
-      userId: req.user._id,
+      userId: req.user.clientId,
       isRead: false,
     })
       .select('_id description createdAt')

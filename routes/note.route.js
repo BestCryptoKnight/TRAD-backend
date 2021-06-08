@@ -4,8 +4,7 @@
 const express = require('express');
 const router = express.Router();
 let mongoose = require('mongoose');
-let Note = mongoose.model('note');
-const ClientDebtor = mongoose.model('client-debtor');
+const Note = mongoose.model('note');
 const Application = mongoose.model('application');
 
 /*

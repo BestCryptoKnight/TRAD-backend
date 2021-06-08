@@ -17,6 +17,7 @@ const clientDebtorSchema = new Schema(
     isEndorsedLimit: { type: Schema.Types.Boolean, default: false },
     creditLimit: { type: Schema.Types.Number },
     outstandingAmount: { type: Schema.Types.Number },
+    expiryDate: { type: Schema.Types.Date },
     activeApplicationId: { type: Schema.Types.ObjectId, ref: 'application' },
   },
   { timestamps: true },

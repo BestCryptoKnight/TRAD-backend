@@ -7,7 +7,7 @@
     },
     "isEntityRegistered": {
       "conditionString": "Confirm the correct legal entity and company status (Must be registered)- Check ASIC",
-      "field": ["entityName", "companyStatus"],
+      "field": ["entityType", "companyStatus"],
       "value": true
     },
     "noNilCreditLimitIssued": {
@@ -23,12 +23,12 @@
     "entityIncorporated": {
       "conditionString": "Make sure the company has been incorporated for at least 12 months - ASIC",
       "field": ["incorporationDate"],
-      "value": "at least 12 months"
+      "value": 12
     },
     "courtCharges": {
       "conditionString": "No court actions or legal or collection activity present above a maximum of $5,000",
       "field": [],
-      "value": ""
+      "value": 5000
     },
     "noAdverse": {
       "conditionString": "No adverse against director/s, owner/s or Shareholders",
@@ -54,7 +54,7 @@
         "reports": ["Equifax Report: Commercial Apply (Individuals tab)"],
         "isAutoApproval": true,
         "reportFrom": "equifax",
-        "guideLines": []
+        "guideLines": {}
       },
       "australianCompanies": {
         "reports": [
@@ -63,13 +63,13 @@
         ],
         "isAutoApproval": true,
         "reportFrom": "illion",
-        "guideLines": []
+        "guideLines": {}
       },
       "newZealand": {
         "reports": ["Illion Report: HTML NZ Comm. Bureau Enq (AU Subs)"],
         "isAutoApproval": true,
         "reportFrom": "illion",
-        "guideLines": []
+        "guideLines": {}
       },
       "commonGuideLines": []
     },
@@ -80,28 +80,52 @@
         "reports": ["Equifax Report: Commercial Apply (Individuals tab)"],
         "isAutoApproval": true,
         "reportFrom": "equifax",
-        "guideLines": [
-          "The Late Payment Risk Level indicated by D&B cannot be “High”, “Very High” or “Severe”",
-          "The D&B Dynamic Delinquency Score cannot be lower than 386"
-        ]
+        "guideLines": {
+          "paymentRiskLevel": {
+            "conditionString": "The Late Payment Risk Level indicated by D&B cannot be “High”, “Very High” or “Severe”",
+            "field": ["riskLevel"],
+            "value": ["High", "Very High", "Severe"]
+          },
+          "delinquencyScore": {
+            "conditionString": "The D&B Dynamic Delinquency Score cannot be lower than 386",
+            "field": ["score"],
+            "value": 386
+          }
+        }
       },
       "australianCompanies": {
         "reports": ["Illion Report: Risk of Late Payment Report (DDS)"],
         "isAutoApproval": true,
         "reportFrom": "illion",
-        "guideLines": [
-          "The Late Payment Risk Level indicated by D&B cannot be “High”, “Very High” or “Severe”",
-          "The D&B Dynamic Delinquency Score cannot be lower than 386"
-        ]
+        "guideLines": {
+          "paymentRiskLevel": {
+            "conditionString": "The Late Payment Risk Level indicated by D&B cannot be “High”, “Very High” or “Severe”",
+            "field": ["riskLevel"],
+            "value": ["High", "Very High", "Severe"]
+          },
+          "delinquencyScore": {
+            "conditionString": "The D&B Dynamic Delinquency Score cannot be lower than 386",
+            "field": ["score"],
+            "value": 386
+          }
+        }
       },
       "newZealand": {
         "reports": ["Illion Report: HTML Payment Analysis with refreshed NZCO"],
         "isAutoApproval": true,
         "reportFrom": "illion",
-        "guideLines": [
-          "The Late Payment Risk Level indicated by D&B cannot be “High”, “Very High” or “Severe”",
-          "The D&B Dynamic Delinquency Score cannot be lower than 386"
-        ]
+        "guideLines": {
+          "paymentRiskLevel": {
+            "conditionString": "The Late Payment Risk Level indicated by D&B cannot be “High”, “Very High” or “Severe”",
+            "field": ["riskLevel"],
+            "value": ["High", "Very High", "Severe"]
+          },
+          "delinquencyScore": {
+            "conditionString": "The D&B Dynamic Delinquency Score cannot be lower than 386",
+            "field": ["score"],
+            "value": 386
+          }
+        }
       },
       "commonGuideLines": [
         "The Late Payment Risk Level indicated by D&B cannot be “High”, “Very High” or “Severe”",
@@ -115,10 +139,18 @@
         "reports": ["Equifax Report: Commercial Apply (Individuals tab)"],
         "isAutoApproval": true,
         "reportFrom": "equifax",
-        "guideLines": [
-          "The Late Payment Risk Level indicated by D&B cannot be “High”, “Very High” or “Severe”",
-          "The D&B Dynamic Delinquency Score cannot be lower than 386"
-        ]
+        "guideLines": {
+          "paymentRiskLevel": {
+            "conditionString": "The Late Payment Risk Level indicated by D&B cannot be “High”, “Very High” or “Severe”",
+            "field": ["riskLevel"],
+            "value": ["High", "Very High", "Severe"]
+          },
+          "delinquencyScore": {
+            "conditionString": "The D&B Dynamic Delinquency Score cannot be lower than 386",
+            "field": ["score"],
+            "value": 386
+          }
+        }
       },
       "australianCompanies": {
         "reports": [
@@ -126,18 +158,34 @@
         ],
         "isAutoApproval": true,
         "reportFrom": "illion",
-        "guideLines": [
-          "The Late Payment Risk Level indicated by D&B cannot be “High”, “Very High” or “Severe”",
-          "The D&B Dynamic Delinquency Score cannot be lower than 386"
-        ]
+        "guideLines": {
+          "paymentRiskLevel": {
+            "conditionString": "The Late Payment Risk Level indicated by D&B cannot be “High”, “Very High” or “Severe”",
+            "field": ["riskLevel"],
+            "value": true
+          },
+          "delinquencyScore": {
+            "conditionString": "The D&B Dynamic Delinquency Score cannot be lower than 386",
+            "field": ["score"],
+            "value": true
+          }
+        }
       },
       "newZealand": {
         "reports": ["To be referred to QBE for approval in all instances"],
         "isAutoApproval": false,
-        "guideLines": [
-          "The Late Payment Risk Level indicated by D&B cannot be “High”, “Very High” or “Severe”",
-          "The D&B Dynamic Delinquency Score cannot be lower than 386"
-        ]
+        "guideLines": {
+          "paymentRiskLevel": {
+            "conditionString": "The Late Payment Risk Level indicated by D&B cannot be “High”, “Very High” or “Severe”",
+            "field": ["riskLevel"],
+            "value": ["High", "Very High", "Severe"]
+          },
+          "delinquencyScore": {
+            "conditionString": "The D&B Dynamic Delinquency Score cannot be lower than 386",
+            "field": ["score"],
+            "value": 386
+          }
+        }
       },
       "commonGuideLines": [
         "The Late Payment Risk Level indicated by D&B cannot be “High”, “Very High” or “Severe”",

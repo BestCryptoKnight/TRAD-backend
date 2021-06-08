@@ -71,6 +71,71 @@ router.get('/column-name', async function (req, res) {
 });
 
 /**
+ * Get Report List
+ */
+router.get('/list', async function (req, res) {
+  try {
+    const reports = [
+      {
+        code: 'HXBCA',
+        name: 'HTML Commercial Bureau Enquiry w/ refresh ASIC w/o ASIC Docs',
+      },
+      {
+        code: 'HXPAA',
+        name: 'HTML Payment Analysis & ASIC Current Extract',
+      },
+      {
+        code: 'HXPYA',
+        name: 'Risk of Late Payment Report (DDS)',
+      },
+    ];
+    res.status(200).send({ status: 'SUCCESS', data: reports });
+  } catch (e) {
+    Logger.log.error('Error occurred in get report list', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later',
+    });
+  }
+});
+
+router.get('/data/:debtorId', async function (req, res) {
+  if (!req.params.debtorId) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const debtor = await Debtor.findOne({ _id: req.params.debtorId }).lean();
+    let entityIds = [req.params.debtorId];
+    const entityTypes = ['TRUST'];
+    if (debtor && entityTypes.includes(debtor.entityType)) {
+      let directors = await DebtorDirector.find({
+        debtorId: req.params.debtorId,
+      }).lean();
+      directors = directors.map((i) => i._id);
+      if (directors.length !== 0) {
+        entityIds.concat(directors);
+      }
+    }
+    const queryFilter = {
+      isDeleted: false,
+      entityId: { $in: entityIds },
+    };
+    const response = await CreditReport.find(queryFilter).lean();
+    res.status(200).send({ status: 'SUCCESS', data: response });
+  } catch (e) {
+    Logger.log.error('Error occurred in fetching Credit Reports', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
  * Get Credit Report
  */
 router.get('/:debtorId', async function (req, res) {
@@ -161,13 +226,8 @@ router.put('/generate', async function (req, res) {
         message: 'Require fields are missing.',
       });
     }
-    const searchField = debtor.abn ? 'ABN' : 'ACN';
-    const searchValue = debtor.abn ? debtor.abn : debtor.acn;
-    const reportData = await fetchCreditReport({
-      productCode: req.body.productCode,
-      searchField,
-      searchValue,
-    });
+    let searchField = debtor.abn ? 'ABN' : 'ACN';
+    let searchValue = debtor.abn ? debtor.abn : debtor.acn;
     const entityTypes = ['TRUST'];
     let entityId = req.body.debtorId;
     let entityType = 'debtor';
@@ -175,9 +235,22 @@ router.put('/generate', async function (req, res) {
       const directors = await DebtorDirector.find({
         debtorId: req.params.debtorId,
       }).lean();
-      entityId = directors[0]._id;
-      entityType = 'debtor-director';
+      if (
+        directors &&
+        directors[0].type === 'company' &&
+        (directors[0].abn || directors[0].acn)
+      ) {
+        entityId = directors[0]._id;
+        entityType = 'debtor-director';
+        searchValue =
+          searchField === 'ABN' ? directors[0].abn : directors[0].acn;
+      }
     }
+    const reportData = await fetchCreditReport({
+      productCode: req.body.productCode,
+      searchField,
+      searchValue,
+    });
     if (
       reportData &&
       reportData.Envelope.Body.Response &&
@@ -195,11 +268,24 @@ router.put('/generate', async function (req, res) {
         name: reportData.Envelope.Body.Response.Header.ProductName,
         expiryDate: expiryDate,
       });
+      if (
+        reportData.Envelope.Body.Response.DynamicDelinquencyScore &&
+        reportData.Envelope.Body.Response.DynamicDelinquencyScore &&
+        reportData.Envelope.Body.Response.DynamicDelinquencyScore.Score
+      ) {
+        await Debtor.updateOne(
+          { _id: debtor._id },
+          {
+            riskRating:
+              reportData.Envelope.Body.Response.DynamicDelinquencyScore.Score,
+          },
+        );
+      }
     }
     // TODO Generate Credit Report HTML
     res.status(200).send({
       status: 'SUCCESS',
-      data: creditReport,
+      data: 'Report generated successfully',
     });
   } catch (e) {
     Logger.log.error(

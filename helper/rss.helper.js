@@ -81,7 +81,7 @@ const getClientsById = async ({ crmIds }) => {
         acn: data.record['acn'],
         sector: data.record['sector'],
         salesPerson: data.record['salesperson'],
-        underWriter: data.record['underwriter'],
+        underWriter: data.record['insurer'],
         referredBy: data.record['referredby'],
         inceptionDate: data.record['inceptiondate'],
         expiryDate: data.record['expirydate'],
@@ -629,7 +629,7 @@ let fetchInsurerDetails = async ({
     }
   } catch (err) {
     Logger.log.error('Error in fetch insurers details ');
-    Logger.log.error(err.message || err);
+    Logger.log.error(err);
   }
 };
 

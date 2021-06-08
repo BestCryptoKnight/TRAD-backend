@@ -21,6 +21,7 @@ io.on('connection', async function (socket) {
   let userToken = socket.handshake.query.token;
   const type = socket.handshake.query.type;
   if (userToken && type) {
+    console.log('Type::', type);
     await addSocketIdToUser(userToken, socket.id, type);
   }
   socket.on('disconnect', async () => {
@@ -50,6 +51,7 @@ socketApi.sendNotification = async function ({
   if (socketIds && socketIds.length !== 0) {
     socketIds.forEach((socketId) => {
       if (socketUser[socketId]) {
+        console.log('Event for...', socketId);
         socketUser[socketId].emit('FromAPI', notificationObj);
       }
     });
@@ -74,7 +76,7 @@ let addSocketIdToUser = (token, socketId, type) => {
       await user.save();
       return resolve();
     } catch (err) {
-      Logger.log.error('Error in adding socketId to user', err.message | err);
+      Logger.log.error('Error in adding socketId to user', err);
       return reject(err);
     }
   });
@@ -113,9 +115,17 @@ let getSocketIdFromUser = (userId, type) => {
           .select({ socketIds: 1 })
           .lean();
       } else {
-        user = await ClientUser.findOne({ _id: userId })
+        const clientUsers = await ClientUser.find({ clientId: userId })
           .select({ socketIds: 1 })
           .lean();
+        if (clientUsers && clientUsers.length !== 0) {
+          user = { socketIds: [] };
+          clientUsers.forEach((i) => {
+            if (i.socketIds && i.socketIds.length !== 0) {
+              user.socketIds = user.socketIds.concat(i.socketIds);
+            }
+          });
+        }
       }
       if (!user) {
         return [];

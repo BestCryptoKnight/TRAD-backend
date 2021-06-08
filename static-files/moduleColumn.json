@@ -374,24 +374,7 @@
           "label": "Endorsed Limit",
           "type": "endorsedString"
         },
-        {
-          "name": "contactNumber",
-          "label": "Contact Number",
-          "type": "string"
-        },
-        { "name": "isActive", "label": "IsActive", "type": "string" },
-        { "name": "fullAddress", "label": "Full Address", "type": "string" },
-        { "name": "property", "label": "Property", "type": "string" },
-        { "name": "unitNumber", "label": "Unit Number", "type": "string" },
-        { "name": "streetNumber", "label": "Street Number", "type": "string" },
-        { "name": "streetName", "label": "Street Name", "type": "string" },
-        { "name": "streetType", "label": "Street Type", "type": "string" },
-        { "name": "suburb", "label": "Suburb", "type": "string" },
-        { "name": "state", "label": "Country/State", "type": "string" },
-        { "name": "country", "label": "Country", "type": "string" },
-        { "name": "postCode", "label": "Postcode/Zip", "type": "string" },
-        { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+        { "name": "expiryDate", "label": "Expiry Date", "type": "date" }
       ],
       "defaultColumns": [
         "entityName",
@@ -400,7 +383,7 @@
         "registrationNumber",
         "creditLimit",
         "isEndorsedLimit",
-        "state"
+        "expiryDate"
       ]
     },
     {
@@ -749,10 +732,57 @@
       "manageColumns": [
         { "name": "clientId", "label": "Client Name", "type": "string" },
         { "name": "debtorId", "label": "Debtor Name", "type": "string" },
+        { "name": "acn", "label": "ACN", "type": "string" },
+        { "name": "dateOfInvoice", "label": "Date Of Invoice", "type": "date" },
+        { "name": "overdueType", "label": "Overdue Type", "type": "string" },
+        { "name": "status", "label": "Status", "type": "string" },
+        { "name": "insurerId", "label": "Insurer Name", "type": "string" },
+        { "name": "month", "label": "Month", "type": "string" },
+        { "name": "year", "label": "Year", "type": "string" },
+        {
+          "name": "clientComment",
+          "label": "Client Comment",
+          "type": "string"
+        },
+        {
+          "name": "analystComment",
+          "label": "Analyst Comment",
+          "type": "string"
+        },
+        {
+          "name": "currentAmount",
+          "label": "Current Amount",
+          "type": "number"
+        },
+        {
+          "name": "thirtyDaysAmount",
+          "label": "Thirty Days Amount",
+          "type": "number"
+        },
+        {
+          "name": "sixtyDaysAmount",
+          "label": "Sixty Days Amount",
+          "type": "number"
+        },
+        {
+          "name": "ninetyDaysAmount",
+          "label": "ninetyDays Amount",
+          "type": "number"
+        },
+        {
+          "name": "ninetyPlusDaysAmount",
+          "label": "ninetyPlusDays Amount",
+          "type": "number"
+        },
+        {
+          "name": "outstandingAmount",
+          "label": "outstanding Amount",
+          "type": "number"
+        },
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
-      "defaultColumns": ["clientId", "debtorId"]
+      "defaultColumns": ["clientId", "debtorId", "acn", "dateOfInvoice"]
     },
     {
       "name": "overdue-task",
@@ -769,6 +799,11 @@
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
       "defaultColumns": ["priority", "title", "description", "entityType"]
+    },
+    {
+      "name": "report",
+      "manageColumns": [],
+      "defaultColumns": []
     },
     {
       "name": "stakeholder",
