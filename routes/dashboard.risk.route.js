@@ -57,7 +57,6 @@ router.get('/', async function (req, res) {
       ],
     }).lean();
     const clientIds = clients.map((i) => i._id);
-    console.log(clientIds);
     const [applications, tasks] = await Promise.all([
       Application.countDocuments({
         isDeleted: false,

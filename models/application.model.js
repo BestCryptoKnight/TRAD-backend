@@ -42,6 +42,8 @@ const applicationSchema = new Schema(
     isAutoApproved: { type: Schema.Types.Boolean, default: false },
     isEndorsedLimit: { type: Schema.Types.Boolean, default: false },
     acceptedAmount: { type: Schema.Types.Number },
+    outstandingAmount: { type: Schema.Types.Number },
+    orderOnHand: { type: Schema.Types.Number },
     blockers: { type: Schema.Types.Mixed },
     createdByType: {
       type: Schema.Types.String,

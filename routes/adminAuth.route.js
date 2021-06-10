@@ -143,7 +143,6 @@ router.put('/change-password', authenticate, async (req, res) => {
  * Forget Password
  */
 router.post('/forget-password', async (req, res) => {
-  Logger.log.info('In forget password function call');
   if (!req.body.email) {
     res.status(400).send({
       status: 'ERROR',
@@ -154,7 +153,9 @@ router.post('/forget-password', async (req, res) => {
   }
   try {
     let user = await User.findOne({
-      email: { $regex: new RegExp('^' + req.body.email.toLowerCase(), 'i') },
+      email: {
+        $regex: new RegExp('^' + req.body.email.toLowerCase() + '$', 'i'),
+      },
       isDeleted: false,
     });
     if (!user) {
@@ -235,7 +236,6 @@ router.post('/forget-password', async (req, res) => {
  * Resent OTP
  */
 router.post('/resend-otp', async (req, res) => {
-  Logger.log.info('In resend otp function call');
   if (!req.body.email) {
     res.status(400).send({
       status: 'ERROR',
@@ -246,7 +246,9 @@ router.post('/resend-otp', async (req, res) => {
   }
   try {
     let user = await User.findOne({
-      email: { $regex: new RegExp('^' + req.body.email.toLowerCase(), 'i') },
+      email: {
+        $regex: new RegExp('^' + req.body.email.toLowerCase() + '$', 'i'),
+      },
       isDeleted: false,
     });
     if (!user) {
@@ -299,7 +301,10 @@ router.post('/verify-otp', async (req, res) => {
   }
   try {
     let user = await User.findOne({
-      email: { $regex: new RegExp('^' + req.body.email.toLowerCase(), 'i') },
+      email: {
+        $regex: new RegExp('^' + req.body.email.toLowerCase() + '$', 'i'),
+      },
+      isDeleted: false,
     });
     if (!user) {
       return res.status(400).send({

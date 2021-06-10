@@ -431,7 +431,9 @@ router.post('/', async function (req, res) {
   }
   try {
     const userData = await User.findOne({
-      email: { $regex: new RegExp('^' + req.body.email.toLowerCase(), 'i') },
+      email: {
+        $regex: new RegExp('^' + req.body.email.toLowerCase() + '$', 'i'),
+      },
       isDeleted: false,
     }).lean();
     if (userData) {
@@ -667,7 +669,7 @@ router.put('/:userId', async function (req, res) {
           ),
         );
         promises.push(
-          Client.updateOne(
+          Client.update(
             { _id: { $in: oldClients } },
             { $set: removeUser },
             { multi: true },

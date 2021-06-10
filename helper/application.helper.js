@@ -126,6 +126,56 @@ const getApplicationList = async ({
       );
     }
 
+    if (applicationColumn.includes('createdById')) {
+      query.push(
+        {
+          $addFields: {
+            clientUserId: {
+              $cond: [
+                { $eq: ['$createdByType', 'client-user'] },
+                '$createdById',
+                null,
+              ],
+            },
+            userId: {
+              $cond: [
+                { $eq: ['$createdByType', 'user'] },
+                '$createdById',
+                null,
+              ],
+            },
+          },
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'userId',
+            foreignField: '_id',
+            as: 'userId',
+          },
+        },
+        {
+          $lookup: {
+            from: 'clients',
+            localField: 'clientUserId',
+            foreignField: '_id',
+            as: 'clientUserId',
+          },
+        },
+        {
+          $addFields: {
+            createdById: {
+              $cond: [
+                { $eq: ['$createdByType', 'client-user'] },
+                '$clientUserId.name',
+                '$userId.name',
+              ],
+            },
+          },
+        },
+      );
+    }
+
     if (requestedQuery.debtorId) {
       query.push({
         $match: {
@@ -270,6 +320,12 @@ const getApplicationList = async ({
         }
         if (!applicationColumn.includes('debtorId')) {
           delete application.debtorId;
+        }
+        if (applicationColumn.includes('createdById')) {
+          application.createdById =
+            application.createdById && application.createdById[0]
+              ? application.createdById[0]
+              : '';
         }
         delete application.clientDebtorId;
       });
@@ -493,9 +549,6 @@ const storePartnerDetails = async ({ requestBody }) => {
           !requestBody.partners[i].address ||
           !requestBody.partners[i].address.state ||
           !requestBody.partners[i].address.postCode ||
-          !requestBody.partners[i].address.streetName ||
-          !requestBody.partners[i].address.streetType ||
-          !requestBody.partners[i].address.suburb ||
           !requestBody.partners[i].address.streetNumber
         ) {
           return {
@@ -524,12 +577,18 @@ const storePartnerDetails = async ({ requestBody }) => {
               ? requestBody.partners[i].address.unitNumber
               : undefined,
             streetNumber: requestBody.partners[i].address.streetNumber,
-            streetName: requestBody.partners[i].address.streetName,
-            streetType: requestBody.partners[i].address.streetType,
-            suburb: requestBody.partners[i].address.suburb,
+            streetName: requestBody.partners[i].address.streetName
+              ? requestBody.partners[i].address.streetName
+              : undefined,
+            streetType: requestBody.partners[i].address.streetType
+              ? requestBody.partners[i].address.streetType
+              : undefined,
+            suburb: requestBody.partners[i].address.suburb
+              ? requestBody.partners[i].address.suburb
+              : undefined,
             state: requestBody.partners[i].address.state,
-            country: requestBody.partners[i].address.country,
             postCode: requestBody.partners[i].address.postCode,
+            country: requestBody.partners[i].address.country,
           };
         }
         update.title = requestBody.partners[i].title
@@ -622,7 +681,13 @@ const storeCreditLimitDetails = async ({
         ? 2
         : 3,
     };
-    // update.note = requestBody.note ? requestBody.note : '';
+    update.outstandingAmount = requestBody.outstandingAmount
+      ? requestBody.outstandingAmount
+      : undefined;
+    update.orderOnHand = requestBody.orderOnHand
+      ? requestBody.orderOnHand
+      : undefined;
+    update.note = requestBody.note ? requestBody.note : '';
     update.extendedPaymentTermsDetails = requestBody.extendedPaymentTermsDetails
       ? requestBody.extendedPaymentTermsDetails
       : '';
@@ -854,6 +919,7 @@ const checkForAutomation = async ({ applicationId }) => {
         logDescription: `An application ${application.applicationId} is approved`,
       });
     } else {
+      //TODO create Task + send Notification
       update.status = 'REVIEW_APPLICATION';
     }
     //TODO notify user

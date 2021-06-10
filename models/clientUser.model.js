@@ -52,7 +52,7 @@ clientUserSchema.statics.findByCredentials = async function (email, password) {
   try {
     let clientUser = this;
     clientUser = await clientUser.findOne({
-      email,
+      email: { $regex: new RegExp('^' + email.toLowerCase() + '$', 'i') },
       isDeleted: false,
       hasPortalAccess: true,
     });

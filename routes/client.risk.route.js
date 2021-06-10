@@ -1416,6 +1416,14 @@ router.put('/user/:clientUserId', async function (req, res) {
       _id: req.params.clientUserId,
     }).lean();
     if (req.body.hasPortalAccess) {
+      const client = await Client.findOne({
+        _id: clientUser.clientId,
+      })
+        .populate({
+          path: 'riskAnalystId serviceManagerId',
+          select: 'name email contactNumber',
+        })
+        .lean();
       const signUpToken = jwt.sign(
         JSON.stringify({ _id: req.params.clientUserId }),
         config.jwt.secret,
@@ -1436,6 +1444,30 @@ router.put('/user/:clientUserId', async function (req, res) {
             clientUser._id +
             '?token=' +
             signUpToken,
+          riskAnalystName:
+            client.riskAnalystId && client.riskAnalystId.name
+              ? client.riskAnalystId.name
+              : null,
+          serviceManagerName:
+            client.serviceManagerId && client.serviceManagerId.name
+              ? client.serviceManagerId.name
+              : null,
+          riskAnalystNumber:
+            client.riskAnalystId && client.riskAnalystId.contactNumber
+              ? client.riskAnalystId.contactNumber
+              : null,
+          serviceManagerNumber:
+            client.serviceManagerId && client.serviceManagerId.contactNumber
+              ? client.serviceManagerId.contactNumber
+              : null,
+          riskAnalystEmail:
+            client.riskAnalystId && client.riskAnalystId.email
+              ? client.riskAnalystId.email
+              : null,
+          serviceManagerEmail:
+            client.serviceManagerId && client.serviceManagerId.email
+              ? client.serviceManagerId.email
+              : null,
         },
         mailFor: 'newClientUser',
       };

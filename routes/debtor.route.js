@@ -470,7 +470,7 @@ router.get('/:debtorId', async function (req, res) {
         for (let key in debtor.address) {
           debtor[key] = debtor.address[key];
         }
-        delete debtor.address;
+        debtor.address = getDebtorFullAddress({ address: debtor.address });
       }
       if (debtor.country) {
         debtor.country = {

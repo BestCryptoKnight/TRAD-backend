@@ -6,7 +6,6 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const Client = mongoose.model('client');
 const Overdue = mongoose.model('overdue');
-const ClientDebtor = mongoose.model('client-debtor');
 
 /*
  * Local Imports
@@ -16,6 +15,9 @@ const {
   getDrawerDetails,
   getLastOverdueList,
   getOverdueList,
+  getDebtorList,
+  getMonthString,
+  formatString,
 } = require('./../helper/overdue.helper');
 
 /**
@@ -23,14 +25,6 @@ const {
  */
 router.get('/entity-list', async function (req, res) {
   try {
-    const clientDebtors = await ClientDebtor.find({
-      isActive: true,
-      clientId: req.user.clientId,
-      creditLimit: { $exists: true, $ne: null },
-    })
-      .populate({ path: 'debtorId', select: '_id entityName' })
-      .select('debtorId')
-      .lean();
     const client = await Client.findById(req.user.clientId)
       .populate({
         path: 'insurerId',
@@ -42,11 +36,10 @@ router.get('/entity-list', async function (req, res) {
     if (client && client.insurerId && client.insurerId.name) {
       insurer.push(client.insurerId);
     }
-    const debtors = [];
-    clientDebtors.forEach((i) => {
-      if (i.debtorId && i.debtorId.entityName) {
-        debtors.push({ _id: i.debtorId._id, name: i.debtorId.entityName });
-      }
+    const debtors = await getDebtorList({
+      isForRisk: false,
+      userId: req.user.clientId,
+      hasFullAccess: false,
     });
     const overdueTypes = [
       { _id: 'PAID', name: 'Paid' },
@@ -99,56 +92,84 @@ router.get('/list', async function (req, res) {
     };
     const overdue = await Overdue.find(query)
       .populate({
-        path: 'debtorId insurerId clientId',
-        select: '_id name entityName',
+        path: 'debtorId insurerId',
+        select: '_id entityName name',
       })
       .select({ isDeleted: 0, createdAt: 0, updatedAt: 0, __v: 0 })
       .lean();
+    let client = await Client.findById(req.user.clientId)
+      .select('_id name')
+      .lean();
+    client = client && client.name ? client.name : '';
     if (overdue && overdue.length !== 0) {
-      return res.status(200).send({ status: 'SUCCESS', data: overdue });
+      overdue.forEach((i) => {
+        i.isExistingData = true;
+        if (i.debtorId && i.debtorId.entityName) {
+          i.debtorId = {
+            label: i.debtorId.entityName,
+            value: i.debtorId._id,
+          };
+        }
+        if (i.insurerId && i.insurerId.name) {
+          i.insurerId = {
+            label: i.insurerId.name,
+            value: i.insurerId._id,
+          };
+        }
+        i.overdueType = {
+          value: i.overdueType,
+          label: formatString(i.overdueType),
+        };
+        i.status = {
+          value: i.status,
+          label: formatString(i.status),
+        };
+      });
+      return res
+        .status(200)
+        .send({ status: 'SUCCESS', data: { docs: overdue, client } });
     } else {
       query.overdueAction === 'AMEND';
-      let overdue = await getLastOverdueList({
+      let { overdue, lastMonth, lastYear } = await getLastOverdueList({
         query,
         date: req.query.date,
       });
-      let update = {};
-      const promises = [];
-      overdue.forEach((i) => {
-        update = {
-          clientId: i.clientId && i.clientId._id ? i.clientId._id : i.clientId,
-          debtorId: i.debtorId && i.debtorId._id ? i.debtorId._id : i.debtorId,
-          acn: i.acn,
-          dateOfInvoice: i.dateOfInvoice,
-          overdueType: i.overdueType,
-          insurerId:
-            i.insurerId && i.insurerId._id ? i.insurerId._id : i.insurerId,
-          month: month.toString().padStart(2, '0'),
-          year: year,
-          currentAmount: i.currentAmount,
-          thirtyDaysAmount: i.thirtyDaysAmount,
-          sixtyDaysAmount: i.sixtyDaysAmount,
-          ninetyDaysAmount: i.ninetyDaysAmount,
-          ninetyPlusDaysAmount: i.ninetyPlusDaysAmount,
-          outstandingAmount: i.outstandingAmount,
-          status: 'SUBMITTED',
-        };
-        promises.push(Overdue.create(update));
+      const response = {
+        docs: overdue,
+        client,
+      };
+      if (overdue && overdue.length !== 0) {
+        overdue.forEach((i) => {
+          i.isExistingData = true;
+          i.month = month;
+          i.year = year;
+          if (i.debtorId && i.debtorId.entityName) {
+            i.debtorId = {
+              label: i.debtorId.entityName,
+              value: i.debtorId._id,
+            };
+          }
+          if (i.insurerId && i.insurerId.name) {
+            i.insurerId = {
+              label: i.insurerId.name,
+              value: i.insurerId._id,
+            };
+          }
+          i.overdueType = {
+            value: i.overdueType,
+            label: formatString(i.overdueType),
+          };
+          i.status = {
+            value: 'SUBMITTED',
+            label: 'Submitted',
+          };
+        });
+        response.previousEntries = getMonthString(lastMonth) + ' ' + lastYear;
+      }
+      return res.status(200).send({
+        status: 'SUCCESS',
+        data: response,
       });
-      await Promise.all(promises);
-      overdue = await Overdue.find({
-        month: month.toString().padStart(2, '0'),
-        year: year,
-        clientId: req.user.clientId,
-      })
-        .populate({
-          path: 'debtorId insurerId clientId',
-          select: '_id name entityName',
-        })
-        .select({ isDeleted: 0, createdAt: 0, updatedAt: 0, __v: 0 })
-        .lean();
-      overdue.forEach((i) => (i.isExistingData = true));
-      return res.status(200).send({ status: 'SUCCESS', data: overdue });
     }
   } catch (e) {
     Logger.log.error(
@@ -183,7 +204,6 @@ router.get('/details/:overdueId', async function (req, res) {
         select: 'name entityName',
       })
       .select({
-        status: 0,
         overdueAction: 0,
         analystComment: 0,
         isDeleted: 0,
@@ -236,6 +256,9 @@ router.get('/', async function (req, res) {
   }
 });
 
+/**
+ * Get overdue details
+ */
 router.get('/:overdueId', async function (req, res) {
   if (
     !req.params.overdueId ||
@@ -278,6 +301,9 @@ router.get('/:overdueId', async function (req, res) {
           value: overdue.insurerId._id,
         };
       }
+      if (overdue.month && overdue.year) {
+        overdue.monthString = overdue.year + ',' + overdue.month;
+      }
     }
     res.status(200).send({
       status: 'SUCCESS',
@@ -308,12 +334,12 @@ router.post('/', async function (req, res) {
     !req.body.insurerId ||
     !req.body.month ||
     !req.body.year ||
-    !req.body.currentAmount ||
-    !req.body.thirtyDaysAmount ||
-    !req.body.sixtyDaysAmount ||
-    !req.body.ninetyDaysAmount ||
-    !req.body.ninetyPlusDaysAmount ||
-    !req.body.outstandingAmount
+    !req.body.hasOwnProperty('currentAmount') ||
+    !req.body.hasOwnProperty('thirtyDaysAmount') ||
+    !req.body.hasOwnProperty('sixtyDaysAmount') ||
+    !req.body.hasOwnProperty('ninetyDaysAmount') ||
+    !req.body.hasOwnProperty('ninetyPlusDaysAmount') ||
+    !req.body.hasOwnProperty('outstandingAmount')
   ) {
     return res.status(400).send({
       status: 'ERROR',
@@ -325,8 +351,8 @@ router.post('/', async function (req, res) {
     const overdueDetail = await Overdue.findOne({
       clientId: req.user.clientId,
       debtorId: req.body.debtorId,
-      month: req.body.month,
-      year: req.body.year,
+      month: req.body.month.toString().padStart(2, '0'),
+      year: req.body.year.toString(),
     }).lean();
     if (overdueDetail) {
       return res.status(400).send({
@@ -335,7 +361,7 @@ router.post('/', async function (req, res) {
         message: 'Overdue already exists, please create with another debtor',
       });
     }
-    const overdue = {
+    let overdue = {
       clientId: req.user.clientId,
       debtorId: req.body.debtorId,
       acn: req.body.acn,
@@ -353,10 +379,29 @@ router.post('/', async function (req, res) {
       clientComment: req.body.clientComment,
       status: 'SUBMITTED',
     };
-    await Overdue.create(overdue);
-    res
-      .status(200)
-      .send({ status: 'SUCCESS', message: 'Overdue added successfully' });
+    const overdueData = await Overdue.create(overdue);
+    overdue = await Overdue.findOne({ _id: overdueData._id })
+      .populate({
+        path: 'debtorId',
+        select: '_id entityName',
+      })
+      .select(
+        '_id debtorId overdueType overdueAction status month year outstandingAmount',
+      )
+      .lean();
+    if (overdue) {
+      overdue.isExistingData = true;
+      if (overdue.debtorId && overdue.debtorId.entityName) {
+        overdue.debtorId = overdue.debtorId.entityName;
+      }
+      overdue.overdueType = formatString(overdue.overdueType);
+      overdue.status = formatString(overdue.status);
+    }
+    res.status(200).send({
+      status: 'SUCCESS',
+      message: 'Overdue added successfully',
+      data: overdue,
+    });
   } catch (e) {
     Logger.log.error('Error occurred in add overdue', e.message || e);
     res.status(500).send({
@@ -379,11 +424,33 @@ router.put('/list', async function (req, res) {
   }
   try {
     const promises = [];
+    let update = {};
+    const overdueArr = req.body.list.map((i) => {
+      return i.debtorId + i.month.toString().padStart(2, '0') + i.year;
+    });
+    console.log(overdueArr);
+    let isDuplicate = overdueArr.some((element, index) => {
+      return overdueArr.indexOf(element) !== index;
+    });
+    if (isDuplicate) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'INVALID_DATA',
+        message: 'Overdue list is invalid',
+      });
+    }
     for (let i = 0; i < req.body.list.length; i++) {
       if (
-        req.body.list[i].hasOwnProperty(req.body.list[i].isExistingData) &&
-        req.body.list[i].isExistingData &&
-        !req.body.list[i].overdueAction
+        !req.body.list[i].debtorId ||
+        !mongoose.Types.ObjectId.isValid(req.body.list[i].debtorId) ||
+        !req.body.list[i].month ||
+        !req.body.list[i].year ||
+        !req.body.list[i].acn ||
+        !req.body.list[i].dateOfInvoice ||
+        !req.body.list[i].overdueType ||
+        !req.body.list[i].insurerId ||
+        !req.body.list[i].hasOwnProperty('isExistingData') ||
+        (req.body.list[i].isExistingData && !req.body.list[i].overdueAction)
       ) {
         return res.status(400).send({
           status: 'ERROR',
@@ -391,12 +458,61 @@ router.put('/list', async function (req, res) {
           message: 'Require fields are missing.',
         });
       }
-      if (req.body.list[i].overdueAction) {
+      update = {};
+      update.clientId = req.user.clientId;
+      if (req.body.list[i].debtorId)
+        update.debtorId = req.body.list[i].debtorId;
+      if (req.body.list[i].acn) update.acn = req.body.list[i].acn;
+      if (req.body.list[i].dateOfInvoice)
+        update.dateOfInvoice = req.body.list[i].dateOfInvoice;
+      if (req.body.list[i].overdueType)
+        update.overdueType = req.body.list[i].overdueType;
+      if (req.body.list[i].insurerId)
+        update.insurerId = req.body.list[i].insurerId;
+      if (req.body.list[i].month)
+        update.month = req.body.list[i].month.toString().padStart(2, '0');
+      if (req.body.list[i].year) update.year = req.body.list[i].year.toString();
+      if (req.body.list[i].currentAmount)
+        update.currentAmount = req.body.list[i].currentAmount;
+      if (req.body.list[i].thirtyDaysAmount)
+        update.thirtyDaysAmount = req.body.list[i].thirtyDaysAmount;
+      if (req.body.list[i].sixtyDaysAmount)
+        update.sixtyDaysAmount = req.body.list[i].sixtyDaysAmount;
+      if (req.body.list[i].ninetyDaysAmount)
+        update.ninetyDaysAmount = req.body.list[i].ninetyDaysAmount;
+      if (req.body.list[i].ninetyPlusDaysAmount)
+        update.ninetyPlusDaysAmount = req.body.list[i].ninetyPlusDaysAmount;
+      if (req.body.list[i].outstandingAmount)
+        update.outstandingAmount = req.body.list[i].outstandingAmount;
+      if (req.body.list[i].clientComment)
+        update.clientComment = req.body.list[i].clientComment;
+      update.overdueAction = req.body.list[i].overdueAction
+        ? req.body.list[i].overdueAction
+        : 'UNCHANGED';
+      update.status = req.body.list[i].status
+        ? req.body.list[i].status
+        : 'SUBMITTED';
+      if (!req.body.list[i]._id) {
+        promises.push(Overdue.create(update));
+      } else {
+        const overdue = await Overdue.findOne({
+          clientId: update.clientId,
+          debtorId: update.debtorId,
+          month: update.month,
+          year: update.year,
+        }).lean();
+        if (overdue && overdue._id.toString() !== req.body.list[i]._id) {
+          return res.status(400).send({
+            status: 'ERROR',
+            messageCode: 'OVERDUE_ALREADY_EXISTS',
+            message:
+              'Overdue already exists, please create with another debtor',
+          });
+        }
         promises.push(
-          Overdue.updateOne(
-            { _id: req.body.list[i]._id },
-            { overdueAction: req.body.list[i].overdueAction },
-          ),
+          Overdue.updateOne({ _id: req.body.list[i]._id }, update, {
+            upsert: true,
+          }),
         );
       }
     }
@@ -473,8 +589,8 @@ router.put('/:overdueId', async function (req, res) {
         query.debtorId = req.body.debtorId;
       }
       if (req.body.month && req.body.year) {
-        query.month = req.body.month;
-        query.year = req.body.year;
+        query.month = req.body.month.toString().padStart(2, '0');
+        query.year = req.body.year.toString();
       }
       const overdueDetail = await Overdue.findOne(query).lean();
       if (
@@ -489,62 +605,50 @@ router.put('/:overdueId', async function (req, res) {
       }
     }
     const update = {};
-    if (req.body.debtorId) update.req.body.debtorId = req.body.debtorId;
-    if (req.body.acn) update.req.body.acn = req.body.acn;
-    if (req.body.dateOfInvoice)
-      update.req.body.dateOfInvoice = req.body.dateOfInvoice;
-    if (req.body.overdueType)
-      update.req.body.overdueType = req.body.overdueType;
-    if (req.body.insurerId) update.req.body.insurerId = req.body.insurerId;
+    if (req.body.debtorId) update.debtorId = req.body.debtorId;
+    if (req.body.acn) update.acn = req.body.acn;
+    if (req.body.dateOfInvoice) update.dateOfInvoice = req.body.dateOfInvoice;
+    if (req.body.overdueType) update.overdueType = req.body.overdueType;
+    if (req.body.insurerId) update.insurerId = req.body.insurerId;
     if (req.body.month)
-      update.req.body.month = req.body.month.toString().padStart(2, '0');
-    if (req.body.currentAmount)
-      update.req.body.currentAmount = req.body.currentAmount;
+      update.month = req.body.month.toString().padStart(2, '0');
+    if (req.body.currentAmount) update.currentAmount = req.body.currentAmount;
     if (req.body.thirtyDaysAmount)
-      update.req.body.thirtyDaysAmount = req.body.thirtyDaysAmount;
+      update.thirtyDaysAmount = req.body.thirtyDaysAmount;
     if (req.body.sixtyDaysAmount)
-      update.req.body.sixtyDaysAmount = req.body.sixtyDaysAmount;
+      update.sixtyDaysAmount = req.body.sixtyDaysAmount;
     if (req.body.ninetyDaysAmount)
-      update.req.body.ninetyDaysAmount = req.body.ninetyDaysAmount;
+      update.ninetyDaysAmount = req.body.ninetyDaysAmount;
     if (req.body.ninetyPlusDaysAmount)
-      update.req.body.ninetyPlusDaysAmount = req.body.ninetyPlusDaysAmount;
+      update.ninetyPlusDaysAmount = req.body.ninetyPlusDaysAmount;
     if (req.body.outstandingAmount)
-      update.req.body.outstandingAmount = req.body.outstandingAmount;
+      update.outstandingAmount = req.body.outstandingAmount;
+    if (req.body.clientComment) update.clientComment = req.body.clientComment;
     await Overdue.updateOne({ _id: req.params.overdueId }, update);
-    res
-      .status(200)
-      .send({ status: 'SUCCESS', message: 'Overdue updated successfully' });
-  } catch (e) {
-    Logger.log.error('Error occurred in update overdue', e.message || e);
-    res.status(500).send({
-      status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
-    });
-  }
-});
-
-/**
- * Delete Overdue
- */
-router.delete('/:entityId', async function (req, res) {
-  if (
-    !req.params.entityId ||
-    !mongoose.Types.ObjectId.isValid(req.params.entityId)
-  ) {
-    return res.status(400).send({
-      status: 'ERROR',
-      messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Require fields are missing',
-    });
-  }
-  try {
-    await Overdue.updateOne({ _id: req.params.entityId }, { isDeleted: true });
+    const overdue = await Overdue.findOne({ _id: req.params.overdueId })
+      .populate({
+        path: 'debtorId',
+        select: '_id entityName',
+      })
+      .select(
+        '_id debtorId overdueType overdueAction status month year outstandingAmount',
+      )
+      .lean();
+    if (overdue) {
+      overdue.isExistingData = true;
+      if (overdue.debtorId && overdue.debtorId.entityName) {
+        overdue.debtorId = overdue.debtorId.entityName;
+      }
+      overdue.overdueType = formatString(overdue.overdueType);
+      overdue.status = formatString(overdue.status);
+    }
     res.status(200).send({
       status: 'SUCCESS',
-      message: 'Overdue deleted successfully',
+      message: 'Overdue status updated successfully',
+      data: overdue,
     });
   } catch (e) {
-    Logger.log.error('Error occurred in delete overdue ', e.message || e);
+    Logger.log.error('Error occurred in update overdue', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

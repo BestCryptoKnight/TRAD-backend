@@ -170,7 +170,7 @@ const createDebtor = async ({
         clientId: clientId,
         debtorId: debtor._id,
         isActive: true,
-        outstandingAmount: requestBody.outstandingAmount,
+        // outstandingAmount: requestBody.outstandingAmount,
       },
       { upsert: true },
     );
@@ -219,7 +219,16 @@ const getDebtorFullAddress = ({ address }) => {
     if (address.country && address.country.name) {
       address.country = address.country.name;
     }
-    fullAddress = Object.values(address).toString().replace(/,,/g, ',');
+    fullAddress =
+      (address.property ? address.property + ', ' : '') +
+      (address.unitNumber ? address.unitNumber + ', ' : '') +
+      (address.streetNumber ? address.streetNumber + ', ' : '') +
+      (address.streetName ? address.streetName + ', ' : '') +
+      (address.streetType ? address.streetType + ', ' : '') +
+      (address.suburb ? address.suburb + ', ' : '') +
+      (address.state ? address.state + ', ' : '') +
+      (address.postCode ? address.postCode + ', ' : '') +
+      address.country;
     return fullAddress;
   } catch (e) {
     Logger.log.error(
@@ -267,9 +276,48 @@ const getCreditLimitList = async ({ debtorId }) => {
   }
 };
 
+const getStateName = (state, countryCode) => {
+  try {
+    const stateData =
+      countryCode === 'AUS'
+        ? StaticData.australianStates.find((i) => {
+            if (i._id === state) return i;
+          })
+        : countryCode === 'NZL'
+        ? StaticData.newZealandStates.find((i) => {
+            if (i._id === state) return i;
+          })
+        : { name: state };
+    return stateData;
+  } catch (e) {
+    Logger.log.error('Error occurred in get state name');
+    Logger.log.error(e.message || e);
+  }
+};
+
+const getStreetTypeName = (streetType) => {
+  try {
+    const streetTypeString = StaticData.streetType.find((i) => {
+      if (i._id === streetType) return i;
+    });
+    return {
+      value: streetType,
+      label:
+        streetTypeString && streetTypeString.name
+          ? streetTypeString.name
+          : streetType,
+    };
+  } catch (e) {
+    Logger.log.error('Error occurred in get state name');
+    Logger.log.error(e.message || e);
+  }
+};
+
 module.exports = {
   getDebtorList,
   createDebtor,
   getDebtorFullAddress,
   getCreditLimitList,
+  getStateName,
+  getStreetTypeName,
 };

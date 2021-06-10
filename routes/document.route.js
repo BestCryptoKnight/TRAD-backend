@@ -453,7 +453,7 @@ router.post('/upload', upload.single('document'), async function (req, res) {
   req.body = JSON.parse(JSON.stringify(req.body));
   if (
     !req.body.documentFor ||
-    !req.body.description ||
+    (req.body.documentFor !== 'application' && !req.body.description) ||
     !req.body.documentType ||
     !req.body.entityId ||
     !req.body.hasOwnProperty('isPublic')
@@ -475,7 +475,7 @@ router.post('/upload', upload.single('document'), async function (req, res) {
     }
     const document = await uploadDocument({
       entityType: req.body.documentFor.toLowerCase(),
-      description: req.body.description,
+      description: req.body.description ? req.body.description : null,
       isPublic: req.body.isPublic,
       entityRefId: req.body.entityId,
       documentTypeId: req.body.documentType,

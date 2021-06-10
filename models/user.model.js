@@ -64,7 +64,7 @@ userSchema.statics.findByCredentials = async function (email, password) {
   try {
     let user = this;
     user = await user.findOne({
-      email: { $regex: new RegExp('^' + email.toLowerCase(), 'i') },
+      email: { $regex: new RegExp('^' + email.toLowerCase() + '$', 'i') },
       isDeleted: false,
     });
     if (!user) {

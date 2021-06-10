@@ -11,6 +11,7 @@ const Logger = require('./../services/logger');
 const forgotPasswordAdminTemplate = require('./../static-files/forgotPassword.risk.template');
 const newAdminTemplate = require('./../static-files/newUser.risk.template');
 const newClientTemplate = require('./../static-files/newUser.client.template');
+const forgotPasswordClientTemplate = require('../static-files/forgotPassword.client.template.js');
 
 const transporter = nodemailer.createTransport({
   host: 'smtp.sendgrid.net',
@@ -45,6 +46,12 @@ const sendMail = ({ toAddress, subject, text, html, mailFor }) => {
         html = newClientTemplate({
           name: text.name,
           setPasswordLink: text.setPasswordLink,
+          riskAnalystName: text.riskAnalystName,
+          riskAnalystNumber: text.riskAnalystNumber,
+          riskAnalystEmail: text.riskAnalystEmail,
+          serviceManagerName: text.serviceManagerName,
+          serviceManagerNumber: text.serviceManagerNumber,
+          serviceManagerEmail: text.serviceManagerEmail,
         });
         break;
       case 'clientForgotPassword':
@@ -53,6 +60,17 @@ const sendMail = ({ toAddress, subject, text, html, mailFor }) => {
         //     resetPasswordLink: text.resetPasswordLink,
         //     forgotPasswordLink: text.forgotPasswordLink,
         // });
+        html = forgotPasswordClientTemplate({
+          name: text.name,
+          otp: text.otp,
+          expireTime: text.expireTime,
+          riskAnalystName: text.riskAnalystName,
+          riskAnalystNumber: text.riskAnalystNumber,
+          riskAnalystEmail: text.riskAnalystEmail,
+          serviceManagerName: text.serviceManagerName,
+          serviceManagerNumber: text.serviceManagerNumber,
+          serviceManagerEmail: text.serviceManagerEmail,
+        });
         break;
       case 'profileUpdate':
         // html = profileUpdateTemplate({

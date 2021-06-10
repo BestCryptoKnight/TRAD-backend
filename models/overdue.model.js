@@ -30,7 +30,8 @@ const overdueSchema = new Schema(
     },
     overdueAction: {
       type: Schema.Types.String,
-      enum: ['MARK_AS_PAID', 'AMEND'],
+      enum: ['MARK_AS_PAID', 'UNCHANGED', 'AMEND'],
+      default: 'UNCHANGED',
     },
     status: {
       type: Schema.Types.String,

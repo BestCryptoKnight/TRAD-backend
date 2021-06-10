@@ -33,7 +33,10 @@ const {
 } = require('./../helper/abr.helper');
 const { generateNewApplication } = require('./../helper/application.helper');
 const { addAuditLog, getEntityName } = require('./../helper/audit-log.helper');
-const { getCreditLimitList } = require('./../helper/debtor.helper');
+const {
+  getCreditLimitList,
+  getDebtorFullAddress,
+} = require('./../helper/debtor.helper');
 
 /**
  * Get Column Names
@@ -256,12 +259,7 @@ router.get('/', async function (req, res) {
         debtor.postCode = debtor.address.postCode;
       }
       if (debtorColumn.columns.includes('fullAddress')) {
-        if (debtor.address.country && debtor.address.country.name) {
-          debtor.address.country = debtor.address.country.name;
-        }
-        debtor.fullAddress = Object.values(debtor.address)
-          .toString()
-          .replace(/,,/g, ',');
+        debtor.fullAddress = getDebtorFullAddress({ address: debtor.address });
       }
       if (debtor.entityType) {
         debtor.entityType = debtor.entityType

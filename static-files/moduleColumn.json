@@ -49,11 +49,12 @@
           "request": { "method": "GET", "url": "debtor/drawer" }
         },
         { "name": "entityType", "label": "Entity Type", "type": "string" },
-        { "name": "creditLimit", "label": "Credit Limit", "type": "number" },
+        { "name": "creditLimit", "label": "Credit Limit", "type": "amount" },
+        { "name": "createdById", "label": "Submitted By", "type": "string" },
         {
           "name": "clientDebtorId",
           "label": "Outstanding Amount",
-          "type": "number"
+          "type": "amount"
         },
         {
           "name": "isExtendedPaymentTerms",
@@ -218,11 +219,11 @@
           "type": "string"
         },
         { "name": "entityType", "label": "Entity Type", "type": "string" },
-        { "name": "creditLimit", "label": "Credit Limit", "type": "number" },
+        { "name": "creditLimit", "label": "Credit Limit", "type": "amount" },
         {
           "name": "clientDebtorId",
           "label": "Outstanding Amount",
-          "type": "number"
+          "type": "amount"
         },
         {
           "name": "extendedPaymentTermsDetails",
@@ -480,11 +481,11 @@
           "type": "string"
         },
         { "name": "entityType", "label": "Entity Type", "type": "string" },
-        { "name": "creditLimit", "label": "Credit Limit", "type": "number" },
+        { "name": "creditLimit", "label": "Credit Limit", "type": "amount" },
         {
           "name": "clientDebtorId",
           "label": "Outstanding Amount",
-          "type": "number"
+          "type": "amount"
         },
         {
           "name": "extendedPaymentTermsDetails",
@@ -614,7 +615,7 @@
         {
           "name": "outstandingAmount",
           "label": "Outstanding Amount",
-          "type": "string"
+          "type": "amount"
         },
         { "name": "isActive", "label": "Active", "type": "string" }
       ],
@@ -897,7 +898,7 @@
         {
           "name": "maxCreditLimit",
           "label": "Max Credit Limit",
-          "type": "number"
+          "type": "amount"
         },
         { "name": "status", "label": "Status", "type": "string" },
         { "name": "createdAt", "label": "Created Date", "type": "date" },

@@ -4,85 +4,225 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
-const User = mongoose.model('user');
-const Client = mongoose.model('client');
 const Overdue = mongoose.model('overdue');
+const Client = mongoose.model('client');
 
 /*
  * Local Imports
  * */
 const Logger = require('./../services/logger');
-const StaticFile = require('./../static-files/moduleColumn');
+const {
+  getDrawerDetails,
+  getLastOverdueList,
+  getOverdueList,
+  getDebtorList,
+  getMonthString,
+  formatString,
+} = require('./../helper/overdue.helper');
+const { insurerList } = require('./../helper/task.helper');
+const { getClientList } = require('./../helper/client.helper');
 
 /**
- * Get Column Names
+ * Get Entity List
  */
-router.get('/column-name', async function (req, res) {
-  if (!req.query.columnFor) {
+router.get('/entity-list', async function (req, res) {
+  try {
+    let hasFullAccess = true;
+    if (req.accessTypes && req.accessTypes.indexOf('full-access') === -1) {
+      hasFullAccess = false;
+    }
+    const clients = await getClientList({
+      hasFullAccess,
+      userId: req.user._id,
+    });
+    const debtors = await getDebtorList({
+      userId: req.user._id,
+      hasFullAccess,
+      isForRisk: true,
+    });
+    const insurer = await insurerList();
+    const overdueTypes = [
+      { _id: 'PAID', name: 'Paid' },
+      { _id: 'INSOLVENCY', name: 'Insolvency' },
+      { _id: 'REPAYMENT_PLAN', name: 'Repayment Plan' },
+      { _id: 'RETURNED_CHEQUE', name: 'Returned Cheque' },
+      { _id: 'RETENTION', name: 'Retention' },
+      { _id: 'PAYMENT_EXPECTED', name: 'Payment expected' },
+      { _id: 'DISPUTE', name: 'Dispute' },
+      { _id: 'LEGAL/COLLECTIONS', name: 'Legal/Collections' },
+    ];
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: {
+        clientId: clients,
+        debtorId: debtors,
+        overdueType: overdueTypes,
+        insurerId: insurer,
+      },
+    });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in get overdue drop-down list',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Get Month & Year Overdue
+ */
+router.get('/list', async function (req, res) {
+  if (
+    !req.query.date ||
+    !req.query.clientId ||
+    !mongoose.Types.ObjectId.isValid(req.query.clientId)
+  ) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Require field is missing.',
+      message: 'Require fields are missing.',
     });
   }
   try {
-    const module = StaticFile.modules.find(
-      (i) => i.name === req.query.columnFor,
-    );
-    const overdueColumn = req.user.manageColumns.find(
-      (i) => i.moduleName === req.query.columnFor,
-    );
-    if (!module || !module.manageColumns || module.manageColumns.length === 0) {
-      return res.status(400).send({
-        status: 'ERROR',
-        messageCode: 'BAD_REQUEST',
-        message: 'Please pass correct fields',
+    let month = new Date(req.query.date).getMonth() + 1;
+    let year = new Date(req.query.date).getFullYear();
+    const query = {
+      month: month.toString().padStart(2, '0'),
+      year: year,
+      clientId: req.query.clientId,
+    };
+    const overdue = await Overdue.find(query)
+      .populate({
+        path: 'debtorId insurerId',
+        select: '_id entityName name',
+      })
+      .select({ isDeleted: 0, createdAt: 0, updatedAt: 0, __v: 0 })
+      .lean();
+    let client = await Client.findById(req.query.clientId)
+      .select('_id name')
+      .lean();
+    client = client && client.name ? client.name : '';
+    if (overdue && overdue.length !== 0) {
+      overdue.forEach((i) => {
+        i.isExistingData = true;
+        if (i.debtorId && i.debtorId.entityName) {
+          i.debtorId = {
+            label: i.debtorId.entityName,
+            value: i.debtorId._id,
+          };
+        }
+        if (i.insurerId && i.insurerId.name) {
+          i.insurerId = {
+            label: i.insurerId.name,
+            value: i.insurerId._id,
+          };
+        }
+        i.overdueType = {
+          value: i.overdueType,
+          label: formatString(i.overdueType),
+        };
+        i.status = {
+          value: i.status,
+          label: formatString(i.status),
+        };
+      });
+      return res
+        .status(200)
+        .send({ status: 'SUCCESS', data: { docs: overdue, client } });
+    } else {
+      query.overdueAction === 'AMEND';
+      let { overdue, lastMonth, lastYear } = await getLastOverdueList({
+        query,
+        date: req.query.date,
+      });
+      const response = {
+        docs: overdue,
+        client,
+      };
+      if (overdue && overdue.length !== 0) {
+        overdue.forEach((i) => {
+          i.isExistingData = true;
+          i.month = month;
+          i.year = year;
+          if (i.debtorId && i.debtorId.entityName) {
+            i.debtorId = {
+              label: i.debtorId.entityName,
+              value: i.debtorId._id,
+            };
+          }
+          if (i.insurerId && i.insurerId.name) {
+            i.insurerId = {
+              label: i.insurerId.name,
+              value: i.insurerId._id,
+            };
+          }
+          i.overdueType = {
+            value: i.overdueType,
+            label: formatString(i.overdueType),
+          };
+          i.status = {
+            value: 'SUBMITTED',
+            label: 'Submitted',
+          };
+        });
+        response.previousEntries = getMonthString(lastMonth) + ' ' + lastYear;
+      }
+      return res.status(200).send({
+        status: 'SUCCESS',
+        data: response,
       });
     }
-    let customFields = [];
-    let defaultFields = [];
-    for (let i = 0; i < module.manageColumns.length; i++) {
-      if (
-        overdueColumn &&
-        overdueColumn.columns.includes(module.manageColumns[i].name)
-      ) {
-        if (module.defaultColumns.includes(module.manageColumns[i].name)) {
-          defaultFields.push({
-            name: module.manageColumns[i].name,
-            label: module.manageColumns[i].label,
-            isChecked: true,
-          });
-        } else {
-          customFields.push({
-            name: module.manageColumns[i].name,
-            label: module.manageColumns[i].label,
-            isChecked: true,
-          });
-        }
-      } else {
-        if (module.defaultColumns.includes(module.manageColumns[i].name)) {
-          defaultFields.push({
-            name: module.manageColumns[i].name,
-            label: module.manageColumns[i].label,
-            isChecked: false,
-          });
-        } else {
-          customFields.push({
-            name: module.manageColumns[i].name,
-            label: module.manageColumns[i].label,
-            isChecked: false,
-          });
-        }
-      }
-    }
-    res
-      .status(200)
-      .send({ status: 'SUCCESS', data: { defaultFields, customFields } });
   } catch (e) {
     Logger.log.error(
-      'Error occurred in get overdue column names',
+      'Error occurred in get selected month and year list',
       e.message || e,
     );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Overdue drawer details
+ */
+router.get('/details/:overdueId', async function (req, res) {
+  if (
+    !req.params.overdueId ||
+    !mongoose.Types.ObjectId.isValid(req.params.overdueId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    let overdue = await Overdue.findOne({ _id: req.params.overdueId })
+      .populate({
+        path: 'clientId debtorId insurerId',
+        select: 'name entityName',
+      })
+      .select({
+        overdueAction: 0,
+        analystComment: 0,
+        isDeleted: 0,
+        __v: 0,
+        updatedAt: 0,
+        createdAt: 0,
+      })
+      .lean();
+    if (overdue) {
+      overdue = await getDrawerDetails({ overdue });
+    }
+    return res.status(200).send({ status: 'SUCCESS', data: overdue });
+  } catch (e) {
+    Logger.log.error('Error occurred in get drawer details', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -95,186 +235,20 @@ router.get('/column-name', async function (req, res) {
  */
 router.get('/', async function (req, res) {
   try {
-    const module = StaticFile.modules.find((i) => i.name === 'overdue');
-    const overdueColumn = req.user.manageColumns.find(
-      (i) => i.moduleName === 'overdue',
-    );
-    const clients = await Client.find({
-      isDeleted: false,
-      $or: [
-        { riskAnalystId: req.user._id },
-        { serviceManagerId: req.user._id },
-      ],
-    })
-      .select({ _id: 1 })
-      .lean();
-    const clientIds = clients.map((i) => i._id);
-    let queryFilter = {
-      isDeleted: false,
-    };
+    let hasFullAccess = true;
     if (req.accessTypes && req.accessTypes.indexOf('full-access') === -1) {
-      queryFilter = {
-        isDeleted: false,
-        clientId: { $in: clientIds },
-      };
+      hasFullAccess = false;
     }
-
-    let aggregationQuery = [];
-    let sortingOptions = {};
-    if (req.query.clientId || overdueColumn.columns.includes('clientId')) {
-      aggregationQuery.push(
-        {
-          $lookup: {
-            from: 'clients',
-            localField: 'clientId',
-            foreignField: '_id',
-            as: 'clientId',
-          },
-        },
-        {
-          $unwind: {
-            path: '$clientId',
-          },
-        },
-      );
-    }
-    if (req.query.clientId) {
-      aggregationQuery.push({
-        $match: {
-          'clientId.name': req.query.clientId,
-        },
-      });
-    }
-    if (req.query.debtorId || overdueColumn.columns.includes('debtorId')) {
-      aggregationQuery.push(
-        {
-          $lookup: {
-            from: 'debtors',
-            localField: 'debtorId',
-            foreignField: '_id',
-            as: 'debtorId',
-          },
-        },
-        {
-          $unwind: {
-            path: '$debtorId',
-          },
-        },
-      );
-    }
-
-    if (req.query.debtorId) {
-      aggregationQuery.push({
-        $match: {
-          'debtorId.name': req.query.debtorId,
-        },
-      });
-    }
-
-    if (
-      req.query.clientDebtorId ||
-      overdueColumn.columns.includes('clientDebtorId')
-    ) {
-      aggregationQuery.push(
-        {
-          $lookup: {
-            from: 'client-debtors',
-            localField: 'clientDebtorId',
-            foreignField: '_id',
-            as: 'clientDebtorId',
-          },
-        },
-        {
-          $unwind: {
-            path: '$clientDebtorId',
-          },
-        },
-      );
-    }
-
-    if (req.query.clientDebtorId) {
-      aggregationQuery.push({
-        $match: {
-          'clientDebtorId.creditLimit': req.query.clientDebtorId,
-        },
-      });
-    }
-
-    const fields = overdueColumn.columns.map((i) => {
-      if (i === 'clientId') {
-        i = i + '.name';
-      }
-      if (i === 'debtorId') {
-        i = i + '.entityName';
-      }
-      if (i === 'clientDebtorId') {
-        i = i + '.creditLimit';
-      }
-      if (i === 'entityType') {
-        i = 'debtorId.' + i;
-      }
-      return [i, 1];
+    const { overdueList, headers, total } = await getOverdueList({
+      requestedQuery: req.query,
+      hasFullAccess: hasFullAccess,
+      isForRisk: true,
+      userId: req.user._id,
     });
-    aggregationQuery.push({
-      $project: fields.reduce((obj, [key, val]) => {
-        obj[key] = val;
-        return obj;
-      }, {}),
-    });
-    if (req.query.sortBy && req.query.sortOrder) {
-      if (req.query.sortBy === 'clientId') {
-        req.query.sortBy = req.query.sortBy + '.name';
-      }
-      if (req.query.sortBy === 'debtorId') {
-        req.query.sortBy = req.query.sortBy + '.entityName';
-      }
-      if (req.query.sortBy === 'clientDebtorId') {
-        req.query.sortBy = req.query.sortBy + '.creditLimit';
-      }
-      if (req.query.sortBy === 'entityType') {
-        req.query.sortBy = 'debtorId.' + req.query.sortBy;
-      }
-      sortingOptions[req.query.sortBy] =
-        req.query.sortOrder === 'desc' ? -1 : 1;
-      aggregationQuery.push({ $sort: sortingOptions });
-    }
-
-    aggregationQuery.push({
-      $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
-    });
-    aggregationQuery.push({ $limit: parseInt(req.query.limit) });
-
-    aggregationQuery.unshift({ $match: queryFilter });
-
-    console.log('aggregationQuery : ', aggregationQuery);
-
-    const [overdueList, total] = await Promise.all([
-      Overdue.aggregate(aggregationQuery).allowDiskUse(true),
-      Overdue.countDocuments(queryFilter).lean(),
-    ]);
-    const headers = [];
-    for (let i = 0; i < module.manageColumns.length; i++) {
-      if (overdueColumn.columns.includes(module.manageColumns[i].name)) {
-        headers.push(module.manageColumns[i]);
-      }
-    }
-    if (overdueList && overdueList.length !== 0) {
-      overdueList.forEach((application) => {
-        if (overdueColumn.columns.includes('clientId')) {
-          application.clientId = application.clientId.name;
-        }
-        if (overdueColumn.columns.includes('debtorId')) {
-          application.debtorId = application.debtorId.entityName;
-        }
-        if (overdueColumn.columns.includes('clientDebtorId')) {
-          application.clientDebtorId = application.clientDebtorId.creditLimit;
-        }
-      });
-    }
     res.status(200).send({
       status: 'SUCCESS',
       data: {
-        docs: overdueList,
+        docs: overdueList[0].paginatedResult,
         headers,
         total,
         page: parseInt(req.query.page),
@@ -292,13 +266,12 @@ router.get('/', async function (req, res) {
 });
 
 /**
- * Get Specific Entity's Overdue list
+ * Get overdue details
  */
-router.get('/:entityId', async function (req, res) {
+router.get('/:overdueId', async function (req, res) {
   if (
-    !req.params.entityId ||
-    !req.query.listFor ||
-    !mongoose.Types.ObjectId.isValid(req.params.entityId)
+    !req.params.overdueId ||
+    !mongoose.Types.ObjectId.isValid(req.params.overdueId)
   ) {
     return res.status(400).send({
       status: 'ERROR',
@@ -307,168 +280,47 @@ router.get('/:entityId', async function (req, res) {
     });
   }
   try {
-    let queryFilter = {
-      isDeleted: false,
-    };
-    switch (req.query.listFor) {
-      case 'client-overdue':
-        queryFilter.clientId = mongoose.Types.ObjectId(req.params.entityId);
-        break;
-      case 'debtor-overdue':
-        queryFilter.debtorId = mongoose.Types.ObjectId(req.params.entityId);
-        break;
-      default:
-        return res.status(400).send({
-          status: 'ERROR',
-          messageCode: 'BAD_REQUEST',
-          message: 'Please pass correct fields',
-        });
-    }
-    const module = StaticFile.modules.find((i) => i.name === req.query.listFor);
-    const overdueColumn = req.user.manageColumns.find(
-      (i) => i.moduleName === req.query.listFor,
-    );
-    let aggregationQuery = [];
-    let sortingOptions = {};
-    if (overdueColumn.columns.includes('clientId')) {
-      aggregationQuery.push(
-        {
-          $lookup: {
-            from: 'clients',
-            localField: 'clientId',
-            foreignField: '_id',
-            as: 'clientId',
-          },
-        },
-        {
-          $unwind: {
-            path: '$clientId',
-          },
-        },
-      );
-    }
-    if (overdueColumn.columns.includes('debtorId')) {
-      aggregationQuery.push(
-        {
-          $lookup: {
-            from: 'debtors',
-            localField: 'debtorId',
-            foreignField: '_id',
-            as: 'debtorId',
-          },
-        },
-        {
-          $unwind: {
-            path: '$debtorId',
-          },
-        },
-      );
-    }
-    if (overdueColumn.columns.includes('clientDebtorId')) {
-      aggregationQuery.push(
-        {
-          $lookup: {
-            from: 'client-debtors',
-            localField: 'clientDebtorId',
-            foreignField: '_id',
-            as: 'clientDebtorId',
-          },
-        },
-        {
-          $unwind: {
-            path: '$clientDebtorId',
-          },
-        },
-      );
-    }
-
-    const fields = overdueColumn.columns.map((i) => {
-      if (i === 'clientId') {
-        i = i + '.name';
+    const overdue = await Overdue.findOne({ _id: req.params.overdueId })
+      .populate({
+        path: 'debtorId insurerId clientId',
+        select: '_id name entityName',
+      })
+      .select({ isDeleted: 0, createdAt: 0, updatedAt: 0, __v: 0 })
+      .lean();
+    if (overdue) {
+      if (overdue.overdueType) {
+        overdue.overdueType = {
+          label: overdue.overdueType
+            .replace(/_/g, ' ')
+            .replace(/\w\S*/g, function (txt) {
+              return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+            }),
+          value: overdue.overdueType,
+        };
       }
-      if (i === 'debtorId') {
-        i = i + '.entityName';
+      if (overdue.debtorId) {
+        overdue.debtorId = {
+          label: overdue.debtorId.entityName,
+          value: overdue.debtorId._id,
+        };
       }
-      if (i === 'clientDebtorId') {
-        i = i + '.creditLimit';
+      if (overdue.insurerId) {
+        overdue.insurerId = {
+          label: overdue.insurerId.name,
+          value: overdue.insurerId._id,
+        };
       }
-      if (i === 'entityType') {
-        i = 'debtorId.' + i;
+      if (overdue.month && overdue.year) {
+        overdue.monthString = overdue.year + ',' + overdue.month;
       }
-      return [i, 1];
-    });
-    aggregationQuery.push({
-      $project: fields.reduce((obj, [key, val]) => {
-        obj[key] = val;
-        return obj;
-      }, {}),
-    });
-    if (req.query.sortBy && req.query.sortOrder) {
-      if (req.query.sortBy === 'clientId') {
-        req.query.sortBy = req.query.sortBy + '.name';
-      }
-      if (req.query.sortBy === 'debtorId') {
-        req.query.sortBy = req.query.sortBy + '.entityName';
-      }
-      if (req.query.sortBy === 'clientDebtorId') {
-        req.query.sortBy = req.query.sortBy + '.creditLimit';
-      }
-      if (req.query.sortBy === 'entityType') {
-        req.query.sortBy = 'debtorId.' + req.query.sortBy;
-      }
-      sortingOptions[req.query.sortBy] =
-        req.query.sortOrder === 'desc' ? -1 : 1;
-      aggregationQuery.push({ $sort: sortingOptions });
-    }
-
-    aggregationQuery.push({
-      $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
-    });
-    aggregationQuery.push({ $limit: parseInt(req.query.limit) });
-
-    aggregationQuery.unshift({ $match: queryFilter });
-
-    console.log('aggregationQuery : ', aggregationQuery);
-
-    const [overdueList, total] = await Promise.all([
-      Overdue.aggregate(aggregationQuery).allowDiskUse(true),
-      Overdue.countDocuments(queryFilter).lean(),
-    ]);
-
-    console.log('overdueList : ', overdueList);
-    const headers = [];
-    for (let i = 0; i < module.manageColumns.length; i++) {
-      if (overdueColumn.columns.includes(module.manageColumns[i].name)) {
-        headers.push(module.manageColumns[i]);
-      }
-    }
-    if (overdueList && overdueList.length !== 0) {
-      overdueList.forEach((application) => {
-        if (overdueColumn.columns.includes('clientId')) {
-          application.clientId = application.clientId.name;
-        }
-        if (overdueColumn.columns.includes('debtorId')) {
-          application.debtorId = application.debtorId.entityName;
-        }
-        if (overdueColumn.columns.includes('clientDebtorId')) {
-          application.clientDebtorId = application.clientDebtorId.creditLimit;
-        }
-      });
     }
     res.status(200).send({
       status: 'SUCCESS',
-      data: {
-        docs: overdueList,
-        headers,
-        total,
-        page: parseInt(req.query.page),
-        limit: parseInt(req.query.limit),
-        pages: Math.ceil(total / parseInt(req.query.limit)),
-      },
+      data: overdue,
     });
   } catch (e) {
     Logger.log.error(
-      'Error occurred while getting specific entity overdueList ',
+      'Error occurred while get specific overdue detail',
       e.message || e,
     );
     res.status(500).send({
@@ -479,52 +331,91 @@ router.get('/:entityId', async function (req, res) {
 });
 
 /**
- * Update Column Names
+ * Add overdue
  */
-router.put('/column-name', async function (req, res) {
+router.post('/', async function (req, res) {
   if (
-    !req.body.hasOwnProperty('isReset') ||
-    !req.body.columns ||
-    !req.body.columnFor
+    !req.body.clientId ||
+    !mongoose.Types.ObjectId.isValid(req.body.clientId) ||
+    !req.body.debtorId ||
+    !mongoose.Types.ObjectId.isValid(req.body.debtorId) ||
+    !req.body.acn ||
+    !req.body.dateOfInvoice ||
+    !req.body.overdueType ||
+    !req.body.insurerId ||
+    !req.body.month ||
+    !req.body.year ||
+    !req.body.hasOwnProperty('currentAmount') ||
+    !req.body.hasOwnProperty('thirtyDaysAmount') ||
+    !req.body.hasOwnProperty('sixtyDaysAmount') ||
+    !req.body.hasOwnProperty('ninetyDaysAmount') ||
+    !req.body.hasOwnProperty('ninetyPlusDaysAmount') ||
+    !req.body.hasOwnProperty('outstandingAmount')
   ) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Require fields are missing',
+      message: 'Require fields are missing.',
     });
   }
   try {
-    let updateColumns = [];
-    let module;
-    switch (req.body.columnFor) {
-      case 'overdue':
-      case 'client-overdue':
-      case 'debtor-overdue':
-        if (req.body.isReset) {
-          module = StaticFile.modules.find(
-            (i) => i.name === req.body.columnFor,
-          );
-          updateColumns = module.defaultColumns;
-        } else {
-          updateColumns = req.body.columns;
-        }
-        break;
-      default:
-        return res.status(400).send({
-          status: 'ERROR',
-          messageCode: 'BAD_REQUEST',
-          message: 'Please pass correct fields',
-        });
+    const overdueDetail = await Overdue.findOne({
+      clientId: req.body.clientId,
+      debtorId: req.body.debtorId,
+      month: req.body.month.toString().padStart(2, '0'),
+      year: req.body.year.toString(),
+    }).lean();
+    if (overdueDetail) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'OVERDUE_ALREADY_EXISTS',
+        message: 'Overdue already exists, please create with another debtor',
+      });
     }
-    await User.updateOne(
-      { _id: req.user._id, 'manageColumns.moduleName': req.body.columnFor },
-      { $set: { 'manageColumns.$.columns': updateColumns } },
-    );
-    res
-      .status(200)
-      .send({ status: 'SUCCESS', message: 'Columns updated successfully' });
+    let overdue = {
+      clientId: req.body.clientId,
+      debtorId: req.body.debtorId,
+      acn: req.body.acn,
+      dateOfInvoice: req.body.dateOfInvoice,
+      overdueType: req.body.overdueType,
+      insurerId: req.body.insurerId,
+      month: req.body.month.toString().padStart(2, '0'),
+      year: req.body.year,
+      currentAmount: req.body.currentAmount,
+      thirtyDaysAmount: req.body.thirtyDaysAmount,
+      sixtyDaysAmount: req.body.sixtyDaysAmount,
+      ninetyDaysAmount: req.body.ninetyDaysAmount,
+      ninetyPlusDaysAmount: req.body.ninetyPlusDaysAmount,
+      outstandingAmount: req.body.outstandingAmount,
+      clientComment: req.body.clientComment,
+      analystComment: req.body.analystComment,
+      status: 'SUBMITTED',
+    };
+    const overdueData = await Overdue.create(overdue);
+    overdue = await Overdue.findOne({ _id: overdueData._id })
+      .populate({
+        path: 'debtorId',
+        select: '_id entityName',
+      })
+      .select(
+        '_id debtorId overdueType overdueAction status month year outstandingAmount',
+      )
+      .lean();
+    if (overdue) {
+      overdue.isExistingData = true;
+      if (overdue.debtorId && overdue.debtorId.entityName) {
+        overdue.debtorId = overdue.debtorId.entityName;
+      }
+      overdue.overdueType = formatString(overdue.overdueType);
+      overdue.status = formatString(overdue.status);
+    }
+    res.status(200).send({
+      status: 'SUCCESS',
+      message: 'Overdue added successfully',
+      data: overdue,
+    });
   } catch (e) {
-    Logger.log.error('Error occurred in update column names', e.message || e);
+    Logger.log.error('Error occurred in add overdue', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -533,27 +424,270 @@ router.put('/column-name', async function (req, res) {
 });
 
 /**
- * Delete Overdue
+ * Save overdue list
  */
-router.delete('/:entityId', async function (req, res) {
+router.put('/list', async function (req, res) {
+  if (!req.body.list || req.body.list === 0) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const promises = [];
+    let update = {};
+    const overdueArr = req.body.list.map((i) => {
+      return (
+        i.clientId + i.debtorId + i.month.toString().padStart(2, '0') + i.year
+      );
+    });
+    console.log(overdueArr);
+    let isDuplicate = overdueArr.some((element, index) => {
+      return overdueArr.indexOf(element) !== index;
+    });
+    if (isDuplicate) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'INVALID_DATA',
+        message: 'Overdue list is invalid',
+      });
+    }
+    for (let i = 0; i < req.body.list.length; i++) {
+      if (
+        !req.body.clientId ||
+        !mongoose.Types.ObjectId.isValid(req.body.clientId) ||
+        !req.body.list[i].debtorId ||
+        !mongoose.Types.ObjectId.isValid(req.body.list[i].debtorId) ||
+        !req.body.list[i].month ||
+        !req.body.list[i].year ||
+        !req.body.list[i].acn ||
+        !req.body.list[i].dateOfInvoice ||
+        !req.body.list[i].overdueType ||
+        !req.body.list[i].insurerId ||
+        !req.body.list[i].hasOwnProperty('isExistingData') ||
+        (req.body.list[i].isExistingData && !req.body.list[i].overdueAction)
+      ) {
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'REQUIRE_FIELD_MISSING',
+          message: 'Require fields are missing.',
+        });
+      }
+      update = {};
+      if (req.body.list[i].clientId)
+        update.clientId = req.body.list[i].clientId;
+      if (req.body.list[i].debtorId)
+        update.debtorId = req.body.list[i].debtorId;
+      if (req.body.list[i].acn) update.acn = req.body.list[i].acn;
+      if (req.body.list[i].dateOfInvoice)
+        update.dateOfInvoice = req.body.list[i].dateOfInvoice;
+      if (req.body.list[i].overdueType)
+        update.overdueType = req.body.list[i].overdueType;
+      if (req.body.list[i].insurerId)
+        update.insurerId = req.body.list[i].insurerId;
+      if (req.body.list[i].month)
+        update.month = req.body.list[i].month.toString().padStart(2, '0');
+      if (req.body.list[i].year) update.year = req.body.list[i].year.toString();
+      if (req.body.list[i].currentAmount)
+        update.currentAmount = req.body.list[i].currentAmount;
+      if (req.body.list[i].thirtyDaysAmount)
+        update.thirtyDaysAmount = req.body.list[i].thirtyDaysAmount;
+      if (req.body.list[i].sixtyDaysAmount)
+        update.sixtyDaysAmount = req.body.list[i].sixtyDaysAmount;
+      if (req.body.list[i].ninetyDaysAmount)
+        update.ninetyDaysAmount = req.body.list[i].ninetyDaysAmount;
+      if (req.body.list[i].ninetyPlusDaysAmount)
+        update.ninetyPlusDaysAmount = req.body.list[i].ninetyPlusDaysAmount;
+      if (req.body.list[i].outstandingAmount)
+        update.outstandingAmount = req.body.list[i].outstandingAmount;
+      if (req.body.list[i].clientComment)
+        update.clientComment = req.body.list[i].clientComment;
+      update.overdueAction = req.body.list[i].overdueAction
+        ? req.body.list[i].overdueAction
+        : 'UNCHANGED';
+      update.status = req.body.list[i].status
+        ? req.body.list[i].status
+        : 'SUBMITTED';
+      if (!req.body.list[i]._id) {
+        promises.push(Overdue.create(update));
+      } else {
+        const overdue = await Overdue.findOne({
+          clientId: update.clientId,
+          debtorId: update.debtorId,
+          month: update.month,
+          year: update.year,
+        }).lean();
+        if (overdue && overdue._id.toString() !== req.body.list[i]._id) {
+          return res.status(400).send({
+            status: 'ERROR',
+            messageCode: 'OVERDUE_ALREADY_EXISTS',
+            message:
+              'Overdue already exists, please create with another debtor',
+          });
+        }
+        promises.push(
+          Overdue.updateOne({ _id: req.body.list[i]._id }, update, {
+            upsert: true,
+          }),
+        );
+      }
+    }
+    await Promise.all(promises);
+    res.status(200).send({
+      status: 'SUCCESS',
+      message: 'Overdue list updated successfully',
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in save overdue list', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Update overdue status
+ */
+router.put('/status/:overdueId', async function (req, res) {
   if (
-    !req.params.entityId ||
-    !mongoose.Types.ObjectId.isValid(req.params.entityId)
+    !req.params.overdueId ||
+    !mongoose.Types.ObjectId.isValid(req.params.overdueId) ||
+    !req.body.status
   ) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Require fields are missing',
+      message: 'Require fields are missing.',
     });
   }
   try {
-    await Overdue.updateOne({ _id: req.params.entityId }, { isDeleted: true });
+    const query = {
+      _id: req.params.overdueId,
+    };
+    if (req.body.status === 'PENDING') {
+      query.status = 'SUBMITTED';
+    }
+    await Overdue.updateOne(query, { status: req.body.status });
+    const overdue = await Overdue.findOne({ _id: req.params.overdueId })
+      .populate({
+        path: 'debtorId',
+        select: '_id entityName',
+      })
+      .select(
+        '_id debtorId overdueType overdueAction status month year outstandingAmount',
+      )
+      .lean();
+    if (overdue) {
+      overdue.isExistingData = true;
+      if (overdue.debtorId && overdue.debtorId.entityName) {
+        overdue.debtorId = overdue.debtorId.entityName;
+      }
+      overdue.overdueType = formatString(overdue.overdueType);
+      overdue.status = formatString(overdue.status);
+    }
     res.status(200).send({
       status: 'SUCCESS',
-      message: 'Overdue deleted successfully',
+      message: 'Overdue status updated successfully',
+      data: overdue,
     });
   } catch (e) {
-    Logger.log.error('Error occurred in delete overdue ', e.message || e);
+    Logger.log.error('Error occurred in update status', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Update overdue
+ */
+router.put('/:overdueId', async function (req, res) {
+  if (
+    !req.params.overdueId ||
+    !mongoose.Types.ObjectId.isValid(req.params.overdueId) ||
+    !req.body.clientId ||
+    !mongoose.Types.ObjectId.isValid(req.body.clientId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    if (req.body.debtorId || req.body.month || req.body.year) {
+      const query = {
+        clientId: req.body.clientId,
+      };
+      if (req.body.debtorId) {
+        query.debtorId = req.body.debtorId;
+      }
+      if (req.body.month && req.body.year) {
+        query.month = req.body.month.toString().padStart(2, '0');
+        query.year = req.body.year.toString();
+      }
+      const overdueDetail = await Overdue.findOne(query).lean();
+      if (
+        overdueDetail &&
+        overdueDetail._id.toString() !== req.params.overdueId.toString()
+      ) {
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'OVERDUE_ALREADY_EXISTS',
+          message: 'Overdue already exists, please create with another debtor',
+        });
+      }
+    }
+    const update = {};
+    if (req.body.debtorId) update.debtorId = req.body.debtorId;
+    if (req.body.acn) update.acn = req.body.acn;
+    if (req.body.dateOfInvoice) update.dateOfInvoice = req.body.dateOfInvoice;
+    if (req.body.overdueType) update.overdueType = req.body.overdueType;
+    if (req.body.insurerId) update.insurerId = req.body.insurerId;
+    if (req.body.month)
+      update.month = req.body.month.toString().padStart(2, '0');
+    if (req.body.currentAmount) update.currentAmount = req.body.currentAmount;
+    if (req.body.thirtyDaysAmount)
+      update.thirtyDaysAmount = req.body.thirtyDaysAmount;
+    if (req.body.sixtyDaysAmount)
+      update.sixtyDaysAmount = req.body.sixtyDaysAmount;
+    if (req.body.ninetyDaysAmount)
+      update.ninetyDaysAmount = req.body.ninetyDaysAmount;
+    if (req.body.ninetyPlusDaysAmount)
+      update.ninetyPlusDaysAmount = req.body.ninetyPlusDaysAmount;
+    if (req.body.outstandingAmount)
+      update.outstandingAmount = req.body.outstandingAmount;
+    if (req.body.clientComment) update.clientComment = req.body.clientComment;
+    if (req.body.analystComment)
+      update.analystComment = req.body.analystComment;
+    await Overdue.updateOne({ _id: req.params.overdueId }, update);
+    const overdue = await Overdue.findOne({ _id: req.params.overdueId })
+      .populate({
+        path: 'debtorId',
+        select: '_id entityName',
+      })
+      .select(
+        '_id debtorId overdueType overdueAction status month year outstandingAmount',
+      )
+      .lean();
+    if (overdue) {
+      overdue.isExistingData = true;
+      if (overdue.debtorId && overdue.debtorId.entityName) {
+        overdue.debtorId = overdue.debtorId.entityName;
+      }
+      overdue.overdueType = formatString(overdue.overdueType);
+      overdue.status = formatString(overdue.status);
+    }
+    res.status(200).send({
+      status: 'SUCCESS',
+      message: 'Overdue status updated successfully',
+      data: overdue,
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in update overdue', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

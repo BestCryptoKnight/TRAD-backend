@@ -800,7 +800,7 @@ const checkGuidelines = async ({
         response.isBlocker = true;
       }
       if (response.isBlocker) {
-        blockers.push(guidelines.isEntityRegistered.conditionString);
+        blockers.push('Legal entity is incorrect or company is not registered');
       }
     }
     if (guidelines.noNilCreditLimitIssued) {
@@ -808,7 +808,7 @@ const checkGuidelines = async ({
         debtorId: application.debtorId._id,
       });
       if (response.isBlocker) {
-        blockers.push(guidelines.noNilCreditLimitIssued.conditionString);
+        blockers.push('Other insurers have issued a NIL credit limit');
       }
     }
     if (guidelines.checkForGSTRegistration) {
@@ -820,7 +820,7 @@ const checkGuidelines = async ({
         response.isBlocker = true;
       }
       if (response.isBlocker) {
-        blockers.push(guidelines.checkForGSTRegistration.conditionString);
+        blockers.push('Entity is not registered for GST');
       }
     }
     if (guidelines.entityIncorporated) {
@@ -833,7 +833,7 @@ const checkGuidelines = async ({
         response.isBlocker = true;
       }
       if (response.isBlocker) {
-        blockers.push(guidelines.entityIncorporated.conditionString);
+        blockers.push('Company is incorporated in last 12 months');
       }
     }
     if (guidelines.courtCharges) {
@@ -845,7 +845,35 @@ const checkGuidelines = async ({
         response.isBlocker = true;
       }
       if (response.isBlocker) {
-        blockers.push(guidelines.courtCharges.conditionString);
+        blockers.push('Court actions or legal or collection activity present');
+      }
+    }
+    if (guidelines.courtChargesWithMinMaxAmount) {
+      if (reportData && reportData.SummaryInformation) {
+        response = await checkForCourtAction({
+          summaryInformation: reportData.SummaryInformation,
+        });
+      } else {
+        response.isBlocker = true;
+      }
+      if (response.isBlocker) {
+        blockers.push(
+          'Court actions or legal or collection activity present above a maximum of $5,000 on a Limit up to $50,000',
+        );
+      }
+    }
+    if (guidelines.courtChargesWithAmount) {
+      if (reportData && reportData.SummaryInformation) {
+        response = await checkForCourtAction({
+          summaryInformation: reportData.SummaryInformation,
+        });
+      } else {
+        response.isBlocker = true;
+      }
+      if (response.isBlocker) {
+        blockers.push(
+          'Court actions or legal or collection activity present above a maximum of $5,000',
+        );
       }
     }
     if (guidelines.noAdverse) {
@@ -857,7 +885,7 @@ const checkGuidelines = async ({
         response.isBlocker = true;
       }
       if (response.isBlocker) {
-        blockers.push(guidelines.noAdverse.conditionString);
+        blockers.push('Adverse against director/s, owner/s or Shareholders');
       }
     }
     if (guidelines.noRegisteredCharges) {
@@ -869,7 +897,7 @@ const checkGuidelines = async ({
         response.isBlocker = true;
       }
       if (response.isBlocker) {
-        blockers.push(guidelines.noRegisteredCharges.conditionString);
+        blockers.push('Related party registered charges');
       }
     }
     if (
@@ -884,7 +912,7 @@ const checkGuidelines = async ({
         response.isBlocker = true;
       }
       if (response.isBlocker || !reportData) {
-        blockers.push(guidelines.soleTraderRegisteredForGST.conditionString);
+        blockers.push('Sole Trader is not registered for GST');
       }
     }
     if (
@@ -918,7 +946,9 @@ const checkPriceRangeGuidelines = async ({
         response.isBlocker = true;
       }
       if (response.isBlocker) {
-        blockers.push(guidelines.paymentRiskLevel.conditionString);
+        blockers.push(
+          'The Late Payment Risk Level indicated by D&B is “High” / “Very High” / “Severe”',
+        );
       }
     }
     if (guidelines.delinquencyScore) {
@@ -931,13 +961,15 @@ const checkPriceRangeGuidelines = async ({
         response.isBlocker = true;
       }
       if (response.isBlocker) {
-        blockers.push(guidelines.delinquencyScore.conditionString);
+        blockers.push('The D&B Dynamic Delinquency Score is lower than 386');
       }
     }
     if (guidelines.tradePaymentInfo) {
-      blockers.push(guidelines.tradePaymentInfo.conditionString);
+      blockers.push(
+        'Trade payment info is not included in the mercantile report',
+      );
     }
-    if (guidelines.enquireUnderwriter) {
+    /*if (guidelines.enquireUnderwriter) {
       blockers.push(guidelines.enquireUnderwriter.conditionString);
     }
     if (guidelines.noRecommendation) {
@@ -948,7 +980,7 @@ const checkPriceRangeGuidelines = async ({
     }
     if (guidelines.approvedOrDeclines) {
       blockers.push(guidelines.approvedOrDeclines.conditionString);
-    }
+    }*/
     return blockers;
   } catch (e) {
     Logger.log.error('Error occurred in check price range guidelines ', e);

@@ -6,6 +6,7 @@ const router = express.Router();
 let mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const ClientUser = mongoose.model('client-user');
+const Client = mongoose.model('client');
 
 /*
  * Local Imports
@@ -149,7 +150,6 @@ router.put('/change-password', authenticate, async (req, res) => {
  * Forget Password
  */
 router.post('/forget-password', async (req, res) => {
-  Logger.log.info('In forget password function call');
   if (!req.body.email) {
     res.status(400).send({
       status: 'ERROR',
@@ -160,7 +160,9 @@ router.post('/forget-password', async (req, res) => {
   }
   try {
     let user = await ClientUser.findOne({
-      email: req.body.email,
+      email: {
+        $regex: new RegExp('^' + req.body.email.toLowerCase() + '$', 'i'),
+      },
       isDeleted: false,
     });
     if (!user) {
@@ -174,6 +176,14 @@ router.post('/forget-password', async (req, res) => {
         message: 'User not found',
       });
     } else {
+      const client = await Client.findOne({
+        _id: user.clientId,
+      })
+        .populate({
+          path: 'riskAnalystId serviceManagerId',
+          select: 'name email contactNumber',
+        })
+        .lean();
       let data = await ClientUser.generateOtp(user);
       let mailObj = {
         toAddress: [req.body.email],
@@ -181,9 +191,35 @@ router.post('/forget-password', async (req, res) => {
         text: {
           name: user.name ? user.name : '',
           otp: data.verificationOtp,
+          expireTime: 5,
+          riskAnalystName:
+            client.riskAnalystId && client.riskAnalystId.name
+              ? client.riskAnalystId.name
+              : null,
+          serviceManagerName:
+            client.serviceManagerId && client.serviceManagerId.name
+              ? client.serviceManagerId.name
+              : null,
+          riskAnalystNumber:
+            client.riskAnalystId && client.riskAnalystId.contactNumber
+              ? client.riskAnalystId.contactNumber
+              : null,
+          serviceManagerNumber:
+            client.serviceManagerId && client.serviceManagerId.contactNumber
+              ? client.serviceManagerId.contactNumber
+              : null,
+          riskAnalystEmail:
+            client.riskAnalystId && client.riskAnalystId.email
+              ? client.riskAnalystId.email
+              : null,
+          serviceManagerEmail:
+            client.serviceManagerId && client.serviceManagerId.email
+              ? client.serviceManagerId.email
+              : null,
         },
-        mailFor: 'forgotPassword',
+        mailFor: 'clientForgotPassword',
       };
+      console.log(mailObj);
       await MailHelper.sendMail(mailObj);
       res.status(200).send({
         status: 'SUCCESS',
@@ -203,7 +239,6 @@ router.post('/forget-password', async (req, res) => {
  * Resent OTP
  */
 router.post('/resend-otp', async (req, res) => {
-  Logger.log.info('In resend otp function call');
   if (!req.body.email) {
     res.status(400).send({
       status: 'ERROR',
@@ -214,7 +249,9 @@ router.post('/resend-otp', async (req, res) => {
   }
   try {
     let user = await ClientUser.findOne({
-      email: req.body.email,
+      email: {
+        $regex: new RegExp('^' + req.body.email.toLowerCase() + '$', 'i'),
+      },
       isDeleted: false,
     });
     if (!user) {
@@ -265,7 +302,11 @@ router.post('/verify-otp', async (req, res) => {
     });
   }
   try {
-    let clientUser = await ClientUser.findOne({ email: req.body.email });
+    let clientUser = await ClientUser.findOne({
+      email: {
+        $regex: new RegExp('^' + req.body.email.toLowerCase() + '$', 'i'),
+      },
+    });
     if (!clientUser) {
       return res.status(400).send({
         status: 'ERROR',

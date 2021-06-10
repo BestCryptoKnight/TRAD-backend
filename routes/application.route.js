@@ -4,7 +4,6 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
-const Client = mongoose.model('client');
 const ClientUser = mongoose.model('client-user');
 const Application = mongoose.model('application');
 const DebtorDirector = mongoose.model('debtor-director');
@@ -30,7 +29,12 @@ const {
   getEntityListByName,
   resolveEntityType,
 } = require('./../helper/abr.helper');
-const { getDebtorList } = require('./../helper/debtor.helper');
+const {
+  getDebtorList,
+  getDebtorFullAddress,
+  getStateName,
+  getStreetTypeName,
+} = require('./../helper/debtor.helper');
 const StaticData = require('./../static-files/staticData.json');
 const { getClientDebtorDetails } = require('./../helper/client-debtor.helper');
 const {
@@ -365,16 +369,10 @@ router.get('/details/:applicationId', async function (req, res) {
           response.company[key] = response.company.address[key];
         }
         if (response.company.state) {
-          const state =
-            response.company.country.code === 'AUS'
-              ? StaticData.australianStates.find((i) => {
-                  if (i._id === response.company.state) return i;
-                })
-              : response.company.country.code === 'NZL'
-              ? StaticData.newZealandStates.find((i) => {
-                  if (i._id === response.company.state) return i;
-                })
-              : { name: response.company.state };
+          const state = await getStateName(
+            response.company.state,
+            response.company.country.code,
+          );
           if (state && state.name && state._id) {
             response.company.state = {
               value: response.company.state,
@@ -389,16 +387,9 @@ router.get('/details/:applicationId', async function (req, res) {
           };
         }
         if (response.company.streetType) {
-          const streetType = StaticData.streetType.find((i) => {
-            if (i._id === response.company.streetType) return i;
-          });
-          response.company.streetType = {
-            value: response.company.streetType,
-            label:
-              streetType && streetType.name
-                ? streetType.name
-                : response.company.streetType,
-          };
+          response.company.streetType = await getStreetTypeName(
+            response.company.streetType,
+          );
         }
         delete response.company.address;
       }
@@ -410,6 +401,8 @@ router.get('/details/:applicationId', async function (req, res) {
           isPassedOverdueAmount: application.isPassedOverdueAmount,
           passedOverdueDetails: application.passedOverdueDetails,
           note: application.note,
+          outstandingAmount: application.outstandingAmount,
+          orderOnHand: application.orderOnHand,
         };
       }
       if (directors && directors.length !== 0) {
@@ -427,32 +420,17 @@ router.get('/details/:applicationId', async function (req, res) {
               partner[key] = partner.residentialAddress[key];
             }
             if (partner.state) {
-              const state =
-                partner.country.code === 'AUS'
-                  ? StaticData.australianStates.find((i) => {
-                      if (i._id === partner.state) return i;
-                    })
-                  : partner.country.code === 'NZL'
-                  ? StaticData.newZealandStates.find((i) => {
-                      if (i._id === partner.state) return i;
-                    })
-                  : { name: partner.state };
-              partner.state = {
-                value: partner.state,
-                label: state && state.name ? state.name : partner.state,
-              };
+              const state = getStateName(partner.state, partner.country.code);
+              if (state && state.name && state._id) {
+                response.company.state = {
+                  value: response.company.state,
+                  label:
+                    state && state.name ? state.name : response.company.state,
+                };
+              }
             }
             if (partner.streetType) {
-              const streetType = StaticData.streetType.find((i) => {
-                if (i._id === partner.streetType) return i;
-              });
-              partner.streetType = {
-                value: partner.streetType,
-                label:
-                  streetType && streetType.name
-                    ? streetType.name
-                    : partner.streetType,
-              };
+              partner.streetType = getStreetTypeName(partner.streetType);
             }
             if (partner.country) {
               partner.country = {
@@ -503,32 +481,9 @@ router.get('/details/:applicationId', async function (req, res) {
         ];
         for (let key in application.debtorId) {
           if (key === 'address') {
-            const state =
-              application.debtorId.address.country.code === 'AUS'
-                ? StaticData.australianStates.find((i) => {
-                    if (i._id === application.debtorId.address.state) return i;
-                  })
-                : application.debtorId.address.country.code === 'NZL'
-                ? StaticData.newZealandStates.find((i) => {
-                    if (i._id === application.debtorId.address.state) return i;
-                  })
-                : { name: application.debtorId.address.state };
-            application.debtorId.address.state =
-              state && state.name
-                ? state.name
-                : application.debtorId.address.state;
-            application.debtorId.address.country =
-              application.debtorId.address.country.name;
-            const streetType = StaticData.streetType.find((i) => {
-              if (i._id === application.debtorId.address.streetType) return i;
+            response[key] = getDebtorFullAddress({
+              address: application.debtorId[key],
             });
-            application.debtorId.address.streetType =
-              streetType && streetType.name
-                ? streetType.name
-                : application.debtorId.address.streetType;
-            response[key] = Object.values(application.debtorId[key])
-              .toString()
-              .replace(/,,/g, ',');
           } else {
             response[key] = application.debtorId[key];
           }
@@ -551,6 +506,8 @@ router.get('/details/:applicationId', async function (req, res) {
         application.extendedPaymentTermsDetails;
       response.isPassedOverdueAmount = application.isPassedOverdueAmount;
       response.passedOverdueDetails = application.passedOverdueDetails;
+      response.orderOnHand = application.orderOnHand;
+      response.outstandingAmount = application.outstandingAmount;
       // response.note = application.note;
       const status = ['DRAFT', 'APPROVED', 'DECLINED'];
       response.applicationStatus = StaticData.applicationStatus.filter(
@@ -989,7 +946,6 @@ router.put('/', async function (req, res) {
   if (
     req.body.stepper === 'company' &&
     (!req.body.address ||
-      !req.body.address.streetNumber ||
       !req.body.address.state ||
       !req.body.address.country ||
       !req.body.address.postCode ||
