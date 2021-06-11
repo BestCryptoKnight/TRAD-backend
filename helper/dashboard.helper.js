@@ -73,12 +73,12 @@ const getRESChecks = async ({
       },
     };
     if (startDate && endDate) {
-      query.updatedAt = {
+      query.createdAt = {
         $gte: new Date(startDate),
         $lte: new Date(endDate),
       };
     }
-    const data = await ClientDebtor.aggregate([
+    const data = await Application.aggregate([
       {
         $match: query,
       },
