@@ -518,8 +518,12 @@ let fetchInsurerDetails = async ({
   auditLog = {},
 }) => {
   try {
+    const words = underwriterName.split(' ');
+    const regex = words.map(function (e) {
+      return new RegExp(e, 'i');
+    });
     let insurer = await Insurer.findOne({
-      name: { $regex: underwriterName, $options: 'i' },
+      name: { $in: regex },
     });
     if (insurer) {
       //TODO sync insurer + client policies

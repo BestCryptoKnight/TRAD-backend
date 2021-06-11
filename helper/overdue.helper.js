@@ -25,7 +25,13 @@ const getLastOverdueList = async ({ date, query, counter = 0 }) => {
         path: 'debtorId insurerId clientId',
         select: '_id name entityName',
       })
-      .select({ isDeleted: 0, createdAt: 0, updatedAt: 0, __v: 0 })
+      .select({
+        isDeleted: 0,
+        createdAt: 0,
+        updatedAt: 0,
+        __v: 0,
+        overdueAction: 0,
+      })
       .lean();
     if (overdue && overdue.length !== 0) {
       return { overdue, lastMonth: query.month, lastYear: query.year };
