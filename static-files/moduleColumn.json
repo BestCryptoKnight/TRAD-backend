@@ -221,7 +221,7 @@
         { "name": "entityType", "label": "Entity Type", "type": "string" },
         { "name": "creditLimit", "label": "Credit Limit", "type": "amount" },
         {
-          "name": "clientDebtorId",
+          "name": "outstandingAmount",
           "label": "Outstanding Amount",
           "type": "amount"
         },
@@ -483,7 +483,7 @@
         { "name": "entityType", "label": "Entity Type", "type": "string" },
         { "name": "creditLimit", "label": "Credit Limit", "type": "amount" },
         {
-          "name": "clientDebtorId",
+          "name": "outstandingAmount",
           "label": "Outstanding Amount",
           "type": "amount"
         },
