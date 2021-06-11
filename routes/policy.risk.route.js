@@ -429,41 +429,17 @@ router.put('/client/sync-from-crm/:clientId', async function (req, res) {
     });
   }
   try {
-    const policies = await Policy.aggregate([
-      { $match: { clientId: mongoose.Types.ObjectId(req.params.clientId) } },
-      {
-        $lookup: {
-          from: 'clients',
-          localField: 'clientId',
-          foreignField: '_id',
-          as: 'client',
-        },
-      },
-      {
-        $group: {
-          _id: '$clientId',
-          clientName: { $first: '$client.name' },
-          crmClientId: { $first: '$client.crmClientId' },
-          insurerId: { $first: '$client.insurerId' },
-        },
-      },
-    ]).allowDiskUse(true);
-    if (!policies || policies.length === 0) {
-      return res.status(400).send({
-        status: 'ERROR',
-        messageCode: 'POLICY_NOT_FOUND',
-        message: 'Policies not found.',
-      });
-    }
-    console.log('Total Policies : ', policies.length);
-    let policiesFromCrm;
+    const client = await Client.findOne({ _id: req.params.clientId })
+      .select('_id name crmClientId insurerId')
+      .lean();
+    console.log('Total Policies : ', client);
     let promiseArr = [];
     let newPolicies = [];
-    for (let i = 0; i < policies.length; i++) {
-      policiesFromCrm = await getClientPolicies({
-        clientId: policies[i]._id,
-        crmClientId: policies[i].crmClientId[0],
-        insurerId: policies[i].insurerId[0],
+    if (client && client._id && client.insurerId) {
+      const policiesFromCrm = await getClientPolicies({
+        clientId: client._id,
+        crmClientId: client.crmClientId,
+        insurerId: client.insurerId,
         limit: 50,
         page: 1,
       });
@@ -487,15 +463,15 @@ router.put('/client/sync-from-crm/:clientId', async function (req, res) {
               userType: 'user',
               userRefId: req.user._id,
               actionType: 'sync',
-              logDescription: `Insurer ${policies[i].clientName[0]} policy ${policiesFromCrm[j].product} synced successfully`,
+              logDescription: `Client ${client.name} policy ${policiesFromCrm[j].product} synced successfully`,
             }),
           );
         } else {
           newPolicies.push(policiesFromCrm[j].crmPolicyId);
         }
       }
+      await Promise.all(promiseArr);
     }
-    await Promise.all(promiseArr);
     let promises = [];
     if (newPolicies.length !== 0) {
       const policyData = await Policy.find({
@@ -509,7 +485,7 @@ router.put('/client/sync-from-crm/:clientId', async function (req, res) {
             userType: 'user',
             userRefId: req.user._id,
             actionType: 'sync',
-            logDescription: `Insurer ${policies[0].clientName[0]} policy ${policyData[i].product} synced successfully`,
+            logDescription: `Client ${client.name} policy ${policyData[i].product} synced successfully`,
           }),
         );
       }

@@ -1166,6 +1166,13 @@ router.put('/sync-from-crm/:clientId', async function (req, res) {
     const clientDataFromCrm = await RssHelper.getClientById({
       clientId: client.crmClientId,
     });
+    const insurer = await RssHelper.fetchInsurerDetails({
+      underwriterName: clientDataFromCrm.underWriter,
+      crmClientId: clientDataFromCrm.crmClientId,
+      clientId: client._id,
+      auditLog: { userType: 'user', userRefId: req.user._id },
+    });
+    clientDataFromCrm.insurerId = insurer && insurer._id ? insurer._id : null;
     await Client.updateOne({ _id: req.params.clientId }, clientDataFromCrm);
     await addAuditLog({
       entityType: 'client',

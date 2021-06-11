@@ -205,7 +205,7 @@ let getClientById = async ({ clientId }) => {
       acn: data.record['acn'],
       sector: data.record['sector'],
       salesPerson: data.record['salesperson'],
-      underWriter: data.record['underwriter'],
+      underWriter: data.record['insurer'],
       referredBy: data.record['referredby'],
       inceptionDate: data.record['inceptiondate'],
       expiryDate: data.record['expirydate'],
