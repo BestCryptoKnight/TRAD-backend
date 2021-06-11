@@ -254,6 +254,7 @@ const getOverdueList = async ({
       {
         $sort: {
           submitted: -1,
+          '_id.month': -1,
           pending: -1,
           notReportable: -1,
         },
@@ -407,21 +408,23 @@ const getDebtorList = async ({
       query.clientId = { $in: clientIds };
     }
     const debtors = await ClientDebtor.find(query)
-      .populate({ path: 'debtorId', select: 'entityName' })
+      .populate({ path: 'debtorId', select: 'entityName acn' })
       .select('_id')
       .lean();
     const debtorIds = [];
     const response = [];
+    const acnResponse = {};
     debtors.forEach((i) => {
       if (i.debtorId && !debtorIds.includes(i.debtorId)) {
         response.push({
           _id: i.debtorId._id,
           name: i.debtorId.entityName,
         });
+        acnResponse[i.debtorId._id] = i.debtorId.acn;
         debtorIds.push(i.debtorId);
       }
     });
-    return response;
+    return { response, acnResponse };
   } catch (e) {
     Logger.log.error('Error occurred in get debtor list ', e);
   }

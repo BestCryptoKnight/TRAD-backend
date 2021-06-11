@@ -35,7 +35,7 @@ router.get('/entity-list', async function (req, res) {
       hasFullAccess,
       userId: req.user._id,
     });
-    const debtors = await getDebtorList({
+    const { response, acnResponse } = await getDebtorList({
       userId: req.user._id,
       hasFullAccess,
       isForRisk: true,
@@ -55,9 +55,10 @@ router.get('/entity-list', async function (req, res) {
       status: 'SUCCESS',
       data: {
         clientId: clients,
-        debtorId: debtors,
+        debtorId: response,
         overdueType: overdueTypes,
         insurerId: insurer,
+        acnResponse: acnResponse,
       },
     });
   } catch (e) {
@@ -510,6 +511,20 @@ router.put('/list', async function (req, res) {
         ? req.body.list[i].status
         : 'SUBMITTED';
       if (!req.body.list[i]._id) {
+        const overdue = await Overdue.findOne({
+          clientId: update.clientId,
+          debtorId: update.debtorId,
+          month: update.month,
+          year: update.year,
+        }).lean();
+        if (overdue) {
+          return res.status(400).send({
+            status: 'ERROR',
+            messageCode: 'OVERDUE_ALREADY_EXISTS',
+            message:
+              'Overdue already exists, please create with another debtor',
+          });
+        }
         promises.push(Overdue.create(update));
       } else {
         const overdue = await Overdue.findOne({
