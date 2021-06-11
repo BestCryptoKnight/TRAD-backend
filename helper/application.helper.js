@@ -28,6 +28,7 @@ const {
 } = require('./automation.helper');
 const { getEntityDetailsByABN } = require('./abr.helper');
 const { addAuditLog } = require('./audit-log.helper');
+const { storeStakeholderDetails } = require('./stakeholder.helper');
 
 //TODO add filter for expiry-date + credit-limit
 const getApplicationList = async ({
@@ -534,12 +535,6 @@ const storePartnerDetails = async ({ requestBody }) => {
     }
     const promises = [];
     for (let i = 0; i < requestBody.partners.length; i++) {
-      const update = {
-        isDeleted: false,
-      };
-      let query = {};
-      update.type = requestBody.partners[i].type.toLowerCase();
-      update.debtorId = applicationData.debtorId;
       if (requestBody.partners[i].type.toLowerCase() === 'individual') {
         if (
           !requestBody.partners[i].title ||
@@ -557,64 +552,17 @@ const storePartnerDetails = async ({ requestBody }) => {
             message: 'Require fields are missing',
           };
         }
-        query = {
-          $or: [
-            {
-              driverLicenceNumber: requestBody.partners[i].driverLicenceNumber,
-            },
-            { dateOfBirth: requestBody.partners[i].dateOfBirth },
-          ],
-        };
-        if (
-          requestBody.partners[i].address &&
-          Object.keys(requestBody.partners[i].address).length !== 0
-        ) {
-          update.residentialAddress = {
-            property: requestBody.partners[i].address.property
-              ? requestBody.partners[i].address.property
-              : undefined,
-            unitNumber: requestBody.partners[i].address.unitNumber
-              ? requestBody.partners[i].address.unitNumber
-              : undefined,
-            streetNumber: requestBody.partners[i].address.streetNumber,
-            streetName: requestBody.partners[i].address.streetName
-              ? requestBody.partners[i].address.streetName
-              : undefined,
-            streetType: requestBody.partners[i].address.streetType
-              ? requestBody.partners[i].address.streetType
-              : undefined,
-            suburb: requestBody.partners[i].address.suburb
-              ? requestBody.partners[i].address.suburb
-              : undefined,
-            state: requestBody.partners[i].address.state,
-            postCode: requestBody.partners[i].address.postCode,
-            country: requestBody.partners[i].address.country,
-          };
-        }
-        update.title = requestBody.partners[i].title
-          ? requestBody.partners[i].title
-          : undefined;
-        if (requestBody.partners[i].firstName)
-          update.firstName = requestBody.partners[i].firstName;
-        update.middleName = requestBody.partners[i].middleName
-          ? requestBody.partners[i].middleName
-          : undefined;
-        if (requestBody.partners[i].lastName)
-          update.lastName = requestBody.partners[i].lastName;
-        if (requestBody.partners[i].dateOfBirth)
-          update.dateOfBirth = requestBody.partners[i].dateOfBirth;
-        if (requestBody.partners[i].driverLicenceNumber)
-          update.driverLicenceNumber =
-            requestBody.partners[i].driverLicenceNumber;
-        if (requestBody.partners[i].phoneNumber)
-          update.phoneNumber = requestBody.partners[i].phoneNumber;
-        if (requestBody.partners[i].mobileNumber)
-          update.mobileNumber = requestBody.partners[i].mobileNumber;
-        if (requestBody.partners[i].email)
-          update.email = requestBody.partners[i].email;
-        if (requestBody.partners[i].hasOwnProperty('allowToCheckCreditHistory'))
-          update.allowToCheckCreditHistory =
-            requestBody.partners[i].allowToCheckCreditHistory;
+        const { query, update, unsetFields } = await storeStakeholderDetails({
+          debtorId: applicationData.debtorId,
+          stakeholder: requestBody.partners[i],
+        });
+        promises.push(
+          DebtorDirector.updateOne(
+            query,
+            { $set: update, $unset: unsetFields },
+            { upsert: true },
+          ),
+        );
       } else {
         if (
           !requestBody.partners[i].entityName ||
@@ -627,24 +575,18 @@ const storePartnerDetails = async ({ requestBody }) => {
             message: 'Require fields are missing',
           };
         }
-        if (requestBody.partners[i].abn)
-          update.abn = requestBody.partners[i].abn;
-        if (requestBody.partners[i].acn)
-          update.acn = requestBody.partners[i].acn;
-        if (requestBody.partners[i].entityType)
-          update.entityType = requestBody.partners[i].entityType;
-        if (requestBody.partners[i].entityName)
-          update.entityName = requestBody.partners[i].entityName;
-        if (requestBody.partners[i].tradingName)
-          update.tradingName = requestBody.partners[i].tradingName;
-        query = {
-          $or: [
-            { abn: requestBody.partners[i].abn },
-            { acn: requestBody.partners[i].acn },
-          ],
-        };
+        const { query, update, unsetFields } = await storeStakeholderDetails({
+          debtorId: applicationData.debtorId,
+          stakeholder: requestBody.partners[i],
+        });
+        promises.push(
+          DebtorDirector.updateOne(
+            query,
+            { $set: update, $unset: unsetFields },
+            { upsert: true },
+          ),
+        );
       }
-      promises.push(DebtorDirector.updateOne(query, update, { upsert: true }));
     }
     promises.push(
       Application.updateOne(

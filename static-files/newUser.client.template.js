@@ -19,19 +19,19 @@ module.exports = ({
     <style>
         @font-face {
             font-family: "GoogleSans-Medium";
-            src: local("GoogleSans-Medium"), url('https://client.trad.dev.gradlesol.com/app/fonts/GoogleSans-Medium.ttf') format("truetype");
+            src: local("GoogleSans-Medium"), url('${config.server.backendServerUrl}fonts/GoogleSans-Medium.ttf') format("truetype");
             font-weight: normal;
         }
 
         @font-face {
             font-family: "GoogleSans-Regular";
-            src: local("GoogleSans-Regular"), url('https://client.trad.dev.gradlesol.com/app/fonts/GoogleSans-Regular.ttf') format("truetype");
+            src: local("GoogleSans-Regular"), url('${config.server.backendServerUrl}fonts/GoogleSans-Regular.ttf') format("truetype");
             font-weight: normal;
         }
 
         @font-face {
             font-family: "GoogleSans-Bold";
-            src: local("GoogleSans-Bold"), url('https://client.trad.dev.gradlesol.com/app/fonts/GoogleSans-Bold.ttf') format("truetype");
+            src: local("GoogleSans-Bold"), url('${config.server.backendServerUrl}fonts/GoogleSans-Bold.ttf') format("truetype");
             font-weight: normal;
         }
 
@@ -59,7 +59,7 @@ module.exports = ({
                             <tr>
                                 <td align="center" valign="center" height="85" style="background-color: #F4F6F8;">
                                     <img height="40"
-                                        src="https://client.trad.dev.gradlesol.com/app/mail-images/tcr-logo.png" />
+                                        src="${config.server.backendServerUrl}mail-images/tcr-logo.png" />
                                 </td>
                             </tr>
 
@@ -251,7 +251,7 @@ module.exports = ({
                                                     <tr>
                                                         <td align="center">
                                                             <img height="30"
-                                                                src="https://client.trad.dev.gradlesol.com/app/mail-images/call.png" />
+                                                                src="${config.server.backendServerUrl}mail-images/call.png" />
                                                         </td>
                                                     </tr>
                                                     <tr style="font-size: 13px; color: #003A78">
@@ -270,7 +270,7 @@ module.exports = ({
                                                     <tr>
                                                         <td align="center">
                                                             <img height="30"
-                                                                src="https://client.trad.dev.gradlesol.com/app/mail-images/mail.png" />
+                                                                src="${config.server.backendServerUrl}mail-images/mail.png" />
                                                         </td>
                                                     </tr>
                                                     <tr style="font-size: 13px; color: #003A78">
@@ -289,7 +289,7 @@ module.exports = ({
                                                     <tr>
                                                         <td align="center">
                                                             <img height="30"
-                                                                src="https://client.trad.dev.gradlesol.com/app/mail-images/location.png" />
+                                                                src="${config.server.backendServerUrl}mail-images/location.png" />
                                                         </td>
                                                     </tr>
                                                     <tr style="font-size: 13px; color: #003A78">
@@ -307,7 +307,7 @@ module.exports = ({
                             <tr>
                                 <td align="center" style="padding: 30px 0 5px 0">
                                     <img height="40"
-                                        src="https://client.trad.dev.gradlesol.com/app/mail-images/trad-icon.png" />
+                                        src="${config.server.backendServerUrl}mail-images/trad-icon.png" />
                                 </td>
                             </tr>
 
@@ -325,19 +325,19 @@ module.exports = ({
                                             <td>
                                                 <a style="text-decoration: none">
                                                     <img height="30" style="cursor:pointer;"
-                                                        src="https://client.trad.dev.gradlesol.com/app/mail-images/facebook.png" />
+                                                        src="${config.server.backendServerUrl}mail-images/facebook.png" />
                                                 </a>
                                             </td>
                                             <td>
                                                 <a style="text-decoration: none">
                                                     <img height="30" style="cursor:pointer;"
-                                                        src="https://client.trad.dev.gradlesol.com/app/mail-images/linkedin.png" />
+                                                        src="${config.server.backendServerUrl}mail-images/linkedin.png" />
                                                 </a>
                                             </td>
                                             <td>
                                                 <a style="text-decoration: none">
                                                     <img height="30" style="cursor:pointer;"
-                                                        src="https://client.trad.dev.gradlesol.com/app/mail-images/twitter.png" />
+                                                        src="${config.server.backendServerUrl}mail-images/twitter.png" />
                                                 </a>
                                             </td>
                                         </tr>

@@ -455,8 +455,8 @@ router.put('/list', async function (req, res) {
     }
     for (let i = 0; i < req.body.list.length; i++) {
       if (
-        !req.body.clientId ||
-        !mongoose.Types.ObjectId.isValid(req.body.clientId) ||
+        !req.body.list[i].clientId ||
+        !mongoose.Types.ObjectId.isValid(req.body.list[i].clientId) ||
         !req.body.list[i].debtorId ||
         !mongoose.Types.ObjectId.isValid(req.body.list[i].debtorId) ||
         !req.body.list[i].month ||

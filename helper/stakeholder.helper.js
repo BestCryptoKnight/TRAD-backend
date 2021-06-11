@@ -83,6 +83,7 @@ const storeStakeholderDetails = async ({ stakeholder, debtorId }) => {
     const update = {
       isDeleted: false,
     };
+    let unsetFields = {};
     let query = {};
     update.type = stakeholder.type.toLowerCase();
     update.debtorId = debtorId;
@@ -92,49 +93,28 @@ const storeStakeholderDetails = async ({ stakeholder, debtorId }) => {
         Object.keys(stakeholder.address).length !== 0
       ) {
         update.residentialAddress = {};
-        if (
-          stakeholder.address.property &&
-          stakeholder.address.property.length !== 0
-        ) {
-          update.residentialAddress.property = stakeholder.address.property;
-        }
-        if (
-          stakeholder.address.unitNumber &&
-          stakeholder.address.unitNumber.length !== 0
-        ) {
-          update.residentialAddress.unitNumber = stakeholder.address.unitNumber;
-        }
-        if (
-          stakeholder.address.streetNumber &&
-          stakeholder.address.streetNumber.length !== 0
-        ) {
-          update.residentialAddress.streetNumber =
-            stakeholder.address.streetNumber;
-        }
-        if (
-          stakeholder.address.streetName &&
-          stakeholder.address.streetName.length !== 0
-        ) {
-          update.residentialAddress.streetName = stakeholder.address.streetName;
-        }
-        if (
-          stakeholder.address.streetType &&
-          stakeholder.address.streetType.length !== 0
-        ) {
-          update.residentialAddress.streetType = stakeholder.address.streetType;
-        }
-        if (
-          stakeholder.address.suburb &&
-          stakeholder.address.suburb.length !== 0
-        ) {
-          update.residentialAddress.suburb = stakeholder.address.suburb;
-        }
-        if (
-          stakeholder.address.state &&
-          stakeholder.address.state.length !== 0
-        ) {
-          update.residentialAddress.state = stakeholder.address.state;
-        }
+        update.residentialAddress.property = stakeholder.address.property
+          ? stakeholder.address.property
+          : undefined;
+        update.residentialAddress.unitNumber = stakeholder.address.unitNumber
+          ? stakeholder.address.unitNumber
+          : undefined;
+        update.residentialAddress.streetNumber = stakeholder.address
+          .streetNumber
+          ? stakeholder.address.streetNumber
+          : undefined;
+        update.residentialAddress.streetName = stakeholder.address.streetName
+          ? stakeholder.address.streetName
+          : undefined;
+        update.residentialAddress.streetType = stakeholder.address.streetType
+          ? stakeholder.address.streetType
+          : undefined;
+        update.residentialAddress.suburb = stakeholder.address.suburb
+          ? stakeholder.address.suburb
+          : undefined;
+        update.residentialAddress.state = stakeholder.address.state
+          ? stakeholder.address.state
+          : undefined;
         if (
           stakeholder.address.country &&
           stakeholder.address.country.name &&
@@ -142,24 +122,26 @@ const storeStakeholderDetails = async ({ stakeholder, debtorId }) => {
         ) {
           update.residentialAddress.country = stakeholder.address.country;
         }
-        if (
-          stakeholder.address.postCode &&
-          stakeholder.address.postCode.length !== 0
-        ) {
-          update.residentialAddress.postCode = stakeholder.address.postCode;
-        }
+        update.residentialAddress.postCode = stakeholder.address.postCode
+          ? stakeholder.address.postCode
+          : undefined;
       }
       if (stakeholder.title) update.title = stakeholder.title;
       if (stakeholder.firstName) update.firstName = stakeholder.firstName;
-      if (stakeholder.middleName) update.middleName = stakeholder.middleName;
+      update.middleName = stakeholder.middleName
+        ? stakeholder.middleName
+        : undefined;
       if (stakeholder.lastName) update.lastName = stakeholder.lastName;
       if (stakeholder.dateOfBirth) update.dateOfBirth = stakeholder.dateOfBirth;
       if (stakeholder.driverLicenceNumber)
         update.driverLicenceNumber = stakeholder.driverLicenceNumber;
-      if (stakeholder.phoneNumber) update.phoneNumber = stakeholder.phoneNumber;
-      if (stakeholder.mobileNumber)
-        update.mobileNumber = stakeholder.mobileNumber;
-      if (stakeholder.email) update.email = stakeholder.email;
+      update.phoneNumber = stakeholder.phoneNumber
+        ? stakeholder.phoneNumber
+        : undefined;
+      update.mobileNumber = stakeholder.mobileNumber
+        ? stakeholder.mobileNumber
+        : undefined;
+      update.email = stakeholder.email ? stakeholder.email : undefined;
       if (stakeholder.hasOwnProperty('allowToCheckCreditHistory'))
         update.allowToCheckCreditHistory =
           stakeholder.allowToCheckCreditHistory;
@@ -171,18 +153,39 @@ const storeStakeholderDetails = async ({ stakeholder, debtorId }) => {
           { dateOfBirth: stakeholder.dateOfBirth },
         ],
       };
+      unsetFields = {
+        abn: 1,
+        acn: 1,
+        entityType: 1,
+        entityName: 1,
+        tradingName: 1,
+      };
     } else {
       if (stakeholder.abn) update.abn = stakeholder.abn;
-      if (stakeholder.acn) update.acn = stakeholder.acn;
+      update.acn = stakeholder.acn ? stakeholder.acn : undefined;
       if (stakeholder.entityType) update.entityType = stakeholder.entityType;
       if (stakeholder.entityName) update.entityName = stakeholder.entityName;
-      if (stakeholder.tradingName) update.tradingName = stakeholder.tradingName;
+      update.tradingName = stakeholder.tradingName
+        ? stakeholder.tradingName
+        : undefined;
       query = {
         $or: [{ abn: stakeholder.abn }, { acn: stakeholder.acn }],
       };
+      unsetFields = {
+        title: 1,
+        firstName: 1,
+        middleName: 1,
+        lastName: 1,
+        dateOfBirth: 1,
+        driverLicenceNumber: 1,
+        residentialAddress: 1,
+        phoneNumber: 1,
+        mobileNumber: 1,
+        email: 1,
+        allowToCheckCreditHistory: 1,
+      };
     }
-    console.log('update ', update);
-    return { query, update };
+    return { query, update, unsetFields };
   } catch (e) {
     Logger.log.error(
       'Error occurred in store stakeholder details ',

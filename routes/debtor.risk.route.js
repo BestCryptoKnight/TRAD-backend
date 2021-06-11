@@ -526,18 +526,9 @@ router.get('/stakeholder/:debtorId', async function (req, res) {
             stakeholder.postCode = stakeholder.residentialAddress.postCode;
           }
           if (stakeholderColumn.columns.includes('fullAddress')) {
-            if (
-              stakeholder.residentialAddress.country &&
-              stakeholder.residentialAddress.country.name
-            ) {
-              stakeholder.residentialAddress.country =
-                stakeholder.residentialAddress.country.name;
-            }
-            stakeholder.fullAddress = Object.values(
-              stakeholder.residentialAddress,
-            )
-              .toString()
-              .replace(/,,/g, ',');
+            stakeholder.fullAddress = getDebtorFullAddress({
+              address: stakeholder.residentialAddress,
+            });
           }
           delete stakeholder.residentialAddress;
         } else {
@@ -1406,9 +1397,7 @@ router.put('/stakeholder/:debtorId/:stakeholderId', async function (req, res) {
       (!req.body.dateOfBirth && !req.body.driverLicenceNumber) ||
       !req.body.address ||
       !req.body.address.state ||
-      !req.body.address.streetName ||
-      !req.body.address.streetType ||
-      !req.body.address.suburb ||
+      !req.body.address.country ||
       !req.body.address.postCode ||
       !req.body.address.streetNumber)
   ) {
@@ -1419,11 +1408,14 @@ router.put('/stakeholder/:debtorId/:stakeholderId', async function (req, res) {
     });
   }
   try {
-    const { query, update } = await storeStakeholderDetails({
+    const { update, unsetFields } = await storeStakeholderDetails({
       stakeholder: req.body,
-      debtorId: debtor._id,
+      debtorId: req.params.debtorId,
     });
-    await DebtorDirector.updateOne({ _id: req.params.stakeholderId }, update);
+    await DebtorDirector.updateOne(
+      { _id: req.params.stakeholderId },
+      { $set: update, $unset: unsetFields },
+    );
     res.status(200).send({
       status: 'SUCCESS',
       message: 'Stakeholder updated successfully',
