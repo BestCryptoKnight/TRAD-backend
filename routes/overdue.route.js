@@ -105,6 +105,9 @@ router.get('/list', async function (req, res) {
     if (overdue && overdue.length !== 0) {
       overdue.forEach((i) => {
         i.isExistingData = true;
+        if (i.overdueAction !== 'MARK_AS_PAID') {
+          delete i.overdueAction;
+        }
         if (i.debtorId && i.debtorId.entityName) {
           i.debtorId = {
             label: i.debtorId.entityName,
@@ -130,7 +133,7 @@ router.get('/list', async function (req, res) {
         .status(200)
         .send({ status: 'SUCCESS', data: { docs: overdue, client } });
     } else {
-      query.overdueAction === 'AMEND';
+      query.overdueAction === { $ne: 'MARK_AS_PAID' };
       let { overdue, lastMonth, lastYear } = await getLastOverdueList({
         query,
         date: req.query.date,
