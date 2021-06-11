@@ -52,7 +52,7 @@
         { "name": "creditLimit", "label": "Credit Limit", "type": "amount" },
         { "name": "createdById", "label": "Submitted By", "type": "string" },
         {
-          "name": "clientDebtorId",
+          "name": "outstandingAmount",
           "label": "Outstanding Amount",
           "type": "amount"
         },
