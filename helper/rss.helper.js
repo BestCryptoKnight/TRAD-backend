@@ -324,6 +324,7 @@ const getClientContacts = async ({ clientId }) => {
           crmContact.record['decisionmaker'] === 0 ||
           crmContact.record['decisionmaker'] === null
         ),
+        isDeleted: false,
       };
       contacts.push(contact);
     });

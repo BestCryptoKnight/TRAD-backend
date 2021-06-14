@@ -22,7 +22,7 @@ const getLastOverdueList = async ({ date, query, counter = 0 }) => {
     }
     const overdue = await Overdue.find(query)
       .populate({
-        path: 'debtorId insurerId clientId',
+        path: 'debtorId insurerId',
         select: '_id name entityName',
       })
       .select({
@@ -125,11 +125,11 @@ const getOverdueList = async ({
   userId,
 }) => {
   try {
-    const queryFilter = {};
+    const queryFilter = [];
     requestedQuery.page = requestedQuery.page || 1;
     requestedQuery.limit = requestedQuery.limit || 5;
     if (!isForRisk) {
-      queryFilter.clientId = mongoose.Types.ObjectId(clientId);
+      queryFilter.push({ clientId: mongoose.Types.ObjectId(clientId) });
     } else if (isForRisk && !hasFullAccess) {
       const clients = await Client.find({
         $or: [{ riskAnalystId: userId }, { serviceManagerId: userId }],
@@ -137,30 +137,58 @@ const getOverdueList = async ({
         .select('_id name')
         .lean();
       const clientIds = clients.map((i) => i._id);
-      queryFilter.clientId = { $in: clientIds };
+      queryFilter.push({ clientId: { $in: clientIds } });
     }
     if (requestedQuery.debtorId) {
-      queryFilter.debtorId = mongoose.Types.ObjectId(requestedQuery.debtorId);
+      queryFilter.push({
+        debtorId: mongoose.Types.ObjectId(requestedQuery.debtorId),
+      });
     }
     if (requestedQuery.minOutstandingAmount) {
-      queryFilter.outstandingAmount = {
-        $gte: parseInt(requestedQuery.minOutstandingAmount),
-      };
+      queryFilter.push({
+        outstandingAmount: {
+          $gte: parseInt(requestedQuery.minOutstandingAmount),
+        },
+      });
     }
     if (requestedQuery.maxOutstandingAmount) {
-      queryFilter.outstandingAmount = {
-        $lte: parseInt(requestedQuery.maxOutstandingAmount),
-      };
+      queryFilter.push({
+        outstandingAmount: {
+          $lte: parseInt(requestedQuery.maxOutstandingAmount),
+        },
+      });
     }
+    let array = [];
     if (requestedQuery.startDate) {
-      queryFilter.dateOfInvoice = {
-        $gte: new Date(requestedQuery.startDate),
-      };
+      array.push({
+        $gte: [
+          { $toInt: '$month' },
+          new Date(requestedQuery.startDate).getMonth() + 1,
+        ],
+      });
+      array.push({
+        $gte: [
+          { $toInt: '$year' },
+          new Date(requestedQuery.startDate).getFullYear(),
+        ],
+      });
+      queryFilter.push({ $expr: { $and: array } });
     }
     if (requestedQuery.endDate) {
-      queryFilter.dateOfInvoice = {
-        $lt: new Date(requestedQuery.endDate),
-      };
+      array = [];
+      array.push({
+        $lte: [
+          { $toInt: '$month' },
+          new Date(requestedQuery.endDate).getMonth() + 1,
+        ],
+      });
+      array.push({
+        $lte: [
+          { $toInt: '$year' },
+          new Date(requestedQuery.endDate).getFullYear(),
+        ],
+      });
+      queryFilter.push({ $expr: { $and: array } });
     }
     const query = [
       {
@@ -252,11 +280,26 @@ const getOverdueList = async ({
         },
       },
       {
+        $addFields: {
+          priority: {
+            $cond: [
+              { $gt: ['$submitted', 0] },
+              0,
+              {
+                $cond: [
+                  { $gt: ['$pending', 0] },
+                  1,
+                  { $cond: [{ $gt: ['$notReportable', 0] }, 2, 3] },
+                ],
+              },
+            ],
+          },
+        },
+      },
+      {
         $sort: {
-          submitted: -1,
+          priority: 1,
           '_id.month': -1,
-          pending: -1,
-          notReportable: -1,
         },
       },
       {
@@ -266,7 +309,7 @@ const getOverdueList = async ({
               { $gt: ['$submitted', 0] },
               'Submitted',
               {
-                $cond: [{ $gt: ['$pending', 0] }, 'Pending', 'Process'],
+                $cond: [{ $gt: ['$pending', 0] }, 'Pending', 'Processed'],
               },
             ],
           },
@@ -317,7 +360,9 @@ const getOverdueList = async ({
         ],
       },
     });
-    query.unshift({ $match: queryFilter });
+    if (queryFilter.length !== 0) {
+      query.unshift({ $match: { $and: queryFilter } });
+    }
     const overdueList = await Overdue.aggregate(query).allowDiskUse(true);
     overdueList[0].paginatedResult.forEach((i) => {
       if (i.debtors.length !== 0) {
@@ -354,7 +399,7 @@ const getOverdueList = async ({
       {
         name: 'amounts',
         label: 'Amounts',
-        type: 'string',
+        type: 'amount',
       },
     ];
     if (isForRisk) {
@@ -461,6 +506,14 @@ const formatString = (text) => {
     });
   } catch (e) {
     Logger.log.error('Error occurred in format string');
+    Logger.log.error(e.message || e);
+  }
+};
+
+const updateList = async () => {
+  try {
+  } catch (e) {
+    Logger.log.error('Error occurred in update list');
     Logger.log.error(e.message || e);
   }
 };

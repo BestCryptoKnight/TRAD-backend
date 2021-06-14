@@ -430,7 +430,11 @@ router.put('/list', async function (req, res) {
     const promises = [];
     let update = {};
     const overdueArr = req.body.list.map((i) => {
-      return i.debtorId + i.month.toString().padStart(2, '0') + i.year;
+      return (
+        (i.debtorId ? i.debtorId : i.acn) +
+        i.month.toString().padStart(2, '0') +
+        i.year
+      );
     });
     console.log(overdueArr);
     let isDuplicate = overdueArr.some((element, index) => {
@@ -454,7 +458,9 @@ router.put('/list', async function (req, res) {
         !req.body.list[i].overdueType ||
         !req.body.list[i].insurerId ||
         !req.body.list[i].hasOwnProperty('isExistingData') ||
-        (req.body.list[i].isExistingData && !req.body.list[i].overdueAction)
+        (req.body.list[i].isExistingData && !req.body.list[i].overdueAction) ||
+        !req.body.list[i].hasOwnProperty('outstandingAmount') ||
+        req.body.list[i].outstandingAmount <= 0
       ) {
         return res.status(400).send({
           status: 'ERROR',

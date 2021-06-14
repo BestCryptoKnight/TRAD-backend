@@ -1222,6 +1222,7 @@ router.put('/user/sync-from-crm/:clientId', async function (req, res) {
     });
     let promiseArr = [];
     for (let i = 0; i < contactsFromCrm.length; i++) {
+      contactsFromCrm[i].clientId = req.params.clientId;
       promiseArr.push(
         ClientUser.updateOne(
           { crmContactId: contactsFromCrm[i].crmContactId, isDeleted: false },

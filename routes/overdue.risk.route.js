@@ -443,7 +443,10 @@ router.put('/list', async function (req, res) {
     let update = {};
     const overdueArr = req.body.list.map((i) => {
       return (
-        i.clientId + i.debtorId + i.month.toString().padStart(2, '0') + i.year
+        i.clientId +
+        (i.debtorId ? i.debtorId : i.acn) +
+        i.month.toString().padStart(2, '0') +
+        i.year
       );
     });
     console.log(overdueArr);
@@ -461,16 +464,18 @@ router.put('/list', async function (req, res) {
       if (
         !req.body.list[i].clientId ||
         !mongoose.Types.ObjectId.isValid(req.body.list[i].clientId) ||
-        !req.body.list[i].debtorId ||
-        !mongoose.Types.ObjectId.isValid(req.body.list[i].debtorId) ||
+        ((!req.body.list[i].debtorId ||
+          !mongoose.Types.ObjectId.isValid(req.body.list[i].debtorId)) &&
+          !req.body.list[i].acn) ||
         !req.body.list[i].month ||
         !req.body.list[i].year ||
-        !req.body.list[i].acn ||
         !req.body.list[i].dateOfInvoice ||
         !req.body.list[i].overdueType ||
         !req.body.list[i].insurerId ||
         !req.body.list[i].hasOwnProperty('isExistingData') ||
-        (req.body.list[i].isExistingData && !req.body.list[i].overdueAction)
+        (req.body.list[i].isExistingData && !req.body.list[i].overdueAction) ||
+        !req.body.list[i].hasOwnProperty('outstandingAmount') ||
+        req.body.list[i].outstandingAmount <= 0
       ) {
         return res.status(400).send({
           status: 'ERROR',
@@ -481,9 +486,10 @@ router.put('/list', async function (req, res) {
       update = {};
       if (req.body.list[i].clientId)
         update.clientId = req.body.list[i].clientId;
-      if (req.body.list[i].debtorId)
-        update.debtorId = req.body.list[i].debtorId;
-      if (req.body.list[i].acn) update.acn = req.body.list[i].acn;
+      update.debtorId = req.body.list[i].debtorId
+        ? req.body.list[i].debtorId
+        : undefined;
+      update.acn = req.body.list[i].acn ? req.body.list[i].acn : undefined;
       if (req.body.list[i].dateOfInvoice)
         update.dateOfInvoice = req.body.list[i].dateOfInvoice;
       if (req.body.list[i].overdueType)
