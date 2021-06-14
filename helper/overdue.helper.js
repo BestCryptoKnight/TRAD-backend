@@ -199,7 +199,7 @@ const getOverdueList = async ({
           as: 'debtorId',
         },
       },
-      { $unwind: '$debtorId' },
+      { $unwind: { path: '$debtorId', preserveNullAndEmptyArrays: true } },
       {
         $addFields: {
           statusNumber: {
