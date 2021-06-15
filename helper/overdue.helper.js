@@ -458,14 +458,17 @@ const getDebtorList = async ({
       .lean();
     const debtorIds = [];
     const response = [];
-    const acnResponse = {};
+    const acnResponse = [];
     debtors.forEach((i) => {
       if (i.debtorId && !debtorIds.includes(i.debtorId)) {
         response.push({
           _id: i.debtorId._id,
           name: i.debtorId.entityName,
         });
-        acnResponse[i.debtorId._id] = i.debtorId.acn;
+        acnResponse.push({
+          _id: i.debtorId._id,
+          acn: i.debtorId.acn,
+        });
         debtorIds.push(i.debtorId);
       }
     });
