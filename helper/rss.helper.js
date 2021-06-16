@@ -519,13 +519,20 @@ let fetchInsurerDetails = async ({
   auditLog = {},
 }) => {
   try {
-    const words = underwriterName.split(' ');
-    const regex = words.map(function (e) {
-      return new RegExp(e, 'i');
-    });
     let insurer = await Insurer.findOne({
-      name: { $in: regex },
+      name: { $regex: underwriterName, $options: 'i' },
     });
+    if (!insurer) {
+      const words = underwriterName.split(' ');
+      const regex = words.map(function (e) {
+        return new RegExp(e, 'i');
+      });
+      insurer = await Insurer.findOne({
+        name: {
+          $in: regex,
+        },
+      });
+    }
     if (insurer) {
       //TODO sync insurer + client policies
       const policies = await Policy.find({ clientId: clientId }).lean();
@@ -638,6 +645,45 @@ let fetchInsurerDetails = async ({
   }
 };
 
+const getClaimsDetails = async ({
+  crmIds = [],
+  page = 1,
+  limit = 10,
+  query = null,
+}) => {
+  try {
+    const url =
+      'https://apiv4.reallysimplesystems.com/claims?limit=' +
+      limit +
+      '&page=' +
+      page;
+    const organization = await Organization.findOne({ isDeleted: false })
+      .select({ 'integration.rss': 1 })
+      .lean();
+    const options = {
+      method: 'GET',
+      url: url,
+      headers: {
+        Authorization: 'Bearer ' + organization.integration.rss.accessToken,
+      },
+    };
+    if (crmIds.length !== 0) {
+      options.params = {};
+      options.params.q = { accountid: { $in: crmIds } };
+    }
+    const { data } = await axios(options);
+    const claims = data.list.map((claim) => claim.record);
+    const totalCount =
+      data && data.metadata && data.metadata['total_count']
+        ? data.metadata['total_count']
+        : 0;
+    return { claims, totalCount };
+  } catch (e) {
+    Logger.log.error('Error occurred in get claims details');
+    Logger.log.error(e.message || e);
+  }
+};
+
 module.exports = {
   getClients,
   getInsurers,
@@ -650,4 +696,5 @@ module.exports = {
   getClientsById,
   getInsurersById,
   getInsurerById,
+  getClaimsDetails,
 };

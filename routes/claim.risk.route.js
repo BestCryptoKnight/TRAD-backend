@@ -13,6 +13,8 @@ const Claim = mongoose.model('claim');
  * */
 const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
+const { getClaimsList } = require('./../helper/claims.helper');
+const { getClientList } = require('./../helper/client.helper');
 
 /**
  * Get Column Names
@@ -91,6 +93,32 @@ router.get('/column-name', async function (req, res) {
 });
 
 /**
+ * Get Entity List
+ * */
+router.get('/entity-list', async function (req, res) {
+  try {
+    let hasFullAccess = true;
+    if (req.accessTypes && req.accessTypes.indexOf('full-access') === -1) {
+      hasFullAccess = false;
+    }
+    const clients = await getClientList({
+      hasFullAccess: hasFullAccess,
+      userId: req.user._id,
+    });
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: clients,
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in get entity list', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
  * Get claim list
  */
 router.get('/', async function (req, res) {
@@ -99,186 +127,20 @@ router.get('/', async function (req, res) {
     const claimColumn = req.user.manageColumns.find(
       (i) => i.moduleName === 'claim',
     );
-    const clients = await Client.find({
-      isDeleted: false,
-      $or: [
-        { riskAnalystId: req.user._id },
-        { serviceManagerId: req.user._id },
-      ],
-    })
-      .select({ _id: 1 })
-      .lean();
-    const clientIds = clients.map((i) => i._id);
-    let queryFilter = {
-      isDeleted: false,
-    };
+    let hasFullAccess = true;
     if (req.accessTypes && req.accessTypes.indexOf('full-access') === -1) {
-      queryFilter = {
-        isDeleted: false,
-        clientId: { $in: clientIds },
-      };
+      hasFullAccess = false;
     }
-
-    let aggregationQuery = [];
-    let sortingOptions = {};
-    if (req.query.clientId || claimColumn.columns.includes('clientId')) {
-      aggregationQuery.push(
-        {
-          $lookup: {
-            from: 'clients',
-            localField: 'clientId',
-            foreignField: '_id',
-            as: 'clientId',
-          },
-        },
-        {
-          $unwind: {
-            path: '$clientId',
-          },
-        },
-      );
-    }
-    if (req.query.clientId) {
-      aggregationQuery.push({
-        $match: {
-          'clientId.name': req.query.clientId,
-        },
-      });
-    }
-    if (req.query.debtorId || claimColumn.columns.includes('debtorId')) {
-      aggregationQuery.push(
-        {
-          $lookup: {
-            from: 'debtors',
-            localField: 'debtorId',
-            foreignField: '_id',
-            as: 'debtorId',
-          },
-        },
-        {
-          $unwind: {
-            path: '$debtorId',
-          },
-        },
-      );
-    }
-
-    if (req.query.debtorId) {
-      aggregationQuery.push({
-        $match: {
-          'debtorId.name': req.query.debtorId,
-        },
-      });
-    }
-
-    if (
-      req.query.clientDebtorId ||
-      claimColumn.columns.includes('clientDebtorId')
-    ) {
-      aggregationQuery.push(
-        {
-          $lookup: {
-            from: 'client-debtors',
-            localField: 'clientDebtorId',
-            foreignField: '_id',
-            as: 'clientDebtorId',
-          },
-        },
-        {
-          $unwind: {
-            path: '$clientDebtorId',
-          },
-        },
-      );
-    }
-
-    if (req.query.clientDebtorId) {
-      aggregationQuery.push({
-        $match: {
-          'clientDebtorId.creditLimit': req.query.clientDebtorId,
-        },
-      });
-    }
-
-    const fields = claimColumn.columns.map((i) => {
-      if (i === 'clientId') {
-        i = i + '.name';
-      }
-      if (i === 'debtorId') {
-        i = i + '.entityName';
-      }
-      if (i === 'clientDebtorId') {
-        i = i + '.creditLimit';
-      }
-      if (i === 'entityType') {
-        i = 'debtorId.' + i;
-      }
-      return [i, 1];
+    const response = await getClaimsList({
+      claimColumn: claimColumn.columns,
+      requestedQuery: req.query,
+      userId: req.user._id,
+      hasFullAccess,
+      moduleColumn: module.manageColumns,
     });
-    aggregationQuery.push({
-      $project: fields.reduce((obj, [key, val]) => {
-        obj[key] = val;
-        return obj;
-      }, {}),
-    });
-    if (req.query.sortBy && req.query.sortOrder) {
-      if (req.query.sortBy === 'clientId') {
-        req.query.sortBy = req.query.sortBy + '.name';
-      }
-      if (req.query.sortBy === 'debtorId') {
-        req.query.sortBy = req.query.sortBy + '.entityName';
-      }
-      if (req.query.sortBy === 'clientDebtorId') {
-        req.query.sortBy = req.query.sortBy + '.creditLimit';
-      }
-      if (req.query.sortBy === 'entityType') {
-        req.query.sortBy = 'debtorId.' + req.query.sortBy;
-      }
-      sortingOptions[req.query.sortBy] =
-        req.query.sortOrder === 'desc' ? -1 : 1;
-      aggregationQuery.push({ $sort: sortingOptions });
-    }
-
-    aggregationQuery.push({
-      $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
-    });
-    aggregationQuery.push({ $limit: parseInt(req.query.limit) });
-
-    aggregationQuery.unshift({ $match: queryFilter });
-
-    const [claims, total] = await Promise.all([
-      Claim.aggregate(aggregationQuery).allowDiskUse(true),
-      Claim.countDocuments(queryFilter).lean(),
-    ]);
-    const headers = [];
-    for (let i = 0; i < module.manageColumns.length; i++) {
-      if (claimColumn.columns.includes(module.manageColumns[i].name)) {
-        headers.push(module.manageColumns[i]);
-      }
-    }
-    if (claims && claims.length !== 0) {
-      claims.forEach((application) => {
-        if (claimColumn.columns.includes('clientId')) {
-          application.clientId = application.clientId.name;
-        }
-        if (claimColumn.columns.includes('debtorId')) {
-          application.debtorId = application.debtorId.entityName;
-        }
-        if (claimColumn.columns.includes('clientDebtorId')) {
-          application.clientDebtorId = application.clientDebtorId.creditLimit;
-        }
-      });
-    }
     res.status(200).send({
       status: 'SUCCESS',
-      data: {
-        docs: claims,
-        headers,
-        total,
-        page: parseInt(req.query.page),
-        limit: parseInt(req.query.limit),
-        pages: Math.ceil(total / parseInt(req.query.limit)),
-      },
+      data: response,
     });
   } catch (e) {
     Logger.log.error('Error occurred in get application list ', e.message || e);
@@ -520,35 +382,6 @@ router.put('/column-name', async function (req, res) {
       .send({ status: 'SUCCESS', message: 'Columns updated successfully' });
   } catch (e) {
     Logger.log.error('Error occurred in update column names', e.message || e);
-    res.status(500).send({
-      status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
-    });
-  }
-});
-
-/**
- * Delete Claim
- */
-router.delete('/:entityId', async function (req, res) {
-  if (
-    !req.params.entityId ||
-    !mongoose.Types.ObjectId.isValid(req.params.entityId)
-  ) {
-    return res.status(400).send({
-      status: 'ERROR',
-      messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Require fields are missing',
-    });
-  }
-  try {
-    await Claim.updateOne({ _id: req.params.entityId }, { isDeleted: true });
-    res.status(200).send({
-      status: 'SUCCESS',
-      message: 'Claim deleted successfully',
-    });
-  } catch (e) {
-    Logger.log.error('Error occurred in delete claim ', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

@@ -93,7 +93,7 @@ router.get('/list', async function (req, res) {
     let year = new Date(req.query.date).getFullYear();
     const query = {
       month: month.toString().padStart(2, '0'),
-      year: year,
+      year: year.toString(),
       clientId: req.query.clientId,
     };
     const overdue = await Overdue.find(query)
@@ -138,7 +138,7 @@ router.get('/list', async function (req, res) {
         .status(200)
         .send({ status: 'SUCCESS', data: { docs: overdue, client } });
     } else {
-      query.overdueAction === { $ne: 'MARK_AS_PAID' };
+      query.overdueAction = { $ne: 'MARK_AS_PAID' };
       let { overdue, lastMonth, lastYear } = await getLastOverdueList({
         query,
         date: req.query.date,

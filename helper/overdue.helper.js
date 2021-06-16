@@ -464,6 +464,7 @@ const getDebtorList = async ({
         response.push({
           _id: i.debtorId._id,
           name: i.debtorId.entityName,
+          acn: i.debtorId.acn,
         });
         acnResponse.push({
           _id: i.debtorId._id,

@@ -390,12 +390,99 @@
     {
       "name": "claim",
       "manageColumns": [
-        { "name": "clientId", "label": "Client Name", "type": "string" },
-        { "name": "debtorId", "label": "Debtor Name", "type": "string" },
-        { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+        { "name": "name", "label": "Claim Name", "type": "string" },
+        {
+          "name": "accountid",
+          "label": "Client Name",
+          "type": "modal",
+          "request": { "method": "GET", "url": "client/details" }
+        },
+        {
+          "name": "description",
+          "label": "Notes",
+          "type": "string"
+        },
+        {
+          "name": "notifiedofcase",
+          "label": "Notified of Case",
+          "type": "date"
+        },
+        {
+          "name": "claimsinforequested",
+          "label": "Claims Info Requested",
+          "type": "string"
+        },
+        {
+          "name": "claimsinforeviewed",
+          "label": "Claims Info Reviewed",
+          "type": "string"
+        },
+        {
+          "name": "datesubmittedtouw",
+          "label": "Date Submitted to U/W",
+          "type": "string"
+        },
+        { "name": "podreceived", "label": "POD Received", "type": "string" },
+        { "name": "podsenttouw", "label": "POD Sent to U/W", "type": "string" },
+        { "name": "codrequested", "label": "COD Requested", "type": "string" },
+        { "name": "codreceived", "label": "COD Received", "type": "string" },
+        {
+          "name": "grossdebtamount",
+          "label": "Gross Debt Amount",
+          "type": "string"
+        },
+        { "name": "amountpaid", "label": "Amount Paid", "type": "string" },
+        {
+          "name": "receivedlolfromuw",
+          "label": "Received LOL from U/W",
+          "type": "string"
+        },
+        {
+          "name": "claimpaidbyuw",
+          "label": "Claim Paid by U/W",
+          "type": "string"
+        },
+        {
+          "name": "reimbursementrequired",
+          "label": "Reimbursement Required",
+          "type": "string"
+        },
+        {
+          "name": "reimbursementrequested",
+          "label": "Reimbursement Requested",
+          "type": "string"
+        },
+        {
+          "name": "reimbursementreceived",
+          "label": "Reimbursement Received",
+          "type": "string"
+        },
+        {
+          "name": "tradinghistory",
+          "label": "Trading History",
+          "type": "string"
+        },
+        {
+          "name": "insurerId",
+          "label": "Insurer Name",
+          "type": "string"
+        },
+        {
+          "name": "sector",
+          "label": "Sector",
+          "type": "string"
+        },
+        { "name": "createddate", "label": "Created Date", "type": "date" },
+        { "name": "modifieddate", "label": "Modified Date", "type": "date" }
       ],
-      "defaultColumns": ["clientId", "debtorId", "updatedAt"]
+      "defaultColumns": [
+        "name",
+        "accountid",
+        "description",
+        "createddate",
+        "modifieddate",
+        "notifiedofcase"
+      ]
     },
     {
       "name": "claim-task",
@@ -802,9 +889,58 @@
       "defaultColumns": ["priority", "title", "description", "entityType"]
     },
     {
-      "name": "report",
-      "manageColumns": [],
-      "defaultColumns": []
+      "name": "client-list-report",
+      "manageColumns": [
+        { "name": "name", "label": "Client Name", "type": "string" },
+        {
+          "name": "discretionaryLimit",
+          "label": "Discretionary Limit",
+          "type": "amount"
+        },
+        { "name": "insurerId", "label": "Insurer Name", "type": "string" },
+        {
+          "name": "noOfResChecks",
+          "label": "No of RES Checks",
+          "type": "number"
+        },
+        {
+          "name": "contactNumber",
+          "label": "Contact Number",
+          "type": "string"
+        },
+        {
+          "name": "riskAnalystId",
+          "label": "Risk Analyst",
+          "type": "string"
+        },
+        {
+          "name": "serviceManagerId",
+          "label": "Service Manager",
+          "type": "string"
+        },
+        { "name": "sector", "label": "Sector", "type": "string" },
+        { "name": "salesPerson", "label": "Sales Person", "type": "string" },
+        { "name": "inceptionDate", "label": "Inception Date", "type": "date" },
+        { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
+        {
+          "name": "totalApplication",
+          "label": "Total Application",
+          "type": "string"
+        },
+        {
+          "name": "remainingApplication",
+          "label": "Remaining Application",
+          "type": "string"
+        }
+      ],
+      "defaultColumns": [
+        "name",
+        "discretionaryLimit",
+        "insurerId",
+        "noOfResChecks",
+        "riskAnalystId",
+        "serviceManagerId"
+      ]
     },
     {
       "name": "stakeholder",
