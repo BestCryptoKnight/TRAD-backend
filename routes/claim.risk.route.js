@@ -5,15 +5,16 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const User = mongoose.model('user');
-const Claim = mongoose.model('claim');
+const Client = mongoose.model('client');
 
 /*
  * Local Imports
  * */
 const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
-const { getClaimsList } = require('./../helper/claims.helper');
+const { getClaimsList, addClaimInRSS } = require('./../helper/claims.helper');
 const { getClientList } = require('./../helper/client.helper');
+const { getClaimById } = require('./../helper/rss.helper');
 
 /**
  * Get Column Names
@@ -103,6 +104,11 @@ router.get('/entity-list', async function (req, res) {
     const clients = await getClientList({
       hasFullAccess: hasFullAccess,
       userId: req.user._id,
+      sendCRMIds: true,
+    });
+    clients.forEach((i) => {
+      i._id = i.crmClientId;
+      delete i.crmClientId;
     });
     res.status(200).send({
       status: 'SUCCESS',
@@ -151,13 +157,52 @@ router.get('/', async function (req, res) {
 });
 
 /**
- * Get Specific Entity's Overdue list
+ * Get Claim Detail
  */
 router.get('/:entityId', async function (req, res) {
+  if (!req.params.entityId) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const claim = await getClaimById({ crmId: req.params.entityId });
+    if (claim && claim.record) {
+      const client = await Client.findOne({
+        crmClientId: claim.record.accountid,
+      })
+        .select('name')
+        .lean();
+      claim.record.accountid = client.name;
+    }
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: claim && claim.record ? claim.record : {},
+    });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred while getting specific entity claims ',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Add Claim in RSS
+ */
+router.post('/', async function (req, res) {
   if (
-    !req.params.entityId ||
-    !req.query.listFor ||
-    !mongoose.Types.ObjectId.isValid(req.params.entityId)
+    !req.body ||
+    !req.body.name ||
+    !req.body.claimsinforequested ||
+    !req.body.underwriter ||
+    !req.body.stage
   ) {
     return res.status(400).send({
       status: 'ERROR',
@@ -166,165 +211,14 @@ router.get('/:entityId', async function (req, res) {
     });
   }
   try {
-    let queryFilter = {
-      isDeleted: false,
-    };
-    switch (req.query.listFor) {
-      case 'client-claim':
-        queryFilter.clientId = mongoose.Types.ObjectId(req.params.entityId);
-        break;
-      case 'debtor-claim':
-        queryFilter.debtorId = mongoose.Types.ObjectId(req.params.entityId);
-        break;
-      default:
-        return res.status(400).send({
-          status: 'ERROR',
-          messageCode: 'BAD_REQUEST',
-          message: 'Please pass correct fields',
-        });
-    }
-    const module = StaticFile.modules.find((i) => i.name === req.query.listFor);
-    const claimColumn = req.user.manageColumns.find(
-      (i) => i.moduleName === req.query.listFor,
-    );
-    let aggregationQuery = [];
-    let sortingOptions = {};
-    if (claimColumn.columns.includes('clientId')) {
-      aggregationQuery.push(
-        {
-          $lookup: {
-            from: 'clients',
-            localField: 'clientId',
-            foreignField: '_id',
-            as: 'clientId',
-          },
-        },
-        {
-          $unwind: {
-            path: '$clientId',
-          },
-        },
-      );
-    }
-    if (claimColumn.columns.includes('debtorId')) {
-      aggregationQuery.push(
-        {
-          $lookup: {
-            from: 'debtors',
-            localField: 'debtorId',
-            foreignField: '_id',
-            as: 'debtorId',
-          },
-        },
-        {
-          $unwind: {
-            path: '$debtorId',
-          },
-        },
-      );
-    }
-    if (claimColumn.columns.includes('clientDebtorId')) {
-      aggregationQuery.push(
-        {
-          $lookup: {
-            from: 'client-debtors',
-            localField: 'clientDebtorId',
-            foreignField: '_id',
-            as: 'clientDebtorId',
-          },
-        },
-        {
-          $unwind: {
-            path: '$clientDebtorId',
-          },
-        },
-      );
-    }
-
-    const fields = claimColumn.columns.map((i) => {
-      if (i === 'clientId') {
-        i = i + '.name';
-      }
-      if (i === 'debtorId') {
-        i = i + '.entityName';
-      }
-      if (i === 'clientDebtorId') {
-        i = i + '.creditLimit';
-      }
-      if (i === 'entityType') {
-        i = 'debtorId.' + i;
-      }
-      return [i, 1];
-    });
-    aggregationQuery.push({
-      $project: fields.reduce((obj, [key, val]) => {
-        obj[key] = val;
-        return obj;
-      }, {}),
-    });
-    if (req.query.sortBy && req.query.sortOrder) {
-      if (req.query.sortBy === 'clientId') {
-        req.query.sortBy = req.query.sortBy + '.name';
-      }
-      if (req.query.sortBy === 'debtorId') {
-        req.query.sortBy = req.query.sortBy + '.entityName';
-      }
-      if (req.query.sortBy === 'clientDebtorId') {
-        req.query.sortBy = req.query.sortBy + '.creditLimit';
-      }
-      if (req.query.sortBy === 'entityType') {
-        req.query.sortBy = 'debtorId.' + req.query.sortBy;
-      }
-      sortingOptions[req.query.sortBy] =
-        req.query.sortOrder === 'desc' ? -1 : 1;
-      aggregationQuery.push({ $sort: sortingOptions });
-    }
-
-    aggregationQuery.push({
-      $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
-    });
-    aggregationQuery.push({ $limit: parseInt(req.query.limit) });
-
-    aggregationQuery.unshift({ $match: queryFilter });
-
-    const [claims, total] = await Promise.all([
-      Claim.aggregate(aggregationQuery).allowDiskUse(true),
-      Claim.countDocuments(queryFilter).lean(),
-    ]);
-
-    const headers = [];
-    for (let i = 0; i < module.manageColumns.length; i++) {
-      if (claimColumn.columns.includes(module.manageColumns[i].name)) {
-        headers.push(module.manageColumns[i]);
-      }
-    }
-    if (claims && claims.length !== 0) {
-      claims.forEach((application) => {
-        if (claimColumn.columns.includes('clientId')) {
-          application.clientId = application.clientId.name;
-        }
-        if (claimColumn.columns.includes('debtorId')) {
-          application.debtorId = application.debtorId.entityName;
-        }
-        if (claimColumn.columns.includes('clientDebtorId')) {
-          application.clientDebtorId = application.clientDebtorId.creditLimit;
-        }
-      });
-    }
+    await addClaimInRSS({ requestBody: req.body });
     res.status(200).send({
       status: 'SUCCESS',
-      data: {
-        docs: claims,
-        headers,
-        total,
-        page: parseInt(req.query.page),
-        limit: parseInt(req.query.limit),
-        pages: Math.ceil(total / parseInt(req.query.limit)),
-      },
+      data: 'Claim added successfully',
     });
   } catch (e) {
     Logger.log.error(
-      'Error occurred while getting specific entity claims ',
+      'Error occurred while adding claim in RSS',
       e.message || e,
     );
     res.status(500).send({

@@ -5,13 +5,15 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const ClientUser = mongoose.model('client-user');
+const Client = mongoose.model('client');
 
 /*
  * Local Imports
  * */
 const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
-const { getClaimsList } = require('./../helper/claims.helper');
+const { getClaimsList, addClaimInRSS } = require('./../helper/claims.helper');
+const { getClaimById } = require('./../helper/rss.helper');
 
 /**
  * Get Column Names
@@ -43,7 +45,8 @@ router.get('/column-name', async function (req, res) {
     for (let i = 0; i < module.manageColumns.length; i++) {
       if (
         claimColumn &&
-        claimColumn.columns.includes(module.manageColumns[i].name)
+        claimColumn.columns.includes(module.manageColumns[i].name) &&
+        module.manageColumns[i].name !== 'description'
       ) {
         if (module.defaultColumns.includes(module.manageColumns[i].name)) {
           defaultFields.push({
@@ -58,7 +61,7 @@ router.get('/column-name', async function (req, res) {
             isChecked: true,
           });
         }
-      } else {
+      } else if (module.manageColumns[i].name !== 'description') {
         if (module.defaultColumns.includes(module.manageColumns[i].name)) {
           defaultFields.push({
             name: module.manageColumns[i].name,
@@ -112,6 +115,86 @@ router.get('/', async function (req, res) {
     });
   } catch (e) {
     Logger.log.error('Error occurred in get application list ', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Get Claim Detail
+ */
+router.get('/:entityId', async function (req, res) {
+  if (!req.params.entityId) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const claim = await getClaimById({ crmId: req.params.entityId });
+    if (claim && claim.record) {
+      const client = await Client.findOne({
+        crmClientId: claim.record.accountid,
+      })
+        .select('name')
+        .lean();
+      claim.record.accountid = client.name;
+      delete claim.record.description;
+    }
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: {
+        docs: claims,
+        headers,
+        total,
+        page: parseInt(req.query.page),
+        limit: parseInt(req.query.limit),
+        pages: Math.ceil(total / parseInt(req.query.limit)),
+      },
+    });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred while getting specific entity claims ',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Add Claim in RSS
+ */
+router.post('/', async function (req, res) {
+  if (
+    !req.body ||
+    !req.body.name ||
+    !req.body.claimsinforequested ||
+    !req.body.underwriter ||
+    !req.body.stage
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    await addClaimInRSS({ requestBody: req.body });
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: 'Claim added successfully',
+    });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred while adding claim in RSS',
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

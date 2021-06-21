@@ -34,7 +34,7 @@ const clientSchema = new Schema(
     referredBy: { type: Schema.Types.String },
     inceptionDate: { type: Schema.Types.Date },
     expiryDate: { type: Schema.Types.Date },
-    isAutoApproveAllowed: { type: Schema.Types.Boolean, default: false },
+    isAutoApproveAllowed: { type: Schema.Types.Boolean, default: true },
     totalApplication: { type: Schema.Types.Number },
     remainingApplication: { type: Schema.Types.Number },
   },

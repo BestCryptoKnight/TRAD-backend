@@ -463,7 +463,7 @@
           "type": "string"
         },
         {
-          "name": "insurerId",
+          "name": "underwriter",
           "label": "Insurer Name",
           "type": "string"
         },

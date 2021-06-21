@@ -684,6 +684,49 @@ const getClaimsDetails = async ({
   }
 };
 
+const getClaimById = async ({ crmId }) => {
+  try {
+    const url = 'https://apiv4.reallysimplesystems.com/claims/' + crmId;
+    const organization = await Organization.findOne({ isDeleted: false })
+      .select({ 'integration.rss': 1 })
+      .lean();
+    const options = {
+      method: 'GET',
+      url: url,
+      headers: {
+        Authorization: 'Bearer ' + organization.integration.rss.accessToken,
+      },
+    };
+    const { data } = await axios(options);
+    return data;
+  } catch (e) {
+    Logger.log.error('Error occurred in get claims details');
+    Logger.log.error(e.message || e);
+  }
+};
+
+const addClaimDetail = async ({ claim }) => {
+  try {
+    const url = 'https://apiv4.reallysimplesystems.com/claims';
+    const organization = await Organization.findOne({ isDeleted: false })
+      .select({ 'integration.rss': 1 })
+      .lean();
+    const options = {
+      method: 'POST',
+      url: url,
+      headers: {
+        Authorization: 'Bearer ' + organization.integration.rss.accessToken,
+      },
+      data: claim,
+    };
+    const { data } = await axios(options);
+    return data;
+  } catch (e) {
+    Logger.log.error('Error occurred in add claim details in RSS');
+    Logger.log.error(e.message || e);
+  }
+};
+
 module.exports = {
   getClients,
   getInsurers,
@@ -697,4 +740,6 @@ module.exports = {
   getInsurersById,
   getInsurerById,
   getClaimsDetails,
+  getClaimById,
+  addClaimDetail,
 };
