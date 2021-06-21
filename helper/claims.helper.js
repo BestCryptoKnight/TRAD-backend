@@ -120,8 +120,6 @@ const addClaimInRSS = async ({ requestBody }) => {
   try {
     const keys = [
       'name',
-      'createdby',
-      'modifiedby',
       'accountid',
       'description',
       'notifiedofcase',

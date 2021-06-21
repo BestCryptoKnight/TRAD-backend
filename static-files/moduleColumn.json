@@ -398,11 +398,6 @@
           "request": { "method": "GET", "url": "client/details" }
         },
         {
-          "name": "description",
-          "label": "Notes",
-          "type": "string"
-        },
-        {
           "name": "notifiedofcase",
           "label": "Notified of Case",
           "type": "date"
@@ -420,27 +415,27 @@
         {
           "name": "datesubmittedtouw",
           "label": "Date Submitted to U/W",
-          "type": "string"
+          "type": "date"
         },
         { "name": "podreceived", "label": "POD Received", "type": "string" },
-        { "name": "podsenttouw", "label": "POD Sent to U/W", "type": "string" },
-        { "name": "codrequested", "label": "COD Requested", "type": "string" },
-        { "name": "codreceived", "label": "COD Received", "type": "string" },
+        { "name": "podsenttouw", "label": "POD Sent to U/W", "type": "date" },
+        { "name": "codrequested", "label": "COD Requested", "type": "date" },
+        { "name": "codreceived", "label": "COD Received", "type": "date" },
         {
           "name": "grossdebtamount",
           "label": "Gross Debt Amount",
-          "type": "string"
+          "type": "amount"
         },
-        { "name": "amountpaid", "label": "Amount Paid", "type": "string" },
+        { "name": "amountpaid", "label": "Amount Paid", "type": "amount" },
         {
           "name": "receivedlolfromuw",
           "label": "Received LOL from U/W",
-          "type": "string"
+          "type": "date"
         },
         {
           "name": "claimpaidbyuw",
           "label": "Claim Paid by U/W",
-          "type": "string"
+          "type": "date"
         },
         {
           "name": "reimbursementrequired",
@@ -455,11 +450,41 @@
         {
           "name": "reimbursementreceived",
           "label": "Reimbursement Received",
+          "type": "date"
+        },
+        {
+          "name": "repaymentplanamount",
+          "label": "Repayment Plan Amount",
+          "type": "amount"
+        },
+        {
+          "name": "instalmentamounts",
+          "label": "Instalment Amounts",
+          "type": "amount"
+        },
+        {
+          "name": "frequency",
+          "label": "Frequency",
           "type": "string"
+        },
+        {
+          "name": "repaymentplanlength",
+          "label": "Repayment Plan Length",
+          "type": "string"
+        },
+        {
+          "name": "finalpaymentdate",
+          "label": "Final Payment Date",
+          "type": "date"
         },
         {
           "name": "tradinghistory",
           "label": "Trading History",
+          "type": "string"
+        },
+        {
+          "name": "dljustification",
+          "label": "D/L Justification",
           "type": "string"
         },
         {
@@ -468,12 +493,31 @@
           "type": "string"
         },
         {
+          "name": "description",
+          "label": "Notes",
+          "type": "string"
+        },
+        {
+          "name": "stage",
+          "label": "Stage",
+          "type": "string"
+        },
+        {
+          "name": "reimbursementspaid",
+          "label": "Reimbursements Paid",
+          "type": "amount"
+        },
+        {
+          "name": "dateofoldestinvoice",
+          "label": "Date of Oldest Invoice",
+          "type": "date"
+        },
+        {
           "name": "sector",
           "label": "Sector",
           "type": "string"
         },
-        { "name": "createddate", "label": "Created Date", "type": "date" },
-        { "name": "modifieddate", "label": "Modified Date", "type": "date" }
+        { "name": "createddate", "label": "Created Date", "type": "date" }
       ],
       "defaultColumns": [
         "name",
