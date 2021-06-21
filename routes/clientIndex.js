@@ -16,6 +16,7 @@ const authenticate = require('./../middlewares/authenticate')
 const clientAuth = require('./clientAuth.route');
 const application = require('./application.route');
 const client = require('./client.route');
+const claims = require('./claims.route');
 const globalSearch = require('./globalSearch.route');
 const debtor = require('./debtor.route');
 const dashboard = require('./dashboard.route');
@@ -33,6 +34,7 @@ router.use('/search', globalSearch);
 router.use(authenticate);
 router.use('/application', application);
 router.use('/client', client);
+router.use('/claim', claims);
 router.use('/debtor', debtor);
 router.use('/dashboard', dashboard);
 router.use('/document', document);

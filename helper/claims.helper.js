@@ -34,9 +34,15 @@ const getClaimsList = async ({
         .lean();
       clientCRMIds = clients.map((i) => i.crmClientId);
     } else if (requestedQuery.clientId) {
-      clientCRMIds = [requestedQuery.clientId];
+      const client = await Client.findById(requestedQuery.clientId)
+        .select('_id crmClientId')
+        .lean();
+      clientCRMIds = [client.crmClientId];
     } else if (!isForRisk) {
-      clientCRMIds = [clientId];
+      const client = await Client.findById(clientId)
+        .select('_id crmClientId')
+        .lean();
+      clientCRMIds = [client.crmClientId];
     }
     requestedQuery.page = requestedQuery.page || 1;
     requestedQuery.limit = requestedQuery.limit || 10;
@@ -92,7 +98,9 @@ const getClaimsList = async ({
               : '';
         } else if (key === 'accountid') {
           data[key] =
-            response[id] && response[id]['name'] ? response[id]['name'] : '';
+            response[id] && response[id]['name']
+              ? { _id: response[id]['_id'], value: response[id]['name'] }
+              : '';
         } else {
           data[key] = claim[key];
         }

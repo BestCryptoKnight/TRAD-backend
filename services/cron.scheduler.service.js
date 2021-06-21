@@ -87,7 +87,7 @@ const scheduler = async () => {
             };
           },
         );
-        console.log(filteredData);
+        console.log(filteredData, 'filteredData');
         for (let i = 0; i < filteredData.length; i++) {
           //TODO send notification
           const notification = await addNotification({

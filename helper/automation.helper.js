@@ -6,6 +6,7 @@ const DebtorDirector = mongoose.model('debtor-director');
 const CreditReport = mongoose.model('credit-report');
 const Application = mongoose.model('application');
 const Debtor = mongoose.model('debtor');
+const ClientDebtor = mongoose.model('client-debtor');
 
 /*
  * Local Imports
@@ -140,7 +141,13 @@ const identifyReport = async ({ matrix, creditLimit, reportType, country }) => {
   }
 };
 
-const getReportData = async ({ entityType, type, debtor, reportCode }) => {
+const getReportData = async ({
+  entityType,
+  type,
+  debtor,
+  reportCode,
+  clientDebtorId,
+}) => {
   try {
     let reportData;
     let reportEntityType = 'debtor';
@@ -165,6 +172,12 @@ const getReportData = async ({ entityType, type, debtor, reportCode }) => {
         productCode: reportCode,
         expiryDate: { $gt: new Date() },
       });
+      if (reportData && reportData._id) {
+        await ClientDebtor.updateOne(
+          { _id: clientDebtorId },
+          { currentReportId: reportData._id },
+        );
+      }
       reportData =
         reportData && reportData.creditReport ? reportData.creditReport : null;
       if (!reportData) {
@@ -180,6 +193,12 @@ const getReportData = async ({ entityType, type, debtor, reportCode }) => {
             productCode: { $in: reportCodes[reportCode] },
             expiryDate: { $gt: new Date() },
           });
+        }
+        if (reportData && reportData._id) {
+          await ClientDebtor.updateOne(
+            { _id: clientDebtorId },
+            { currentReportId: reportData._id },
+          );
         }
         reportData =
           reportData && reportData.creditReport
@@ -209,6 +228,7 @@ const getReportData = async ({ entityType, type, debtor, reportCode }) => {
             reportName: reportData.Envelope.Body.Response.Header.ProductName,
             reportData: reportData.Envelope.Body.Response,
             entityType: reportEntityType,
+            clientDebtorId: clientDebtorId,
           });
           reportData = reportData.Envelope.Body.Response;
           if (
@@ -263,6 +283,7 @@ const insurerQBE = async ({ application, type }) => {
         reportCode,
         entityType: application.debtorId.entityType,
         debtor: application.debtorId,
+        clientDebtorId: application.clientDebtorId._id,
       }),
       getEntityDetailsByABN({ searchString: application.debtorId.abn }),
     ]);
@@ -317,6 +338,7 @@ const insurerBond = async ({ application, type }) => {
         reportCode,
         entityType: application.debtorId.entityType,
         debtor: application.debtorId,
+        clientDebtorId: application.clientDebtorId._id,
       }),
       getEntityDetailsByABN({ searchString: application.debtorId.abn }),
     ]);
@@ -370,6 +392,7 @@ const insurerAtradius = async ({ application, type }) => {
         reportCode,
         entityType: application.debtorId.entityType,
         debtor: application.debtorId,
+        clientDebtorId: application.clientDebtorId._id,
       }),
       getEntityDetailsByABN({ searchString: application.debtorId.abn }),
     ]);
@@ -423,6 +446,7 @@ const insurerCoface = async ({ application, type }) => {
         reportCode,
         entityType: application.debtorId.entityType,
         debtor: application.debtorId,
+        clientDebtorId: application.clientDebtorId._id,
       }),
       getEntityDetailsByABN({ searchString: application.debtorId.abn }),
     ]);
@@ -476,6 +500,7 @@ const insurerEuler = async ({ application, type }) => {
         reportCode,
         entityType: application.debtorId.entityType,
         debtor: application.debtorId,
+        clientDebtorId: application.clientDebtorId._id,
       }),
       getEntityDetailsByABN({ searchString: application.debtorId.abn }),
     ]);
@@ -529,6 +554,7 @@ const insurerTrad = async ({ application, type }) => {
         reportCode,
         entityType: application.debtorId.entityType,
         debtor: application.debtorId,
+        clientDebtorId: application.clientDebtorId._id,
       }),
       getEntityDetailsByABN({ searchString: application.debtorId.abn }),
     ]);
@@ -994,6 +1020,7 @@ const storeReportData = async ({
   productCode,
   reportData,
   entityType,
+  clientDebtorId,
 }) => {
   try {
     const date = new Date();
@@ -1007,6 +1034,10 @@ const storeReportData = async ({
       expiryDate,
       creditReport: reportData,
     });
+    await ClientDebtor.updateOne(
+      { _id: clientDebtorId },
+      { currentReportId: reportData._id },
+    );
     // console.log('response ', response);
   } catch (e) {
     Logger.log.error('Error occurred in store report data ', e);

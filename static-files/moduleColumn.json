@@ -931,6 +931,11 @@
           "name": "remainingApplication",
           "label": "Remaining Application",
           "type": "string"
+        },
+        {
+          "name": "renewalType",
+          "label": "Renewal Type",
+          "type": "string"
         }
       ],
       "defaultColumns": [
@@ -940,6 +945,465 @@
         "noOfResChecks",
         "riskAnalystId",
         "serviceManagerId"
+      ]
+    },
+    {
+      "name": "limit-list-report",
+      "manageColumns": [
+        { "name": "clientId", "label": "Client Name", "type": "string" },
+        { "name": "insurerId", "label": "Insurer Name", "type": "string" },
+        { "name": "debtorId", "label": "Debtor Name", "type": "string" },
+        { "name": "abn", "label": "ABN", "type": "string" },
+        { "name": "acn", "label": "ACN", "type": "string" },
+        {
+          "name": "registrationNumber",
+          "label": "Registration Number",
+          "type": "string"
+        },
+        { "name": "country", "label": "Country", "type": "string" },
+        {
+          "name": "applicationId",
+          "label": "Application Number",
+          "type": "string"
+        },
+        {
+          "name": "creditLimit",
+          "label": "Requested Amount",
+          "type": "amount"
+        },
+        {
+          "name": "acceptedAmount",
+          "label": "Approved Amount",
+          "type": "amount"
+        },
+        { "name": "approvalDate", "label": "Approval Date", "type": "date" },
+        { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
+        { "name": "limitType", "label": "Limit Type", "type": "string" },
+        {
+          "name": "clientReference",
+          "label": "Client Reference",
+          "type": "string"
+        },
+        { "name": "comments", "label": "Comments", "type": "string" }
+      ],
+      "defaultColumns": [
+        "clientId",
+        "insurerId",
+        "debtorId",
+        "abn",
+        "registrationNumber",
+        "country",
+        "applicationId"
+      ]
+    },
+    {
+      "name": "pending-application-report",
+      "manageColumns": [
+        { "name": "clientId", "label": "Client Name", "type": "string" },
+        { "name": "debtorId", "label": "Debtor Name", "type": "string" },
+        {
+          "name": "entityType",
+          "label": "Debtor Entity Type",
+          "type": "string"
+        },
+        {
+          "name": "applicationId",
+          "label": "Application Number",
+          "type": "string"
+        },
+        {
+          "name": "status",
+          "label": "Application Status",
+          "type": "string"
+        },
+        { "name": "insurerId", "label": "Insurer Name", "type": "string" },
+        {
+          "name": "creditLimit",
+          "label": "Requested Amount",
+          "type": "amount"
+        },
+        { "name": "requestDate", "label": "Applied Date", "type": "date" }
+      ],
+      "defaultColumns": [
+        "clientId",
+        "insurerId",
+        "debtorId",
+        "abn",
+        "registrationNumber",
+        "country",
+        "applicationId"
+      ]
+    },
+    {
+      "name": "review-report",
+      "manageColumns": [
+        { "name": "clientId", "label": "Client Name", "type": "string" },
+        { "name": "insurerId", "label": "Insurer Name", "type": "string" },
+        { "name": "debtorId", "label": "Debtor Name", "type": "string" },
+        {
+          "name": "entityType",
+          "label": "Debtor Entity Type",
+          "type": "string"
+        },
+        { "name": "abn", "label": "ABN", "type": "string" },
+        { "name": "acn", "label": "ACN", "type": "string" },
+        {
+          "name": "registrationNumber",
+          "label": "Registration Number",
+          "type": "string"
+        },
+        { "name": "country", "label": "Country", "type": "string" },
+        {
+          "name": "requestedCreditLimit",
+          "label": "Requested Amount",
+          "type": "amount"
+        },
+        {
+          "name": "creditLimit",
+          "label": "Approved Amount",
+          "type": "amount"
+        },
+        {
+          "name": "approvalDate",
+          "label": "Application Approval Date",
+          "type": "date"
+        },
+        {
+          "name": "applicationExpiryDate",
+          "label": "Application Expiry Date",
+          "type": "date"
+        },
+        {
+          "name": "expiryDate",
+          "label": "Credit Limit Expiry Date",
+          "type": "date"
+        },
+        {
+          "name": "reportExpiryDate",
+          "label": "Report Expiry Date",
+          "type": "date"
+        },
+        { "name": "reportName", "label": "Report Expiry Date", "type": "date" },
+        { "name": "limitType", "label": "Limit Type", "type": "string" },
+        {
+          "name": "clientReference",
+          "label": "Client Reference",
+          "type": "string"
+        },
+        { "name": "comments", "label": "Comments", "type": "string" }
+      ],
+      "defaultColumns": [
+        "clientId",
+        "insurerId",
+        "debtorId",
+        "entityType",
+        "abn",
+        "registrationNumber",
+        "country",
+        "applicationExpiryDate"
+      ]
+    },
+    {
+      "name": "usage-report",
+      "manageColumns": [
+        { "name": "name", "label": "Client Name", "type": "string" },
+        { "name": "insurerId", "label": "Insurer Name", "type": "string" },
+        {
+          "name": "noOfResChecks",
+          "label": "Total Credit Checks Assigned",
+          "type": "number"
+        },
+        {
+          "name": "noOfResChecksUsed",
+          "label": "No. of used Credit Checks",
+          "type": "number"
+        },
+        {
+          "name": "policyNumber",
+          "label": "Current Policy Number",
+          "type": "string"
+        },
+        {
+          "name": "inceptionDate",
+          "label": "Policy Inception Date",
+          "type": "date"
+        },
+        { "name": "expiryDate", "label": "Policy Expiry Date", "type": "date" },
+        {
+          "name": "riskAnalystId",
+          "label": "Risk Analyst",
+          "type": "string"
+        },
+        {
+          "name": "serviceManagerId",
+          "label": "Service Manager",
+          "type": "string"
+        },
+        {
+          "name": "renewalType",
+          "label": "Renewal Type",
+          "type": "string"
+        }
+      ],
+      "defaultColumns": [
+        "clientId",
+        "insurerId",
+        "noOfResChecks",
+        "noOfResChecksUsed",
+        "policyNumber",
+        "inceptionDate",
+        "expiryDate"
+      ]
+    },
+    {
+      "name": "usage-per-client-report",
+      "manageColumns": [
+        { "name": "clientId", "label": "Client Name", "type": "string" },
+        { "name": "insurerId", "label": "Insurer Name", "type": "string" },
+        { "name": "debtorId", "label": "Debtor Name", "type": "string" },
+        {
+          "name": "entityType",
+          "label": "Debtor Entity Type",
+          "type": "string"
+        },
+        { "name": "abn", "label": "Debtor ABN", "type": "string" },
+        { "name": "acn", "label": "Debtor ACN", "type": "string" },
+        {
+          "name": "registrationNumber",
+          "label": "Debtor Registration Number",
+          "type": "string"
+        },
+        { "name": "country", "label": "Debtor Country", "type": "string" },
+        {
+          "name": "isActive",
+          "label": "Current Status of Credit Limit",
+          "type": "string"
+        },
+        {
+          "name": "creditLimit",
+          "label": "Credit Limit",
+          "type": "amount"
+        },
+        {
+          "name": "applicationCount",
+          "label": "Application Count",
+          "type": "string"
+        }
+      ],
+      "defaultColumns": [
+        "clientId",
+        "insurerId",
+        "debtorId",
+        "entityType",
+        "abn",
+        "registrationNumber",
+        "isActive",
+        "creditLimit"
+      ]
+    },
+    {
+      "name": "limit-history-report",
+      "manageColumns": [
+        {
+          "name": "applicationId",
+          "label": "Application Number",
+          "type": "string"
+        },
+        {
+          "name": "status",
+          "label": "Application Status",
+          "type": "string"
+        },
+        { "name": "clientId", "label": "Client Name", "type": "string" },
+        { "name": "debtorId", "label": "Debtor Name", "type": "string" },
+        {
+          "name": "entityType",
+          "label": "Debtor Entity Type",
+          "type": "string"
+        },
+        { "name": "abn", "label": "Debtor ABN", "type": "string" },
+        { "name": "acn", "label": "Debtor ACN", "type": "string" },
+        {
+          "name": "registrationNumber",
+          "label": "Debtor Registration Number",
+          "type": "string"
+        },
+        { "name": "country", "label": "Debtor Country", "type": "string" },
+        { "name": "insurerId", "label": "Insurer Name", "type": "string" },
+        {
+          "name": "creditLimit",
+          "label": "Requested Amount",
+          "type": "amount"
+        },
+        {
+          "name": "acceptedAmount",
+          "label": "Approved Amount",
+          "type": "amount"
+        },
+        { "name": "approvalDate", "label": "Approval Date", "type": "date" },
+        { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
+        { "name": "limitType", "label": "Limit Type", "type": "string" },
+        {
+          "name": "clientReference",
+          "label": "Client Reference",
+          "type": "string"
+        },
+        { "name": "comments", "label": "Comments", "type": "string" }
+      ],
+      "defaultColumns": [
+        "clientId",
+        "insurerId",
+        "debtorId",
+        "abn",
+        "registrationNumber",
+        "country",
+        "applicationId",
+        "acceptedAmount",
+        "approvalDate",
+        "expiryDate"
+      ]
+    },
+    {
+      "name": "claims-report",
+      "manageColumns": [
+        { "name": "name", "label": "Claim Name", "type": "string" },
+        {
+          "name": "accountid",
+          "label": "Client Name",
+          "type": "modal",
+          "request": { "method": "GET", "url": "client/details" }
+        },
+        {
+          "name": "notifiedofcase",
+          "label": "Notified of Case",
+          "type": "date"
+        },
+        {
+          "name": "claimsinforequested",
+          "label": "Claims Info Requested",
+          "type": "string"
+        },
+        {
+          "name": "claimsinforeviewed",
+          "label": "Claims Info Reviewed",
+          "type": "string"
+        },
+        {
+          "name": "datesubmittedtouw",
+          "label": "Date Submitted to U/W",
+          "type": "string"
+        },
+        { "name": "podreceived", "label": "POD Received", "type": "string" },
+        { "name": "podsenttouw", "label": "POD Sent to U/W", "type": "string" },
+        { "name": "codrequested", "label": "COD Requested", "type": "string" },
+        { "name": "codreceived", "label": "COD Received", "type": "string" },
+        {
+          "name": "grossdebtamount",
+          "label": "Gross Debt Amount",
+          "type": "string"
+        },
+        { "name": "amountpaid", "label": "Amount Paid", "type": "string" },
+        {
+          "name": "receivedlolfromuw",
+          "label": "Received LOL from U/W",
+          "type": "string"
+        },
+        {
+          "name": "claimpaidbyuw",
+          "label": "Claim Paid by U/W",
+          "type": "string"
+        },
+        {
+          "name": "reimbursementrequired",
+          "label": "Reimbursement Required",
+          "type": "string"
+        },
+        {
+          "name": "reimbursementrequested",
+          "label": "Reimbursement Requested",
+          "type": "string"
+        },
+        {
+          "name": "reimbursementreceived",
+          "label": "Reimbursement Received",
+          "type": "string"
+        },
+        {
+          "name": "tradinghistory",
+          "label": "Trading History",
+          "type": "string"
+        },
+        {
+          "name": "repaymentplanamount",
+          "label": "Repayment Plan Amount",
+          "type": "string"
+        },
+        {
+          "name": "instalmentamounts",
+          "label": "Instalment Amounts",
+          "type": "string"
+        },
+        {
+          "name": "frequency",
+          "label": "Frequency",
+          "type": "string"
+        },
+        {
+          "name": "repaymentplanlength",
+          "label": "Repayment Plan Length",
+          "type": "string"
+        },
+        {
+          "name": "finalpaymentdate",
+          "label": "Final Payment Date",
+          "type": "string"
+        },
+        {
+          "name": "dljustification",
+          "label": "D/L Justification",
+          "type": "string"
+        },
+        {
+          "name": "stage",
+          "label": "Stage",
+          "type": "string"
+        },
+        {
+          "name": "reimbursementspaid",
+          "label": "Reimbursements Paid",
+          "type": "string"
+        },
+        {
+          "name": "dateofoldestinvoice",
+          "label": "Date of Oldest Invoice",
+          "type": "string"
+        },
+        {
+          "name": "underwriter",
+          "label": "Underwriter",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "label": "Notes",
+          "type": "string"
+        },
+        {
+          "name": "sector",
+          "label": "Sector",
+          "type": "string"
+        }
+      ],
+      "defaultColumns": [
+        "name",
+        "accountid",
+        "claimsinforequested",
+        "claimsinforeviewed",
+        "datesubmittedtouw",
+        "reimbursementrequired",
+        "reimbursementrequested",
+        "reimbursementreceived",
+        "stage"
       ]
     },
     {

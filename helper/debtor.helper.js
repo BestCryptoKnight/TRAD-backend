@@ -53,11 +53,18 @@ const getClientDebtorList = async ({
 const getDebtorList = async () => {
   try {
     const debtors = await Debtor.find({ isActive: true })
-      .select('_id entityName abn acn')
+      .select('_id entityName abn acn registrationNumber')
       .lean();
     debtors.forEach((debtor) => {
       debtor.name =
-        debtor.entityName + ' (' + (debtor.abn ? debtor.abn : debtor.acn) + ')';
+        debtor.entityName +
+        ' (' +
+        (debtor.abn
+          ? debtor.abn
+          : debtor.acn
+          ? debtor.acn
+          : debtor.registrationNumber) +
+        ')';
       delete debtor.entityName;
       delete debtor.abn;
       delete debtor.acn;

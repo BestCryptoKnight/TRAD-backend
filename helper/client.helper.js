@@ -12,7 +12,11 @@ const ClientDebtor = mongoose.model('client-debtor');
 const Logger = require('./../services/logger');
 const StaticData = require('./../static-files/staticData.json');
 
-const getClientList = async ({ hasFullAccess = false, userId }) => {
+const getClientList = async ({
+  hasFullAccess = false,
+  userId,
+  sendCRMIds = false,
+}) => {
   try {
     let query = {
       isDeleted: false,
@@ -23,7 +27,11 @@ const getClientList = async ({ hasFullAccess = false, userId }) => {
         $or: [{ riskAnalystId: userId }, { serviceManagerId: userId }],
       };
     }
-    return await Client.find(query).select('_id name').lean();
+    let select = '_id name';
+    if (sendCRMIds) {
+      select += ' crmClientId';
+    }
+    return await Client.find(query).select(select).lean();
   } catch (e) {
     Logger.log.error('Error occurred in get client list', e.message || e);
   }

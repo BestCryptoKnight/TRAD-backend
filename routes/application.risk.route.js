@@ -1083,7 +1083,13 @@ router.put('/', async function (req, res) {
         }
         await Application.updateOne(
           { _id: req.body.applicationId },
-          { $set: { status: 'SUBMITTED', $inc: { applicationStage: 1 } } },
+          {
+            $set: {
+              status: 'SUBMITTED',
+              $inc: { applicationStage: 1 },
+              requestDate: new Date(),
+            },
+          },
         );
         message = 'Application submitted successfully.';
         await addAuditLog({
@@ -1142,6 +1148,9 @@ router.put('/:applicationId', async function (req, res) {
     const application = await Application.findOne({
       _id: req.params.applicationId,
     }).lean();
+    const applicationUpdate = {
+      status: req.body.status,
+    };
     if (req.body.status === 'APPROVED') {
       if (!req.body.creditLimit || !/^\d+$/.test(req.body.creditLimit)) {
         return res.status(400).send({
@@ -1150,13 +1159,12 @@ router.put('/:applicationId', async function (req, res) {
           message: 'Require fields are missing',
         });
       }
-      const applicationData = await Application.findOne({
-        clientId: application.clientId,
-        debtorId: application.debtorId,
-        clientDebtorId: application.clientDebtorId,
-        status: 'APPROVED',
-      }).lean();
+      const date = new Date();
+      applicationUpdate.approvalDate = date;
+      const expiryDate = new Date(date.setMonth(date.getMonth() + 12));
+      applicationUpdate.expiryDate = expiryDate;
       req.body.creditLimit = parseInt(req.body.creditLimit);
+      applicationUpdate.acceptedAmount = req.body.creditLimit;
       const ciPolicy = await Policy.findOne({
         clientId: application.clientId,
         product: { $regex: '.*Credit Insurance.*' },
@@ -1171,6 +1179,7 @@ router.put('/:applicationId', async function (req, res) {
         creditLimit: req.body.creditLimit,
         isEndorsedLimit: false,
         activeApplicationId: application._id,
+        expiryDate: expiryDate,
       };
       if (
         ciPolicy &&
@@ -1180,12 +1189,19 @@ router.put('/:applicationId', async function (req, res) {
         update.isEndorsedLimit = true;
       }
       await ClientDebtor.updateOne({ _id: application.clientDebtorId }, update);
+      //TODO uncomment Surrender other application on Approve status
+      /*const applicationData = await Application.findOne({
+        clientId: application.clientId,
+        debtorId: application.debtorId,
+        clientDebtorId: application.clientDebtorId,
+        status: 'APPROVED',
+      }).lean();
       if (applicationData && applicationData._id) {
         await Application.updateOne(
           { _id: applicationData._id },
           { status: 'SURRENDERED' },
         );
-      }
+      }*/
     } else if (
       req.body.status === 'DECLINED' ||
       req.body.status === 'CANCELLED' ||
@@ -1215,7 +1231,7 @@ router.put('/:applicationId', async function (req, res) {
     //TODO notify user
     await Application.updateOne(
       { _id: req.params.applicationId },
-      { status: req.body.status },
+      applicationUpdate,
     );
     await addAuditLog({
       entityType: 'application',

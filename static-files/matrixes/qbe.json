@@ -172,7 +172,7 @@
         }
       },
       "newZealand": {
-        "reports": ["To be referred to QBE for approval in all instances"],
+        "reports": [],
         "isAutoApproval": false,
         "guideLines": {
           "paymentRiskLevel": {

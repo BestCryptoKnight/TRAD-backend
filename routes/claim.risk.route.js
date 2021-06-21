@@ -5,7 +5,6 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const User = mongoose.model('user');
-const Client = mongoose.model('client');
 const Claim = mongoose.model('claim');
 
 /*

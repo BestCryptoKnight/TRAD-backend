@@ -1052,7 +1052,13 @@ router.put('/', async function (req, res) {
         }
         await Application.updateOne(
           { _id: req.body.applicationId },
-          { $set: { status: 'SUBMITTED', $inc: { applicationStage: 1 } } },
+          {
+            $set: {
+              status: 'SUBMITTED',
+              $inc: { applicationStage: 1 },
+              requestDate: new Date(),
+            },
+          },
         );
         message = 'Application submitted successfully.';
         await addAuditLog({

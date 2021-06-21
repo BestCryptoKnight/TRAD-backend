@@ -95,6 +95,12 @@
       "label": "Credit Report",
       "isDefault": false,
       "accessTypes": ["read", "write", "full-access"]
+    },
+    {
+      "name": "report",
+      "label": "Report",
+      "isDefault": false,
+      "accessTypes": ["read", "write", "full-access"]
     }
   ]
 }

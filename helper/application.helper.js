@@ -844,13 +844,19 @@ const checkForAutomation = async ({ applicationId }) => {
     update.blockers = blockers;
     if (blockers.length === 0 && identifiedInsurer !== 'euler') {
       //TODO approve credit limit
+      const date = new Date();
+      update.approvalDate = date;
+      const expiryDate = new Date(date.setMonth(date.getMonth() + 12));
+      update.expiryDate = expiryDate;
       update.status = 'APPROVED';
+      update.acceptedAmount = application.creditLimit;
       await ClientDebtor.updateOne(
         { _id: application.clientDebtorId._id },
         {
           creditLimit: application.creditLimit,
           isEndorsedLimit: false,
           activeApplicationId: applicationId,
+          expiryDate: expiryDate,
         },
       );
       await addAuditLog({

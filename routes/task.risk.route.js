@@ -9,6 +9,7 @@ const Task = mongoose.model('task');
 const Client = mongoose.model('client');
 const Debtor = mongoose.model('debtor');
 const Application = mongoose.model('application');
+const Insurer = mongoose.model('insurer');
 
 /*
  * Local Imports
@@ -123,8 +124,8 @@ router.get('/user-list', async function (req, res) {
     if (!userIds.includes(req.user._id.toString())) {
       users.push({ _id: req.user._id, name: req.user.name });
     }
-    users.forEach((i) => (i._id = 'user|' + i._id));
-    clients.forEach((i) => (i._id = 'client-user|' + i._id));
+    users.forEach((i) => (i.type = 'user'));
+    clients.forEach((i) => (i.type = 'client-user'));
     users = users.concat(clients);
     res.status(200).send({ status: 'SUCCESS', data: users });
   } catch (e) {
@@ -226,16 +227,6 @@ router.get('/details/:taskId', async function (req, res) {
       };
     }
     let value;
-    if (task.assigneeId) {
-      const user = await User.findById(task.assigneeId).lean();
-      if (user && user.name) {
-        value = user.name;
-        task.assigneeId = {
-          label: user.name,
-          value: task.assigneeId,
-        };
-      }
-    }
     if (task.entityId && task.entityType) {
       let response;
       if (task.entityType === 'client') {
@@ -248,11 +239,29 @@ router.get('/details/:taskId', async function (req, res) {
       } else if (task.entityType === 'debtor') {
         response = await Debtor.findById(task.entityId).lean();
         value = response && response.entityName ? response.entityName : '';
+      } else if (task.entityType === 'insurer') {
+        response = await Insurer.findById(task.entityId).lean();
+        value = response && response.name ? response.name : '';
       }
       task.entityId = {
         value: task.entityId,
         label: value,
       };
+    }
+    if (task.assigneeId) {
+      let user;
+      if (task.assigneeType === 'user') {
+        user = await User.findById(task.assigneeId).lean();
+      } else {
+        user = await Client.findById(task.assigneeId).lean();
+      }
+      if (user && user.name) {
+        value = user.name;
+        task.assigneeId = {
+          label: user.name,
+          value: task.assigneeId,
+        };
+      }
     }
     if (task.entityType) {
       task.entityType = {
@@ -400,6 +409,7 @@ router.post('/', async function (req, res) {
     !req.body.taskFrom ||
     !req.body.title ||
     !req.body.assigneeId ||
+    !req.body.assigneeType ||
     !req.body.dueDate
   ) {
     return res.status(400).send({
@@ -417,8 +427,8 @@ router.post('/', async function (req, res) {
       // entityId: req.body.entityId,
       createdByType: 'user',
       createdById: req.user._id,
-      assigneeType: req.body.assigneeId.split('|')[0],
-      assigneeId: req.body.assigneeId.split('|')[1],
+      assigneeType: req.body.assigneeType,
+      assigneeId: req.body.assigneeId,
       dueDate: req.body.dueDate,
     };
     if (req.body.entityType) {
@@ -566,9 +576,9 @@ router.put('/:taskId', async function (req, res) {
     if (req.body.entityType)
       updateObj.entityType = req.body.entityType.toLowerCase();
     if (req.body.entityId) updateObj.entityId = req.body.entityId;
-    if (req.body.assigneeId) {
-      updateObj.assigneeType = req.body.assigneeId.split('|')[0];
-      updateObj.assigneeId = req.body.assigneeId.split('|')[1];
+    if (req.body.assigneeId && req.body.assigneeType) {
+      updateObj.assigneeType = req.body.assigneeType;
+      updateObj.assigneeId = req.body.assigneeId;
     }
     if (req.body.dueDate) updateObj.dueDate = req.body.dueDate;
     if (req.body.hasOwnProperty('isCompleted')) {

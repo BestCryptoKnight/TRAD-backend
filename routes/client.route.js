@@ -262,7 +262,10 @@ router.get('/', async function (req, res) {
   }
   try {
     const client = await Client.findOne({ _id: req.user.clientId })
-      .populate({ path: 'riskAnalystId serviceManagerId', select: 'name' })
+      .populate({
+        path: 'riskAnalystId serviceManagerId insurerId',
+        select: 'name',
+      })
       .lean();
     res.status(200).send({ status: 'SUCCESS', data: client });
   } catch (e) {
