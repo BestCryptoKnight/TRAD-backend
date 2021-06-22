@@ -202,7 +202,8 @@ router.post('/', async function (req, res) {
     !req.body.name ||
     !req.body.hasOwnProperty('claimsinforequested') ||
     !req.body.underwriter ||
-    !req.body.stage
+    !req.body.stage ||
+    !req.body.accountid
   ) {
     return res.status(400).send({
       status: 'ERROR',

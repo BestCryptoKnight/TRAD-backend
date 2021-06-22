@@ -146,14 +146,7 @@ router.get('/:entityId', async function (req, res) {
     }
     res.status(200).send({
       status: 'SUCCESS',
-      data: {
-        docs: claims,
-        headers,
-        total,
-        page: parseInt(req.query.page),
-        limit: parseInt(req.query.limit),
-        pages: Math.ceil(total / parseInt(req.query.limit)),
-      },
+      data: claim && claim.record ? claim.record : {},
     });
   } catch (e) {
     Logger.log.error(
@@ -185,6 +178,10 @@ router.post('/', async function (req, res) {
     });
   }
   try {
+    const client = await Client.findOne({ _id: req.user.clientId })
+      .select('crmClientId')
+      .lean();
+    req.body.accountid = client.crmClientId;
     await addClaimInRSS({ requestBody: req.body });
     res.status(200).send({
       status: 'SUCCESS',
