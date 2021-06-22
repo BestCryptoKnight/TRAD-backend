@@ -8,12 +8,36 @@ const { numberWithCommas } = require('./report.helper');
 
 console.log('Current working directory:', __dirname);
 
-const generateExcel = ({ data, reportFor, headers }) => {
+const generateExcel = ({ data, reportFor, headers, filter }) => {
   return new Promise((resolve, reject) => {
+    console.log(data.length);
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet(reportFor);
     const row = worksheet.addRow([`Report for: ${reportFor}`]);
     row.height = 30;
+    let date;
+    for (let i = 0; i <= filter.length; i++) {
+      if (filter[i]) {
+        if (filter[i].type === 'date') {
+          date = new Date(filter[i]['value']);
+          filter[i]['value'] =
+            date.getDate() +
+            '/' +
+            (date.getMonth() + 1) +
+            '/' +
+            date.getFullYear();
+        }
+        worksheet.addRow([`${filter[i].label}: ${filter[i].value}`]);
+        worksheet.getCell(`A${i + 2}`).alignment = {
+          vertical: 'middle',
+          horizontal: 'center',
+        };
+        worksheet.getCell(`A${i + 2}`).font = {
+          bold: true,
+          size: 12,
+        };
+      }
+    }
     worksheet.getCell('A1').alignment = {
       vertical: 'middle',
       horizontal: 'center',
@@ -24,10 +48,15 @@ const generateExcel = ({ data, reportFor, headers }) => {
     };
     switch (reportFor) {
       case 'Limit List':
-        addColumnsForLimitList({ data, worksheet, headers });
+        addColumnsForLimitList({ data, worksheet, headers, filter });
         break;
       case 'Pending Application':
-        addColumnsForPendingApplicationList({ data, worksheet, headers });
+        addColumnsForPendingApplicationList({
+          data,
+          worksheet,
+          headers,
+          filter,
+        });
         break;
     }
     workbook.xlsx.writeBuffer().then((buffer) => {
@@ -37,9 +66,14 @@ const generateExcel = ({ data, reportFor, headers }) => {
   });
 };
 
-const addColumnsForLimitList = async ({ data, worksheet, headers }) => {
+const addColumnsForLimitList = async ({ data, worksheet, headers, filter }) => {
   try {
     worksheet.mergeCells('A1:O1');
+    for (let i = 0; i <= filter.length; i++) {
+      if (filter[i]) {
+        worksheet.mergeCells(`A${i + 2}:O${i + 2}`);
+      }
+    }
     worksheet.getColumn(1).width = 40;
     worksheet.getColumn(2).width = 30;
     worksheet.getColumn(3).width = 40;
@@ -69,9 +103,15 @@ const addColumnsForPendingApplicationList = async ({
   data,
   worksheet,
   headers,
+  filter,
 }) => {
   try {
     worksheet.mergeCells('A1:H1');
+    for (let i = 0; i <= filter.length; i++) {
+      if (filter[i]) {
+        worksheet.mergeCells(`A${i + 2}:H${i + 2}`);
+      }
+    }
     worksheet.getColumn(1).width = 40;
     worksheet.getColumn(2).width = 30;
     worksheet.getColumn(3).width = 26;

@@ -6,6 +6,7 @@ const Client = mongoose.model('client');
 const Policy = mongoose.model('policy');
 const Application = mongoose.model('application');
 const ClientDebtor = mongoose.model('client-debtor');
+const Debtor = mongoose.model('debtor');
 
 /*
  * Local Imports
@@ -321,6 +322,7 @@ const getLimitListReport = async ({
   userId,
   reportColumn,
   requestedQuery,
+  isForDownload = false,
 }) => {
   try {
     const queryFilter = {
@@ -328,10 +330,23 @@ const getLimitListReport = async ({
       creditLimit: { $exists: true, $ne: null },
     };
     const query = [];
+    const filterArray = [];
     if (requestedQuery.clientIds) {
-      const clientIds = requestedQuery.clientIds
-        .split(',')
-        .map((id) => mongoose.Types.ObjectId(id));
+      let clientIds = requestedQuery.clientIds.split(',');
+      if (isForDownload) {
+        const clients = await Client.find({ _id: { $in: clientIds } })
+          .select('name')
+          .lean();
+        filterArray.push({
+          label: 'Client',
+          value: clients
+            .map((i) => i.name)
+            .toString()
+            .replace(/,/g, ', '),
+          type: 'string',
+        });
+      }
+      clientIds = clientIds.map((id) => mongoose.Types.ObjectId(id));
       queryFilter.clientId = { $in: clientIds };
     } else if (!hasFullAccess) {
       const clients = await Client.find({
@@ -349,11 +364,25 @@ const getLimitListReport = async ({
         dateQuery = {
           $gte: new Date(requestedQuery.startDate),
         };
+        if (isForDownload) {
+          filterArray.push({
+            label: 'Start Date',
+            value: requestedQuery.startDate,
+            type: 'date',
+          });
+        }
       }
       if (requestedQuery.endDate) {
         dateQuery = Object.assign({}, dateQuery, {
           $lt: new Date(requestedQuery.endDate),
         });
+        if (isForDownload) {
+          filterArray.push({
+            label: 'End Date',
+            value: requestedQuery.endDate,
+            type: 'date',
+          });
+        }
       }
       queryFilter.expiryDate = dateQuery;
     }
@@ -563,7 +592,7 @@ const getLimitListReport = async ({
       }
       delete limit.activeApplicationId;
     });
-    return { response, total };
+    return { response, total, filterArray };
   } catch (e) {
     Logger.log.error('Error occurred in get limit list report');
     Logger.log.error(e.message || e);
@@ -575,6 +604,7 @@ const getPendingApplicationReport = async ({
   userId,
   reportColumn,
   requestedQuery,
+  isForDownload = false,
 }) => {
   try {
     const queryFilter = {
@@ -591,10 +621,23 @@ const getPendingApplicationReport = async ({
       },
     };
     const query = [];
+    const filterArray = [];
     if (requestedQuery.clientIds) {
-      const clientIds = requestedQuery.clientIds
-        .split(',')
-        .map((id) => mongoose.Types.ObjectId(id));
+      let clientIds = requestedQuery.clientIds.split(',');
+      if (isForDownload) {
+        const clients = await Client.find({ _id: { $in: clientIds } })
+          .select('name')
+          .lean();
+        filterArray.push({
+          label: 'Client',
+          value: clients
+            .map((i) => i.name)
+            .toString()
+            .replace(/,/g, ', '),
+          type: 'string',
+        });
+      }
+      clientIds = clientIds.map((id) => mongoose.Types.ObjectId(id));
       queryFilter.clientId = { $in: clientIds };
     } else if (!hasFullAccess) {
       const clients = await Client.find({
@@ -608,6 +651,16 @@ const getPendingApplicationReport = async ({
     }
     if (requestedQuery.debtorId) {
       queryFilter.debtorId = mongoose.Types.ObjectId(requestedQuery.debtorId);
+      const debtor = await Debtor.findOne({ _id: requestedQuery.debtorId })
+        .select('entityName')
+        .lean();
+      if (isForDownload) {
+        filterArray.push({
+          label: 'Debtor',
+          value: debtor && debtor.entityName ? debtor.entityName : '',
+          type: 'string',
+        });
+      }
     }
     if (requestedQuery.startDate || requestedQuery.endDate) {
       let dateQuery = {};
@@ -615,11 +668,25 @@ const getPendingApplicationReport = async ({
         dateQuery = {
           $gte: new Date(requestedQuery.startDate),
         };
+        if (isForDownload) {
+          filterArray.push({
+            label: 'Start Date',
+            value: requestedQuery.startDate,
+            type: 'date',
+          });
+        }
       }
       if (requestedQuery.endDate) {
         dateQuery = Object.assign({}, dateQuery, {
           $lt: new Date(requestedQuery.endDate),
         });
+        if (isForDownload) {
+          filterArray.push({
+            label: 'End Date',
+            value: requestedQuery.endDate,
+            type: 'date',
+          });
+        }
       }
       queryFilter.requestDate = dateQuery;
     }

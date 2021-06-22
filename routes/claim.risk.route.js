@@ -200,7 +200,7 @@ router.post('/', async function (req, res) {
   if (
     !req.body ||
     !req.body.name ||
-    !req.body.claimsinforequested ||
+    !req.body.hasOwnProperty('claimsinforequested') ||
     !req.body.underwriter ||
     !req.body.stage
   ) {

@@ -324,6 +324,7 @@ router.get('/download', async function (req, res) {
           hasFullAccess,
           userId: req.user._id,
           requestedQuery: req.query,
+          isForDownload: true,
         });
         break;
       case 'pending-application-report':
@@ -343,6 +344,7 @@ router.get('/download', async function (req, res) {
           hasFullAccess,
           userId: req.user._id,
           requestedQuery: req.query,
+          isForDownload: true,
         });
         break;
       default:
@@ -373,6 +375,7 @@ router.get('/download', async function (req, res) {
       data: finalArray,
       reportFor: reportFor,
       headers,
+      filter: response.filterArray,
     });
     const fileName = new Date().getTime() + '.xlsx';
     res.header(
