@@ -90,6 +90,13 @@ const getClaimsList = async ({
                   value: response[clientId]['name'],
                 }
               : '';
+        } else if (
+          key === 'claimsinforequested' ||
+          key === 'claimsinforeviewed' ||
+          key === 'reimbursementrequired' ||
+          key === 'tradinghistory'
+        ) {
+          data[key] = claim[key] === '1' ? 'Yes' : 'No';
         } else {
           data[key] = claim[key];
         }
