@@ -815,7 +815,7 @@ const getPendingApplicationReport = async ({
         application.status = formatString(application.status);
       }
     });
-    return { response, total };
+    return { response, total, filterArray };
   } catch (e) {
     Logger.log.error('Error occurred in get pending application report');
     Logger.log.error(e.message || e);
