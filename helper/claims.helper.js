@@ -36,15 +36,13 @@ const getClaimsList = async ({
         .select('_id crmClientId')
         .lean();
       clientCRMIds = [client.crmClientId];
-    }
-    //TODO take confirmation
-    /*else if (isForRisk) {
+    } else if (isForRisk) {
       const client = await Client.find({ isDeleted: false })
         .select('_id crmClientId')
         .lean();
       const crmIds = client.map((i) => i.crmClientId);
       clientCRMIds = crmIds;
-    }*/
+    }
     requestedQuery.page = requestedQuery.page || 1;
     requestedQuery.limit = requestedQuery.limit || 10;
     const { claims, totalCount } = await getClaimsDetails({
