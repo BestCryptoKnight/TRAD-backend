@@ -142,6 +142,12 @@ router.get('/:entityId', async function (req, res) {
         .select('name')
         .lean();
       claim.record.accountid = client.name;
+      claim.record.claimsinforequested =
+        claim.record.claimsinforequested === '1';
+      claim.record.claimsinforeviewed = claim.record.claimsinforeviewed === '1';
+      claim.record.reimbursementrequired =
+        claim.record.reimbursementrequired === '1';
+      claim.record.tradinghistory = claim.record.tradinghistory === '1';
       delete claim.record.description;
     }
     res.status(200).send({
