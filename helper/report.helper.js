@@ -1642,6 +1642,11 @@ const getUsagePerClientReport = async ({
           ? limit.debtorId[0]['registrationNumber']
           : '';
       }
+      if (limit.debtorId && limit.debtorId[0] && limit.debtorId[0].entityType) {
+        limit.entityType = limit.debtorId[0]['entityType']
+          ? formatString(limit.debtorId[0]['entityType'])
+          : '';
+      }
       if (limit.debtorId && limit.debtorId[0] && limit.debtorId[0].address) {
         limit.country =
           limit.debtorId[0]['address']['country'] &&
