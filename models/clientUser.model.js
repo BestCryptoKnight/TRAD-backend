@@ -28,7 +28,6 @@ const clientUserSchema = new Schema(
     crmContactId: { type: Schema.Types.String },
     email: {
       type: Schema.Types.String,
-      unique: true,
     },
     password: Schema.Types.String,
     signUpToken: Schema.Types.String,

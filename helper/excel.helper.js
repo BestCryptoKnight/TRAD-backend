@@ -1,19 +1,14 @@
 const ExcelJS = require('exceljs');
-const fs = require('fs');
-const path = require('path');
-let filePath = path.join(__dirname, '');
-let fileName = `new_users1${Date.now()}.xlsx`;
 
 const { numberWithCommas } = require('./report.helper');
 
-console.log('Current working directory:', __dirname);
-
-const generateExcel = ({ data, reportFor, headers, filter }) => {
+const generateExcel = ({ data, reportFor, headers, filter, title }) => {
   return new Promise((resolve, reject) => {
-    console.log(data.length);
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet(reportFor);
-    const row = worksheet.addRow([`Report for: ${reportFor}`]);
+    const row = worksheet.addRow([
+      title ? `${title}: ${reportFor}` : `${reportFor}`,
+    ]);
     row.height = 30;
     let date;
     for (let i = 0; i <= filter.length; i++) {
@@ -31,6 +26,7 @@ const generateExcel = ({ data, reportFor, headers, filter }) => {
         worksheet.getCell(`A${i + 2}`).alignment = {
           vertical: 'middle',
           horizontal: 'center',
+          wrapText: true,
         };
         worksheet.getCell(`A${i + 2}`).font = {
           bold: true,
@@ -58,12 +54,56 @@ const generateExcel = ({ data, reportFor, headers, filter }) => {
           filter,
         });
         break;
+      case 'Application List':
+        addColumnsForApplicationList({ data, worksheet, headers, filter });
+        break;
     }
     workbook.xlsx.writeBuffer().then((buffer) => {
       return resolve(buffer);
     });
-    // workbook.xlsx.writeFile(fileName);
   });
+};
+
+const addColumnsForApplicationList = async ({
+  data,
+  worksheet,
+  headers,
+  filter,
+}) => {
+  try {
+    worksheet.mergeCells('A1:S1');
+    for (let i = 0; i <= filter.length; i++) {
+      if (filter[i]) {
+        worksheet.mergeCells(`A${i + 2}:O${i + 2}`);
+      }
+    }
+    worksheet.getColumn(1).width = 40;
+    worksheet.getColumn(2).width = 20;
+    worksheet.getColumn(3).width = 40;
+    worksheet.getColumn(4).width = 40;
+    worksheet.getColumn(5).width = 20;
+    worksheet.getColumn(6).width = 25;
+    worksheet.getColumn(7).width = 25;
+    worksheet.getColumn(8).width = 20;
+    worksheet.getColumn(9).width = 20;
+    worksheet.getColumn(10).width = 20;
+    worksheet.getColumn(11).width = 25;
+    worksheet.getColumn(12).width = 20;
+    worksheet.getColumn(13).width = 20;
+    worksheet.getColumn(14).width = 30;
+    worksheet.getColumn(15).width = 30;
+    worksheet.getColumn(16).width = 30;
+    worksheet.getColumn(17).width = 30;
+    worksheet.getColumn(18).width = 20;
+    worksheet.getColumn(19).width = 20;
+    worksheet.addRow();
+    worksheet.mergeCells(
+      `A${worksheet.lastRow.number}:O${worksheet.lastRow.number}`,
+    );
+    await addDataForTable({ data, headers, worksheet });
+  } catch (e) {
+    console.log('Error occurred in add limit list data', e);
+  }
 };
 
 const addColumnsForLimitList = async ({ data, worksheet, headers, filter }) => {

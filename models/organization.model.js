@@ -32,6 +32,9 @@ const organizationSchema = new Schema(
         username: Schema.Types.String,
         password: Schema.Types.String,
       },
+      nzbn: {
+        accessToken: Schema.Types.String,
+      },
     },
     entityCount: {
       client: { type: Schema.Types.Number, default: 0 },

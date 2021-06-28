@@ -32,7 +32,7 @@ const getClientDebtorDetails = async ({ debtor, manageColumns }) => {
           label: i.label,
           value:
             i.name === 'country'
-              ? debtor['debtorId']['address']['country'][i.name]
+              ? debtor['debtorId']['address'][i.name]['name']
               : debtor['debtorId']['address'][i.name] || '',
           type: i.type,
         });
@@ -49,7 +49,7 @@ const getClientDebtorDetails = async ({ debtor, manageColumns }) => {
         if (value) {
           response.push({
             label: i.label,
-            value: value || '',
+            value: value || '-',
             type: i.type,
           });
         }

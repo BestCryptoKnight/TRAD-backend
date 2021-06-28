@@ -73,22 +73,51 @@ router.get('/column-name', async function (req, res) {
 /**
  * Get Report List
  */
-router.get('/list', async function (req, res) {
+router.get('/list/:debtorId', async function (req, res) {
+  if (!req.params.debtorId) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
   try {
-    const reports = [
-      {
-        code: 'HXBCA',
-        name: 'HTML Commercial Bureau Enquiry w/ refresh ASIC w/o ASIC Docs',
-      },
-      {
-        code: 'HXPAA',
-        name: 'HTML Payment Analysis & ASIC Current Extract',
-      },
-      {
-        code: 'HXPYA',
-        name: 'Risk of Late Payment Report (DDS)',
-      },
-    ];
+    const debtor = await Debtor.findOne({ _id: req.params.debtorId }).lean();
+    let reports = [];
+    if (debtor && debtor.entityType !== 'SOLE_TRADER' && debtor.address) {
+      if (debtor.address.country && debtor.address.country.code === 'AUS') {
+        reports = [
+          {
+            code: 'HXBSC',
+            name: 'HTML Commercial Bureau Enquiry without ASIC Docs',
+          },
+          {
+            code: 'HXBCA',
+            name:
+              'HTML Commercial Bureau Enquiry w/ refresh ASIC w/o ASIC Docs',
+          },
+          {
+            code: 'HXPAA',
+            name: 'HTML Payment Analysis & ASIC Current Extract',
+          },
+          {
+            code: 'HXPYA',
+            name: 'Risk of Late Payment Report (DDS)',
+          },
+        ];
+      } else {
+        reports = [
+          {
+            code: 'HNBCau',
+            name: 'HTML NZ Comm. Bureau Enq (AU Subs)',
+          },
+          {
+            code: 'NPA',
+            name: 'HTML Payment Analysis with refreshed NZCO',
+          },
+        ];
+      }
+    }
     res.status(200).send({ status: 'SUCCESS', data: reports });
   } catch (e) {
     Logger.log.error('Error occurred in get report list', e.message || e);
@@ -216,82 +245,129 @@ router.put('/generate', async function (req, res) {
     });
   }
   try {
-    let debtor = await Debtor.findOne({ _id: req.body.debtorId })
-      .select('abn acn entityType')
+    const debtor = await Debtor.findOne({ _id: req.body.debtorId })
+      .select('abn acn entityType address')
       .lean();
-    if (!debtor.abn && !debtor.acn) {
+    if (debtor) {
+      const report = await CreditReport.findOne({
+        isDeleted: false,
+        isExpired: false,
+        entityId: debtor._id,
+        productCode: req.body.productCode,
+        expiryDate: { $gt: new Date() },
+      });
+      if (report) {
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'REPORT_ALREADY_EXISTS',
+          message: 'Report already exists',
+        });
+      }
+      if (
+        !debtor.abn &&
+        !debtor.acn &&
+        !debtor.address &&
+        !debtor.address.country
+      ) {
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'ABN_AND_ACN_NOT_PRESENT',
+          message: 'Require fields are missing.',
+        });
+      }
+      let searchField;
+      let searchValue;
+      if (debtor.address.country.code === 'AUS') {
+        searchField = debtor.abn ? 'ABN' : 'ACN';
+        searchValue = debtor.abn ? debtor.abn : debtor.acn;
+      } else {
+        searchField = 'NCN';
+        searchValue = debtor.acn ? debtor.acn : '';
+      }
+      const entityTypes = ['TRUST'];
+      let entityId = req.body.debtorId;
+      let entityType = 'debtor';
+      if (debtor && entityTypes.includes(debtor.entityType)) {
+        const directors = await DebtorDirector.find({
+          debtorId: req.params.debtorId,
+        }).lean();
+        if (directors && directors.length !== 0) {
+          for (let i = 0; i < directors.length; i++) {
+            if (directors[i].type === 'company') {
+              entityId = directors[i]._id;
+              entityType = 'debtor-director';
+              if (directors[i].country && directors[i].country.code === 'AUS') {
+                searchValue = directors[i].abn
+                  ? directors[i].abn
+                  : directors[i].acn;
+                searchField = directors[i].abn ? 'ABN' : 'ACN';
+              } else {
+                searchValue = directors[i].acn ? directors[i].acn : '';
+                searchField = 'NCN';
+              }
+            }
+          }
+        }
+      }
+      if (searchField && searchValue) {
+        const reportData = await fetchCreditReport({
+          productCode: req.body.productCode,
+          searchField,
+          searchValue,
+        });
+        if (
+          reportData &&
+          reportData.Envelope.Body.Response &&
+          reportData.Envelope.Body.Response.Messages.ErrorCount &&
+          parseInt(reportData.Envelope.Body.Response.Messages.ErrorCount) === 0
+        ) {
+          const date = new Date();
+          const expiryDate = new Date(date.setMonth(date.getMonth() + 12));
+          await CreditReport.create({
+            entityId: entityId,
+            productCode: req.body.productCode,
+            creditReport: reportData.Envelope.Body.Response,
+            reportProvider: 'illion',
+            entityType: entityType,
+            name: reportData.Envelope.Body.Response.Header.ProductName,
+            expiryDate: expiryDate,
+          });
+          //TODO update in client-debtor
+          if (
+            reportData.Envelope.Body.Response.DynamicDelinquencyScore &&
+            reportData.Envelope.Body.Response.DynamicDelinquencyScore &&
+            reportData.Envelope.Body.Response.DynamicDelinquencyScore.Score
+          ) {
+            await Debtor.updateOne(
+              { _id: debtor._id },
+              {
+                riskRating:
+                  reportData.Envelope.Body.Response.DynamicDelinquencyScore
+                    .Score,
+              },
+            );
+          }
+        }
+        // TODO Generate Credit Report HTML
+        res.status(200).send({
+          status: 'SUCCESS',
+          data: 'Report generated successfully',
+        });
+      } else {
+        res.status(400).send({
+          status: 'UNABLE_TO_FETCH_REPORT',
+          data: 'Unable to fetch report',
+        });
+      }
+    } else {
       return res.status(400).send({
         status: 'ERROR',
-        messageCode: 'ABN_AND_ACN_NOT_PRESENT',
-        message: 'Require fields are missing.',
+        messageCode: 'NO_DEBTOR_FOUND',
+        message: 'No debtor found',
       });
     }
-    let searchField = debtor.abn ? 'ABN' : 'ACN';
-    let searchValue = debtor.abn ? debtor.abn : debtor.acn;
-    const entityTypes = ['TRUST'];
-    let entityId = req.body.debtorId;
-    let entityType = 'debtor';
-    if (debtor && entityTypes.includes(debtor.entityType)) {
-      const directors = await DebtorDirector.find({
-        debtorId: req.params.debtorId,
-      }).lean();
-      if (
-        directors &&
-        directors[0].type === 'company' &&
-        (directors[0].abn || directors[0].acn)
-      ) {
-        entityId = directors[0]._id;
-        entityType = 'debtor-director';
-        searchValue =
-          searchField === 'ABN' ? directors[0].abn : directors[0].acn;
-      }
-    }
-    const reportData = await fetchCreditReport({
-      productCode: req.body.productCode,
-      searchField,
-      searchValue,
-    });
-    if (
-      reportData &&
-      reportData.Envelope.Body.Response &&
-      reportData.Envelope.Body.Response.Messages.ErrorCount &&
-      parseInt(reportData.Envelope.Body.Response.Messages.ErrorCount) === 0
-    ) {
-      const date = new Date();
-      const expiryDate = new Date(date.setMonth(date.getMonth() + 12));
-      await CreditReport.create({
-        entityId: entityId,
-        productCode: req.body.productCode,
-        creditReport: reportData.Envelope.Body.Response,
-        reportProvider: 'illion',
-        entityType: entityType,
-        name: reportData.Envelope.Body.Response.Header.ProductName,
-        expiryDate: expiryDate,
-      });
-      if (
-        reportData.Envelope.Body.Response.DynamicDelinquencyScore &&
-        reportData.Envelope.Body.Response.DynamicDelinquencyScore &&
-        reportData.Envelope.Body.Response.DynamicDelinquencyScore.Score
-      ) {
-        await Debtor.updateOne(
-          { _id: debtor._id },
-          {
-            riskRating:
-              reportData.Envelope.Body.Response.DynamicDelinquencyScore.Score,
-          },
-        );
-      }
-    }
-    // TODO Generate Credit Report HTML
-    res.status(200).send({
-      status: 'SUCCESS',
-      data: 'Report generated successfully',
-    });
   } catch (e) {
-    Logger.log.error(
-      'Error occurred in generating Credit Report',
-      e.message || e,
-    );
+    Logger.log.error('Error occurred in generating Credit Report', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

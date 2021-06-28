@@ -19,7 +19,7 @@
         "entityType",
         "actionType",
         "logDescription",
-        "userType",
+        "userRefId",
         "createdAt"
       ]
     },
@@ -28,7 +28,7 @@
       "manageColumns": [
         {
           "name": "applicationId",
-          "label": "Application ID",
+          "label": "Application Number",
           "type": "string"
         },
         {
@@ -49,11 +49,28 @@
           "request": { "method": "GET", "url": "debtor/drawer" }
         },
         { "name": "entityType", "label": "Entity Type", "type": "string" },
-        { "name": "creditLimit", "label": "Credit Limit", "type": "amount" },
+        {
+          "name": "creditLimit",
+          "label": "Requested Amount",
+          "type": "amount"
+        },
+        {
+          "name": "acceptedAmount",
+          "label": "Approved Amount",
+          "type": "amount"
+        },
+        { "name": "requestDate", "label": "Requested Date", "type": "date" },
+        { "name": "approvalDate", "label": "Approval Date", "type": "date" },
+        { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
         { "name": "createdById", "label": "Submitted By", "type": "string" },
         {
           "name": "outstandingAmount",
           "label": "Outstanding Amount",
+          "type": "amount"
+        },
+        {
+          "name": "orderOnHand",
+          "label": "Orders on hand",
           "type": "amount"
         },
         {
@@ -85,6 +102,9 @@
         "entityType",
         "clientId",
         "debtorId",
+        "creditLimit",
+        "requestDate",
+        "createdById",
         "updatedAt"
       ]
     },
@@ -140,12 +160,17 @@
         { "name": "zipCode", "label": "Postcode/Zip", "type": "string" },
         { "name": "website", "label": "Website", "type": "string" },
         { "name": "sector", "label": "Sector", "type": "string" },
-        { "name": "abn", "label": "ABN", "type": "string" },
-        { "name": "acn", "label": "ACN", "type": "string" },
+        { "name": "abn", "label": "ABN/NZBN", "type": "string" },
+        { "name": "acn", "label": "ACN/NCN", "type": "string" },
         { "name": "salesPerson", "label": "Sales Person", "type": "string" },
         { "name": "referredBy", "label": "Referred By", "type": "string" },
         { "name": "inceptionDate", "label": "Inception Date", "type": "date" },
         { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
+        {
+          "name": "isAutoApproveAllowed",
+          "label": "AutoApprove Allowed",
+          "type": "string"
+        },
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
@@ -156,7 +181,8 @@
         "riskAnalystId",
         "abn",
         "acn",
-        "state"
+        "insurerId",
+        "expiryDate"
       ]
     },
     {
@@ -215,11 +241,29 @@
         },
         {
           "name": "applicationId",
-          "label": "Application ID",
+          "label": "Application Number",
           "type": "string"
         },
         { "name": "entityType", "label": "Entity Type", "type": "string" },
-        { "name": "creditLimit", "label": "Credit Limit", "type": "amount" },
+        {
+          "name": "status",
+          "label": "Status",
+          "type": "string"
+        },
+        {
+          "name": "creditLimit",
+          "label": "Requested Amount",
+          "type": "amount"
+        },
+        {
+          "name": "acceptedAmount",
+          "label": "Approved Amount",
+          "type": "amount"
+        },
+        { "name": "requestDate", "label": "Requested Date", "type": "date" },
+        { "name": "approvalDate", "label": "Approval Date", "type": "date" },
+        { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
+        { "name": "createdById", "label": "Submitted By", "type": "string" },
         {
           "name": "outstandingAmount",
           "label": "Outstanding Amount",
@@ -242,7 +286,9 @@
         "entityType",
         "debtorId",
         "creditLimit",
-        "applicationId"
+        "applicationId",
+        "requestDate",
+        "createdById"
       ]
     },
     {
@@ -362,8 +408,8 @@
           }
         },
         { "name": "entityType", "label": "Entity Type", "type": "string" },
-        { "name": "abn", "label": "ABN", "type": "string" },
-        { "name": "acn", "label": "ACN", "type": "string" },
+        { "name": "abn", "label": "ABN/NZBN", "type": "string" },
+        { "name": "acn", "label": "ACN/NCN", "type": "string" },
         {
           "name": "registrationNumber",
           "label": "Registration Number",
@@ -556,8 +602,8 @@
       "manageColumns": [
         { "name": "debtorCode", "label": "Debtor Code", "type": "string" },
         { "name": "entityName", "label": "Entity Name", "type": "string" },
-        { "name": "abn", "label": "ABN", "type": "string" },
-        { "name": "acn", "label": "ACN", "type": "string" },
+        { "name": "abn", "label": "ABN/NZBN", "type": "string" },
+        { "name": "acn", "label": "ACN/NCN", "type": "string" },
         {
           "name": "registrationNumber",
           "label": "Registration Number",
@@ -612,6 +658,11 @@
           "type": "string"
         },
         { "name": "entityType", "label": "Entity Type", "type": "string" },
+        {
+          "name": "status",
+          "label": "Status",
+          "type": "string"
+        },
         { "name": "creditLimit", "label": "Credit Limit", "type": "amount" },
         {
           "name": "outstandingAmount",
@@ -723,8 +774,8 @@
           "label": "Contact Number",
           "type": "string"
         },
-        { "name": "abn", "label": "ABN", "type": "string" },
-        { "name": "acn", "label": "ACN", "type": "string" },
+        { "name": "abn", "label": "ABN/NZBN", "type": "string" },
+        { "name": "acn", "label": "ACN/NCN", "type": "string" },
         {
           "name": "registrationNumber",
           "label": "Registration Number",
@@ -997,8 +1048,8 @@
         { "name": "clientId", "label": "Client Name", "type": "string" },
         { "name": "insurerId", "label": "Insurer Name", "type": "string" },
         { "name": "debtorId", "label": "Debtor Name", "type": "string" },
-        { "name": "abn", "label": "ABN", "type": "string" },
-        { "name": "acn", "label": "ACN", "type": "string" },
+        { "name": "abn", "label": "ABN/NZBN", "type": "string" },
+        { "name": "acn", "label": "ACN/NCN", "type": "string" },
         {
           "name": "registrationNumber",
           "label": "Registration Number",
@@ -1089,8 +1140,8 @@
           "label": "Debtor Entity Type",
           "type": "string"
         },
-        { "name": "abn", "label": "ABN", "type": "string" },
-        { "name": "acn", "label": "ACN", "type": "string" },
+        { "name": "abn", "label": "ABN/NZBN", "type": "string" },
+        { "name": "acn", "label": "ACN/NCN", "type": "string" },
         {
           "name": "registrationNumber",
           "label": "Registration Number",
@@ -1210,8 +1261,8 @@
           "label": "Debtor Entity Type",
           "type": "string"
         },
-        { "name": "abn", "label": "Debtor ABN", "type": "string" },
-        { "name": "acn", "label": "Debtor ACN", "type": "string" },
+        { "name": "abn", "label": "Debtor ABN/NZBN", "type": "string" },
+        { "name": "acn", "label": "Debtor ACN/NCN", "type": "string" },
         {
           "name": "registrationNumber",
           "label": "Debtor Registration Number",
@@ -1265,8 +1316,8 @@
           "label": "Debtor Entity Type",
           "type": "string"
         },
-        { "name": "abn", "label": "Debtor ABN", "type": "string" },
-        { "name": "acn", "label": "Debtor ACN", "type": "string" },
+        { "name": "abn", "label": "Debtor ABN/NZBN", "type": "string" },
+        { "name": "acn", "label": "Debtor ACN/NCN", "type": "string" },
         {
           "name": "registrationNumber",
           "label": "Debtor Registration Number",
@@ -1453,8 +1504,8 @@
     {
       "name": "stakeholder",
       "manageColumns": [
-        { "name": "abn", "label": "ABN", "type": "string" },
-        { "name": "acn", "label": "ACN", "type": "string" },
+        { "name": "abn", "label": "ABN/NZBN", "type": "string" },
+        { "name": "acn", "label": "ACN/NCN", "type": "string" },
         {
           "name": "registrationNumber",
           "label": "Registration Number",

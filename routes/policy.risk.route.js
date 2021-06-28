@@ -336,7 +336,6 @@ router.put('/sync-from-crm/:insurerId', async function (req, res) {
         message: 'Policies not found',
       });
     }
-    console.log('Total Clients : ', policies.length);
     let policiesFromCrm;
     let promiseArr = [];
     let newPolicies = [];
@@ -432,7 +431,6 @@ router.put('/client/sync-from-crm/:clientId', async function (req, res) {
     const client = await Client.findOne({ _id: req.params.clientId })
       .select('_id name crmClientId insurerId')
       .lean();
-    console.log('Total Policies : ', client);
     let promiseArr = [];
     let newPolicies = [];
     if (client && client._id && client.insurerId) {

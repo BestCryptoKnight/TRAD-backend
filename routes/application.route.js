@@ -24,10 +24,8 @@ const {
   checkForAutomation,
 } = require('./../helper/application.helper');
 const {
-  getEntityDetailsByABN,
-  getEntityDetailsByACN,
-  getEntityListByName,
-  resolveEntityType,
+  getEntityDetailsByBusinessNumber,
+  getEntityDetailsByName,
 } = require('./../helper/abr.helper');
 const {
   getDebtorList,
@@ -422,10 +420,9 @@ router.get('/details/:applicationId', async function (req, res) {
             if (partner.state) {
               const state = getStateName(partner.state, partner.country.code);
               if (state && state.name && state._id) {
-                response.company.state = {
-                  value: response.company.state,
-                  label:
-                    state && state.name ? state.name : response.company.state,
+                partner.state = {
+                  value: partner.state,
+                  label: state && state.name ? state.name : partner.state,
                 };
               }
             }
@@ -452,6 +449,12 @@ router.get('/details/:applicationId', async function (req, res) {
                 label:
                   partner.entityType.charAt(0).toUpperCase() +
                   partner.entityType.slice(1).toLowerCase(),
+              };
+            }
+            if (partner.country) {
+              partner.stakeholderCountry = {
+                value: partner.country.code,
+                label: partner.country.name,
               };
             }
           }
@@ -481,6 +484,7 @@ router.get('/details/:applicationId', async function (req, res) {
         ];
         for (let key in application.debtorId) {
           if (key === 'address') {
+            response.country = application.debtorId.address.country.code;
             response[key] = getDebtorFullAddress({
               address: application.debtorId[key],
             });
@@ -590,7 +594,7 @@ router.get('/modules/:applicationId', async function (req, res) {
  * Search from ABN/ACN Number
  */
 router.get('/search-entity', async function (req, res) {
-  if (!req.query.searchString) {
+  if (!req.query.searchString || !req.query.country || !req.query.step) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -623,104 +627,19 @@ router.get('/search-entity', async function (req, res) {
         responseData.messageCode = 'APPROVED_APPLICATION_ALREADY_EXISTS';
       }
     }
-    let entityData;
-    if (req.query.searchString.length < 10) {
-      console.log('Get entity details from ACN number :: ');
-      entityData = await getEntityDetailsByACN({
-        searchString: req.query.searchString,
-      });
-    } else {
-      entityData = await getEntityDetailsByABN({
-        searchString: req.query.searchString,
-      });
-    }
-    let response = {};
-    if (entityData && entityData.response) {
-      const entityDetails =
-        entityData.response.businessEntity202001 ||
-        entityData.response.businessEntity201408;
-      if (entityDetails) {
-        if (entityDetails.ABN) response.abn = entityDetails.ABN.identifierValue;
-        if (
-          entityDetails.entityStatus &&
-          entityDetails.entityStatus.entityStatusCode
-        )
-          response.isActive = entityDetails.entityStatus.entityStatusCode;
-        if (
-          entityDetails.entityStatus &&
-          entityDetails.entityStatus.effectiveFrom
-        )
-          response.registeredDate = entityDetails.entityStatus.effectiveFrom;
-        if (entityDetails.ASICNumber)
-          response.acn =
-            typeof entityDetails.ASICNumber === 'string'
-              ? entityDetails.ASICNumber
-              : '';
-        if (entityDetails.entityType) {
-          const entityType = await resolveEntityType({
-            entityType: entityDetails.entityType.entityDescription,
-          });
-          response.entityType = {
-            label: entityType
-              .replace(/_/g, ' ')
-              .replace(/\w\S*/g, function (txt) {
-                return (
-                  txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
-                );
-              }),
-            value: entityType,
-          };
-        }
-        if (entityDetails.goodsAndServicesTax)
-          response.gstStatus = entityDetails.goodsAndServicesTax.effectiveFrom;
-        if (entityDetails.mainName)
-          response.entityName = {
-            label: Array.isArray(entityDetails.mainName)
-              ? entityDetails.mainName[0].organisationName
-              : entityDetails.mainName.organisationName,
-            value: Array.isArray(entityDetails.mainName)
-              ? entityDetails.mainName[0].organisationName
-              : entityDetails.mainName.organisationName,
-          };
-        const tradingName =
-          entityDetails.mainTradingName || entityDetails.businessName;
-        if (tradingName)
-          response.tradingName =
-            tradingName.organisationName ||
-            typeof tradingName.organisationName === 'string'
-              ? tradingName.organisationName
-              : tradingName[0].organisationName;
-        if (entityDetails.mainBusinessPhysicalAddress[0]) {
-          const state = StaticData.australianStates.find((i) => {
-            if (
-              i._id === entityDetails.mainBusinessPhysicalAddress[0].stateCode
-            )
-              return i;
-          });
-          response.state = {
-            label:
-              state && state.name
-                ? state.name
-                : entityDetails.mainBusinessPhysicalAddress[0].stateCode,
-            value: entityDetails.mainBusinessPhysicalAddress[0].stateCode,
-          };
-        }
-        if (entityDetails.mainBusinessPhysicalAddress[0])
-          response.postCode =
-            entityDetails.mainBusinessPhysicalAddress[0].postcode;
-      } else {
-        return res.status(400).send({
-          status: 'ERROR',
-          messageCode: 'NO_DATA_FOUND',
-          message: 'No data found',
-        });
-      }
+    const response = await getEntityDetailsByBusinessNumber({
+      country: req.query.country,
+      searchString: req.query.searchString,
+      step: req.query.step,
+    });
+    if (response && response.status && response.status === 'ERROR') {
+      return res.status(400).send(response);
     }
     responseData.status = 'SUCCESS';
     responseData.data = response;
     res.status(200).send(responseData);
   } catch (e) {
-    Logger.log.error('Error occurred in search by ABN number  ', e);
+    Logger.log.error('Error occurred in search by business number', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -732,7 +651,7 @@ router.get('/search-entity', async function (req, res) {
  * Search from Entity Name
  */
 router.get('/search-entity-list', async function (req, res) {
-  if (!req.query.searchString) {
+  if (!req.query.searchString || !req.query.country) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -740,65 +659,17 @@ router.get('/search-entity-list', async function (req, res) {
     });
   }
   try {
-    let entityList = await getEntityListByName({
+    const response = await getEntityDetailsByName({
       searchString: req.query.searchString,
+      country: req.query.country,
+      page: req.query.page,
     });
-    let response = [];
-    let entityData = {};
-    if (
-      entityList &&
-      entityList.ABRPayloadSearchResults.response &&
-      entityList.ABRPayloadSearchResults.response.searchResultsList &&
-      entityList.ABRPayloadSearchResults.response.searchResultsList
-        .searchResultsRecord &&
-      entityList.ABRPayloadSearchResults.response.searchResultsList
-        .searchResultsRecord.length !== 0
-    ) {
-      const entities = Array.isArray(
-        entityList.ABRPayloadSearchResults.response.searchResultsList
-          .searchResultsRecord,
-      )
-        ? entityList.ABRPayloadSearchResults.response.searchResultsList
-            .searchResultsRecord
-        : [
-            entityList.ABRPayloadSearchResults.response.searchResultsList
-              .searchResultsRecord,
-          ];
-      entities.forEach((data) => {
-        entityData = {};
-        if (
-          data.ABN &&
-          data.ABN.identifierStatus &&
-          data.ABN.identifierStatus.toLowerCase() !== 'cancelled'
-        ) {
-          if (data.ABN) entityData.abn = data.ABN.identifierValue;
-          if (data.ABN) entityData.status = data.ABN.identifierStatus;
-          let fieldName =
-            data.mainName ||
-            data.businessName ||
-            data.otherTradingName ||
-            data.mainTradingName;
-          if (fieldName) {
-            entityData.label = fieldName.organisationName;
-            entityData.value = fieldName.organisationName;
-          }
-          if (data.mainBusinessPhysicalAddress) {
-            entityData.state =
-              typeof data.mainBusinessPhysicalAddress.stateCode === 'string'
-                ? data.mainBusinessPhysicalAddress.stateCode
-                : '';
-            entityData.postCode = data.mainBusinessPhysicalAddress.postcode;
-          }
-          response.push(entityData);
-        }
-      });
-    }
     res.status(200).send({
       status: 'SUCCESS',
       data: response,
     });
   } catch (e) {
-    Logger.log.error('Error occurred in search by ABN number  ', e);
+    Logger.log.error('Error occurred in search by entity name', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -1069,7 +940,11 @@ router.put('/', async function (req, res) {
           userRefId: req.user._id,
           logDescription: `A new application ${application.applicationId} is successfully generated by ${req.user.name}`,
         });
-        checkForAutomation({ applicationId: req.body.applicationId });
+        checkForAutomation({
+          applicationId: req.body.applicationId,
+          userId: req.user.clientId,
+          userType: 'client-user',
+        });
         break;
       default:
         return res.status(400).send({

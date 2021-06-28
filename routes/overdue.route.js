@@ -436,7 +436,6 @@ router.put('/list', async function (req, res) {
         i.year
       );
     });
-    console.log(overdueArr);
     let isDuplicate = overdueArr.some((element, index) => {
       return overdueArr.indexOf(element) !== index;
     });
@@ -449,11 +448,11 @@ router.put('/list', async function (req, res) {
     }
     for (let i = 0; i < req.body.list.length; i++) {
       if (
-        !req.body.list[i].debtorId ||
-        !mongoose.Types.ObjectId.isValid(req.body.list[i].debtorId) ||
+        ((!req.body.list[i].debtorId ||
+          !mongoose.Types.ObjectId.isValid(req.body.list[i].debtorId)) &&
+          !req.body.list[i].acn) ||
         !req.body.list[i].month ||
         !req.body.list[i].year ||
-        !req.body.list[i].acn ||
         !req.body.list[i].dateOfInvoice ||
         !req.body.list[i].overdueType ||
         !req.body.list[i].insurerId ||

@@ -1181,7 +1181,7 @@ const getUsageReport = async ({
       const clientIds = requestedQuery.clientIds
         .split(',')
         .map((id) => mongoose.Types.ObjectId(id));
-      queryFilter.clientId = { $in: clientIds };
+      queryFilter._id = { $in: clientIds };
     } else if (!hasFullAccess) {
       queryFilter = Object.assign({}, queryFilter, {
         $or: [

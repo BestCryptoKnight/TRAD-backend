@@ -185,14 +185,17 @@ const createDebtor = async ({
       clientId: clientId,
       debtorId: debtor._id,
     }).lean();
-    await addAuditLog({
-      entityType: 'debtor',
-      entityRefId: debtor._id,
-      actionType: 'add',
-      userType: 'user',
-      userRefId: userId,
-      logDescription: `A debtor ${debtor.entityName} is successfully updated by ${userName}`,
-    });
+    //TODO add logs for update on back step
+    if (!isDebtorExists) {
+      addAuditLog({
+        entityType: 'debtor',
+        entityRefId: debtor._id,
+        actionType: 'add',
+        userType: 'user',
+        userRefId: userId,
+        logDescription: `A debtor ${debtor.entityName} is successfully added by ${userName}`,
+      });
+    }
     return { debtor, clientDebtor };
   } catch (e) {
     Logger.log.error('Error occurred in creating debtor ', e);

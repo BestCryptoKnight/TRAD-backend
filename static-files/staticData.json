@@ -2574,5 +2574,103 @@
       "_id": "TRUST",
       "name": "Unlisted Public Unit Trust"
     }
+  ],
+  "NZEntityType": [
+    {
+      "name": "LTD",
+      "_id": "LIMITED_COMPANY"
+    },
+    {
+      "name": "ULTD",
+      "_id": "LIMITED_COMPANY"
+    },
+    {
+      "name": "UNLTD1",
+      "_id": "LIMITED_COMPANY"
+    },
+    {
+      "name": "COOP",
+      "_id": "BUSINESS"
+    },
+    {
+      "name": "NZCompany",
+      "_id": "PROPRIETARY_LIMITED"
+    },
+    {
+      "name": "ASIC",
+      "_id": "PROPRIETARY_LIMITED"
+    },
+    {
+      "name": "NON_ASIC",
+      "_id": "PROPRIETARY_LIMITED"
+    },
+    {
+      "name": "OverseasCompany",
+      "_id": "PROPRIETARY_LIMITED"
+    },
+    {
+      "name": "Sole_Trader",
+      "_id": "SOLE_TRADER"
+    },
+    {
+      "_id": "PARTNERSHIP",
+      "name": "Partnership"
+    },
+    {
+      "name": "Trading_Trust",
+      "_id": "TRUST"
+    },
+    {
+      "name": "T",
+      "_id": "TRUST"
+    },
+    {
+      "name": "B",
+      "_id": "BUSINESS"
+    },
+    {
+      "name": "D",
+      "_id": "BUSINESS"
+    },
+    {
+      "name": "F",
+      "_id": "BUSINESS"
+    },
+    {
+      "name": "I",
+      "_id": "BUSINESS"
+    },
+    {
+      "name": "N",
+      "_id": "BUSINESS"
+    },
+    {
+      "name": "Y",
+      "_id": "PARTNERSHIP"
+    },
+    {
+      "name": "Z",
+      "_id": "PARTNERSHIP"
+    },
+    {
+      "name": "S",
+      "_id": "BUSINESS"
+    },
+    {
+      "name": "GovtCentral",
+      "_id": "GOVERNMENT"
+    },
+    {
+      "name": "GovtLocal",
+      "_id": "GOVERNMENT"
+    },
+    {
+      "name": "GovtEdu",
+      "_id": "GOVERNMENT"
+    },
+    {
+      "name": "GovtOther",
+      "_id": "GOVERNMENT"
+    }
   ]
 }

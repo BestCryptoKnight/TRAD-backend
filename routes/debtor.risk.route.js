@@ -26,10 +26,8 @@ const {
   storeStakeholderDetails,
 } = require('./../helper/stakeholder.helper');
 const {
-  getEntityDetailsByABN,
-  getEntityDetailsByACN,
-  getEntityListByName,
-  resolveEntityType,
+  getEntityDetailsByBusinessNumber,
+  getEntityDetailsByName,
 } = require('./../helper/abr.helper');
 const { generateNewApplication } = require('./../helper/application.helper');
 const { addAuditLog, getEntityName } = require('./../helper/audit-log.helper');
@@ -362,10 +360,18 @@ router.get('/stakeholder-details/:stakeholderId', async function (req, res) {
         delete stakeholder.residentialAddress;
       }
       if (stakeholder.country) {
-        stakeholder.country = {
-          label: stakeholder.country.name,
-          value: stakeholder.country.code,
-        };
+        if (stakeholder.type === 'company') {
+          stakeholder.stakeholderCountry = {
+            label: stakeholder.country.name,
+            value: stakeholder.country.code,
+          };
+          delete stakeholder.country;
+        } else {
+          stakeholder.country = {
+            label: stakeholder.country.name,
+            value: stakeholder.country.code,
+          };
+        }
       }
       if (stakeholder.entityType) {
         stakeholder.entityType = {
@@ -548,6 +554,9 @@ router.get('/stakeholder/:debtorId', async function (req, res) {
                 );
               });
           }
+          if (stakeholder.country) {
+            stakeholder.country = stakeholder.country.name;
+          }
         }
         delete stakeholder.type;
         delete stakeholder.id;
@@ -676,7 +685,7 @@ router.get('/details/:debtorId', async function (req, res) {
       debtorId: req.params.debtorId,
       clientId: req.query.clientId,
       status: {
-        $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED', 'DRAFT'],
+        $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED'],
       },
     }).lean();
     if (application && application.status !== 'APPROVED') {
@@ -926,8 +935,8 @@ router.get('/credit-limit/:debtorId', async function (req, res) {
 /**
  * Search from ABN/ACN Number
  */
-router.get('/search-entity/:searchString', async function (req, res) {
-  if (!req.params.searchString) {
+router.get('/search-entity', async function (req, res) {
+  if (!req.query.searchString || !req.query.country) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -935,120 +944,20 @@ router.get('/search-entity/:searchString', async function (req, res) {
     });
   }
   try {
-    let entityData;
-    if (req.params.searchString.length < 10) {
-      entityData = await getEntityDetailsByACN({
-        searchString: req.params.searchString,
-      });
-    } else {
-      entityData = await getEntityDetailsByABN({
-        searchString: req.params.searchString,
-      });
-    }
-    let response = {};
-    if (entityData && entityData.response) {
-      const entityDetails =
-        entityData.response.businessEntity202001 ||
-        entityData.response.businessEntity201408;
-      if (entityDetails) {
-        if (entityDetails.entityType) {
-          const entityType = await resolveEntityType({
-            entityType: entityDetails.entityType.entityDescription,
-          });
-          const entityTypes = [
-            'PROPRIETARY_LIMITED',
-            'LIMITED',
-            'CORPORATION',
-            'INCORPORATED',
-            'NO_LIABILITY',
-            'PROPRIETARY',
-            'REGISTERED_BODY',
-          ];
-          if (!entityTypes.includes(entityType)) {
-            return res.status(400).send({
-              status: 'ERROR',
-              messageCode: 'INVALID_ENTITY_TYPE',
-              message: 'Invalid entity type',
-            });
-          }
-          response.entityType = {
-            label: entityType
-              .replace(/_/g, ' ')
-              .replace(/\w\S*/g, function (txt) {
-                return (
-                  txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
-                );
-              }),
-            value: entityType,
-          };
-        }
-        if (entityDetails.ABN) response.abn = entityDetails.ABN.identifierValue;
-        if (
-          entityDetails.entityStatus &&
-          entityDetails.entityStatus.entityStatusCode
-        )
-          response.isActive = entityDetails.entityStatus.entityStatusCode;
-        if (
-          entityDetails.entityStatus &&
-          entityDetails.entityStatus.effectiveFrom
-        )
-          response.registeredDate = entityDetails.entityStatus.effectiveFrom;
-        if (entityDetails.ASICNumber)
-          response.acn =
-            typeof entityDetails.ASICNumber === 'string'
-              ? entityDetails.ASICNumber
-              : '';
-        if (entityDetails.goodsAndServicesTax)
-          response.gstStatus = entityDetails.goodsAndServicesTax.effectiveFrom;
-        if (entityDetails.mainName)
-          response.entityName = {
-            label: Array.isArray(entityDetails.mainName)
-              ? entityDetails.mainName[0].organisationName
-              : entityDetails.mainName.organisationName,
-            value: Array.isArray(entityDetails.mainName)
-              ? entityDetails.mainName[0].organisationName
-              : entityDetails.mainName.organisationName,
-          };
-        const tradingName =
-          entityDetails.mainTradingName || entityDetails.businessName;
-        if (tradingName)
-          response.tradingName =
-            tradingName.organisationName ||
-            typeof tradingName.organisationName === 'string'
-              ? tradingName.organisationName
-              : tradingName[0].organisationName;
-        if (entityDetails.mainBusinessPhysicalAddress[0]) {
-          const state = StaticData.australianStates.find((i) => {
-            if (
-              i._id === entityDetails.mainBusinessPhysicalAddress[0].stateCode
-            )
-              return i;
-          });
-          response.state = {
-            label:
-              state && state.name
-                ? state.name
-                : entityDetails.mainBusinessPhysicalAddress[0].stateCode,
-            value: entityDetails.mainBusinessPhysicalAddress[0].stateCode,
-          };
-        }
-        if (entityDetails.mainBusinessPhysicalAddress[0])
-          response.postCode =
-            entityDetails.mainBusinessPhysicalAddress[0].postcode;
-      } else {
-        return res.status(400).send({
-          status: 'ERROR',
-          messageCode: 'NO_DATA_FOUND',
-          message: 'No data found',
-        });
-      }
+    const response = await getEntityDetailsByBusinessNumber({
+      country: req.query.country,
+      searchString: req.query.searchString,
+      step: 'person',
+    });
+    if (response && response.status && response.status === 'ERROR') {
+      return res.status(400).send(response);
     }
     res.status(200).send({
       status: 'SUCCESS',
       data: response,
     });
   } catch (e) {
-    Logger.log.error('Error occurred in search by ABN number  ', e);
+    Logger.log.error('Error occurred in search by business number', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -1060,7 +969,7 @@ router.get('/search-entity/:searchString', async function (req, res) {
  * Search from Entity Name
  */
 router.get('/search-entity-list', async function (req, res) {
-  if (!req.query.searchString) {
+  if (!req.query.searchString || !req.query.country) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -1068,48 +977,16 @@ router.get('/search-entity-list', async function (req, res) {
     });
   }
   try {
-    let entityList = await getEntityListByName({
+    const response = await getEntityDetailsByName({
       searchString: req.query.searchString,
+      country: req.query.country,
     });
-    let response = [];
-    let entityData = {};
-    if (
-      entityList.ABRPayloadSearchResults.response &&
-      entityList.ABRPayloadSearchResults.response.searchResultsList &&
-      entityList.ABRPayloadSearchResults.response.searchResultsList
-        .searchResultsRecord.length !== 0
-    ) {
-      entityList.ABRPayloadSearchResults.response.searchResultsList.searchResultsRecord.forEach(
-        (data) => {
-          entityData = {};
-          if (data.ABN) entityData.abn = data.ABN.identifierValue;
-          if (data.ABN) entityData.status = data.ABN.identifierStatus;
-          let fieldName =
-            data.mainName ||
-            data.businessName ||
-            data.otherTradingName ||
-            data.mainTradingName;
-          if (fieldName) {
-            entityData.label = fieldName.organisationName;
-            entityData.value = fieldName.organisationName;
-          }
-          if (data.mainBusinessPhysicalAddress) {
-            entityData.state =
-              typeof data.mainBusinessPhysicalAddress.stateCode === 'string'
-                ? data.mainBusinessPhysicalAddress.stateCode
-                : '';
-            entityData.postCode = data.mainBusinessPhysicalAddress.postcode;
-          }
-          response.push(entityData);
-        },
-      );
-    }
     res.status(200).send({
       status: 'SUCCESS',
       data: response,
     });
   } catch (e) {
-    Logger.log.error('Error occurred in search by ABN number  ', e);
+    Logger.log.error('Error occurred in search by entity name', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -1256,7 +1133,7 @@ router.post('/stakeholder/:debtorId', async function (req, res) {
     req.body.type === 'company' &&
     (!req.body.entityName ||
       !req.body.entityType ||
-      (!req.body.abn && !req.body.acn))
+      (!req.body.abn && !req.body.acn && !req.body.registrationNumber))
   ) {
     return res.status(400).send({
       status: 'ERROR',
@@ -1381,7 +1258,7 @@ router.put('/stakeholder/:debtorId/:stakeholderId', async function (req, res) {
     req.body.type === 'company' &&
     (!req.body.entityName ||
       !req.body.entityType ||
-      (!req.body.abn && !req.body.acn))
+      (!req.body.abn && !req.body.acn && !req.body.registrationNumber))
   ) {
     return res.status(400).send({
       status: 'ERROR',

@@ -452,7 +452,10 @@ router.get('/details/:clientId', async function (req, res) {
     const client = await Client.findOne({
       _id: req.params.clientId,
     })
-      .populate({ path: 'riskAnalystId serviceManagerId', select: 'name' })
+      .populate({
+        path: 'riskAnalystId serviceManagerId insurerId',
+        select: 'name',
+      })
       .select({ isDeleted: 0, crmClientId: 0, __v: 0 })
       .lean();
     let response = [];
@@ -474,7 +477,9 @@ router.get('/details/:clientId', async function (req, res) {
         response.push({
           label: i.label,
           value:
-            i.name === 'riskAnalystId' || i.name === 'serviceManagerId'
+            i.name === 'riskAnalystId' ||
+            i.name === 'serviceManagerId' ||
+            i.name === 'insurerId'
               ? client[i.name]
                 ? client[i.name]['name']
                 : ''
@@ -762,7 +767,6 @@ router.get('/download/:clientId', async function (req, res) {
     const creditLimits = await getCreditLimitList({
       clientId: req.params.clientId,
     });
-    console.log(creditLimits);
     if (creditLimits.length !== 0) {
       const response = await convertToCSV(creditLimits);
       res.header('Content-Type', 'text/csv');

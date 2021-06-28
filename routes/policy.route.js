@@ -238,7 +238,6 @@ router.put('/sync-from-crm', async function (req, res) {
         message: 'Policies not found.',
       });
     }
-    console.log('Total Policies : ', policies.length);
     let policiesFromCrm;
     let promiseArr = [];
     let newPolicies = [];

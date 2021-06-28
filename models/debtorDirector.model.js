@@ -14,6 +14,7 @@ const debtorDirectorSchema = new Schema(
     debtorId: { type: Schema.Types.ObjectId, ref: 'debtor' },
     abn: { type: Schema.Types.String },
     acn: { type: Schema.Types.String },
+    registrationNumber: { type: Schema.Types.String },
     entityName: { type: Schema.Types.String },
     tradingName: { type: Schema.Types.String },
     entityType: {
@@ -52,6 +53,10 @@ const debtorDirectorSchema = new Schema(
     mobileNumber: { type: Schema.Types.String },
     email: { type: Schema.Types.String },
     allowToCheckCreditHistory: { type: Schema.Types.Boolean },
+    country: {
+      name: Schema.Types.String,
+      code: Schema.Types.String,
+    },
     isDeleted: { type: Schema.Types.Boolean, default: false },
   },
   { timestamps: true },

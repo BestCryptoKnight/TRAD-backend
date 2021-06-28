@@ -13,7 +13,11 @@ const ClientDebtor = mongoose.model('client-debtor');
  * */
 const Logger = require('./../services/logger');
 const { fetchCreditReport } = require('./illion.helper');
-const { getEntityDetailsByABN, resolveEntityType } = require('./abr.helper');
+const {
+  getEntityDetailsByABN,
+  resolveEntityType,
+  getEntityDetailsByNZBN,
+} = require('./abr.helper');
 const qbe = require('./../static-files/matrixes/qbe.json');
 const bond = require('./../static-files/matrixes/bond.json');
 const atradius = require('./../static-files/matrixes/atradius.json');
@@ -21,6 +25,10 @@ const coface = require('./../static-files/matrixes/coface.json');
 const euler = require('./../static-files/matrixes/euler.json');
 const trad = require('./../static-files/matrixes/trad.json');
 const reports = [
+  {
+    code: 'HXBSC',
+    name: 'HTML Commercial Bureau Enquiry without ASIC Docs OR',
+  },
   {
     code: 'HXBCA',
     name: 'HTML Commercial Bureau Enquiry w/ refresh ASIC w/o ASIC Docs',
@@ -32,6 +40,14 @@ const reports = [
   {
     code: 'HXPYA',
     name: 'Risk of Late Payment Report (DDS)',
+  },
+  {
+    code: 'HNBCau',
+    name: 'HTML NZ Comm. Bureau Enq (AU Subs)',
+  },
+  {
+    code: 'NPA',
+    name: 'HTML Payment Analysis with refreshed NZCO',
   },
 ];
 
@@ -155,13 +171,30 @@ const getReportData = async ({
     if (type === 'individual') {
       //TODO add for euifax
     } else if (type === 'company' && reportCode) {
-      let abnNumber = debtor.abn;
+      let lookupNumber;
+      let lookupMethod;
+
+      if (debtor.address.country.code === 'AUS') {
+        lookupNumber = debtor.abn ? debtor.abn : debtor.acn;
+        lookupMethod = debtor.abn ? 'ABN' : 'ACN';
+      } else {
+        lookupNumber = debtor.acn;
+        lookupMethod = 'NCN';
+      }
       let debtorId = debtor._id;
       if (entityType === 'TRUST') {
         const stakeHolder = await DebtorDirector.findOne({
           debtorId: debtor._id,
         }).lean();
-        abnNumber = stakeHolder.abn;
+        if (stakeHolder && stakeHolder.country && stakeHolder.country.code) {
+          if (stakeHolder.country.code === 'AUS') {
+            lookupNumber = stakeHolder.abn ? stakeHolder.abn : stakeHolder.acn;
+            lookupMethod = stakeHolder.abn ? 'ABN' : 'ACN';
+          } else {
+            lookupNumber = stakeHolder.acn;
+            lookupMethod = 'NCN';
+          }
+        }
         debtorId = stakeHolder._id;
         reportEntityType = 'debtor-director';
       }
@@ -182,8 +215,10 @@ const getReportData = async ({
         reportData && reportData.creditReport ? reportData.creditReport : null;
       if (!reportData) {
         const reportCodes = {
+          HXBSC: ['HXBCA', 'HXPAA', 'HXPYA'],
           HXBCA: ['HXPAA', 'HXPYA'],
           HXPYA: ['HXPAA'],
+          HNBCau: ['NPA'],
         };
         if (reportCodes[reportCode] && reportCodes[reportCode].length !== 0) {
           reportData = await CreditReport.findOne({
@@ -205,12 +240,12 @@ const getReportData = async ({
             ? reportData.creditReport
             : null;
       }
-      console.log('abnNumber :: ', abnNumber);
-      if (!reportData) {
+      console.log('lookupNumber :: ', lookupNumber);
+      if (!reportData && lookupNumber) {
         reportData = await fetchCreditReport({
           productCode: reportCode,
-          searchField: 'ABN',
-          searchValue: abnNumber,
+          searchField: lookupMethod,
+          searchValue: lookupNumber,
         });
         console.log('HERE:::::::::::::::::::::::::');
         console.log('Report DATA', JSON.stringify(reportData, null, 3));
@@ -257,7 +292,49 @@ const getReportData = async ({
   }
 };
 
-const insurerQBE = async ({ application, type }) => {
+const getEntityData = async ({ country, businessNumber }) => {
+  try {
+    console.log('businessNumber', businessNumber);
+    console.log('country', country);
+    let response = {};
+    if (country === 'AUS') {
+      const entityData = await getEntityDetailsByABN({
+        searchString: businessNumber,
+      });
+      if (entityData && entityData.response) {
+        const entityDetails =
+          entityData.response.businessEntity202001 ||
+          entityData.response.businessEntity201408;
+        const keys = ['entityType', 'entityStatus', 'goodsAndServicesTax'];
+        keys.map((key) => {
+          response[key] = entityDetails[key];
+        });
+      }
+    } else {
+      const entityData = await getEntityDetailsByNZBN({
+        searchString: businessNumber,
+      });
+      console.log('entityData', entityData);
+      if (entityData) {
+        response['entityType'] = {
+          entityTypeCode: entityData['entityTypeCode'],
+          entityTypeDescription: entityData['entityTypeDescription'],
+        };
+        response['entityStatus'] = {
+          entityStatusCode: entityData['entityStatusCode'],
+          registrationDate: entityData['registrationDate'],
+        };
+        response['goodsAndServicesTax'] = entityData['gstNumbers'];
+      }
+    }
+    return response;
+  } catch (e) {
+    Logger.log.error('Error occurred in get entity data from lookup');
+    Logger.log.error(e.message || e);
+  }
+};
+
+const insurerQBE = async ({ application, type, policy }) => {
   try {
     console.log('report for :', type);
     let blockers = [];
@@ -285,7 +362,10 @@ const insurerQBE = async ({ application, type }) => {
         debtor: application.debtorId,
         clientDebtorId: application.clientDebtorId._id,
       }),
-      getEntityDetailsByABN({ searchString: application.debtorId.abn }),
+      getEntityData({
+        country: application.debtorId.address.country.code,
+        businessNumber: application.debtorId.abn || application.debtorId.acn,
+      }),
     ]);
     if (!reportData) {
       blockers.push('Unable to generate a report');
@@ -296,9 +376,11 @@ const insurerQBE = async ({ application, type }) => {
     blockers = await checkGuidelines({
       guidelines: qbe.generalTerms,
       application,
-      entityData: entityData.response.businessEntity202001,
+      entityData: entityData,
       reportData: reportData ? reportData : null,
       blockers,
+      country: application.debtorId.address.country.code,
+      policy,
     });
     blockers = await checkPriceRangeGuidelines({
       guidelines: identifiedReportDetails.guideLines,
@@ -312,7 +394,7 @@ const insurerQBE = async ({ application, type }) => {
   }
 };
 
-const insurerBond = async ({ application, type }) => {
+const insurerBond = async ({ application, type, policy }) => {
   try {
     console.log('report for :', type);
     let blockers = [];
@@ -340,7 +422,10 @@ const insurerBond = async ({ application, type }) => {
         debtor: application.debtorId,
         clientDebtorId: application.clientDebtorId._id,
       }),
-      getEntityDetailsByABN({ searchString: application.debtorId.abn }),
+      getEntityData({
+        country: application.debtorId.address.country.code,
+        businessNumber: application.debtorId.abn || application.debtorId.acn,
+      }),
     ]);
     if (!reportData) {
       blockers.push('Unable to generate a report');
@@ -351,9 +436,11 @@ const insurerBond = async ({ application, type }) => {
     blockers = await checkGuidelines({
       guidelines: qbe.generalTerms,
       application,
-      entityData: entityData.response.businessEntity202001,
+      entityData: entityData,
       reportData: reportData ? reportData : null,
       blockers,
+      country: application.debtorId.address.country.code,
+      policy,
     });
     blockers = await checkPriceRangeGuidelines({
       guidelines: identifiedReportDetails.guideLines,
@@ -366,7 +453,7 @@ const insurerBond = async ({ application, type }) => {
   }
 };
 
-const insurerAtradius = async ({ application, type }) => {
+const insurerAtradius = async ({ application, type, policy }) => {
   try {
     console.log('report for :', type);
     let blockers = [];
@@ -394,7 +481,10 @@ const insurerAtradius = async ({ application, type }) => {
         debtor: application.debtorId,
         clientDebtorId: application.clientDebtorId._id,
       }),
-      getEntityDetailsByABN({ searchString: application.debtorId.abn }),
+      getEntityData({
+        country: application.debtorId.address.country.code,
+        businessNumber: application.debtorId.abn || application.debtorId.acn,
+      }),
     ]);
     if (!reportData) {
       blockers.push('Unable to generate a report');
@@ -405,9 +495,11 @@ const insurerAtradius = async ({ application, type }) => {
     blockers = await checkGuidelines({
       guidelines: qbe.generalTerms,
       application,
-      entityData: entityData.response.businessEntity202001,
+      entityData: entityData,
       reportData: reportData ? reportData : null,
       blockers,
+      country: application.debtorId.address.country.code,
+      policy,
     });
     blockers = await checkPriceRangeGuidelines({
       guidelines: identifiedReportDetails.guideLines,
@@ -420,7 +512,7 @@ const insurerAtradius = async ({ application, type }) => {
   }
 };
 
-const insurerCoface = async ({ application, type }) => {
+const insurerCoface = async ({ application, type, policy }) => {
   try {
     console.log('report for :', type);
     let blockers = [];
@@ -448,7 +540,10 @@ const insurerCoface = async ({ application, type }) => {
         debtor: application.debtorId,
         clientDebtorId: application.clientDebtorId._id,
       }),
-      getEntityDetailsByABN({ searchString: application.debtorId.abn }),
+      getEntityData({
+        country: application.debtorId.address.country.code,
+        businessNumber: application.debtorId.abn || application.debtorId.acn,
+      }),
     ]);
     if (!reportData) {
       blockers.push('Unable to generate a report');
@@ -459,9 +554,11 @@ const insurerCoface = async ({ application, type }) => {
     blockers = await checkGuidelines({
       guidelines: qbe.generalTerms,
       application,
-      entityData: entityData.response.businessEntity202001,
+      entityData: entityData,
       reportData: reportData ? reportData : null,
       blockers,
+      country: application.debtorId.address.country.code,
+      policy,
     });
     blockers = await checkPriceRangeGuidelines({
       guidelines: identifiedReportDetails.guideLines,
@@ -474,7 +571,7 @@ const insurerCoface = async ({ application, type }) => {
   }
 };
 
-const insurerEuler = async ({ application, type }) => {
+const insurerEuler = async ({ application, type, policy }) => {
   try {
     console.log('report for :', type);
     let blockers = [];
@@ -502,7 +599,10 @@ const insurerEuler = async ({ application, type }) => {
         debtor: application.debtorId,
         clientDebtorId: application.clientDebtorId._id,
       }),
-      getEntityDetailsByABN({ searchString: application.debtorId.abn }),
+      getEntityData({
+        country: application.debtorId.address.country.code,
+        businessNumber: application.debtorId.abn || application.debtorId.acn,
+      }),
     ]);
     if (!reportData) {
       blockers.push('Unable to generate a report');
@@ -513,9 +613,11 @@ const insurerEuler = async ({ application, type }) => {
     blockers = await checkGuidelines({
       guidelines: qbe.generalTerms,
       application,
-      entityData: entityData.response.businessEntity202001,
+      entityData: entityData,
       reportData: reportData ? reportData : null,
       blockers,
+      country: application.debtorId.address.country.code,
+      policy,
     });
     blockers = await checkPriceRangeGuidelines({
       guidelines: identifiedReportDetails.guideLines,
@@ -528,7 +630,7 @@ const insurerEuler = async ({ application, type }) => {
   }
 };
 
-const insurerTrad = async ({ application, type }) => {
+const insurerTrad = async ({ application, type, policy }) => {
   try {
     console.log('report for :', type);
     let blockers = ['RMP only insurer'];
@@ -556,7 +658,10 @@ const insurerTrad = async ({ application, type }) => {
         debtor: application.debtorId,
         clientDebtorId: application.clientDebtorId._id,
       }),
-      getEntityDetailsByABN({ searchString: application.debtorId.abn }),
+      getEntityData({
+        country: application.debtorId.address.country.code,
+        businessNumber: application.debtorId.abn || application.debtorId.acn,
+      }),
     ]);
     if (!reportData) {
       blockers.push('Unable to generate a report');
@@ -567,9 +672,11 @@ const insurerTrad = async ({ application, type }) => {
     blockers = await checkGuidelines({
       guidelines: qbe.generalTerms,
       application,
-      entityData: entityData.response.businessEntity202001,
+      entityData: entityData,
       reportData: reportData ? reportData : null,
       blockers,
+      country: application.debtorId.address.country.code,
+      policy,
     });
     blockers = await checkPriceRangeGuidelines({
       guidelines: identifiedReportDetails.guideLines,
@@ -582,36 +689,77 @@ const insurerTrad = async ({ application, type }) => {
   }
 };
 
+const checkForCreditLimit = async ({ policy, creditLimit }) => {
+  try {
+    const response = {
+      isBlocker: false,
+    };
+    creditLimit = parseInt(creditLimit);
+    if (
+      parseInt(policy.excess) > creditLimit ||
+      parseInt(policy.discretionaryLimit) < creditLimit
+    ) {
+      response.isBlocker = true;
+    }
+    return response;
+  } catch (e) {
+    Logger.log.error('Error occurred in check for credit limit', e);
+  }
+};
+
 const checkForEntityRegistration = async ({
   entityStatus,
   entityType,
   applicationEntityType,
+  country,
 }) => {
   try {
     const response = {
       isBlocker: false,
     };
-    if (entityType && entityType.entityDescription) {
-      const type = await resolveEntityType({
-        entityType: entityType.entityDescription,
-      });
-      if (type !== applicationEntityType) {
-        response.isBlocker = true;
-      }
-    }
-    if (entityStatus && entityStatus.effectiveTo) {
-      if (entityStatus.effectiveTo !== '0001-01-01') {
-        response.isBlocker = true;
-      }
-    } else if (entityStatus && entityStatus.length !== 0) {
-      const entityRegistration = entityStatus.find((i) => {
-        if (i.effectiveTo === '0001-01-01') {
-          return i;
+    if (country === 'AUS') {
+      if (entityType && entityType.entityDescription) {
+        const type = await resolveEntityType({
+          entityType: entityType.entityDescription,
+          country,
+        });
+        if (type !== applicationEntityType) {
+          response.isBlocker = true;
         }
-      });
-      console.log('entityRegistration ', entityRegistration);
-      if (!entityRegistration) {
+      }
+      if (entityStatus && entityStatus.effectiveTo) {
+        if (entityStatus.effectiveTo !== '0001-01-01') {
+          response.isBlocker = true;
+        }
+      } else if (entityStatus && entityStatus.length !== 0) {
+        const entityRegistration = entityStatus.find((i) => {
+          if (i.effectiveTo === '0001-01-01') {
+            return i;
+          }
+        });
+        console.log('entityRegistration ', entityRegistration);
+        if (!entityRegistration) {
+          response.isBlocker = true;
+        }
+      }
+    } else {
+      const inActiveCode = ['62', '80', '90', '91'];
+      if (
+        entityStatus &&
+        entityStatus.entityStatusCode &&
+        inActiveCode.includes(entityStatus.entityStatusCode)
+      ) {
         response.isBlocker = true;
+      }
+      if (entityType && entityType.entityTypeCode) {
+        //TODO change entity type helper for NZ
+        const type = await resolveEntityType({
+          entityType: entityType.entityTypeCode,
+          country,
+        });
+        if (type !== applicationEntityType) {
+          response.isBlocker = true;
+        }
       }
     }
     return response;
@@ -638,23 +786,40 @@ const checkForNilCreditLimitIssues = async ({ debtorId }) => {
   }
 };
 
-const checkForGSTRegistration = async ({ goodsAndServicesTax }) => {
+const checkForGSTRegistration = async ({ goodsAndServicesTax, country }) => {
   try {
     const response = {
       isBlocker: false,
     };
-    if (goodsAndServicesTax && goodsAndServicesTax.effectiveTo) {
-      if (goodsAndServicesTax.effectiveTo !== '0001-01-01') {
-        response.isBlocker = true;
-      }
-    } else if (goodsAndServicesTax && goodsAndServicesTax.length !== 0) {
-      const entityGSTRegistration = goodsAndServicesTax.find((i) => {
-        if (i.effectiveTo === '0001-01-01') {
-          return i;
+    if (country === 'AUS') {
+      if (goodsAndServicesTax && goodsAndServicesTax.effectiveTo) {
+        if (goodsAndServicesTax.effectiveTo !== '0001-01-01') {
+          response.isBlocker = true;
         }
-      });
-      console.log('entityGSTRegistration ', entityGSTRegistration);
-      if (!entityGSTRegistration) {
+      } else if (goodsAndServicesTax && goodsAndServicesTax.length !== 0) {
+        const entityGSTRegistration = goodsAndServicesTax.find((i) => {
+          if (i.effectiveTo === '0001-01-01') {
+            return i;
+          }
+        });
+        console.log('entityGSTRegistration ', entityGSTRegistration);
+        if (!entityGSTRegistration) {
+          response.isBlocker = true;
+        }
+      }
+    } else {
+      if (
+        goodsAndServicesTax &&
+        Array.isArray(goodsAndServicesTax) &&
+        goodsAndServicesTax.length !== 0
+      ) {
+        if (
+          !goodsAndServicesTax[0].startDate &&
+          new Date() < new Date(goodsAndServicesTax[0].startDate)
+        ) {
+          response.isBlocker = true;
+        }
+      } else {
         response.isBlocker = true;
       }
     }
@@ -665,7 +830,7 @@ const checkForGSTRegistration = async ({ goodsAndServicesTax }) => {
 };
 
 //TODO make dynamic
-const checkForEntityIncorporated = async ({ entityStatus, value }) => {
+const checkForEntityIncorporated = async ({ entityStatus, value, country }) => {
   try {
     const response = {
       isBlocker: false,
@@ -673,30 +838,41 @@ const checkForEntityIncorporated = async ({ entityStatus, value }) => {
     let today = new Date();
     today = today.setMonth(today.getMonth() - value);
     const yearBefore = new Date(today);
-    if (
-      entityStatus &&
-      entityStatus.entityStatusCode &&
-      entityStatus.effectiveTo &&
-      entityStatus.effectiveFrom
-    ) {
+    console.log('yearBefore', yearBefore);
+    if (country === 'AUS') {
       if (
-        new Date(entityStatus.effectiveFrom) > yearBefore ||
-        entityStatus.entityStatusCode.toLowerCase() !== 'active'
+        entityStatus &&
+        entityStatus.entityStatusCode &&
+        entityStatus.effectiveTo &&
+        entityStatus.effectiveFrom
       ) {
-        response.isBlocker = true;
-      }
-    } else if (entityStatus && entityStatus.length !== 0) {
-      const entityRegistration = entityStatus.find((i) => {
-        if (i.effectiveTo === '0001-01-01') {
-          return i;
+        if (
+          new Date(entityStatus.effectiveFrom) > yearBefore ||
+          entityStatus.entityStatusCode.toLowerCase() !== 'active'
+        ) {
+          response.isBlocker = true;
         }
-      });
-      console.log('entityRegistration ', entityRegistration);
-      if (
-        new Date(entityRegistration.effectiveFrom) > yearBefore ||
-        entityRegistration.entityStatusCode.toLowerCase() !== 'active'
-      ) {
-        response.isBlocker = true;
+      } else if (entityStatus && entityStatus.length !== 0) {
+        const entityRegistration = entityStatus.find((i) => {
+          if (i.effectiveTo === '0001-01-01') {
+            return i;
+          }
+        });
+        console.log('entityRegistration ', entityRegistration);
+        if (
+          new Date(entityRegistration.effectiveFrom) > yearBefore ||
+          entityRegistration.entityStatusCode.toLowerCase() !== 'active'
+        ) {
+          response.isBlocker = true;
+        }
+      }
+    } else {
+      if (entityStatus && entityStatus.registrationDate) {
+        console.log(entityStatus.registrationDate, 'registrationDate');
+        console.log(new Date(entityStatus.registrationDate) > yearBefore);
+        if (new Date(entityStatus.registrationDate) > yearBefore) {
+          response.isBlocker = true;
+        }
       }
     }
     return response;
@@ -705,11 +881,7 @@ const checkForEntityIncorporated = async ({ entityStatus, value }) => {
   }
 };
 
-const checkForCourtAction = async ({
-  summaryInformation,
-  value,
-  courtActionsSummary,
-}) => {
+const checkForCourtAction = async ({ summaryInformation }) => {
   try {
     const response = {
       isBlocker: false,
@@ -807,9 +979,31 @@ const checkGuidelines = async ({
   entityData,
   reportData,
   blockers,
+  country,
+  policy,
 }) => {
   try {
     let response = {};
+    if (guidelines.checkCreditLimit) {
+      if (
+        policy &&
+        policy.discretionaryLimit &&
+        policy.excess &&
+        application.creditLimit
+      ) {
+        response = await checkForCreditLimit({
+          policy,
+          creditLimit: application.creditLimit,
+        });
+      } else {
+        response.isBlocker = true;
+      }
+      if (response.isBlocker) {
+        blockers.push(
+          'Limit must be within the Excess and Discretionary Limit',
+        );
+      }
+    }
     if (guidelines.isEntityRegistered) {
       if (
         entityData &&
@@ -821,6 +1015,7 @@ const checkGuidelines = async ({
           entityType: entityData.entityType,
           entityStatus: entityData.entityStatus,
           applicationEntityType: application.debtorId.entityType,
+          country,
         });
       } else {
         response.isBlocker = true;
@@ -841,6 +1036,7 @@ const checkGuidelines = async ({
       if (entityData && entityData.goodsAndServicesTax) {
         response = await checkForGSTRegistration({
           goodsAndServicesTax: entityData.goodsAndServicesTax,
+          country: application.debtorId.address.country.code,
         });
       } else {
         response.isBlocker = true;
@@ -854,6 +1050,7 @@ const checkGuidelines = async ({
         response = await checkForEntityIncorporated({
           entityStatus: entityData.entityStatus,
           value: guidelines.entityIncorporated.value,
+          country: application.debtorId.address.country.code,
         });
       } else {
         response.isBlocker = true;
@@ -933,6 +1130,7 @@ const checkGuidelines = async ({
       if (entityData && entityData.goodsAndServicesTax) {
         response = await checkForGSTRegistration({
           goodsAndServicesTax: entityData.goodsAndServicesTax,
+          country: application.debtorId.address.country.code,
         });
       } else {
         response.isBlocker = true;
@@ -945,6 +1143,7 @@ const checkGuidelines = async ({
       guidelines.soleTraderNotRegistered &&
       application.debtorId.entityType === 'SOLE_TRADER'
     ) {
+      //RMP only
       if (response.isBlocker) {
         blockers.push(guidelines.soleTraderNotRegistered.conditionString);
       }

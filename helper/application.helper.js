@@ -26,9 +26,16 @@ const {
   insurerCoface,
   insurerAtradius,
 } = require('./automation.helper');
-const { getEntityDetailsByABN } = require('./abr.helper');
+const {
+  getEntityDetailsByABN,
+  getEntityDetailsByNZBN,
+} = require('./abr.helper');
 const { addAuditLog } = require('./audit-log.helper');
 const { storeStakeholderDetails } = require('./stakeholder.helper');
+const { createTask } = require('./task.helper');
+const { addNotification } = require('./notification.helper');
+const { sendNotification } = require('./socket.helper');
+const { formatString } = require('./overdue.helper');
 
 //TODO add filter for expiry-date + credit-limit
 const getApplicationList = async ({
@@ -40,26 +47,39 @@ const getApplicationList = async ({
   clientIds = [],
   moduleColumn,
   userId,
+  isForDownload = false,
 }) => {
   try {
     let query = [];
+    const filterArray = [];
     let sortingOptions = {};
-    requestedQuery.page = requestedQuery.page || 1;
-    requestedQuery.limit = requestedQuery.limit || 10;
     requestedQuery.sortBy = requestedQuery.sortBy || '_id';
     requestedQuery.sortOrder = requestedQuery.sortOrder || 'desc';
 
     queryFilter.isDeleted = false;
-    if (!hasFullAccess && isForRisk && clientIds.length !== 0) {
-      queryFilter.clientId = { $in: clientIds };
-    }
-    if (userId) {
+    if (requestedQuery.clientId) {
+      requestedQuery.clientId = requestedQuery.clientId
+        .split(',')
+        .map((id) => mongoose.Types.ObjectId(id));
+      if (isForDownload) {
+        const client = await Client.findOne({ _id: requestedQuery.clientId })
+          .select('name')
+          .lean();
+        filterArray.push({
+          label: 'Client',
+          value: client && client.name ? client.name : '',
+          type: 'string',
+        });
+      }
+    } else if (userId) {
       queryFilter = Object.assign({}, queryFilter, {
         $or: [
           { status: { $ne: 'DRAFT' } },
           { createdById: mongoose.Types.ObjectId(userId), status: 'DRAFT' },
         ],
       });
+    } else if (!hasFullAccess && isForRisk && clientIds.length !== 0) {
+      queryFilter.clientId = { $in: clientIds };
     }
     if (requestedQuery.search) {
       queryFilter.applicationId = {
@@ -69,11 +89,13 @@ const getApplicationList = async ({
     }
     if (requestedQuery.status) {
       queryFilter.status = requestedQuery.status;
-    }
-    if (requestedQuery.clientId) {
-      requestedQuery.clientId = requestedQuery.clientId
-        .split(',')
-        .map((id) => mongoose.Types.ObjectId(id));
+      if (isForDownload) {
+        filterArray.push({
+          label: 'Application Status',
+          value: formatString(requestedQuery.status),
+          type: 'string',
+        });
+      }
     }
     if (requestedQuery.clientId || applicationColumn.includes('clientId')) {
       query.push(
@@ -103,6 +125,16 @@ const getApplicationList = async ({
       requestedQuery.debtorId = requestedQuery.debtorId
         .split(',')
         .map((id) => mongoose.Types.ObjectId(id));
+      if (isForDownload) {
+        const debtor = await Debtor.findOne({ _id: requestedQuery.debtorId })
+          .select('entityName')
+          .lean();
+        filterArray.push({
+          label: 'Debtor',
+          value: debtor && debtor.entityName ? debtor.entityName : '',
+          type: 'string',
+        });
+      }
     }
     if (
       requestedQuery.debtorId ||
@@ -190,6 +222,13 @@ const getApplicationList = async ({
           'debtorId.entityType': requestedQuery.entityType,
         },
       });
+      if (isForDownload) {
+        filterArray.push({
+          label: 'Debtor Entity Type',
+          value: formatString(requestedQuery.entityType),
+          type: 'string',
+        });
+      }
     }
 
     /*if (applicationColumn.includes('outstandingAmount')) {
@@ -210,24 +249,73 @@ const getApplicationList = async ({
       );
     }*/
 
-    if (requestedQuery.minCreditLimit && requestedQuery.maxCreditLimit) {
-      query.push({
+    if (requestedQuery.minCreditLimit || requestedQuery.maxCreditLimit) {
+      let limitQuery = {};
+      if (requestedQuery.minCreditLimit) {
+        limitQuery = {
+          $gte: parseInt(requestedQuery.minCreditLimit),
+        };
+        if (isForDownload) {
+          filterArray.push({
+            label: 'Minimum Credit Limit',
+            value: parseInt(requestedQuery.minCreditLimit),
+            type: 'amount',
+          });
+        }
+      }
+      if (requestedQuery.maxCreditLimit) {
+        limitQuery = Object.assign({}, limitQuery, {
+          $lt: parseInt(requestedQuery.maxCreditLimit),
+        });
+        if (isForDownload) {
+          filterArray.push({
+            label: 'Maximum Credit Limit',
+            value: parseInt(requestedQuery.maxCreditLimit),
+            type: 'amount',
+          });
+        }
+      }
+      queryFilter.creditLimit = limitQuery;
+      /*query.push({
         $match: {
           creditLimit: {
             $gte: parseInt(requestedQuery.minCreditLimit),
             $lt: parseInt(requestedQuery.maxCreditLimit),
           },
         },
-      });
+      });*/
     }
-    //TODO add filter for expiry date
-    if (requestedQuery.startDate && requestedQuery.maxCreditLimit) {
+
+    if (requestedQuery.startDate || requestedQuery.endDate) {
+      let dateQuery = {};
+      if (requestedQuery.startDate) {
+        dateQuery = {
+          $gte: new Date(requestedQuery.startDate),
+        };
+        if (isForDownload) {
+          filterArray.push({
+            label: 'Start Date',
+            value: requestedQuery.startDate,
+            type: 'date',
+          });
+        }
+      }
+      if (requestedQuery.endDate) {
+        dateQuery = Object.assign({}, dateQuery, {
+          $lt: new Date(requestedQuery.endDate),
+        });
+        if (isForDownload) {
+          filterArray.push({
+            label: 'End Date',
+            value: requestedQuery.endDate,
+            type: 'date',
+          });
+        }
+      }
+      queryFilter.expiryDate = dateQuery;
     }
 
     const fields = applicationColumn.map((i) => {
-      /* if (i === 'outstandingAmount') {
-         i = 'clientDebtorId';
-       }*/
       if (i === 'debtorId') {
         i = i + '.entityName';
       }
@@ -239,9 +327,6 @@ const getApplicationList = async ({
     if (applicationColumn.includes('debtorId')) {
       fields.push(['debtorId._id', 1]);
     }
-    /*if (!applicationColumn.includes('outstandingAmount')) {
-      fields.push(['clientDebtorId', 1]);
-    }*/
     query.push({
       $project: fields.reduce((obj, [key, val]) => {
         obj[key] = val;
@@ -256,9 +341,6 @@ const getApplicationList = async ({
       if (requestedQuery.sortBy === 'debtorId') {
         requestedQuery.sortBy = requestedQuery.sortBy + '.entityName';
       }
-      /*if (requestedQuery.sortBy === 'outstandingAmount') {
-        requestedQuery.sortBy = 'clientDebtorId.' + requestedQuery.sortBy;
-      }*/
       if (requestedQuery.sortBy === 'entityType') {
         requestedQuery.sortBy = 'debtorId.' + requestedQuery.sortBy;
       }
@@ -267,41 +349,50 @@ const getApplicationList = async ({
       query.push({ $sort: sortingOptions });
     }
 
-    query.push({
-      $facet: {
-        paginatedResult: [
-          {
-            $skip:
-              (parseInt(requestedQuery.page) - 1) *
-              parseInt(requestedQuery.limit),
-          },
-          { $limit: parseInt(requestedQuery.limit) },
-        ],
-        totalCount: [
-          {
-            $count: 'count',
-          },
-        ],
-      },
-    });
+    if (requestedQuery.page && requestedQuery.limit) {
+      query.push({
+        $facet: {
+          paginatedResult: [
+            {
+              $skip:
+                (parseInt(requestedQuery.page) - 1) *
+                parseInt(requestedQuery.limit),
+            },
+            { $limit: parseInt(requestedQuery.limit) },
+          ],
+          totalCount: [
+            {
+              $count: 'count',
+            },
+          ],
+        },
+      });
+    }
     query.unshift({ $match: queryFilter });
 
     const applications = await Application.aggregate(query).allowDiskUse(true);
-    if (applications && applications.length !== 0) {
-      applications[0].paginatedResult.forEach((application) => {
+
+    const response =
+      applications && applications[0] && applications[0]['paginatedResult']
+        ? applications[0]['paginatedResult']
+        : applications;
+
+    const total =
+      applications.length !== 0 &&
+      applications[0]['totalCount'] &&
+      applications[0]['totalCount'].length !== 0
+        ? applications[0]['totalCount'][0]['count']
+        : 0;
+
+    if (response && response.length !== 0) {
+      response.forEach((application) => {
         if (applicationColumn.includes('entityType')) {
-          application.entityType = application.debtorId.entityType
-            .replace(/_/g, ' ')
-            .replace(/\w\S*/g, function (txt) {
-              return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
-            });
+          application.entityType = formatString(
+            application.debtorId.entityType,
+          );
         }
         if (applicationColumn.includes('status')) {
-          application.status = application.status
-            .replace(/_/g, ' ')
-            .replace(/\w\S*/g, function (txt) {
-              return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
-            });
+          application.status = formatString(application.status);
         }
         if (applicationColumn.includes('clientId')) {
           application.clientId = {
@@ -328,29 +419,38 @@ const getApplicationList = async ({
               ? application.createdById[0]
               : '';
         }
+        if (application.hasOwnProperty('isExtendedPaymentTerms')) {
+          application.isExtendedPaymentTerms = application.isExtendedPaymentTerms
+            ? 'Yes'
+            : 'No';
+        }
+        if (application.hasOwnProperty('isPassedOverdueAmount')) {
+          application.isPassedOverdueAmount = application.isPassedOverdueAmount
+            ? 'Yes'
+            : 'No';
+        }
         delete application.clientDebtorId;
       });
     }
-    const total =
-      applications[0].totalCount.length !== 0
-        ? applications[0]['totalCount'][0]['count']
-        : 0;
-
     const headers = [];
     for (let i = 0; i < moduleColumn.length; i++) {
       if (applicationColumn.includes(moduleColumn[i].name)) {
         headers.push(moduleColumn[i]);
       }
     }
-
-    return {
-      docs: applications[0].paginatedResult,
+    const applicationResponse = {
+      docs: response,
       headers,
       total,
       page: parseInt(requestedQuery.page),
       limit: parseInt(requestedQuery.limit),
       pages: Math.ceil(total / parseInt(requestedQuery.limit)),
+      filterArray,
     };
+    if (isForDownload) {
+      applicationResponse.filterArray = filterArray;
+    }
+    return applicationResponse;
   } catch (e) {
     Logger.log.error('Error occurred in get aggregation stages ', e);
   }
@@ -419,7 +519,19 @@ const storeCompanyDetails = async ({
         return {
           status: 'ERROR',
           messageCode: 'INVALID_ABN_NUMBER',
-          message: 'Invalid ABN number',
+          message: 'Invalid Australian Business Number',
+        };
+      }
+    }
+    if (requestBody.address.country.code === 'NZL' && requestBody.abn) {
+      const entityData = await getEntityDetailsByNZBN({
+        searchString: requestBody.abn,
+      });
+      if (!entityData || !entityData.nzbn || !entityData.entityName) {
+        return {
+          status: 'ERROR',
+          messageCode: 'INVALID_NZBN_NUMBER',
+          message: 'Invalid New Zealand Business Number',
         };
       }
     }
@@ -540,7 +652,8 @@ const storePartnerDetails = async ({ requestBody }) => {
           !requestBody.partners[i].title ||
           !requestBody.partners[i].firstName ||
           !requestBody.partners[i].lastName ||
-          !requestBody.partners[i].dateOfBirth ||
+          (!requestBody.partners[i].dateOfBirth &&
+            !requestBody.partners[i].driverLicenceNumber) ||
           !requestBody.partners[i].address ||
           !requestBody.partners[i].address.state ||
           !requestBody.partners[i].address.postCode ||
@@ -567,7 +680,9 @@ const storePartnerDetails = async ({ requestBody }) => {
         if (
           !requestBody.partners[i].entityName ||
           !requestBody.partners[i].entityType ||
-          (!requestBody.partners[i].abn && !requestBody.partners[i].acn)
+          (!requestBody.partners[i].abn &&
+            !requestBody.partners[i].acn &&
+            !requestBody.partners[i].registrationNumber)
         ) {
           return {
             status: 'ERROR',
@@ -722,7 +837,7 @@ const partnerDetailsValidation = ({
   }
 };
 
-const checkForAutomation = async ({ applicationId }) => {
+const checkForAutomation = async ({ applicationId, userId, userType }) => {
   try {
     const application = await Application.findById(applicationId)
       .populate({ path: 'clientId', populate: { path: 'insurerId' } })
@@ -751,6 +866,7 @@ const checkForAutomation = async ({ applicationId }) => {
       }
     }
 
+    const policy = {};
     if (continueWithAutomation) {
       //TODO check product type base on flag/field (RMP/CI)
       const [ciPolicy, rmpPolicy] = await Promise.all([
@@ -761,7 +877,7 @@ const checkForAutomation = async ({ applicationId }) => {
           expiryDate: { $gt: new Date() },
         })
           .select(
-            'clientId product policyPeriod discretionaryLimit inceptionDate expiryDate',
+            'clientId product policyPeriod excess discretionaryLimit inceptionDate expiryDate',
           )
           .lean(),
         Policy.findOne({
@@ -774,7 +890,7 @@ const checkForAutomation = async ({ applicationId }) => {
           expiryDate: { $gt: new Date() },
         })
           .select(
-            'clientId product policyPeriod discretionaryLimit inceptionDate expiryDate',
+            'clientId product policyPeriod excess discretionaryLimit inceptionDate expiryDate',
           )
           .lean(),
       ]);
@@ -791,11 +907,19 @@ const checkForAutomation = async ({ applicationId }) => {
         if (ciPolicy.discretionaryLimit || rmpPolicy.discretionaryLimit) {
           discretionaryLimit =
             ciPolicy.discretionaryLimit || rmpPolicy.discretionaryLimit;
+          policy['discretionaryLimit'] = discretionaryLimit
+            ? parseInt(discretionaryLimit)
+            : '';
+          policy['excess'] = ciPolicy.excess
+            ? parseInt(ciPolicy.excess)
+            : rmpPolicy.excess
+            ? parseInt(rmpPolicy.excess)
+            : '';
           console.log('discretionaryLimit ', discretionaryLimit);
         }
         if (
           discretionaryLimit &&
-          discretionaryLimit < application.creditLimit
+          parseInt(discretionaryLimit) < parseInt(application.creditLimit)
         ) {
           continueWithAutomation = false;
           blockers.push('Credit limit is greater than Discretionary limit');
@@ -803,7 +927,6 @@ const checkForAutomation = async ({ applicationId }) => {
       }
     }
 
-    //TODO add flag to stop automation (check blockers array)
     let type;
     if (continueWithAutomation) {
       const response = await checkEntityType({
@@ -825,31 +948,32 @@ const checkForAutomation = async ({ applicationId }) => {
       console.log('identifiedInsurer ', identifiedInsurer);
       let response;
       if (identifiedInsurer === 'qbe') {
-        response = await insurerQBE({ application, type: type });
+        response = await insurerQBE({ application, type: type, policy });
       } else if (identifiedInsurer === 'bond') {
-        response = await insurerBond({ application, type: type });
+        response = await insurerBond({ application, type: type, policy });
       } else if (identifiedInsurer === 'atradius') {
-        response = await insurerAtradius({ application, type: type });
+        response = await insurerAtradius({ application, type: type, policy });
       } else if (identifiedInsurer === 'coface') {
-        response = await insurerCoface({ application, type: type });
+        response = await insurerCoface({ application, type: type, policy });
       } else if (identifiedInsurer === 'euler') {
-        response = await insurerEuler({ application, type: type });
+        response = await insurerEuler({ application, type: type, policy });
       } else if (identifiedInsurer === 'trad') {
         blockers.push('RMP only insurer');
-        response = await insurerTrad({ application, type: type });
+        response = await insurerTrad({ application, type: type, policy });
       }
       blockers = blockers.concat(response);
     }
     const update = {};
     update.blockers = blockers;
+    const date = new Date();
     if (blockers.length === 0 && identifiedInsurer !== 'euler') {
       //TODO approve credit limit
-      const date = new Date();
       update.approvalDate = date;
       const expiryDate = new Date(date.setMonth(date.getMonth() + 12));
       update.expiryDate = expiryDate;
       update.status = 'APPROVED';
       update.acceptedAmount = application.creditLimit;
+      update.isAutoApproved = true;
       await ClientDebtor.updateOne(
         { _id: application.clientDebtorId._id },
         {
@@ -859,16 +983,87 @@ const checkForAutomation = async ({ applicationId }) => {
           expiryDate: expiryDate,
         },
       );
+      //TODO send notification
       await addAuditLog({
         entityType: 'application',
         entityRefId: applicationId,
         actionType: 'edit',
         userType: 'system',
-        logDescription: `An application ${application.applicationId} is approved`,
+        logDescription: `An application ${application.applicationId} is get approved`,
       });
+      if (application.clientId && application.clientId._id) {
+        const clientNotification = await addNotification({
+          userId: application.clientId._id,
+          userType: 'client-user',
+          description: `A new application ${application.applicationId} is get approved`,
+        });
+        if (clientNotification) {
+          sendNotification({
+            notificationObj: {
+              type: 'APPLICATION_APPROVED',
+              data: clientNotification,
+            },
+            type: 'client-user',
+            userId: application.clientId._id,
+          });
+        }
+      }
+      if (application.clientId && application.clientId.riskAnalystId) {
+        const userNotification = await addNotification({
+          userId: application.clientId.riskAnalystId,
+          userType: 'user',
+          description: `A new application ${application.applicationId} is get approved`,
+        });
+        if (userNotification) {
+          sendNotification({
+            notificationObj: {
+              type: 'APPLICATION_APPROVED',
+              data: userNotification,
+            },
+            type: 'user',
+            userId: application.clientId.riskAnalystId,
+          });
+        }
+      }
     } else {
       //TODO create Task + send Notification
       update.status = 'REVIEW_APPLICATION';
+      if (application.clientId && application.clientId.riskAnalystId) {
+        const data = {
+          title: `Review Application ${application.applicationId}`,
+          createdByType: userType,
+          createdById: userId,
+          assigneeType: 'user',
+          assigneeId: application.clientId.riskAnalystId,
+          dueDate: new Date(date.setDate(date.getDate() + 7)),
+          entityType: 'application',
+          entityId: application._id,
+        };
+        const task = await createTask(data);
+        await addAuditLog({
+          entityType: 'task',
+          entityRefId: task._id,
+          actionType: 'add',
+          userType: userType,
+          userRefId: userId,
+          logDescription: `A new task for ${application.applicationId} is created by system`,
+        });
+        const notification = await addNotification({
+          userId: task.assigneeId,
+          userType: task.assigneeType,
+          description: `A new task ${task.title} is assigned by system`,
+        });
+        if (notification) {
+          sendNotification({
+            notificationObj: {
+              type: 'TASK_ASSIGNED',
+              data: notification,
+            },
+            type: task.assigneeType,
+            userId: task.assigneeId,
+          });
+        }
+      }
     }
     //TODO notify user
     await Application.updateOne({ _id: applicationId }, update);
@@ -922,7 +1117,11 @@ const generateNewApplication = async ({
         { $inc: { 'entityCount.application': 1 } },
       );
       const application = await Application.create(applicationDetails);
-      checkForAutomation({ applicationId: application._id });
+      checkForAutomation({
+        applicationId: application._id,
+        userId: createdById,
+        userType: createdByType,
+      });
       //TODO call application automation helper
     }
     return application;

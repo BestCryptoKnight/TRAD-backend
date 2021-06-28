@@ -376,6 +376,7 @@ router.get('/download', async function (req, res) {
       reportFor: reportFor,
       headers,
       filter: response.filterArray,
+      title: 'Report for',
     });
     const fileName = new Date().getTime() + '.xlsx';
     res.header(

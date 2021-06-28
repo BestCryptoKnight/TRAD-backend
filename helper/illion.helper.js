@@ -70,7 +70,7 @@ let fetchCreditReport = ({ productCode, searchField, searchValue }) => {
       // fs.writeFileSync('hxbca1.json', jsonData);
       return resolve(processedReport);
     } catch (e) {
-      console.log('Error in getting entity details from ABN');
+      console.log('Error in getting entity details from lookup');
       console.log(e.message || e);
       return reject(e);
     }

@@ -63,7 +63,6 @@ router.get('/', async function (req, res) {
     );
     const response = {};
     notifications[0].paginatedResult.forEach((data) => {
-      console.log(data);
       if (!response[data.year + '-' + data.month + '-' + data.day]) {
         response[data.year + '-' + data.month + '-' + data.day] = [];
       }

@@ -95,13 +95,23 @@ const getEntityListByName = async ({ searchString }) => {
   }
 };
 
-const resolveEntityType = async ({ entityType }) => {
+const resolveEntityType = async ({ entityType, country }) => {
   try {
-    const entityTypesFromABR = StaticData.ABREntityType;
-    for (let i = 0; i < entityTypesFromABR.length; i++) {
-      if (entityTypesFromABR[i].name === entityType) {
-        entityType = entityTypesFromABR[i]._id;
-        break;
+    if (country === 'AUS') {
+      const entityTypesFromABR = StaticData.ABREntityType;
+      for (let i = 0; i < entityTypesFromABR.length; i++) {
+        if (entityTypesFromABR[i].name === entityType) {
+          entityType = entityTypesFromABR[i]._id;
+          break;
+        }
+      }
+    } else {
+      const entityTypesFromNZBN = StaticData.NZEntityType;
+      for (let i = 0; i < entityTypesFromNZBN.length; i++) {
+        if (entityTypesFromNZBN[i].name === entityType) {
+          entityType = entityTypesFromNZBN[i]._id;
+          break;
+        }
       }
     }
     return entityType;
@@ -110,9 +120,520 @@ const resolveEntityType = async ({ entityType }) => {
   }
 };
 
+const getEntityListByNameFromNZBN = async ({
+  searchString,
+  page = 0,
+  limit = 200,
+}) => {
+  try {
+    const organization = await Organization.findOne({
+      isDeleted: false,
+    })
+      .select({ 'integration.nzbn': 1 })
+      .lean();
+    const url = `https://api.business.govt.nz/services/v4/nzbn/entities?search-term=${searchString}&page-size=${limit}&page=${page}`;
+    const options = {
+      method: 'GET',
+      url: url,
+      headers: {
+        Authorization: `Bearer ${organization.integration.nzbn.accessToken}`,
+      },
+    };
+    const { data } = await axios(options);
+    return data;
+  } catch (e) {
+    Logger.log.error('Error in getting entity list from NZBN lookup ');
+    Logger.log.error(e.message || e);
+  }
+};
+
+const getEntityDetailsByNZBN = async ({ searchString }) => {
+  try {
+    const organization = await Organization.findOne({
+      isDeleted: false,
+    })
+      .select({ 'integration.nzbn': 1 })
+      .lean();
+    const url = `https://api.business.govt.nz/services/v4/nzbn/entities/${searchString}`;
+    const options = {
+      method: 'GET',
+      url: url,
+      headers: {
+        Authorization: `Bearer ${organization.integration.nzbn.accessToken}`,
+      },
+    };
+    const { data } = await axios(options);
+    return data;
+  } catch (e) {
+    Logger.log.error('Error in getting entity details from NZBN lookup ');
+    Logger.log.error(e);
+  }
+};
+
+const extractABRLookupData = async ({ entityData, country, step }) => {
+  try {
+    let response = {};
+    if (entityData && entityData.response) {
+      const entityDetails =
+        entityData.response.businessEntity202001 ||
+        entityData.response.businessEntity201408;
+      if (entityDetails) {
+        if (entityDetails.entityType) {
+          const entityType = await resolveEntityType({
+            entityType: entityDetails.entityType.entityDescription,
+            country,
+          });
+          if (step && step.toLowerCase() === 'person') {
+            const entityTypes = [
+              'PROPRIETARY_LIMITED',
+              'LIMITED',
+              'CORPORATION',
+              'INCORPORATED',
+              'NO_LIABILITY',
+              'PROPRIETARY',
+              'REGISTERED_BODY',
+            ];
+            if (!entityTypes.includes(entityType)) {
+              return {
+                status: 'ERROR',
+                messageCode: 'INVALID_ENTITY_TYPE',
+                message: 'Invalid entity type',
+              };
+            }
+          }
+          response.entityType = {
+            label: entityType
+              .replace(/_/g, ' ')
+              .replace(/\w\S*/g, function (txt) {
+                return (
+                  txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+                );
+              }),
+            value: entityType,
+          };
+        }
+        if (entityDetails.ABN) response.abn = entityDetails.ABN.identifierValue;
+        if (entityDetails.entityStatus) {
+          if (
+            entityDetails.entityStatus.effectiveFrom &&
+            entityDetails.entityStatus.entityStatusCode
+          ) {
+            response.registeredDate = entityDetails.entityStatus.effectiveFrom;
+            response.isActive = entityDetails.entityStatus.entityStatusCode;
+          } else if (entityDetails.entityStatus.length !== 0) {
+            const entityRegistration = entityDetails.entityStatus.find((i) => {
+              if (i.effectiveTo === '0001-01-01') {
+                return i;
+              }
+            });
+            if (entityRegistration) {
+              response.registeredDate = entityRegistration.effectiveFrom;
+              response.isActive = entityRegistration.entityStatusCode;
+            }
+          }
+        }
+        if (entityDetails.ASICNumber)
+          response.acn =
+            typeof entityDetails.ASICNumber === 'string'
+              ? entityDetails.ASICNumber
+              : '';
+        if (entityDetails.goodsAndServicesTax)
+          response.gstStatus = entityDetails.goodsAndServicesTax.effectiveFrom;
+        if (entityDetails.mainName)
+          response.entityName = {
+            label: Array.isArray(entityDetails.mainName)
+              ? entityDetails.mainName[0].organisationName
+              : entityDetails.mainName.organisationName,
+            value: Array.isArray(entityDetails.mainName)
+              ? entityDetails.mainName[0].organisationName
+              : entityDetails.mainName.organisationName,
+          };
+        const tradingName =
+          entityDetails.mainTradingName || entityDetails.businessName;
+        if (tradingName)
+          response.tradingName =
+            tradingName.organisationName ||
+            typeof tradingName.organisationName === 'string'
+              ? tradingName.organisationName
+              : tradingName[0].organisationName;
+        if (entityDetails.mainBusinessPhysicalAddress[0]) {
+          const state = StaticData.australianStates.find((i) => {
+            if (
+              i._id === entityDetails.mainBusinessPhysicalAddress[0].stateCode
+            )
+              return i;
+          });
+          response.state = {
+            label:
+              state && state.name
+                ? state.name
+                : entityDetails.mainBusinessPhysicalAddress[0].stateCode,
+            value: entityDetails.mainBusinessPhysicalAddress[0].stateCode,
+          };
+        }
+        if (entityDetails.mainBusinessPhysicalAddress[0])
+          response.postCode =
+            entityDetails.mainBusinessPhysicalAddress[0].postcode;
+      } else {
+        return {
+          status: 'ERROR',
+          messageCode: 'NO_DATA_FOUND',
+          message: 'No data found',
+        };
+      }
+    } else {
+      return {
+        status: 'ERROR',
+        messageCode: 'NO_DATA_FOUND',
+        message: 'No data found',
+      };
+    }
+    return response;
+  } catch (e) {
+    Logger.log.error('Error in extract ABR lookup data');
+    Logger.log.error(e.message || e);
+  }
+};
+
+const extractABRLookupDataFromArray = async ({ entityList }) => {
+  try {
+    let response = [];
+    let entityData = {};
+    if (
+      entityList &&
+      entityList.ABRPayloadSearchResults.response &&
+      entityList.ABRPayloadSearchResults.response.searchResultsList &&
+      entityList.ABRPayloadSearchResults.response.searchResultsList
+        .searchResultsRecord &&
+      entityList.ABRPayloadSearchResults.response.searchResultsList
+        .searchResultsRecord.length !== 0
+    ) {
+      const entities = Array.isArray(
+        entityList.ABRPayloadSearchResults.response.searchResultsList
+          .searchResultsRecord,
+      )
+        ? entityList.ABRPayloadSearchResults.response.searchResultsList
+            .searchResultsRecord
+        : [
+            entityList.ABRPayloadSearchResults.response.searchResultsList
+              .searchResultsRecord,
+          ];
+      entities.forEach((data) => {
+        entityData = {};
+        if (
+          data.ABN &&
+          data.ABN.identifierStatus &&
+          data.ABN.identifierStatus.toLowerCase() !== 'cancelled'
+        ) {
+          if (data.ABN) entityData.abn = data.ABN.identifierValue;
+          if (data.ABN) entityData.status = data.ABN.identifierStatus;
+          let fieldName =
+            data.mainName ||
+            data.businessName ||
+            data.otherTradingName ||
+            data.mainTradingName;
+          if (fieldName) {
+            entityData.label = fieldName.organisationName;
+            entityData.value = fieldName.organisationName;
+          }
+          if (data.mainBusinessPhysicalAddress) {
+            entityData.state =
+              typeof data.mainBusinessPhysicalAddress.stateCode === 'string'
+                ? data.mainBusinessPhysicalAddress.stateCode
+                : '';
+            entityData.postCode = data.mainBusinessPhysicalAddress.postcode;
+          }
+          response.push(entityData);
+        }
+      });
+    }
+    return response;
+  } catch (e) {
+    Logger.log.error('Error in extract ABR lookup data');
+    Logger.log.error(e.message || e);
+  }
+};
+
+//TODO send entity-type after entity type mapping
+const extractNZBRLookupData = async ({ entityData, country, step }) => {
+  try {
+    let response = {};
+    const inActiveCode = ['62', '80', '90', '91'];
+    if (entityData && entityData.nzbn) {
+      if (entityData.entityTypeCode) {
+        const entityType = await resolveEntityType({
+          entityType: entityData.entityTypeCode,
+          country,
+        });
+        if (step && step.toLowerCase() === 'person') {
+          const entityTypes = [
+            'PROPRIETARY_LIMITED',
+            'LIMITED',
+            'CORPORATION',
+            'INCORPORATED',
+            'NO_LIABILITY',
+            'PROPRIETARY',
+            'REGISTERED_BODY',
+          ];
+          if (!entityTypes.includes(entityType)) {
+            return {
+              status: 'ERROR',
+              messageCode: 'INVALID_ENTITY_TYPE',
+              message: 'Invalid entity type',
+            };
+          }
+        }
+        response.entityType = {
+          label: entityType
+            .replace(/_/g, ' ')
+            .replace(/\w\S*/g, function (txt) {
+              return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+            }),
+          value: entityType,
+        };
+      }
+      if (entityData.nzbn) {
+        response.abn = entityData.nzbn;
+      }
+      if (entityData.entityName) {
+        response.entityName = {
+          label: entityData.entityName,
+          value: entityData.entityName,
+        };
+      }
+      if (entityData.entityStatusCode) {
+        response.isActive = !inActiveCode.includes(entityData.entityStatusCode);
+      }
+      if (entityData.entityStatusDescription) {
+        response.status = entityData.entityStatusDescription;
+      }
+      if (
+        entityData.sourceRegisterUniqueIdentifier ||
+        entityData.sourceRegisterUniqueId
+      ) {
+        response.acn =
+          entityData.sourceRegisterUniqueIdentifier ||
+          entityData.sourceRegisterUniqueId;
+      }
+      if (entityData.tradingNames) {
+        if (
+          Array.isArray(entityData.tradingNames) &&
+          entityData.tradingNames.length !== 0
+        ) {
+          response.tradingName = entityData.tradingNames[0]['name'];
+        }
+      }
+      if (entityData.addresses && entityData.addresses.addressList) {
+        const addressList = entityData.addresses.addressList;
+        if (Array.isArray(addressList) && addressList.length !== 0) {
+          let address = {};
+          for (let i = 0; i < addressList.length; i++) {
+            if (addressList[i].addressType === 'REGISTERED') {
+              address = addressList[i];
+              break;
+            }
+          }
+          if (address) {
+            let state;
+            if (address.address3 || address.address4) {
+              state = StaticData.newZealandStates.find((i) => {
+                if (
+                  address.address3 &&
+                  address.address3.toLowerCase().includes(i.name.toLowerCase())
+                ) {
+                  return i;
+                } else if (
+                  address.address4 &&
+                  address.address4.toLowerCase().includes(i.name.toLowerCase())
+                ) {
+                  return i;
+                }
+              });
+            }
+            if (address.address1) {
+              response.property = address.address1;
+            }
+            if (address.address2) {
+              response.streetName = address.address2;
+            }
+            if (address.address3) {
+              response.suburb = address.address3;
+            }
+            if (state && state._id) {
+              response.state = {
+                label: state.name,
+                value: state._id,
+              };
+            }
+            if (address.postCode) {
+              response.postCode = address.postCode;
+            }
+          }
+        }
+      }
+      if (entityData.phoneNumbers) {
+        if (
+          Array.isArray(entityData.phoneNumbers) &&
+          entityData.phoneNumbers.length !== 0
+        ) {
+          response.contactNumber =
+            entityData.phoneNumbers[0]['phoneCountryCode'] +
+            entityData.phoneNumbers[0]['phoneNumber'];
+        }
+      }
+    } else {
+      return {
+        status: 'ERROR',
+        messageCode: 'NO_DATA_FOUND',
+        message: 'No data found',
+      };
+    }
+    return response;
+  } catch (e) {
+    Logger.log.error('Error in extract NZBN lookup data');
+    Logger.log.error(e.message || e);
+  }
+};
+
+//TODO send entity-type after entity type mapping
+const extractNZBRLookupDataFromArray = async ({ entityList, country }) => {
+  try {
+    let responseArray = [];
+    let response = {};
+    const inActiveCode = ['62', '80', '90', '91'];
+    if (entityList && entityList.items && entityList.items.length !== 0) {
+      entityList.items.forEach((entityData) => {
+        response = {};
+        if (
+          entityData.entityStatusCode &&
+          !inActiveCode.includes(entityData.entityStatusCode)
+        ) {
+          if (entityData.nzbn) response.abn = entityData.nzbn;
+          if (entityData.entityName) {
+            response.label = entityData.entityName;
+            response.value = entityData.entityName;
+          }
+          if (entityData.entityStatusDescription)
+            response.status = entityData.entityStatusDescription;
+          if (entityData.sourceRegisterUniqueId) {
+            response.acn = entityData.sourceRegisterUniqueId;
+          }
+          responseArray.push(response);
+        }
+      });
+    }
+    return responseArray;
+  } catch (e) {
+    Logger.log.error('Error in extract NZBR lookup data');
+    Logger.log.error(e.message || e);
+  }
+};
+
+const getEntityDetailsByBusinessNumber = async ({
+  searchString,
+  country,
+  step,
+}) => {
+  try {
+    let responseData = {};
+    let entityData;
+    if (country === 'AUS') {
+      if (searchString.length < 10) {
+        entityData = await getEntityDetailsByACN({
+          searchString: searchString,
+        });
+        responseData = await extractABRLookupData({
+          entityData,
+          country,
+          step,
+        });
+      } else {
+        entityData = await getEntityDetailsByABN({
+          searchString: searchString,
+        });
+        responseData = await extractABRLookupData({
+          entityData,
+          country,
+          step,
+        });
+      }
+    } else if (country === 'NZL') {
+      if (searchString.length < 12) {
+        entityData = await getEntityListByNameFromNZBN({
+          searchString: searchString,
+        });
+        let identifiedData = {};
+        if (entityData && entityData.items && entityData.items.length !== 0) {
+          for (let i = 0; i < entityData.items.length; i++) {
+            if (
+              entityData.items[i].sourceRegisterUniqueId &&
+              entityData.items[i].sourceRegisterUniqueId === searchString
+            ) {
+              identifiedData = entityData.items[i];
+              break;
+            }
+          }
+        }
+        responseData = await extractNZBRLookupData({
+          entityData: identifiedData,
+          country,
+          step,
+        });
+      } else {
+        entityData = await getEntityDetailsByNZBN({
+          searchString: searchString,
+        });
+        responseData = await extractNZBRLookupData({
+          entityData,
+          country,
+          step,
+        });
+      }
+    }
+    return responseData;
+  } catch (e) {
+    Logger.log.error(
+      'Error in get entity details using business/company number',
+    );
+    Logger.log.error(e.message || e);
+  }
+};
+
+const getEntityDetailsByName = async ({ searchString, country, page = 0 }) => {
+  try {
+    let responseData;
+    let entityData;
+    if (country === 'AUS') {
+      entityData = await getEntityListByName({
+        searchString: searchString,
+      });
+      responseData = await extractABRLookupDataFromArray({
+        entityList: entityData,
+      });
+    } else if (country === 'NZL') {
+      entityData = await getEntityListByNameFromNZBN({
+        searchString: searchString,
+        page: page,
+      });
+      responseData = await extractNZBRLookupDataFromArray({
+        entityList: entityData,
+        country,
+      });
+    }
+    return responseData;
+  } catch (e) {
+    Logger.log.error('Error in get entity details using name');
+    Logger.log.error(e.message || e);
+  }
+};
+
 module.exports = {
   getEntityDetailsByABN,
   getEntityDetailsByACN,
   getEntityListByName,
   resolveEntityType,
+  getEntityListByNameFromNZBN,
+  getEntityDetailsByNZBN,
+  getEntityDetailsByBusinessNumber,
+  getEntityDetailsByName,
 };

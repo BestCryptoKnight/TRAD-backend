@@ -5,8 +5,6 @@ const Logger = require('./../services/logger');
 
 const getStakeholderDetails = async ({ stakeholder, manageColumns }) => {
   try {
-    console.log('stakeholder ', stakeholder);
-    console.log('manageColumns ', manageColumns);
     if (stakeholder.entityType) {
       stakeholder.entityType = stakeholder.entityType
         .replace(/_/g, ' ')
@@ -159,15 +157,22 @@ const storeStakeholderDetails = async ({ stakeholder, debtorId }) => {
         entityType: 1,
         entityName: 1,
         tradingName: 1,
+        country: 1,
+        registrationNumber: 1,
       };
     } else {
       if (stakeholder.abn) update.abn = stakeholder.abn;
       update.acn = stakeholder.acn ? stakeholder.acn : undefined;
+      update.registrationNumber = stakeholder.registrationNumber
+        ? stakeholder.registrationNumber
+        : undefined;
       if (stakeholder.entityType) update.entityType = stakeholder.entityType;
       if (stakeholder.entityName) update.entityName = stakeholder.entityName;
       update.tradingName = stakeholder.tradingName
         ? stakeholder.tradingName
         : undefined;
+      if (stakeholder.stakeholderCountry)
+        update.country = stakeholder.stakeholderCountry;
       query = {
         $or: [{ abn: stakeholder.abn }, { acn: stakeholder.acn }],
       };
