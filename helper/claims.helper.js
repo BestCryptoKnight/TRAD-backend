@@ -30,7 +30,10 @@ const getClaimsList = async ({
         .lean();
       clientCRMIds = clients.map((i) => i.crmClientId);
     } else if (requestedQuery.clientId) {
-      clientCRMIds = [requestedQuery.clientId];
+      const client = await Client.findOne({ _id: requestedQuery.clientId })
+        .select('crmClientId')
+        .lean();
+      clientCRMIds = [client.crmClientId];
     } else if (!isForRisk) {
       const client = await Client.findById(clientId)
         .select('_id crmClientId')

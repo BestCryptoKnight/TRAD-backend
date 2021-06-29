@@ -535,6 +535,11 @@ router.get('/stakeholder/:debtorId', async function (req, res) {
               address: stakeholder.residentialAddress,
             });
           }
+          if (stakeholder.hasOwnProperty('allowToCheckCreditHistory')) {
+            stakeholder.allowToCheckCreditHistory = stakeholder.allowToCheckCreditHistory
+              ? 'Yes'
+              : 'No';
+          }
           delete stakeholder.residentialAddress;
         } else {
           if (stakeholder.entityName) {

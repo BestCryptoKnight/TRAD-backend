@@ -50,7 +50,7 @@ const getClientDebtorDetails = async ({ debtor, manageColumns }) => {
           i.name === 'updatedAt'
             ? debtor[i.name]
             : debtor['debtorId'][i.name];
-        if (i.name === 'isActive') {
+        if (i.name === 'isActive' || i.name === 'isAutoApproveAllowed') {
           value = value ? 'Yes' : 'No';
         }
         if (value) {
@@ -135,6 +135,7 @@ const getClientCreditLimit = async ({
       i = !clientDebtorDetails.includes(i) ? 'debtorId.' + i : i;
       return [i, 1];
     });
+    fields.push(['debtorId._id', 1]);
     aggregationQuery.push({
       $project: fields.reduce((obj, [key, val]) => {
         obj[key] = val;
@@ -211,6 +212,7 @@ const getClientCreditLimit = async ({
       }
     }
     response.forEach((debtor) => {
+      debtor._id = debtor.debtorId._id || debtor._id;
       if (
         debtor.activeApplicationId &&
         debtor.activeApplicationId.applicationId

@@ -481,9 +481,11 @@ router.get('/details/:clientId', async function (req, res) {
             i.name === 'riskAnalystId' ||
             i.name === 'serviceManagerId' ||
             i.name === 'insurerId'
+              ? client[i.name]['name']
+              : i.name === 'isAutoApproveAllowed'
               ? client[i.name]
-                ? client[i.name]['name']
-                : ''
+                ? 'Yes'
+                : 'No'
               : client[i.name] || '',
           type: i.type,
         });

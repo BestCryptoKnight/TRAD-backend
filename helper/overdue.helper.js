@@ -137,6 +137,8 @@ const getOverdueList = async ({
   hasFullAccess = false,
   clientId,
   userId,
+  entityId = null,
+  isForSubmodule = false,
 }) => {
   try {
     const queryFilter = [];
@@ -144,6 +146,17 @@ const getOverdueList = async ({
     requestedQuery.limit = requestedQuery.limit || 5;
     if (!isForRisk) {
       queryFilter.push({ clientId: mongoose.Types.ObjectId(clientId) });
+    } else if (isForSubmodule && entityId && requestedQuery.entityType) {
+      if (requestedQuery.entityType === 'client') {
+        queryFilter.push({
+          clientId: mongoose.Types.ObjectId(entityId),
+        });
+      } else if (requestedQuery.entityType === 'debtor') {
+        queryFilter.push({
+          debtorId: mongoose.Types.ObjectId(entityId),
+        });
+        isForSubmodule = false;
+      }
     } else if (isForRisk && !hasFullAccess) {
       const clients = await Client.find({
         $or: [{ riskAnalystId: userId }, { serviceManagerId: userId }],
@@ -245,7 +258,7 @@ const getOverdueList = async ({
       status: 1,
       _id: 0,
     };
-    if (isForRisk) {
+    if (isForRisk && !isForSubmodule) {
       query.push(
         {
           $lookup: {
@@ -381,16 +394,8 @@ const getOverdueList = async ({
     overdueList[0].paginatedResult.forEach((i) => {
       if (i.debtors.length !== 0) {
         i.debtors.forEach((j) => {
-          j.overdueType = j.overdueType
-            .replace(/_/g, ' ')
-            .replace(/\w\S*/g, function (txt) {
-              return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
-            });
-          j.status = j.status
-            .replace(/_/g, ' ')
-            .replace(/\w\S*/g, function (txt) {
-              return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
-            });
+          j.overdueType = formatString(j.overdueType);
+          j.status = formatString(j.status);
         });
       }
     });
@@ -416,7 +421,7 @@ const getOverdueList = async ({
         type: 'amount',
       },
     ];
-    if (isForRisk) {
+    if (isForRisk && !isForSubmodule) {
       const firstColumn = [
         {
           name: 'client',

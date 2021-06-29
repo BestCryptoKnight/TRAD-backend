@@ -282,22 +282,139 @@
       ]
     },
     {
-      "name": "client-overdue",
-      "manageColumns": [
-        { "name": "debtorId", "label": "Debtor Name", "type": "string" },
-        { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
-      ],
-      "defaultColumns": ["debtorId", "updatedAt"]
-    },
-    {
       "name": "client-claim",
       "manageColumns": [
-        { "name": "debtorId", "label": "Debtor Name", "type": "string" },
-        { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+        { "name": "name", "label": "Claim Name", "type": "string" },
+        {
+          "name": "notifiedofcase",
+          "label": "Notified of Case",
+          "type": "date"
+        },
+        {
+          "name": "claimsinforequested",
+          "label": "Claims Info Requested",
+          "type": "string"
+        },
+        {
+          "name": "claimsinforeviewed",
+          "label": "Claims Info Reviewed",
+          "type": "string"
+        },
+        {
+          "name": "datesubmittedtouw",
+          "label": "Date Submitted to U/W",
+          "type": "date"
+        },
+        { "name": "podreceived", "label": "POD Received", "type": "string" },
+        { "name": "podsenttouw", "label": "POD Sent to U/W", "type": "date" },
+        { "name": "codrequested", "label": "COD Requested", "type": "date" },
+        { "name": "codreceived", "label": "COD Received", "type": "date" },
+        {
+          "name": "grossdebtamount",
+          "label": "Gross Debt Amount",
+          "type": "amount"
+        },
+        { "name": "amountpaid", "label": "Amount Paid", "type": "amount" },
+        {
+          "name": "receivedlolfromuw",
+          "label": "Received LOL from U/W",
+          "type": "date"
+        },
+        {
+          "name": "claimpaidbyuw",
+          "label": "Claim Paid by U/W",
+          "type": "date"
+        },
+        {
+          "name": "reimbursementrequired",
+          "label": "Reimbursement Required",
+          "type": "string"
+        },
+        {
+          "name": "reimbursementrequested",
+          "label": "Reimbursement Requested",
+          "type": "string"
+        },
+        {
+          "name": "reimbursementreceived",
+          "label": "Reimbursement Received",
+          "type": "date"
+        },
+        {
+          "name": "repaymentplanamount",
+          "label": "Repayment Plan Amount",
+          "type": "amount"
+        },
+        {
+          "name": "instalmentamounts",
+          "label": "Instalment Amounts",
+          "type": "amount"
+        },
+        {
+          "name": "frequency",
+          "label": "Frequency",
+          "type": "string"
+        },
+        {
+          "name": "repaymentplanlength",
+          "label": "Repayment Plan Length",
+          "type": "string"
+        },
+        {
+          "name": "finalpaymentdate",
+          "label": "Final Payment Date",
+          "type": "date"
+        },
+        {
+          "name": "tradinghistory",
+          "label": "Trading History",
+          "type": "string"
+        },
+        {
+          "name": "dljustification",
+          "label": "D/L Justification",
+          "type": "string"
+        },
+        {
+          "name": "underwriter",
+          "label": "Insurer Name",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "label": "Notes",
+          "type": "string"
+        },
+        {
+          "name": "stage",
+          "label": "Stage",
+          "type": "string"
+        },
+        {
+          "name": "reimbursementspaid",
+          "label": "Reimbursements Paid",
+          "type": "amount"
+        },
+        {
+          "name": "dateofoldestinvoice",
+          "label": "Date of Oldest Invoice",
+          "type": "date"
+        },
+        {
+          "name": "sector",
+          "label": "Sector",
+          "type": "string"
+        },
+        { "name": "createddate", "label": "Created Date", "type": "date" }
       ],
-      "defaultColumns": ["debtorId", "updatedAt"]
+      "defaultColumns": [
+        "name",
+        "stage",
+        "underwriter",
+        "createddate",
+        "modifieddate",
+        "notifiedofcase"
+      ]
     },
     {
       "name": "client-policy",
@@ -416,7 +533,7 @@
         { "name": "creditLimit", "label": "Credit Limit", "type": "string" },
         {
           "name": "isEndorsedLimit",
-          "label": "Endorsed Limit",
+          "label": "Credit Type",
           "type": "string"
         },
         { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
@@ -680,24 +797,6 @@
       ]
     },
     {
-      "name": "debtor-overdue",
-      "manageColumns": [
-        { "name": "clientId", "label": "Client Name", "type": "string" },
-        { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
-      ],
-      "defaultColumns": ["clientId", "updatedAt"]
-    },
-    {
-      "name": "debtor-claim",
-      "manageColumns": [
-        { "name": "clientId", "label": "Client Name", "type": "string" },
-        { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
-      ],
-      "defaultColumns": ["clientId", "updatedAt"]
-    },
-    {
       "name": "debtor-task",
       "manageColumns": [
         { "name": "priority", "label": "Priority", "type": "string" },
@@ -895,63 +994,6 @@
         "inceptionDate",
         "expiryDate"
       ]
-    },
-    {
-      "name": "overdue",
-      "manageColumns": [
-        { "name": "clientId", "label": "Client Name", "type": "string" },
-        { "name": "debtorId", "label": "Debtor Name", "type": "string" },
-        { "name": "acn", "label": "ACN", "type": "string" },
-        { "name": "dateOfInvoice", "label": "Date Of Invoice", "type": "date" },
-        { "name": "overdueType", "label": "Overdue Type", "type": "string" },
-        { "name": "status", "label": "Status", "type": "string" },
-        { "name": "insurerId", "label": "Insurer Name", "type": "string" },
-        { "name": "month", "label": "Month", "type": "string" },
-        { "name": "year", "label": "Year", "type": "string" },
-        {
-          "name": "clientComment",
-          "label": "Client Comment",
-          "type": "string"
-        },
-        {
-          "name": "analystComment",
-          "label": "Analyst Comment",
-          "type": "string"
-        },
-        {
-          "name": "currentAmount",
-          "label": "Current Amount",
-          "type": "number"
-        },
-        {
-          "name": "thirtyDaysAmount",
-          "label": "Thirty Days Amount",
-          "type": "number"
-        },
-        {
-          "name": "sixtyDaysAmount",
-          "label": "Sixty Days Amount",
-          "type": "number"
-        },
-        {
-          "name": "ninetyDaysAmount",
-          "label": "ninetyDays Amount",
-          "type": "number"
-        },
-        {
-          "name": "ninetyPlusDaysAmount",
-          "label": "ninetyPlusDays Amount",
-          "type": "number"
-        },
-        {
-          "name": "outstandingAmount",
-          "label": "outstanding Amount",
-          "type": "number"
-        },
-        { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
-      ],
-      "defaultColumns": ["clientId", "debtorId", "acn", "dateOfInvoice"]
     },
     {
       "name": "client-list-report",
@@ -1512,6 +1554,11 @@
         { "name": "state", "label": "Country/State", "type": "string" },
         { "name": "country", "label": "Country", "type": "string" },
         { "name": "postCode", "label": "Postcode/Zip", "type": "string" },
+        {
+          "name": "allowToCheckCreditHistory",
+          "label": "Allow To Check CreditHistory",
+          "type": "string"
+        },
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],

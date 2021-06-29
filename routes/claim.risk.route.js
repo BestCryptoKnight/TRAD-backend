@@ -104,11 +104,6 @@ router.get('/entity-list', async function (req, res) {
     const clients = await getClientList({
       hasFullAccess: hasFullAccess,
       userId: req.user._id,
-      sendCRMIds: true,
-    });
-    clients.forEach((i) => {
-      i._id = i.crmClientId;
-      delete i.crmClientId;
     });
     res.status(200).send({
       status: 'SUCCESS',
@@ -256,7 +251,6 @@ router.put('/column-name', async function (req, res) {
     switch (req.body.columnFor) {
       case 'claim':
       case 'client-claim':
-      case 'debtor-claim':
         if (req.body.isReset) {
           module = StaticFile.modules.find(
             (i) => i.name === req.body.columnFor,

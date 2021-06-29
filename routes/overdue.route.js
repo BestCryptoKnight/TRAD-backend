@@ -248,9 +248,9 @@ router.get('/', async function (req, res) {
   }
 });
 
-/**
+/*/!**
  * Get overdue details
- */
+ *!/
 router.get('/:overdueId', async function (req, res) {
   if (
     !req.params.overdueId ||
@@ -275,7 +275,7 @@ router.get('/:overdueId', async function (req, res) {
         overdue.overdueType = {
           label: overdue.overdueType
             .replace(/_/g, ' ')
-            .replace(/\w\S*/g, function (txt) {
+            .replace(/\w\S*!/g, function (txt) {
               return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
             }),
           value: overdue.overdueType,
@@ -311,7 +311,7 @@ router.get('/:overdueId', async function (req, res) {
       message: e.message || 'Something went wrong, please try again later.',
     });
   }
-});
+});*/
 
 /**
  * Save overdue list
@@ -399,9 +399,9 @@ router.put('/status/:overdueId', async function (req, res) {
   }
 });
 
-/**
+/*/!**
  * Update overdue
- */
+ *!/
 router.put('/:overdueId', async function (req, res) {
   if (
     !req.params.overdueId ||
@@ -488,6 +488,7 @@ router.put('/:overdueId', async function (req, res) {
     });
   }
 });
+*/
 
 /**
  * Export Router

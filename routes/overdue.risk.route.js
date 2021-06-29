@@ -258,12 +258,13 @@ router.get('/', async function (req, res) {
 });
 
 /**
- * Get overdue details
+ * Get Specific Entity Overdue List
  */
-router.get('/:overdueId', async function (req, res) {
+router.get('/:entityId', async function (req, res) {
   if (
-    !req.params.overdueId ||
-    !mongoose.Types.ObjectId.isValid(req.params.overdueId)
+    !req.params.entityId ||
+    !mongoose.Types.ObjectId.isValid(req.params.entityId) ||
+    !req.query.entityType
   ) {
     return res.status(400).send({
       status: 'ERROR',
@@ -272,43 +273,23 @@ router.get('/:overdueId', async function (req, res) {
     });
   }
   try {
-    const overdue = await Overdue.findOne({ _id: req.params.overdueId })
-      .populate({
-        path: 'debtorId insurerId clientId',
-        select: '_id name entityName',
-      })
-      .select({ isDeleted: 0, createdAt: 0, updatedAt: 0, __v: 0 })
-      .lean();
-    if (overdue) {
-      if (overdue.overdueType) {
-        overdue.overdueType = {
-          label: overdue.overdueType
-            .replace(/_/g, ' ')
-            .replace(/\w\S*/g, function (txt) {
-              return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
-            }),
-          value: overdue.overdueType,
-        };
-      }
-      if (overdue.debtorId) {
-        overdue.debtorId = {
-          label: overdue.debtorId.entityName,
-          value: overdue.debtorId._id,
-        };
-      }
-      if (overdue.insurerId) {
-        overdue.insurerId = {
-          label: overdue.insurerId.name,
-          value: overdue.insurerId._id,
-        };
-      }
-      if (overdue.month && overdue.year) {
-        overdue.monthString = overdue.year + ',' + overdue.month;
-      }
-    }
+    const { overdueList, headers, total } = await getOverdueList({
+      requestedQuery: req.query,
+      isForRisk: true,
+      userId: req.user._id,
+      entityId: req.params.entityId,
+      isForSubmodule: true,
+    });
     res.status(200).send({
       status: 'SUCCESS',
-      data: overdue,
+      data: {
+        docs: overdueList[0].paginatedResult,
+        headers,
+        total,
+        page: parseInt(req.query.page),
+        limit: parseInt(req.query.limit),
+        pages: Math.ceil(total / parseInt(req.query.limit)),
+      },
     });
   } catch (e) {
     Logger.log.error(
@@ -322,9 +303,9 @@ router.get('/:overdueId', async function (req, res) {
   }
 });
 
-/**
+/*/!**
  * Add overdue
- */
+ *!/
 router.post('/', async function (req, res) {
   if (
     !req.body.clientId ||
@@ -413,7 +394,7 @@ router.post('/', async function (req, res) {
       message: e.message || 'Something went wrong, please try again later.',
     });
   }
-});
+});*/
 
 /**
  * Save overdue list
@@ -519,9 +500,10 @@ router.put('/status/:overdueId', async function (req, res) {
   }
 });
 
-/**
+/*
+/!**
  * Update overdue
- */
+ *!/
 router.put('/:overdueId', async function (req, res) {
   if (
     !req.params.overdueId ||
@@ -612,6 +594,7 @@ router.put('/:overdueId', async function (req, res) {
     });
   }
 });
+*/
 
 /**
  * Export Router
