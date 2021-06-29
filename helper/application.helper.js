@@ -10,6 +10,7 @@ const Policy = mongoose.model('policy');
 const DebtorDirector = mongoose.model('debtor-director');
 const ClientDebtor = mongoose.model('client-debtor');
 const Note = mongoose.model('note');
+const User = mongoose.model('user');
 
 /*
  * Local Imports
@@ -302,7 +303,7 @@ const getApplicationList = async ({
       }
       if (requestedQuery.endDate) {
         dateQuery = Object.assign({}, dateQuery, {
-          $lt: new Date(requestedQuery.endDate),
+          $lte: new Date(requestedQuery.endDate),
         });
         if (isForDownload) {
           filterArray.push({
@@ -847,10 +848,10 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
     let blockers = [];
 
     //TODO uncomment after flag added in client
-    /*if (!application.clientId.isAutoApproveAllowed) {
+    if (!application.clientId.isAutoApproveAllowed) {
       continueWithAutomation = false;
-      blockers.push('Automation is not Allowed')
-    }*/
+      blockers.push('Automation is not Allowed');
+    }
 
     if (
       continueWithAutomation &&
@@ -947,6 +948,9 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
       });
       console.log('identifiedInsurer ', identifiedInsurer);
       let response;
+      if (!identifiedInsurer) {
+        blockers.push('No insurer found');
+      }
       if (identifiedInsurer === 'qbe') {
         response = await insurerQBE({ application, type: type, policy });
       } else if (identifiedInsurer === 'bond') {
@@ -984,86 +988,21 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
         },
       );
       //TODO send notification
-      await addAuditLog({
-        entityType: 'application',
-        entityRefId: applicationId,
-        actionType: 'edit',
-        userType: 'system',
-        logDescription: `An application ${application.applicationId} is get approved`,
+      sendNotificationsToUser({
+        application,
+        userType,
+        userId,
+        status: 'APPROVED',
       });
-      if (application.clientId && application.clientId._id) {
-        const clientNotification = await addNotification({
-          userId: application.clientId._id,
-          userType: 'client-user',
-          description: `A new application ${application.applicationId} is get approved`,
-        });
-        if (clientNotification) {
-          sendNotification({
-            notificationObj: {
-              type: 'APPLICATION_APPROVED',
-              data: clientNotification,
-            },
-            type: 'client-user',
-            userId: application.clientId._id,
-          });
-        }
-      }
-      if (application.clientId && application.clientId.riskAnalystId) {
-        const userNotification = await addNotification({
-          userId: application.clientId.riskAnalystId,
-          userType: 'user',
-          description: `A new application ${application.applicationId} is get approved`,
-        });
-        if (userNotification) {
-          sendNotification({
-            notificationObj: {
-              type: 'APPLICATION_APPROVED',
-              data: userNotification,
-            },
-            type: 'user',
-            userId: application.clientId.riskAnalystId,
-          });
-        }
-      }
     } else {
       //TODO create Task + send Notification
       update.status = 'REVIEW_APPLICATION';
-      if (application.clientId && application.clientId.riskAnalystId) {
-        const data = {
-          title: `Review Application ${application.applicationId}`,
-          createdByType: userType,
-          createdById: userId,
-          assigneeType: 'user',
-          assigneeId: application.clientId.riskAnalystId,
-          dueDate: new Date(date.setDate(date.getDate() + 7)),
-          entityType: 'application',
-          entityId: application._id,
-        };
-        const task = await createTask(data);
-        await addAuditLog({
-          entityType: 'task',
-          entityRefId: task._id,
-          actionType: 'add',
-          userType: userType,
-          userRefId: userId,
-          logDescription: `A new task for ${application.applicationId} is created by system`,
-        });
-        const notification = await addNotification({
-          userId: task.assigneeId,
-          userType: task.assigneeType,
-          description: `A new task ${task.title} is assigned by system`,
-        });
-        if (notification) {
-          sendNotification({
-            notificationObj: {
-              type: 'TASK_ASSIGNED',
-              data: notification,
-            },
-            type: task.assigneeType,
-            userId: task.assigneeId,
-          });
-        }
-      }
+      sendNotificationsToUser({
+        application,
+        userType,
+        userId,
+        status: 'REVIEW_APPLICATION',
+      });
     }
     //TODO notify user
     await Application.updateOne({ _id: applicationId }, update);
@@ -1130,6 +1069,175 @@ const generateNewApplication = async ({
   }
 };
 
+const applicationDrawerDetails = async ({ application, manageColumns }) => {
+  try {
+    let createdBy;
+    if (application.createdByType === 'client-user') {
+      createdBy = await Client.findOne({ _id: application.createdById })
+        .select('name')
+        .lean();
+    } else {
+      createdBy = await User.findOne({ _id: application.createdById })
+        .select('name')
+        .lean();
+    }
+    let response = [];
+    let value = '';
+    manageColumns.forEach((i) => {
+      value =
+        i.name === 'clientId'
+          ? application['clientId']['name']
+          : i.name === 'debtorId'
+          ? application['debtorId']['entityName']
+          : i.name === 'entityType'
+          ? application['debtorId'][i.name]
+          : i.name === 'createdById'
+          ? createdBy['name']
+          : i.name === 'isExtendedPaymentTerms' ||
+            i.name === 'isPassedOverdueAmount'
+          ? application[i.name]
+            ? 'Yes'
+            : 'No'
+          : application[i.name]
+          ? application[i.name]
+          : '';
+      if (i.name === 'status' || i.name === 'entityType') {
+        value = formatString(value);
+      }
+      response.push({
+        label: i.label,
+        value: value,
+        type: i.type,
+      });
+    });
+    return response;
+  } catch (e) {
+    Logger.log.error('Error occurred in get application drawer details', e);
+  }
+};
+
+const sendNotificationsToUser = async ({
+  application,
+  userId,
+  userType,
+  userName = null,
+  status,
+}) => {
+  try {
+    if (status === 'APPROVED') {
+      await addAuditLog({
+        entityType: 'application',
+        entityRefId: application._id,
+        actionType: 'edit',
+        userType: 'system',
+        logDescription: `An application ${application.applicationId} is being approved`,
+      });
+      if (application.clientId && application.clientId._id) {
+        const clientNotification = await addNotification({
+          userId: application.clientId._id,
+          userType: 'client-user',
+          description: `An application ${application.applicationId} is being approved`,
+        });
+        if (clientNotification) {
+          sendNotification({
+            notificationObj: {
+              type: 'APPLICATION_APPROVED',
+              data: clientNotification,
+            },
+            type: 'client-user',
+            userId: application.clientId._id,
+          });
+        }
+      }
+      if (application.clientId && application.clientId.riskAnalystId) {
+        const userNotification = await addNotification({
+          userId: application.clientId.riskAnalystId,
+          userType: 'user',
+          description: `A new application ${application.applicationId} is being approved`,
+        });
+        if (userNotification) {
+          sendNotification({
+            notificationObj: {
+              type: 'APPLICATION_APPROVED',
+              data: userNotification,
+            },
+            type: 'user',
+            userId: application.clientId.riskAnalystId,
+          });
+        }
+      }
+    } else if (
+      status === 'REVIEW_APPLICATION' &&
+      application.clientId &&
+      application.clientId.riskAnalystId
+    ) {
+      const date = new Date();
+      const data = {
+        title: `Review Application ${application.applicationId}`,
+        createdByType: userType,
+        createdById: userId,
+        assigneeType: 'user',
+        assigneeId: application.clientId.riskAnalystId,
+        dueDate: new Date(date.setDate(date.getDate() + 7)),
+        entityType: 'application',
+        entityId: application._id,
+      };
+      const task = await createTask(data);
+      await addAuditLog({
+        entityType: 'task',
+        entityRefId: task._id,
+        actionType: 'add',
+        userType: userType,
+        userRefId: userId,
+        logDescription: `A new task for ${application.applicationId} is created by system`,
+      });
+      const notification = await addNotification({
+        userId: task.assigneeId,
+        userType: task.assigneeType,
+        description: `A new task ${task.title} is assigned by system`,
+      });
+      if (notification) {
+        sendNotification({
+          notificationObj: {
+            type: 'TASK_ASSIGNED',
+            data: notification,
+          },
+          type: task.assigneeType,
+          userId: task.assigneeId,
+        });
+      }
+    } else if (status === 'DECLINED') {
+      await addAuditLog({
+        entityType: 'application',
+        entityRefId: application._id,
+        actionType: 'edit',
+        userType: 'system',
+        logDescription: `An application ${application.applicationId} is being declined by ${userName}`,
+      });
+      if (application.clientId && application.clientId._id) {
+        const clientNotification = await addNotification({
+          userId: application.clientId._id,
+          userType: 'client-user',
+          description: `An application ${application.applicationId} is being declined by ${userName}`,
+        });
+        if (clientNotification) {
+          sendNotification({
+            notificationObj: {
+              type: 'APPLICATION_DECLINED',
+              data: clientNotification,
+            },
+            type: 'client-user',
+            userId: application.clientId._id,
+          });
+        }
+      }
+    }
+  } catch (e) {
+    Logger.log.error('Error occurred in send notifications');
+    Logger.log.error(e.message || e);
+  }
+};
+
 module.exports = {
   getApplicationList,
   storeCompanyDetails,
@@ -1138,4 +1246,6 @@ module.exports = {
   partnerDetailsValidation,
   checkForAutomation,
   generateNewApplication,
+  applicationDrawerDetails,
+  sendNotificationsToUser,
 };

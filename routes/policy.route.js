@@ -92,7 +92,7 @@ router.get('/client/policy-details/:policyId', async function (req, res) {
   }
   try {
     const policyData = await Policy.findById(req.params.policyId)
-      .populate({ path: 'insurerId', select: 'name' })
+      .populate({ path: 'insurerId clientId', select: 'name' })
       .select({ __v: 0 })
       .lean();
     const response = await getPolicyDetails({ policyData });
@@ -149,10 +149,10 @@ router.get('/', async function (req, res) {
       }
     }
     responseObj.docs.forEach((data) => {
-      if (data.product) {
-        data.product = {
+      if (data.policyNumber) {
+        data.policyNumber = {
           id: data._id,
-          value: data.product,
+          value: data.policyNumber,
         };
       }
       if (policyColumn.columns.includes('insurerId')) {

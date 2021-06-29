@@ -7,6 +7,7 @@ const getPolicyDetails = ({ policyData }) => {
   try {
     const policyColumns = [
       { name: 'clientId', label: 'Client Name', type: 'string' },
+      { name: 'insurerId', label: 'Insurer Name', type: 'string' },
       {
         name: 'product',
         label: 'Product',

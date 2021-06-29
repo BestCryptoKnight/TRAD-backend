@@ -23,6 +23,8 @@ const {
   storePartnerDetails,
   storeCreditLimitDetails,
   checkForAutomation,
+  applicationDrawerDetails,
+  sendNotificationsToUser,
 } = require('./../helper/application.helper');
 const {
   getEntityDetailsByBusinessNumber,
@@ -36,7 +38,6 @@ const {
   getStreetTypeName,
 } = require('./../helper/debtor.helper');
 const StaticData = require('./../static-files/staticData.json');
-const { getClientDebtorDetails } = require('./../helper/client-debtor.helper');
 const {
   getApplicationDocumentList,
   getSpecificEntityDocumentList,
@@ -314,23 +315,13 @@ router.get('/drawer-details/:applicationId', async function (req, res) {
   }
   try {
     const module = StaticFile.modules.find((i) => i.name === 'application');
-    const debtor = StaticFile.modules.find((i) => i.name === 'debtor');
     const application = await Application.findById(req.params.applicationId)
       .populate({
-        path: 'clientId debtorId clientDebtorId',
-        select: {
-          __v: 0,
-          updatedAt: 0,
-          debtorCode: 0,
-          createdAt: 0,
-        },
+        path: 'clientId debtorId',
+        select: 'name entityName entityType',
       })
       .select({
         __v: 0,
-        updatedAt: 0,
-        createdAt: 0,
-        createdById: 0,
-        createdByType: 0,
         applicationStage: 0,
       })
       .lean();
@@ -341,38 +332,10 @@ router.get('/drawer-details/:applicationId', async function (req, res) {
         message: 'No application found',
       });
     }
-    const debtorDetails = await getClientDebtorDetails({
-      debtor: application,
-      manageColumns: debtor.manageColumns,
+    const response = await applicationDrawerDetails({
+      application,
+      manageColumns: module.manageColumns,
     });
-    let response = [];
-    let value = '';
-    module.manageColumns.forEach((i) => {
-      value =
-        i.name === 'clientId'
-          ? application['clientId'][i.name]
-          : i.name === 'outstandingAmount'
-          ? application['clientDebtorId'][i.name]
-          : i.name === 'isExtendedPaymentTerms' ||
-            i.name === 'isPassedOverdueAmount'
-          ? application[i.name]
-            ? 'Yes'
-            : 'No'
-          : application[i.name];
-      if (i.name === 'status') {
-        value = value.replace(/_/g, ' ').replace(/\w\S*/g, function (txt) {
-          return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
-        });
-      }
-      if (typeof value === 'string') {
-        response.push({
-          label: i.label,
-          value: value || '',
-          type: i.type,
-        });
-      }
-    });
-    response = response.concat(debtorDetails);
     res.status(200).send({ status: 'SUCCESS', data: response });
   } catch (e) {
     Logger.log.error(
@@ -1117,7 +1080,9 @@ router.put('/:applicationId', async function (req, res) {
   try {
     const application = await Application.findOne({
       _id: req.params.applicationId,
-    }).lean();
+    })
+      .populate({ path: 'clientId', select: '_id name riskAnalystId' })
+      .lean();
     if (application.status === 'SUBMITTED') {
       return res.status(400).send({
         status: 'ERROR',
@@ -1218,6 +1183,15 @@ router.put('/:applicationId', async function (req, res) {
       userRefId: req.user._id,
       logDescription: `An application ${application.applicationId} is updated by ${req.user.name}`,
     });
+    if (req.body.status === 'APPROVED' || req.body.status === 'DECLINED') {
+      sendNotificationsToUser({
+        userName: req.user.name,
+        userId: req.user._id,
+        userType: 'user',
+        status: req.body.status,
+        application,
+      });
+    }
     res.status(200).send({
       status: 'SUCCESS',
       message: 'Application status updated successfully',

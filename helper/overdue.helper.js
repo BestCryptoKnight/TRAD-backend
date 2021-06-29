@@ -53,63 +53,77 @@ const getLastOverdueList = async ({ date, query, counter = 0 }) => {
   }
 };
 
-const getDrawerDetails = async ({ overdue }) => {
+const getDrawerDetails = async ({ overdueId, isForRisk = false }) => {
   try {
-    const overdueColumns = [
-      { name: 'status', label: 'Status', type: 'status' },
-      { name: 'month', label: 'Month-Year', type: 'string' },
-      { name: 'clientId', label: 'Client Name', type: 'string' },
-      { name: 'debtorId', label: 'Debtor Name', type: 'string' },
-      { name: 'acn', label: 'ACN', type: 'string' },
-      { name: 'dateOfInvoice', label: 'Date of Invoice', type: 'date' },
-      { name: 'overdueType', label: 'Overdue Type', type: 'string' },
-      { name: 'insurerId', label: 'Insurer Name', type: 'string' },
-      { name: 'currentAmount', label: 'Current', type: 'dollar' },
-      { name: 'thirtyDaysAmount', label: '30 days', type: 'dollar' },
-      { name: 'sixtyDaysAmount', label: '60 days', type: 'dollar' },
-      { name: 'ninetyDaysAmount', label: '90 days', type: 'dollar' },
-      { name: 'ninetyPlusDaysAmount', label: '90+ days', type: 'dollar' },
-      {
-        name: 'outstandingAmount',
-        label: 'Outstanding Amounts',
-        type: 'dollar',
-      },
-      { name: 'clientComment', label: 'Client Comment', type: 'string' },
-      { name: 'analystComment', label: 'Analyst Comment', type: 'string' },
-    ];
+    const overdue = await Overdue.findOne({ _id: overdueId })
+      .populate({
+        path: 'clientId debtorId insurerId',
+        select: 'name entityName',
+      })
+      .select({
+        overdueAction: 0,
+        isDeleted: 0,
+        __v: 0,
+        updatedAt: 0,
+        createdAt: 0,
+      })
+      .lean();
     let response = [];
-    overdueColumns.forEach((i) => {
-      if (overdue.hasOwnProperty(i.name)) {
+    if (overdue) {
+      const overdueColumns = [
+        { name: 'status', label: 'Status', type: 'status' },
+        { name: 'month', label: 'Month-Year', type: 'string' },
+        { name: 'clientId', label: 'Client Name', type: 'string' },
+        { name: 'debtorId', label: 'Debtor Name', type: 'string' },
+        { name: 'acn', label: 'ACN', type: 'string' },
+        { name: 'dateOfInvoice', label: 'Date of Invoice', type: 'date' },
+        { name: 'overdueType', label: 'Overdue Type', type: 'string' },
+        { name: 'insurerId', label: 'Insurer Name', type: 'string' },
+        { name: 'currentAmount', label: 'Current', type: 'dollar' },
+        { name: 'thirtyDaysAmount', label: '30 days', type: 'dollar' },
+        { name: 'sixtyDaysAmount', label: '60 days', type: 'dollar' },
+        { name: 'ninetyDaysAmount', label: '90 days', type: 'dollar' },
+        { name: 'ninetyPlusDaysAmount', label: '90+ days', type: 'dollar' },
+        {
+          name: 'outstandingAmount',
+          label: 'Outstanding Amounts',
+          type: 'dollar',
+        },
+        { name: 'clientComment', label: 'Client Comment', type: 'string' },
+      ];
+      if (isForRisk) {
+        overdueColumns.push({
+          name: 'analystComment',
+          label: 'Analyst Comment',
+          type: 'string',
+        });
+      }
+      overdueColumns.forEach((i) => {
         let value =
-          (i.name === 'insurerId' ||
-            i.name === 'clientId' ||
-            i.name === 'debtorId') &&
-          overdue[i.name]
+          (i.name === 'insurerId' || i.name === 'clientId') && overdue[i.name]
             ? overdue[i.name]['name']
+            : i.name === 'debtorId'
+            ? overdue[i.name] && overdue[i.name]['entityName']
             : overdue[i.name] || '';
         if (i.name === 'month') {
           value = getMonthString(overdue['month']) + '-' + overdue['year'];
         }
         if (i.name === 'overdueType') {
-          value = value.replace(/_/g, ' ').replace(/\w\S*/g, function (txt) {
-            return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
-          });
+          value = formatString(value);
         }
         if (i.name === 'status') {
           value = {
             value: value,
-            label: value.replace(/_/g, ' ').replace(/\w\S*/g, function (txt) {
-              return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
-            }),
+            label: formatString(value),
           };
         }
         response.push({
           label: i.label,
-          value: value,
+          value: value || '',
           type: i.type,
         });
-      }
-    });
+      });
+    }
     return response;
   } catch (e) {
     Logger.log.error('Error occurred in get drawer details');
@@ -514,8 +528,134 @@ const formatString = (text) => {
   }
 };
 
-const updateList = async () => {
+const updateList = async ({ requestBody, isForRisk = false, clientId }) => {
   try {
+    const promises = [];
+    let update = {};
+    for (let i = 0; i < requestBody.list.length; i++) {
+      if (
+        (isForRisk &&
+          (!requestBody.list[i].clientId ||
+            !mongoose.Types.ObjectId.isValid(requestBody.list[i].clientId))) ||
+        ((!requestBody.list[i].debtorId ||
+          !mongoose.Types.ObjectId.isValid(requestBody.list[i].debtorId)) &&
+          !requestBody.list[i].acn) ||
+        !requestBody.list[i].month ||
+        !requestBody.list[i].year ||
+        !requestBody.list[i].dateOfInvoice ||
+        !requestBody.list[i].overdueType ||
+        !requestBody.list[i].insurerId ||
+        !requestBody.list[i].hasOwnProperty('isExistingData') ||
+        (requestBody.list[i].isExistingData &&
+          !requestBody.list[i].overdueAction) ||
+        !requestBody.list[i].hasOwnProperty('outstandingAmount') ||
+        requestBody.list[i].outstandingAmount <= 0
+      ) {
+        return {
+          status: 'ERROR',
+          messageCode: 'REQUIRE_FIELD_MISSING',
+          message: 'Require fields are missing.',
+        };
+      }
+      update = {};
+      if (requestBody.list[i].clientId) {
+        update.clientId = isForRisk ? requestBody.list[i].clientId : clientId;
+      }
+      update.debtorId = requestBody.list[i].debtorId
+        ? requestBody.list[i].debtorId
+        : undefined;
+      update.acn = requestBody.list[i].acn
+        ? requestBody.list[i].acn
+        : undefined;
+      if (requestBody.list[i].dateOfInvoice) {
+        update.dateOfInvoice = requestBody.list[i].dateOfInvoice;
+      }
+      if (requestBody.list[i].overdueType) {
+        update.overdueType = requestBody.list[i].overdueType;
+      }
+      if (requestBody.list[i].insurerId) {
+        update.insurerId = requestBody.list[i].insurerId;
+      }
+      if (requestBody.list[i].month) {
+        update.month = requestBody.list[i].month.toString().padStart(2, '0');
+      }
+      if (requestBody.list[i].year) {
+        update.year = requestBody.list[i].year.toString();
+      }
+      if (requestBody.list[i].currentAmount) {
+        update.currentAmount = requestBody.list[i].currentAmount;
+      }
+      if (requestBody.list[i].thirtyDaysAmount) {
+        update.thirtyDaysAmount = requestBody.list[i].thirtyDaysAmount;
+      }
+      if (requestBody.list[i].sixtyDaysAmount) {
+        update.sixtyDaysAmount = requestBody.list[i].sixtyDaysAmount;
+      }
+      if (requestBody.list[i].ninetyDaysAmount) {
+        update.ninetyDaysAmount = requestBody.list[i].ninetyDaysAmount;
+      }
+      if (requestBody.list[i].ninetyPlusDaysAmount) {
+        update.ninetyPlusDaysAmount = requestBody.list[i].ninetyPlusDaysAmount;
+      }
+      if (requestBody.list[i].outstandingAmount) {
+        update.outstandingAmount = requestBody.list[i].outstandingAmount;
+      }
+      if (requestBody.list[i].clientComment) {
+        update.clientComment = requestBody.list[i].clientComment;
+      }
+      if (requestBody.list[i].analystComment) {
+        update.analystComment = requestBody.list[i].analystComment;
+      }
+      update.overdueAction = requestBody.list[i].overdueAction
+        ? requestBody.list[i].overdueAction
+        : 'UNCHANGED';
+      update.status = requestBody.list[i].status
+        ? requestBody.list[i].status
+        : 'SUBMITTED';
+      if (!requestBody.list[i]._id) {
+        const overdue = await Overdue.findOne({
+          clientId: update.clientId,
+          debtorId: update.debtorId,
+          month: update.month,
+          year: update.year,
+        }).lean();
+        if (overdue) {
+          return {
+            status: 'ERROR',
+            messageCode: 'OVERDUE_ALREADY_EXISTS',
+            message:
+              'Overdue already exists, please create with another debtor',
+          };
+        }
+        promises.push(Overdue.create(update));
+      } else {
+        const overdue = await Overdue.findOne({
+          clientId: update.clientId,
+          debtorId: update.debtorId,
+          month: update.month,
+          year: update.year,
+        }).lean();
+        if (overdue && overdue._id.toString() !== requestBody.list[i]._id) {
+          return {
+            status: 'ERROR',
+            messageCode: 'OVERDUE_ALREADY_EXISTS',
+            message:
+              'Overdue already exists, please create with another debtor',
+          };
+        }
+        if (!overdue) {
+          promises.push(Overdue.create(update));
+        } else {
+          promises.push(
+            Overdue.updateOne({ _id: requestBody.list[i]._id }, update, {
+              upsert: true,
+            }),
+          );
+        }
+      }
+    }
+    const response = await Promise.all(promises);
+    return response;
   } catch (e) {
     Logger.log.error('Error occurred in update list');
     Logger.log.error(e.message || e);
@@ -529,4 +669,5 @@ module.exports = {
   getDebtorList,
   getMonthString,
   formatString,
+  updateList,
 };

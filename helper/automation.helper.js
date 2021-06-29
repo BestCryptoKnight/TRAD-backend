@@ -633,7 +633,7 @@ const insurerEuler = async ({ application, type, policy }) => {
 const insurerTrad = async ({ application, type, policy }) => {
   try {
     console.log('report for :', type);
-    let blockers = ['RMP only insurer'];
+    let blockers = [];
     let response;
     const {
       identifiedReportDetails,
@@ -1064,8 +1064,6 @@ const checkGuidelines = async ({
         response = await checkForCourtAction({
           summaryInformation: reportData.SummaryInformation,
         });
-      } else {
-        response.isBlocker = true;
       }
       if (response.isBlocker) {
         blockers.push('Court actions or legal or collection activity present');
@@ -1076,8 +1074,6 @@ const checkGuidelines = async ({
         response = await checkForCourtAction({
           summaryInformation: reportData.SummaryInformation,
         });
-      } else {
-        response.isBlocker = true;
       }
       if (response.isBlocker) {
         blockers.push(
@@ -1090,8 +1086,6 @@ const checkGuidelines = async ({
         response = await checkForCourtAction({
           summaryInformation: reportData.SummaryInformation,
         });
-      } else {
-        response.isBlocker = true;
       }
       if (response.isBlocker) {
         blockers.push(
@@ -1104,8 +1098,6 @@ const checkGuidelines = async ({
         response = await checkForNoAdverse({
           summaryInformation: reportData.SummaryInformation,
         });
-      } else {
-        response.isBlocker = true;
       }
       if (response.isBlocker) {
         blockers.push('Adverse against director/s, owner/s or Shareholders');
@@ -1116,8 +1108,6 @@ const checkGuidelines = async ({
         response = await checkForRegisteredCharges({
           summaryInformation: reportData.SummaryInformation,
         });
-      } else {
-        response.isBlocker = true;
       }
       if (response.isBlocker) {
         blockers.push('Related party registered charges');

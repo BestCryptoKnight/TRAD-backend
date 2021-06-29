@@ -22,7 +22,9 @@ const generateExcel = ({ data, reportFor, headers, filter, title }) => {
             '/' +
             date.getFullYear();
         }
-        worksheet.addRow([`${filter[i].label}: ${filter[i].value}`]);
+        const row = worksheet.addRow([
+          `${filter[i].label}: ${filter[i].value}`,
+        ]);
         worksheet.getCell(`A${i + 2}`).alignment = {
           vertical: 'middle',
           horizontal: 'center',
@@ -32,6 +34,8 @@ const generateExcel = ({ data, reportFor, headers, filter, title }) => {
           bold: true,
           size: 12,
         };
+        row.height =
+          filter[i].value.length / 15 < 15 ? 15 : filter[i].value.length / 15;
       }
     }
     worksheet.getCell('A1').alignment = {

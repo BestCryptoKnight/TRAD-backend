@@ -18,10 +18,11 @@ const StaticData = require('./../static-files/staticData.json');
 const {
   getClientDebtorDetails,
   convertToCSV,
+  getClientCreditLimit,
+  formatCreditLimitList,
 } = require('./../helper/client-debtor.helper');
 const { getDebtorFullAddress } = require('./../helper/debtor.helper');
 const { generateNewApplication } = require('./../helper/application.helper');
-const { getCreditLimitList } = require('./../helper/client.helper');
 
 /**
  * Get Column Names
@@ -113,161 +114,15 @@ router.get('/', async function (req, res) {
     const debtorColumn = req.user.manageColumns.find(
       (i) => i.moduleName === 'credit-limit',
     );
-    let queryFilter = {
-      isActive: true,
-      clientId: mongoose.Types.ObjectId(req.user.clientId),
-      creditLimit: { $exists: true, $ne: null },
-    };
-    const aggregationQuery = [
-      {
-        $lookup: {
-          from: 'debtors',
-          localField: 'debtorId',
-          foreignField: '_id',
-          as: 'debtorId',
-        },
-      },
-      {
-        $unwind: {
-          path: '$debtorId',
-        },
-      },
-    ];
-    debtorColumn.columns.push('address');
-    debtorColumn.columns.push('_id');
-    if (req.query.entityType) {
-      aggregationQuery.push({
-        $match: {
-          'debtorId.entityType': req.query.entityType,
-        },
-      });
-    }
-    const fields = debtorColumn.columns.map((i) => {
-      if (
-        i !== 'creditLimit' &&
-        i !== 'createdAt' &&
-        i !== 'updatedAt' &&
-        i !== 'isActive'
-      ) {
-        i = 'debtorId.' + i;
-      }
-      return [i, 1];
+    const response = await getClientCreditLimit({
+      requestedQuery: req.query,
+      debtorColumn: debtorColumn.columns,
+      clientId: req.user.clientId,
+      moduleColumn: module.manageColumns,
     });
-    aggregationQuery.push({
-      $project: fields.reduce((obj, [key, val]) => {
-        obj[key] = val;
-        return obj;
-      }, {}),
-    });
-    const sortingOptions = {};
-    if (req.query.sortBy && req.query.sortOrder) {
-      sortingOptions[req.query.sortBy] =
-        req.query.sortOrder === 'desc' ? -1 : 1;
-      aggregationQuery.push({ $sort: sortingOptions });
-    }
-    if (req.query.search) {
-      aggregationQuery.push({
-        $match: {
-          'debtorId.entityName': { $regex: req.query.search, $options: 'i' },
-        },
-      });
-    }
-    aggregationQuery.push({
-      $facet: {
-        paginatedResult: [
-          {
-            $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
-          },
-          { $limit: parseInt(req.query.limit) },
-        ],
-        totalCount: [
-          {
-            $count: 'count',
-          },
-        ],
-      },
-    });
-    aggregationQuery.unshift({ $match: queryFilter });
-
-    const debtors = await ClientDebtor.aggregate(aggregationQuery).allowDiskUse(
-      true,
-    );
-    const headers = [];
-    for (let i = 0; i < module.manageColumns.length; i++) {
-      if (debtorColumn.columns.includes(module.manageColumns[i].name)) {
-        if (module.manageColumns[i].name === 'entityName') {
-          headers.push({
-            name: module.manageColumns[i].name,
-            label: module.manageColumns[i].label,
-            type: 'string',
-          });
-        } else {
-          headers.push(module.manageColumns[i]);
-        }
-      }
-    }
-    debtors[0].paginatedResult.forEach((debtor) => {
-      if (debtor.debtorId) {
-        for (let key in debtor.debtorId) {
-          debtor[key] = debtor.debtorId[key];
-        }
-        if (debtorColumn.columns.includes('property')) {
-          debtor.property = debtor.debtorId.address.property;
-        }
-        if (debtorColumn.columns.includes('unitNumber')) {
-          debtor.unitNumber = debtor.debtorId.address.unitNumber;
-        }
-        if (debtorColumn.columns.includes('streetNumber')) {
-          debtor.streetNumber = debtor.debtorId.address.streetNumber;
-        }
-        if (debtorColumn.columns.includes('streetName')) {
-          debtor.streetName = debtor.debtorId.address.streetName;
-        }
-        if (debtorColumn.columns.includes('streetType')) {
-          debtor.streetType = debtor.debtorId.address.streetType;
-        }
-        if (debtorColumn.columns.includes('suburb')) {
-          debtor.suburb = debtor.debtorId.address.suburb;
-        }
-        if (debtorColumn.columns.includes('state')) {
-          debtor.state = debtor.debtorId.address.state;
-        }
-        if (debtorColumn.columns.includes('country')) {
-          debtor.country = debtor.debtorId.address.country.name;
-        }
-        if (debtorColumn.columns.includes('postCode')) {
-          debtor.postCode = debtor.debtorId.address.postCode;
-        }
-        if (debtorColumn.columns.includes('fullAddress')) {
-          debtor.fullAddress = getDebtorFullAddress({
-            address: debtor.debtorId.address,
-          });
-        }
-        if (debtorColumn.columns.includes('entityType')) {
-          debtor.entityType = debtor.debtorId.entityType
-            .replace(/_/g, ' ')
-            .replace(/\w\S*/g, function (txt) {
-              return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
-            });
-        }
-        delete debtor.address;
-      }
-      delete debtor.debtorId;
-    });
-    const total =
-      debtors[0]['totalCount'].length !== 0
-        ? debtors[0]['totalCount'][0]['count']
-        : 0;
     res.status(200).send({
       status: 'SUCCESS',
-      data: {
-        docs: debtors[0].paginatedResult,
-        headers,
-        total,
-        page: parseInt(req.query.page),
-        limit: parseInt(req.query.limit),
-        pages: Math.ceil(total / parseInt(req.query.limit)),
-      },
+      data: response,
     });
   } catch (e) {
     Logger.log.error('Error occurred in get client-debtor details ', e);
@@ -428,12 +283,40 @@ router.get('/details/:debtorId', async function (req, res) {
  */
 router.get('/download', async function (req, res) {
   try {
-    const creditLimits = await getCreditLimitList({
+    const module = StaticFile.modules.find((i) => i.name === 'credit-limit');
+    const debtorColumn = [
+      'entityName',
+      'entityType',
+      'activeApplicationId',
+      'creditLimit',
+      'isEndorsedLimit',
+      'expiryDate',
+      'abn',
+      'registrationNumber',
+      'acn',
+      'createdAt',
+      'updatedAt',
+    ];
+    const response = await getClientCreditLimit({
+      requestedQuery: req.query,
+      debtorColumn: debtorColumn,
       clientId: req.user.clientId,
+      moduleColumn: module.manageColumns,
     });
-    const data = await convertToCSV(creditLimits);
-    res.header('Content-Type', 'text/csv');
-    res.send(data);
+    if (response && response.docs.length !== 0) {
+      const finalArray = await formatCreditLimitList({
+        debtorColumn,
+        creditLimits: response.docs,
+      });
+      const csvResponse = await convertToCSV(finalArray);
+      res.header('Content-Type', 'text/csv');
+      res.send(csvResponse);
+    } else {
+      res.status(200).send({
+        status: 'SUCCESS',
+        message: 'No data found for download file',
+      });
+    }
   } catch (e) {
     Logger.log.error('Error occurred in download in csv', e);
     res.status(500).send({

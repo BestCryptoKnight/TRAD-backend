@@ -110,7 +110,7 @@ router.get('/client/policy-details/:policyId', async function (req, res) {
   }
   try {
     const policyData = await Policy.findById(req.params.policyId)
-      .populate({ path: 'insurerId', select: 'name' })
+      .populate({ path: 'insurerId clientId', select: 'name' })
       .select({ __v: 0 })
       .lean();
     const response = await getPolicyDetails({ policyData });
@@ -225,10 +225,10 @@ router.get('/:entityId', async function (req, res) {
       }
     }
     responseObj.docs.forEach((data) => {
-      if (data.product) {
-        data.product = {
+      if (data.policyNumber) {
+        data.policyNumber = {
           id: data._id,
-          value: data.product,
+          value: data.policyNumber,
         };
       }
       if (policyColumn.columns.includes('insurerId')) {
@@ -367,7 +367,7 @@ router.put('/sync-from-crm/:insurerId', async function (req, res) {
               userType: 'user',
               userRefId: req.user._id,
               actionType: 'sync',
-              logDescription: `Insurer ${insurer.name} and client ${policies[i].name} policy ${policiesFromCrm[j].product} synced successfully`,
+              logDescription: `Insurer ${insurer.name} and client ${policies[i].name} policy ${policiesFromCrm[j].policyNumber} synced successfully`,
             }),
           );
         } else {
@@ -385,7 +385,7 @@ router.put('/sync-from-crm/:insurerId', async function (req, res) {
           path: 'clientId',
           select: 'name',
         })
-        .select('_id product clientId')
+        .select('_id product clientId policyNumber')
         .lean();
       for (let i = 0; i < policyData.length; i++) {
         promises.push(
@@ -395,7 +395,7 @@ router.put('/sync-from-crm/:insurerId', async function (req, res) {
             userType: 'user',
             userRefId: req.user._id,
             actionType: 'sync',
-            logDescription: `Insurer ${insurer.name} and client ${policyData[i].clientId.name} policy ${policyData[i].product} synced successfully`,
+            logDescription: `Insurer ${insurer.name} and client ${policyData[i].clientId.name} policy ${policyData[i].policyNumber} synced successfully`,
           }),
         );
       }
@@ -461,7 +461,7 @@ router.put('/client/sync-from-crm/:clientId', async function (req, res) {
               userType: 'user',
               userRefId: req.user._id,
               actionType: 'sync',
-              logDescription: `Client ${client.name} policy ${policiesFromCrm[j].product} synced successfully`,
+              logDescription: `Client ${client.name} policy ${policiesFromCrm[j].policyNumber} synced successfully`,
             }),
           );
         } else {
@@ -483,7 +483,7 @@ router.put('/client/sync-from-crm/:clientId', async function (req, res) {
             userType: 'user',
             userRefId: req.user._id,
             actionType: 'sync',
-            logDescription: `Client ${client.name} policy ${policyData[i].product} synced successfully`,
+            logDescription: `Client ${client.name} policy ${policyData[i].policyNumber} synced successfully`,
           }),
         );
       }

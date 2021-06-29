@@ -266,6 +266,7 @@ router.get('/', async function (req, res) {
         path: 'riskAnalystId serviceManagerId insurerId',
         select: 'name',
       })
+      .select({ isDeleted: 0, __v: 0, updatedAt: 0, createdAt: 0 })
       .lean();
     res.status(200).send({ status: 'SUCCESS', data: client });
   } catch (e) {

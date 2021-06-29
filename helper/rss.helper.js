@@ -533,6 +533,7 @@ let fetchInsurerDetails = async ({
         },
       });
     }
+    console.log(insurer);
     if (insurer) {
       //TODO sync insurer + client policies
       const policies = await Policy.find({ clientId: clientId }).lean();
@@ -547,17 +548,39 @@ let fetchInsurerDetails = async ({
           limit: 50,
         });
         let promiseArr = [];
+        const policyIds = [];
         clientPolicies.forEach((policy) => {
-          const clientPolicy = new Policy(policy);
-          promiseArr.push(clientPolicy.save());
+          policyIds.push(policy.crmPolicyId);
           promiseArr.push(
+            Policy.updateOne({ crmPolicyId: policy.crmPolicyId }, policy, {
+              upsert: true,
+            }),
+          );
+          /* promiseArr.push(
             addAuditLog({
               entityType: 'policy',
               entityRefId: clientPolicy._id,
               userType: auditLog.userType,
               userRefId: auditLog.userRefId,
               actionType: 'add',
-              logDescription: `Client policy ${clientPolicy.product} added successfully.`,
+              logDescription: `Client policy ${policy.product} added successfully.`,
+            }),
+          );*/
+        });
+        await Promise.all(promiseArr);
+        const policies = await Policy.find({ crmPolicyId: { $in: policyIds } })
+          .select('_id product policyNumber')
+          .lean();
+        promiseArr = [];
+        policies.forEach((i) => {
+          promiseArr.push(
+            addAuditLog({
+              entityType: 'policy',
+              entityRefId: i._id,
+              userType: auditLog.userType,
+              userRefId: auditLog.userRefId,
+              actionType: 'add',
+              logDescription: `Client policy ${i.policyNumber} added successfully.`,
             }),
           );
         });

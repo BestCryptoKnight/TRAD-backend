@@ -88,37 +88,29 @@ const createDebtor = async ({
     console.log('isDebtorExists::', isDebtorExists);
     if (requestBody.address && Object.keys(requestBody.address).length !== 0) {
       update.address = {};
-      update.address.property =
-        requestBody.address.property &&
-        requestBody.address.property.length !== 0
-          ? requestBody.address.property
-          : undefined;
-      update.address.unitNumber =
-        requestBody.address.unitNumber &&
-        requestBody.address.unitNumber.length !== 0
-          ? requestBody.address.unitNumber
-          : undefined;
-      if (
-        requestBody.address.streetNumber &&
-        requestBody.address.streetNumber.length !== 0
-      ) {
-        update.address.streetNumber = requestBody.address.streetNumber;
-      }
-      update.address.streetName =
-        requestBody.address.streetName &&
-        requestBody.address.streetName.length !== 0
-          ? requestBody.address.streetName
-          : undefined;
+      update.address.property = requestBody.address.property
+        ? requestBody.address.property
+        : undefined;
+      update.address.unitNumber = requestBody.address.unitNumber
+        ? requestBody.address.unitNumber
+        : undefined;
+
+      update.address.streetNumber = requestBody.address.streetNumber
+        ? requestBody.address.streetNumber
+        : null;
+
+      update.address.streetName = requestBody.address.streetName
+        ? requestBody.address.streetName
+        : undefined;
       if (
         requestBody.address.streetType &&
         requestBody.address.streetType.length !== 0
       ) {
         update.address.streetType = requestBody.address.streetType;
       }
-      update.address.suburb =
-        requestBody.address.suburb && requestBody.address.suburb.length !== 0
-          ? requestBody.address.suburb
-          : undefined;
+      update.address.suburb = requestBody.address.suburb
+        ? requestBody.address.suburb
+        : undefined;
 
       if (requestBody.address.state && requestBody.address.state.length !== 0) {
         update.address.state = requestBody.address.state;
@@ -248,44 +240,6 @@ const getDebtorFullAddress = ({ address }) => {
   }
 };
 
-const getCreditLimitList = async ({ debtorId }) => {
-  try {
-    const debtors = await ClientDebtor.find({
-      isActive: true,
-      debtorId: mongoose.Types.ObjectId(debtorId),
-      creditLimit: { $exists: true, $ne: null },
-    })
-      .populate('clientId debtorId')
-      .lean();
-    let creditLimits = [];
-    debtors.forEach((debtor) =>
-      creditLimits.push({
-        clientName: debtor.clientId.name,
-        abn: debtor.clientId.abn,
-        acn: debtor.clientId.acn,
-        registrationNumber: debtor.clientId.registrationNumber,
-        creditLimit: debtor.creditLimit,
-        contactNumber: debtor.clientId.contactNumber,
-        inceptionDate:
-          new Date(debtor.clientId.inceptionDate).getDate() +
-          '-' +
-          (new Date(debtor.clientId.inceptionDate).getMonth() + 1) +
-          '-' +
-          new Date(debtor.clientId.inceptionDate).getFullYear(),
-        expiryDate:
-          new Date(debtor.clientId.expiryDate).getDate() +
-          '-' +
-          (new Date(debtor.clientId.expiryDate).getMonth() + 1) +
-          '-' +
-          new Date(debtor.clientId.expiryDate).getFullYear(),
-      }),
-    );
-    return creditLimits;
-  } catch (e) {
-    Logger.log.error('Error occurred in get credit-limit list', e.message || e);
-  }
-};
-
 const getStateName = (state, countryCode) => {
   try {
     const stateData =
@@ -327,7 +281,6 @@ module.exports = {
   getDebtorList,
   createDebtor,
   getDebtorFullAddress,
-  getCreditLimitList,
   getStateName,
   getStreetTypeName,
 };

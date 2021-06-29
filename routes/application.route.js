@@ -22,6 +22,7 @@ const {
   storePartnerDetails,
   storeCreditLimitDetails,
   checkForAutomation,
+  applicationDrawerDetails,
 } = require('./../helper/application.helper');
 const {
   getEntityDetailsByBusinessNumber,
@@ -34,7 +35,6 @@ const {
   getStreetTypeName,
 } = require('./../helper/debtor.helper');
 const StaticData = require('./../static-files/staticData.json');
-const { getClientDebtorDetails } = require('./../helper/client-debtor.helper');
 const {
   getApplicationDocumentList,
   getSpecificEntityDocumentList,
@@ -44,6 +44,7 @@ const {
   getEntityName,
   addAuditLog,
 } = require('./../helper/audit-log.helper');
+const { generateExcel } = require('../helper/excel.helper.js');
 
 /**
  * Get Column Names
@@ -189,6 +190,83 @@ router.get('/', async function (req, res) {
 });
 
 /**
+ * Download Excel
+ */
+router.get('/download', async function (req, res) {
+  try {
+    const module = StaticFile.modules.find((i) => i.name === 'application');
+    const applicationColumn = [
+      'applicationId',
+      'status',
+      'clientId',
+      'debtorId',
+      'entityType',
+      'creditLimit',
+      'acceptedAmount',
+      'requestDate',
+      'approvalDate',
+      'expiryDate',
+      'createdById',
+      'outstandingAmount',
+      'orderOnHand',
+      'isExtendedPaymentTerms',
+      'extendedPaymentTermsDetails',
+      'isPassedOverdueAmount',
+      'passedOverdueDetails',
+      'createdAt',
+      'updatedAt',
+    ];
+
+    const response = await getApplicationList({
+      hasFullAccess: false,
+      applicationColumn: applicationColumn,
+      isForRisk: false,
+      requestedQuery: req.query,
+      moduleColumn: module.manageColumns,
+      isForDownload: true,
+      queryFilter: {
+        status: { $ne: 'DRAFT' },
+        clientId: mongoose.Types.ObjectId(req.user.clientId),
+      },
+    });
+    const finalArray = [];
+    let data = {};
+    if (response && response.docs.length !== 0) {
+      response.docs.forEach((i) => {
+        data = {};
+        applicationColumn.map((key) => {
+          if (key === 'clientId' || key === 'debtorId') {
+            i[key] = i[key] && i[key]['value'] ? i[key]['value'] : '-';
+          }
+          data[key] = i[key];
+        });
+        finalArray.push(data);
+      });
+    }
+
+    const excelData = await generateExcel({
+      data: finalArray,
+      reportFor: 'Application List',
+      headers: response.headers,
+      filter: response.filterArray,
+    });
+    const fileName = new Date().getTime() + '.xlsx';
+    res.header(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader('Content-Disposition', 'attachment; filename=' + fileName);
+    res.status(200).send(excelData);
+  } catch (e) {
+    Logger.log.error('Error occurred in export application list', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
  * Get Application Modal details
  */
 router.get('/drawer-details/:applicationId', async function (req, res) {
@@ -204,23 +282,13 @@ router.get('/drawer-details/:applicationId', async function (req, res) {
   }
   try {
     const module = StaticFile.modules.find((i) => i.name === 'application');
-    const debtor = StaticFile.modules.find((i) => i.name === 'debtor');
     const application = await Application.findById(req.params.applicationId)
       .populate({
-        path: 'clientId debtorId clientDebtorId',
-        select: {
-          __v: 0,
-          updatedAt: 0,
-          debtorCode: 0,
-          createdAt: 0,
-        },
+        path: 'clientId debtorId',
+        select: 'name entityName entityType',
       })
       .select({
         __v: 0,
-        updatedAt: 0,
-        createdAt: 0,
-        createdById: 0,
-        createdByType: 0,
         applicationStage: 0,
       })
       .lean();
@@ -231,38 +299,10 @@ router.get('/drawer-details/:applicationId', async function (req, res) {
         message: 'No application found',
       });
     }
-    const debtorDetails = await getClientDebtorDetails({
-      debtor: application,
-      manageColumns: debtor.manageColumns,
+    const response = await applicationDrawerDetails({
+      application,
+      manageColumns: module.manageColumns,
     });
-    let response = [];
-    let value = '';
-    module.manageColumns.forEach((i) => {
-      value =
-        i.name === 'clientId'
-          ? application['clientId'][i.name]
-          : i.name === 'outstandingAmount'
-          ? application['clientDebtorId'][i.name]
-          : i.name === 'isExtendedPaymentTerms' ||
-            i.name === 'isPassedOverdueAmount'
-          ? application[i.name]
-            ? 'Yes'
-            : 'No'
-          : application[i.name];
-      if (i.name === 'status') {
-        value = value.replace(/_/g, ' ').replace(/\w\S*/g, function (txt) {
-          return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
-        });
-      }
-      if (typeof value === 'string') {
-        response.push({
-          label: i.label,
-          value: value || '',
-          type: i.type,
-        });
-      }
-    });
-    response = response.concat(debtorDetails);
     res.status(200).send({ status: 'SUCCESS', data: response });
   } catch (e) {
     Logger.log.error(

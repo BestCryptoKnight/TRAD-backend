@@ -269,16 +269,6 @@
           "label": "Outstanding Amount",
           "type": "amount"
         },
-        {
-          "name": "extendedPaymentTermsDetails",
-          "label": "Extended Payment Terms Details",
-          "type": "string"
-        },
-        {
-          "name": "passedOverdueDetails",
-          "label": "Passed Overdue Details",
-          "type": "string"
-        },
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
@@ -316,6 +306,11 @@
         {
           "name": "product",
           "label": "Product",
+          "type": "string"
+        },
+        {
+          "name": "policyNumber",
+          "label": "Policy Number",
           "type": "modal",
           "request": {
             "method": "GET",
@@ -336,6 +331,7 @@
       "defaultColumns": [
         "insurerId",
         "product",
+        "policyNumber",
         "policyPeriod",
         "policyCurrency",
         "inceptionDate",
@@ -360,7 +356,7 @@
         "priority",
         "title",
         "description",
-        "entityType",
+        "entityId",
         "assigneeId",
         "dueDate"
       ]
@@ -408,29 +404,39 @@
           }
         },
         { "name": "entityType", "label": "Entity Type", "type": "string" },
-        { "name": "abn", "label": "ABN/NZBN", "type": "string" },
-        { "name": "acn", "label": "ACN/NCN", "type": "string" },
         {
-          "name": "registrationNumber",
-          "label": "Registration Number",
-          "type": "string"
+          "name": "activeApplicationId",
+          "label": "Application Number",
+          "type": "modal",
+          "request": {
+            "method": "GET",
+            "url": "application/drawer-details"
+          }
         },
         { "name": "creditLimit", "label": "Credit Limit", "type": "string" },
         {
           "name": "isEndorsedLimit",
           "label": "Endorsed Limit",
-          "type": "endorsedString"
+          "type": "string"
         },
-        { "name": "expiryDate", "label": "Expiry Date", "type": "date" }
+        { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
+        { "name": "abn", "label": "ABN/NZBN", "type": "string" },
+        {
+          "name": "registrationNumber",
+          "label": "Registration Number",
+          "type": "string"
+        },
+        { "name": "acn", "label": "ACN/NCN", "type": "string" },
+        { "name": "createdAt", "label": "Created Date", "type": "date" },
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
       "defaultColumns": [
         "entityName",
-        "abn",
-        "acn",
-        "registrationNumber",
+        "activeApplicationId",
         "creditLimit",
         "isEndorsedLimit",
-        "expiryDate"
+        "expiryDate",
+        "createdAt"
       ]
     },
     {
@@ -568,33 +574,11 @@
       "defaultColumns": [
         "name",
         "accountid",
-        "description",
+        "stage",
+        "underwriter",
         "createddate",
         "modifieddate",
         "notifiedofcase"
-      ]
-    },
-    {
-      "name": "claim-task",
-      "manageColumns": [
-        { "name": "priority", "label": "Priority", "type": "string" },
-        { "name": "title", "label": "Title", "type": "string" },
-        { "name": "description", "label": "Description", "type": "string" },
-        { "name": "entityType", "label": "Entity Type", "type": "string" },
-        { "name": "entityId", "label": "Entity Name", "type": "modal" },
-        { "name": "createdById", "label": "Created By", "type": "string" },
-        { "name": "assigneeId", "label": "Assignee", "type": "string" },
-        { "name": "dueDate", "label": "Due Date", "type": "date" },
-        { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
-      ],
-      "defaultColumns": [
-        "priority",
-        "title",
-        "description",
-        "entityType",
-        "assigneeId",
-        "dueDate"
       ]
     },
     {
@@ -640,7 +624,8 @@
         "entityType",
         "registrationNumber",
         "riskRating",
-        "reviewDate"
+        "reviewDate",
+        "country"
       ]
     },
     {
@@ -657,36 +642,41 @@
           "label": "Application ID",
           "type": "string"
         },
-        { "name": "entityType", "label": "Entity Type", "type": "string" },
         {
           "name": "status",
           "label": "Status",
           "type": "string"
         },
-        { "name": "creditLimit", "label": "Credit Limit", "type": "amount" },
+        {
+          "name": "creditLimit",
+          "label": "Requested Amount",
+          "type": "amount"
+        },
+        {
+          "name": "acceptedAmount",
+          "label": "Approved Amount",
+          "type": "amount"
+        },
+        { "name": "requestDate", "label": "Requested Date", "type": "date" },
+        { "name": "approvalDate", "label": "Approval Date", "type": "date" },
+        { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
+        { "name": "createdById", "label": "Submitted By", "type": "string" },
         {
           "name": "outstandingAmount",
           "label": "Outstanding Amount",
           "type": "amount"
         },
-        {
-          "name": "extendedPaymentTermsDetails",
-          "label": "Extended Payment Terms Details",
-          "type": "string"
-        },
-        {
-          "name": "passedOverdueDetails",
-          "label": "Passed Overdue Details",
-          "type": "string"
-        },
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
       "defaultColumns": [
-        "entityType",
         "clientId",
         "applicationId",
-        "creditLimit"
+        "creditLimit",
+        "status",
+        "requestDate",
+        "approvalDate",
+        "acceptedAmount"
       ]
     },
     {
@@ -725,7 +715,7 @@
         "priority",
         "title",
         "description",
-        "entityType",
+        "entityId",
         "assigneeId",
         "dueDate"
       ]
@@ -764,7 +754,7 @@
       "name": "debtor-credit-limit",
       "manageColumns": [
         {
-          "name": "clientId",
+          "name": "name",
           "label": "Client Name",
           "type": "modal",
           "request": { "method": "GET", "url": "client/details" }
@@ -774,40 +764,34 @@
           "label": "Contact Number",
           "type": "string"
         },
-        { "name": "abn", "label": "ABN/NZBN", "type": "string" },
-        { "name": "acn", "label": "ACN/NCN", "type": "string" },
         {
-          "name": "registrationNumber",
-          "label": "Registration Number",
-          "type": "string"
-        },
-        { "name": "inceptionDate", "label": "Inception Date", "type": "date" },
-        { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
-        {
-          "name": "reportExpiryDate",
-          "label": "Report Expiry Date",
-          "type": "date"
+          "name": "activeApplicationId",
+          "label": "Application Number",
+          "type": "modal",
+          "request": {
+            "method": "GET",
+            "url": "application/drawer-details"
+          }
         },
         { "name": "creditLimit", "label": "Credit Limit", "type": "string" },
         {
           "name": "isEndorsedLimit",
-          "label": "Endorsed Limit",
-          "type": "endorsedString"
+          "label": "Credit Type",
+          "type": "string"
         },
-        {
-          "name": "outstandingAmount",
-          "label": "Outstanding Amount",
-          "type": "amount"
-        },
-        { "name": "isActive", "label": "Active", "type": "string" }
+        { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
+        { "name": "abn", "label": "ABN", "type": "string" },
+        { "name": "acn", "label": "ACN", "type": "string" },
+        { "name": "createdAt", "label": "Created Date", "type": "date" },
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
       "defaultColumns": [
-        "clientId",
-        "abn",
+        "name",
+        "activeApplicationId",
         "creditLimit",
-        "acn",
-        "registrationNumber",
-        "isEndorsedLimit"
+        "isEndorsedLimit",
+        "expiryDate",
+        "createdAt"
       ]
     },
     {
@@ -832,8 +816,9 @@
       "defaultColumns": [
         "name",
         "contactNumber",
-        "state",
+        "fullAddress",
         "website",
+        "createdAt",
         "updatedAt"
       ]
     },
@@ -875,10 +860,14 @@
     {
       "name": "insurer-policy",
       "manageColumns": [
-        { "name": "clientId", "label": "Client Name", "type": "string" },
         {
           "name": "product",
           "label": "Product",
+          "type": "string"
+        },
+        {
+          "name": "policyNumber",
+          "label": "Policy Number",
           "type": "modal",
           "request": {
             "method": "GET",
@@ -886,6 +875,7 @@
           }
         },
         { "name": "policyPeriod", "label": "Policy Period", "type": "string" },
+        { "name": "clientId", "label": "Client Name", "type": "string" },
         {
           "name": "policyCurrency",
           "label": "Policy Currency",
@@ -899,16 +889,12 @@
       "defaultColumns": [
         "clientId",
         "product",
+        "policyNumber",
         "policyPeriod",
         "policyCurrency",
         "inceptionDate",
         "expiryDate"
       ]
-    },
-    {
-      "name": "organization",
-      "manageColumns": [],
-      "defaultColumns": []
     },
     {
       "name": "overdue",
@@ -966,22 +952,6 @@
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
       "defaultColumns": ["clientId", "debtorId", "acn", "dateOfInvoice"]
-    },
-    {
-      "name": "overdue-task",
-      "manageColumns": [
-        { "name": "priority", "label": "Priority", "type": "string" },
-        { "name": "title", "label": "Title", "type": "string" },
-        { "name": "description", "label": "Description", "type": "string" },
-        { "name": "entityType", "label": "Entity Type", "type": "string" },
-        { "name": "entityId", "label": "Entity Name", "type": "modal" },
-        { "name": "createdById", "label": "Created By", "type": "string" },
-        { "name": "assigneeId", "label": "Assignee", "type": "string" },
-        { "name": "dueDate", "label": "Due Date", "type": "date" },
-        { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
-      ],
-      "defaultColumns": ["priority", "title", "description", "entityType"]
     },
     {
       "name": "client-list-report",
@@ -1504,13 +1474,6 @@
     {
       "name": "stakeholder",
       "manageColumns": [
-        { "name": "abn", "label": "ABN/NZBN", "type": "string" },
-        { "name": "acn", "label": "ACN/NCN", "type": "string" },
-        {
-          "name": "registrationNumber",
-          "label": "Registration Number",
-          "type": "string"
-        },
         { "name": "title", "label": "Title", "type": "string" },
         {
           "name": "name",
@@ -1520,6 +1483,13 @@
             "method": "GET",
             "url": "debtor/stakeholder/drawer-details"
           }
+        },
+        { "name": "abn", "label": "ABN/NZBN", "type": "string" },
+        { "name": "acn", "label": "ACN/NCN", "type": "string" },
+        {
+          "name": "registrationNumber",
+          "label": "Registration Number",
+          "type": "string"
         },
         { "name": "tradingName", "label": "Trading Name", "type": "string" },
         { "name": "entityType", "label": "Entity Type", "type": "string" },
