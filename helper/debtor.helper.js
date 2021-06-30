@@ -194,17 +194,17 @@ const createDebtor = async ({
   }
 };
 
-const getDebtorFullAddress = ({ address }) => {
+const getDebtorFullAddress = ({ address, country }) => {
   try {
     let fullAddress;
     if (address.state) {
       const state =
-        address.country.code === 'AUS' ||
-        (typeof address.country === 'string' && address.country === 'Australia')
+        country.code === 'AUS' ||
+        (typeof country === 'string' && country === 'Australia')
           ? StaticData.australianStates.find((i) => {
               if (i._id === address.state) return i;
             })
-          : address.country.code === 'NZL'
+          : country.code === 'NZL'
           ? StaticData.newZealandStates.find((i) => {
               if (i._id === address.state) return i;
             })
@@ -218,8 +218,8 @@ const getDebtorFullAddress = ({ address }) => {
       address.streetType =
         streetType && streetType.name ? streetType.name : address.streetType;
     }
-    if (address.country && address.country.name) {
-      address.country = address.country.name;
+    if (country && country.name) {
+      country = country.name;
     }
     fullAddress =
       (address.property ? address.property + ', ' : '') +
@@ -230,7 +230,7 @@ const getDebtorFullAddress = ({ address }) => {
       (address.suburb ? address.suburb + ', ' : '') +
       (address.state ? address.state + ', ' : '') +
       (address.postCode ? address.postCode + ', ' : '') +
-      address.country;
+      country;
     return fullAddress;
   } catch (e) {
     Logger.log.error(

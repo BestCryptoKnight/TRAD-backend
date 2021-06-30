@@ -1,16 +1,30 @@
 /*
+ * Module Imports
+ * */
+const mongoose = require('mongoose');
+const DebtorDirector = mongoose.model('debtor-director');
+
+/*
  * Local Imports
  * */
 const Logger = require('./../services/logger');
+const { formatString } = require('./overdue.helper');
+const { getDebtorFullAddress } = require('./debtor.helper');
 
-const getStakeholderDetails = async ({ stakeholder, manageColumns }) => {
+const getStakeholderDetails = async ({ stakeholderId, manageColumns }) => {
   try {
+    const stakeholder = await DebtorDirector.findById(stakeholderId)
+      .select({ __v: 0, isDeleted: 0 })
+      .lean();
+    if (!stakeholder) {
+      return {
+        status: 'ERROR',
+        messageCode: 'NO_STAKEHOLDER_FOUND',
+        message: 'No stakeholder found',
+      };
+    }
     if (stakeholder.entityType) {
-      stakeholder.entityType = stakeholder.entityType
-        .replace(/_/g, ' ')
-        .replace(/\w\S*/g, function (txt) {
-          return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
-        });
+      stakeholder.entityType = formatString(stakeholder.entityType);
     }
     let response = [];
     let value = '';
@@ -29,7 +43,6 @@ const getStakeholderDetails = async ({ stakeholder, manageColumns }) => {
         'streetType',
         'suburb',
         'state',
-        'country',
         'postCode',
       ];
       if (addressFields.includes(i.name)) {
@@ -39,10 +52,7 @@ const getStakeholderDetails = async ({ stakeholder, manageColumns }) => {
         ) {
           response.push({
             label: i.label,
-            value:
-              i.name === 'country'
-                ? stakeholder['residentialAddress']['country'][i.name]
-                : stakeholder['residentialAddress'][i.name] || '',
+            value: stakeholder['residentialAddress'][i.name] || '',
             type: i.type,
           });
         }
@@ -54,8 +64,13 @@ const getStakeholderDetails = async ({ stakeholder, manageColumns }) => {
                 (stakeholder.middleName ? stakeholder.middleName + ' ' : '') +
                 (stakeholder.lastName ? stakeholder.lastName : '')
               ).trim()
+            : i.name === 'country'
+            ? stakeholder[i.name]['name']
             : stakeholder[i.name];
-        if (i.name === 'allowToCheckCreditHistory') {
+        if (
+          i.name === 'allowToCheckCreditHistory' &&
+          stakeholder.type === 'individual'
+        ) {
           value = value ? 'Yes' : 'No';
         }
         if (value) {
@@ -118,7 +133,7 @@ const storeStakeholderDetails = async ({ stakeholder, debtorId }) => {
           stakeholder.address.country.name &&
           stakeholder.address.country.code
         ) {
-          update.residentialAddress.country = stakeholder.address.country;
+          update.country = stakeholder.address.country;
         }
         update.residentialAddress.postCode = stakeholder.address.postCode
           ? stakeholder.address.postCode
@@ -144,6 +159,7 @@ const storeStakeholderDetails = async ({ stakeholder, debtorId }) => {
         update.allowToCheckCreditHistory =
           stakeholder.allowToCheckCreditHistory;
       query = {
+        debtorId: debtorId,
         $or: [
           {
             driverLicenceNumber: stakeholder.driverLicenceNumber,
@@ -157,7 +173,6 @@ const storeStakeholderDetails = async ({ stakeholder, debtorId }) => {
         entityType: 1,
         entityName: 1,
         tradingName: 1,
-        country: 1,
         registrationNumber: 1,
       };
     } else {
@@ -173,9 +188,17 @@ const storeStakeholderDetails = async ({ stakeholder, debtorId }) => {
         : undefined;
       if (stakeholder.stakeholderCountry)
         update.country = stakeholder.stakeholderCountry;
+
       query = {
-        $or: [{ abn: stakeholder.abn }, { acn: stakeholder.acn }],
+        debtorId: debtorId,
       };
+      if (stakeholder.registrationNumber) {
+        query.registrationNumber = stakeholder.registrationNumber;
+      } else if (stakeholder.abn) {
+        query.abn = stakeholder.abn;
+      } else {
+        query.acn = stakeholder.acn;
+      }
       unsetFields = {
         title: 1,
         firstName: 1,
@@ -199,4 +222,160 @@ const storeStakeholderDetails = async ({ stakeholder, debtorId }) => {
   }
 };
 
-module.exports = { getStakeholderDetails, storeStakeholderDetails };
+const getStakeholderList = async ({
+  debtorId,
+  stakeholderColumn,
+  manageColumns,
+  requestedQuery,
+}) => {
+  try {
+    if (stakeholderColumn.includes('name')) {
+      stakeholderColumn.push('entityName');
+      stakeholderColumn.push('firstName');
+      stakeholderColumn.push('middleName');
+      stakeholderColumn.push('lastName');
+    }
+    let queryFilter = {
+      isDeleted: false,
+      debtorId: mongoose.Types.ObjectId(debtorId),
+    };
+    const sortingOptions = {};
+    requestedQuery.sortBy = requestedQuery.sortBy || '_id';
+    requestedQuery.sortOrder = requestedQuery.sortOrder || 'desc';
+    sortingOptions[requestedQuery.sortBy] = requestedQuery.sortOrder;
+    /*if (requestedQuery.search) {
+      queryFilter = Object.assign({}, queryFilter, {
+        $expr: {
+          $or: [
+            {
+              $regexMatch: {
+                input: {
+                  $concat: ['$firstName', ' ', '$middleName', ' ', '$lastName'],
+                },
+                regex: requestedQuery.search,
+                options: 'i',
+              },
+            },
+            {
+              $regexMatch: {
+                input: '$entityName',
+                regex: requestedQuery.search,
+                options: 'i',
+              },
+            }
+          ],
+        },
+      });
+      // queryFilter.name = { $regex: requestedQuery.search, $options: 'i' }
+    }*/
+
+    const option = {
+      page: parseInt(requestedQuery.page) || 1,
+      limit: parseInt(requestedQuery.limit) || 5,
+    };
+    option.select =
+      stakeholderColumn.toString().replace(/,/g, ' ') +
+      ' residentialAddress type';
+    option.sort = sortingOptions;
+    option.lean = true;
+    const responseObj = await DebtorDirector.paginate(queryFilter, option);
+    responseObj.headers = [];
+    for (let i = 0; i < manageColumns.length; i++) {
+      if (stakeholderColumn.includes(manageColumns[i].name)) {
+        responseObj.headers.push(manageColumns[i]);
+      }
+    }
+    if (responseObj && responseObj.docs && responseObj.docs.length !== 0) {
+      responseObj.docs.forEach((stakeholder) => {
+        if (stakeholder.type === 'individual') {
+          if (
+            stakeholder.firstName ||
+            stakeholder.middleName ||
+            stakeholder.lastName
+          ) {
+            stakeholder.name = {
+              _id: stakeholder._id,
+              value: (
+                (stakeholder.firstName ? stakeholder.firstName + ' ' : '') +
+                (stakeholder.middleName ? stakeholder.middleName + ' ' : '') +
+                (stakeholder.lastName ? stakeholder.lastName : '')
+              ).trim(),
+            };
+            delete stakeholder.firstName;
+            delete stakeholder.middleName;
+            delete stakeholder.lastName;
+          }
+          if (stakeholderColumn.includes('property')) {
+            stakeholder.property = stakeholder.residentialAddress.property;
+          }
+          if (stakeholderColumn.includes('unitNumber')) {
+            stakeholder.unitNumber = stakeholder.residentialAddress.unitNumber;
+          }
+          if (stakeholderColumn.includes('streetNumber')) {
+            stakeholder.streetNumber =
+              stakeholder.residentialAddress.streetNumber;
+          }
+          if (stakeholderColumn.includes('streetName')) {
+            stakeholder.streetName = stakeholder.residentialAddress.streetName;
+          }
+          if (stakeholderColumn.includes('streetType')) {
+            const streetType = StaticData.streetType.find((i) => {
+              if (i._id === stakeholder.residentialAddress.streetType) return i;
+            });
+            stakeholder.streetType =
+              streetType && streetType.name
+                ? streetType.name
+                : stakeholder.residentialAddress.streetType;
+          }
+          if (stakeholderColumn.includes('suburb')) {
+            stakeholder.suburb = stakeholder.residentialAddress.suburb;
+          }
+          if (stakeholderColumn.includes('state')) {
+            stakeholder.state = stakeholder.residentialAddress.state;
+          }
+          if (stakeholderColumn.includes('postCode')) {
+            stakeholder.postCode = stakeholder.residentialAddress.postCode;
+          }
+          if (stakeholderColumn.includes('fullAddress')) {
+            stakeholder.fullAddress = getDebtorFullAddress({
+              address: stakeholder.residentialAddress,
+              country: stakeholder.country,
+            });
+          }
+          if (stakeholder.hasOwnProperty('allowToCheckCreditHistory')) {
+            stakeholder.allowToCheckCreditHistory = stakeholder.allowToCheckCreditHistory
+              ? 'Yes'
+              : 'No';
+          }
+          delete stakeholder.residentialAddress;
+        } else {
+          if (stakeholder.entityName) {
+            stakeholder.name = {
+              _id: stakeholder._id,
+              value: stakeholder.entityName,
+            };
+            delete stakeholder.entityName;
+          }
+          if (stakeholder.entityType) {
+            stakeholder.entityType = formatString(stakeholder.entityType);
+          }
+        }
+        if (stakeholder.country) {
+          stakeholder.country = stakeholder.country.name;
+        }
+        delete stakeholder.type;
+        delete stakeholder.id;
+      });
+    }
+    return responseObj;
+  } catch (e) {
+    Logger.log.error('Error occurred in get stakeholder list');
+    Logger.log.error(e.message || e);
+  }
+};
+
+module.exports = {
+  getStakeholderDetails,
+  storeStakeholderDetails,
+  getStakeholderList,
+};

@@ -522,6 +522,7 @@ let fetchInsurerDetails = async ({
     let insurer = await Insurer.findOne({
       name: { $regex: underwriterName, $options: 'i' },
     });
+    //TODO remove after changes are done from RSS
     if (!insurer) {
       const words = underwriterName.split(' ');
       const regex = words.map(function (e) {

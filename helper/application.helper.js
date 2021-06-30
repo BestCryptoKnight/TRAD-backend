@@ -37,6 +37,7 @@ const { createTask } = require('./task.helper');
 const { addNotification } = require('./notification.helper');
 const { sendNotification } = require('./socket.helper');
 const { formatString } = require('./overdue.helper');
+const { getRESChecks } = require('./dashboard.helper');
 
 //TODO add filter for expiry-date + credit-limit
 const getApplicationList = async ({
@@ -905,6 +906,36 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
       }
       let discretionaryLimit;
       if (continueWithAutomation) {
+        const startDate =
+          ciPolicy && ciPolicy.inceptionDate
+            ? ciPolicy.inceptionDate
+            : rmpPolicy.inceptionDate;
+        const endDate =
+          ciPolicy && ciPolicy.expiryDate
+            ? ciPolicy.expiryDate
+            : rmpPolicy.expiryDate;
+        const noOfRESCheckCount =
+          rmpPolicy && rmpPolicy.noOfResChecks
+            ? rmpPolicy.noOfResChecks
+            : ciPolicy && ciPolicy.noOfResChecks
+            ? ciPolicy.noOfResChecks
+            : 0;
+        const count = await Application.countDocuments({
+          clientId: application.clientId._id,
+          status: {
+            $nin: ['DRAFT'],
+          },
+          createdAt: {
+            $gte: new Date(startDate),
+            $lte: new Date(endDate),
+          },
+        }).exec();
+        if (count > noOfRESCheckCount) {
+          continueWithAutomation = false;
+          blockers.push('Client has used all RESchecks');
+        }
+      }
+      if (continueWithAutomation) {
         if (ciPolicy.discretionaryLimit || rmpPolicy.discretionaryLimit) {
           discretionaryLimit =
             ciPolicy.discretionaryLimit || rmpPolicy.discretionaryLimit;
@@ -1153,7 +1184,7 @@ const sendNotificationsToUser = async ({
         const userNotification = await addNotification({
           userId: application.clientId.riskAnalystId,
           userType: 'user',
-          description: `A new application ${application.applicationId} is being approved`,
+          description: `An application ${application.applicationId} is being approved`,
         });
         if (userNotification) {
           sendNotification({

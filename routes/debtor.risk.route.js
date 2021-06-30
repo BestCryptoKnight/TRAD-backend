@@ -26,6 +26,7 @@ const {
 const {
   getStakeholderDetails,
   storeStakeholderDetails,
+  getStakeholderList,
 } = require('./../helper/stakeholder.helper');
 const {
   getEntityDetailsByBusinessNumber,
@@ -256,7 +257,10 @@ router.get('/', async function (req, res) {
         debtor.postCode = debtor.address.postCode;
       }
       if (debtorColumn.columns.includes('fullAddress')) {
-        debtor.fullAddress = getDebtorFullAddress({ address: debtor.address });
+        debtor.fullAddress = getDebtorFullAddress({
+          address: debtor.address,
+          country: debtor.address.country,
+        });
       }
       if (debtor.entityType) {
         debtor.entityType = debtor.entityType
@@ -303,22 +307,13 @@ router.get(
     try {
       let module = StaticFile.modules.find((i) => i.name === 'stakeholder');
       module = JSON.parse(JSON.stringify(module));
-      const stakeholder = await DebtorDirector.findById(
-        req.params.stakeholderId,
-      )
-        .select({ __v: 0, isDeleted: 0 })
-        .lean();
-      if (!stakeholder) {
-        return res.status(400).send({
-          status: 'ERROR',
-          messageCode: 'NO_STAKEHOLDER_FOUND',
-          message: 'No stakeholder found',
-        });
-      }
       const response = await getStakeholderDetails({
-        stakeholder,
+        stakeholderId: req.params.stakeholderId,
         manageColumns: module.manageColumns,
       });
+      if (response && response.status && response.status === 'ERROR') {
+        return res.status(400).send(response);
+      }
       res.status(200).send({ status: 'SUCCESS', data: response });
     } catch (e) {
       Logger.log.error(
@@ -443,130 +438,13 @@ router.get('/stakeholder/:debtorId', async function (req, res) {
     const stakeholderColumn = req.user.manageColumns.find(
       (i) => i.moduleName === 'stakeholder',
     );
-    if (stakeholderColumn.columns.includes('name')) {
-      stakeholderColumn.columns.push('entityName');
-      stakeholderColumn.columns.push('firstName');
-      stakeholderColumn.columns.push('middleName');
-      stakeholderColumn.columns.push('lastName');
-    }
-    const queryFilter = {
-      isDeleted: false,
-      debtorId: mongoose.Types.ObjectId(req.params.debtorId),
-    };
-    const sortingOptions = {};
-    req.query.sortBy = req.query.sortBy || '_id';
-    req.query.sortOrder = req.query.sortOrder || 'desc';
-    sortingOptions[req.query.sortBy] = req.query.sortOrder;
-    /* if (req.query.search)
-      queryFilter.name = { $regex: req.query.search, $options: 'i' };*/
-
-    const option = {
-      page: parseInt(req.query.page) || 1,
-      limit: parseInt(req.query.limit) || 5,
-    };
-    option.select =
-      stakeholderColumn.columns.toString().replace(/,/g, ' ') +
-      ' residentialAddress type';
-    option.sort = sortingOptions;
-    option.lean = true;
-    const responseObj = await DebtorDirector.paginate(queryFilter, option);
-    responseObj.headers = [];
-    for (let i = 0; i < module.manageColumns.length; i++) {
-      if (stakeholderColumn.columns.includes(module.manageColumns[i].name)) {
-        responseObj.headers.push(module.manageColumns[i]);
-      }
-    }
-    if (responseObj && responseObj.docs && responseObj.docs.length !== 0) {
-      responseObj.docs.forEach((stakeholder) => {
-        if (stakeholder.type === 'individual') {
-          if (
-            stakeholder.firstName ||
-            stakeholder.middleName ||
-            stakeholder.lastName
-          ) {
-            stakeholder.name = {
-              _id: stakeholder._id,
-              value: (
-                (stakeholder.firstName ? stakeholder.firstName + ' ' : '') +
-                (stakeholder.middleName ? stakeholder.middleName + ' ' : '') +
-                (stakeholder.lastName ? stakeholder.lastName : '')
-              ).trim(),
-            };
-            delete stakeholder.firstName;
-            delete stakeholder.middleName;
-            delete stakeholder.lastName;
-          }
-          if (stakeholderColumn.columns.includes('property')) {
-            stakeholder.property = stakeholder.residentialAddress.property;
-          }
-          if (stakeholderColumn.columns.includes('unitNumber')) {
-            stakeholder.unitNumber = stakeholder.residentialAddress.unitNumber;
-          }
-          if (stakeholderColumn.columns.includes('streetNumber')) {
-            stakeholder.streetNumber =
-              stakeholder.residentialAddress.streetNumber;
-          }
-          if (stakeholderColumn.columns.includes('streetName')) {
-            stakeholder.streetName = stakeholder.residentialAddress.streetName;
-          }
-          if (stakeholderColumn.columns.includes('streetType')) {
-            const streetType = StaticData.streetType.find((i) => {
-              if (i._id === stakeholder.residentialAddress.streetType) return i;
-            });
-            stakeholder.streetType =
-              streetType && streetType.name
-                ? streetType.name
-                : stakeholder.residentialAddress.streetType;
-          }
-          if (stakeholderColumn.columns.includes('suburb')) {
-            stakeholder.suburb = stakeholder.residentialAddress.suburb;
-          }
-          if (stakeholderColumn.columns.includes('state')) {
-            stakeholder.state = stakeholder.residentialAddress.state;
-          }
-          if (stakeholderColumn.columns.includes('country')) {
-            stakeholder.country = stakeholder.residentialAddress.country.name;
-          }
-          if (stakeholderColumn.columns.includes('postCode')) {
-            stakeholder.postCode = stakeholder.residentialAddress.postCode;
-          }
-          if (stakeholderColumn.columns.includes('fullAddress')) {
-            stakeholder.fullAddress = getDebtorFullAddress({
-              address: stakeholder.residentialAddress,
-            });
-          }
-          if (stakeholder.hasOwnProperty('allowToCheckCreditHistory')) {
-            stakeholder.allowToCheckCreditHistory = stakeholder.allowToCheckCreditHistory
-              ? 'Yes'
-              : 'No';
-          }
-          delete stakeholder.residentialAddress;
-        } else {
-          if (stakeholder.entityName) {
-            stakeholder.name = {
-              _id: stakeholder._id,
-              value: stakeholder.entityName,
-            };
-            delete stakeholder.entityName;
-          }
-          if (stakeholder.entityType) {
-            stakeholder.entityType = stakeholder.entityType
-              .replace(/_/g, ' ')
-              .replace(/\w\S*/g, function (txt) {
-                return (
-                  txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
-                );
-              });
-          }
-          if (stakeholder.country) {
-            stakeholder.country = stakeholder.country.name;
-          }
-        }
-        delete stakeholder.type;
-        delete stakeholder.id;
-      });
-    }
-    res.status(200).send({ status: 'SUCCESS', data: responseObj });
+    const response = await getStakeholderList({
+      debtorId: req.params.debtorId,
+      requestedQuery: req.query,
+      manageColumns: module.manageColumns,
+      stakeholderColumn: stakeholderColumn.columns,
+    });
+    res.status(200).send({ status: 'SUCCESS', data: response });
   } catch (e) {
     Logger.log.error('Error occurred in get stakeholder list ', e.message || e);
     res.status(500).send({

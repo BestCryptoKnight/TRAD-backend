@@ -76,6 +76,7 @@ const getClientCreditLimit = async ({
   requestedQuery,
   moduleColumn,
   clientId,
+  isForRisk = true,
 }) => {
   try {
     const clientDebtorDetails = [
@@ -208,7 +209,15 @@ const getClientCreditLimit = async ({
     const headers = [];
     for (let i = 0; i < moduleColumn.length; i++) {
       if (debtorColumn.includes(moduleColumn[i].name)) {
-        headers.push(moduleColumn[i]);
+        if (!isForRisk && moduleColumn[i].name === 'entityName') {
+          headers.push({
+            name: moduleColumn[i].name,
+            label: moduleColumn[i].label,
+            type: 'string',
+          });
+        } else {
+          headers.push(moduleColumn[i]);
+        }
       }
     }
     response.forEach((debtor) => {

@@ -866,7 +866,10 @@ router.get('/', async function (req, res) {
           user.zipCode = user.address.zipCode;
         }
         if (clientColumn.columns.includes('fullAddress')) {
-          user.fullAddress = getDebtorFullAddress({ address: user.address });
+          user.fullAddress = getDebtorFullAddress({
+            address: user.address,
+            country: user.address.country,
+          });
         }
         delete user.address;
       });

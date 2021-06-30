@@ -527,6 +527,7 @@ router.get('/details/:applicationId', async function (req, res) {
             response.country = application.debtorId.address.country.code;
             response[key] = getDebtorFullAddress({
               address: application.debtorId[key],
+              country: application.debtorId[key]['country'],
             });
           } else {
             response[key] = application.debtorId[key];

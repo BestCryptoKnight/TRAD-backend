@@ -23,16 +23,36 @@ const {
 } = require('./../helper/client-debtor.helper');
 const { getDebtorFullAddress } = require('./../helper/debtor.helper');
 const { generateNewApplication } = require('./../helper/application.helper');
+const {
+  getStakeholderList,
+  getStakeholderDetails,
+} = require('./../helper/stakeholder.helper');
 
 /**
  * Get Column Names
  */
 router.get('/column-name', async function (req, res) {
+  if (!req.query.columnFor) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require field is missing.',
+    });
+  }
   try {
-    const module = StaticFile.modules.find((i) => i.name === 'credit-limit');
-    const debtorColumn = req.user.manageColumns.find(
-      (i) => i.moduleName === 'credit-limit',
+    const module = StaticFile.modules.find(
+      (i) => i.name === req.query.columnFor,
     );
+    const debtorColumn = req.user.manageColumns.find(
+      (i) => i.moduleName === req.query.columnFor,
+    );
+    if (!module || !module.manageColumns || module.manageColumns.length === 0) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'BAD_REQUEST',
+        message: 'Please pass correct fields',
+      });
+    }
     const customFields = [];
     const defaultFields = [];
     for (let i = 0; i < module.manageColumns.length; i++) {
@@ -119,6 +139,7 @@ router.get('/', async function (req, res) {
       debtorColumn: debtorColumn.columns,
       clientId: req.user.clientId,
       moduleColumn: module.manageColumns,
+      isForRisk: false,
     });
     res.status(200).send({
       status: 'SUCCESS',
@@ -126,6 +147,81 @@ router.get('/', async function (req, res) {
     });
   } catch (e) {
     Logger.log.error('Error occurred in get client-debtor details ', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Get Stakeholder drawer details
+ */
+router.get(
+  '/stakeholder/drawer-details/:stakeholderId',
+  async function (req, res) {
+    if (
+      !req.params.stakeholderId ||
+      !mongoose.Types.ObjectId.isValid(req.params.stakeholderId)
+    ) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'REQUIRE_FIELD_MISSING',
+        message: 'Require fields are missing',
+      });
+    }
+    try {
+      let module = StaticFile.modules.find((i) => i.name === 'stakeholder');
+      module = JSON.parse(JSON.stringify(module));
+      const response = await getStakeholderDetails({
+        stakeholderId: req.params.stakeholderId,
+        manageColumns: module.manageColumns,
+      });
+      if (response && response.status && response.status === 'ERROR') {
+        return res.status(400).send(response);
+      }
+      res.status(200).send({ status: 'SUCCESS', data: response });
+    } catch (e) {
+      Logger.log.error(
+        'Error occurred in get stakeholder modal details ',
+        e.message || e,
+      );
+      res.status(500).send({
+        status: 'ERROR',
+        message: e.message || 'Something went wrong, please try again later.',
+      });
+    }
+  },
+);
+
+/**
+ * Get StakeHolder List
+ */
+router.get('/stakeholder/:debtorId', async function (req, res) {
+  if (
+    !req.params.debtorId ||
+    !mongoose.Types.ObjectId.isValid(req.params.debtorId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const module = StaticFile.modules.find((i) => i.name === 'stakeholder');
+    const stakeholderColumn = req.user.manageColumns.find(
+      (i) => i.moduleName === 'stakeholder',
+    );
+    const response = await getStakeholderList({
+      debtorId: req.params.debtorId,
+      requestedQuery: req.query,
+      manageColumns: module.manageColumns,
+      stakeholderColumn: stakeholderColumn.columns,
+    });
+    res.status(200).send({ status: 'SUCCESS', data: response });
+  } catch (e) {
+    Logger.log.error('Error occurred in get stakeholder list ', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -353,7 +449,10 @@ router.get('/:debtorId', async function (req, res) {
         for (let key in debtor.address) {
           debtor[key] = debtor.address[key];
         }
-        debtor.address = getDebtorFullAddress({ address: debtor.address });
+        debtor.address = getDebtorFullAddress({
+          address: debtor.address,
+          country: debtor.address.country,
+        });
       }
       if (debtor.country) {
         debtor.country = {
@@ -414,23 +513,41 @@ router.get('/:debtorId', async function (req, res) {
  * Update Column Names
  */
 router.put('/column-name', async function (req, res) {
-  if (!req.body.hasOwnProperty('isReset') || !req.body.columns) {
-    Logger.log.error('Require fields are missing');
+  if (
+    !req.body.hasOwnProperty('isReset') ||
+    !req.body.columns ||
+    !req.body.columnFor
+  ) {
     return res.status(400).send({
       status: 'ERROR',
-      message: 'Something went wrong, please try again.',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing',
     });
   }
   try {
     let updateColumns = [];
-    if (req.body.isReset) {
-      const module = StaticFile.modules.find((i) => i.name === 'credit-limit');
-      updateColumns = module.defaultColumns;
-    } else {
-      updateColumns = req.body.columns;
+    let module;
+    switch (req.body.columnFor) {
+      case 'credit-limit':
+      case 'stakeholder':
+        if (req.body.isReset) {
+          module = StaticFile.modules.find(
+            (i) => i.name === req.body.columnFor,
+          );
+          updateColumns = module.defaultColumns;
+        } else {
+          updateColumns = req.body.columns;
+        }
+        break;
+      default:
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'BAD_REQUEST',
+          message: 'Please pass correct fields',
+        });
     }
     await ClientUser.updateOne(
-      { _id: req.user._id, 'manageColumns.moduleName': 'credit-limit' },
+      { _id: req.user._id, 'manageColumns.moduleName': req.body.columnFor },
       { $set: { 'manageColumns.$.columns': updateColumns } },
     );
     res

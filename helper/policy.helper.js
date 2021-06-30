@@ -29,7 +29,7 @@ const getPolicyDetails = ({ policyData }) => {
         label: 'No Of Monitored Accounts',
         type: 'string',
       },
-      { name: 'noOfResChecks', label: 'No Of Res Checks', type: 'string' },
+      { name: 'noOfResChecks', label: 'No Of RES Checks', type: 'string' },
       { name: 'premiumFunder', label: 'Premium Funder', type: 'string' },
       { name: 'premiumRate', label: 'Premium Rate', type: 'percent' },
       {
