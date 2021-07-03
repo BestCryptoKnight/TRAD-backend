@@ -347,12 +347,16 @@ router.put('/generate', async function (req, res) {
               },
             );
           }
+          res.status(200).send({
+            status: 'SUCCESS',
+            data: 'Report generated successfully',
+          });
+        } else {
+          res.status(400).send({
+            status: 'UNABLE_TO_FETCH_REPORT',
+            data: 'Unable to fetch report',
+          });
         }
-        // TODO Generate Credit Report HTML
-        res.status(200).send({
-          status: 'SUCCESS',
-          data: 'Report generated successfully',
-        });
       } else {
         res.status(400).send({
           status: 'UNABLE_TO_FETCH_REPORT',

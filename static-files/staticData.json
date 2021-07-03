@@ -915,7 +915,7 @@
       "name": "Proprietary Limited"
     },
     {
-      "_id": "LIMITED_COMPANY",
+      "_id": "LIMITED",
       "name": "Limited"
     },
     {
@@ -965,7 +965,7 @@
       "name": "Proprietary Limited"
     },
     {
-      "_id": "LIMITED_COMPANY",
+      "_id": "LIMITED",
       "name": "Limited"
     },
     {
@@ -2023,7 +2023,7 @@
       "name": "Australian Private Company"
     },
     {
-      "_id": "LIMITED_COMPANY",
+      "_id": "LIMITED",
       "name": "Australian Public Company"
     },
     {
@@ -2578,15 +2578,15 @@
   "NZEntityType": [
     {
       "name": "LTD",
-      "_id": "LIMITED_COMPANY"
+      "_id": "LIMITED"
     },
     {
       "name": "ULTD",
-      "_id": "LIMITED_COMPANY"
+      "_id": "LIMITED"
     },
     {
       "name": "UNLTD1",
-      "_id": "LIMITED_COMPANY"
+      "_id": "LIMITED"
     },
     {
       "name": "COOP",

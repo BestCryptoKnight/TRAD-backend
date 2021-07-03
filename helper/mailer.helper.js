@@ -85,11 +85,11 @@ const sendMail = ({ toAddress, subject, text, html, mailFor }) => {
       to: toAddressStr,
       subject: subject,
     };
-    if (html) {
+    /*if (html) {
       mailBody.html = html;
     } else {
       mailBody.text = 'Name : ' + text.name + '\nOTP : ' + text.otp;
-    }
+    }*/
     if (config.mailer.send === 'true') {
       transporter.sendMail(mailBody, (err, info) => {
         if (err) {

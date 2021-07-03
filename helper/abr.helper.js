@@ -496,10 +496,15 @@ const extractNZBRLookupData = async ({ entityData, country, step }) => {
 };
 
 //TODO send entity-type after entity type mapping
-const extractNZBRLookupDataFromArray = async ({ entityList, country }) => {
+const extractNZBRLookupDataFromArray = async ({
+  entityList,
+  step,
+  country,
+}) => {
   try {
     let responseArray = [];
     let response = {};
+    const isForPersonStep = step === 'person';
     const inActiveCode = ['62', '80', '90', '91'];
     if (entityList && entityList.items && entityList.items.length !== 0) {
       entityList.items.forEach((entityData) => {
@@ -518,7 +523,32 @@ const extractNZBRLookupDataFromArray = async ({ entityList, country }) => {
           if (entityData.sourceRegisterUniqueId) {
             response.acn = entityData.sourceRegisterUniqueId;
           }
-          responseArray.push(response);
+          if (isForPersonStep && entityData.entityTypeCode) {
+            const entityTypeCodes = [
+              'COOP',
+              'Sole_Trader',
+              'PARTNERSHIP',
+              'Trading_Trust',
+              'T',
+              'B',
+              'D',
+              'F',
+              'I',
+              'N',
+              'Y',
+              'Z',
+              'S',
+              'GovtCentral',
+              'GovtLocal',
+              'GovtEdu',
+              'GovtOther',
+            ];
+            if (!entityTypeCodes.includes(entityData.entityTypeCode)) {
+              responseArray.push(response);
+            }
+          } else {
+            responseArray.push(response);
+          }
         }
       });
     }
@@ -599,7 +629,12 @@ const getEntityDetailsByBusinessNumber = async ({
   }
 };
 
-const getEntityDetailsByName = async ({ searchString, country, page = 0 }) => {
+const getEntityDetailsByName = async ({
+  searchString,
+  country,
+  page = 0,
+  step,
+}) => {
   try {
     let responseData;
     let entityData;
@@ -618,6 +653,7 @@ const getEntityDetailsByName = async ({ searchString, country, page = 0 }) => {
       responseData = await extractNZBRLookupDataFromArray({
         entityList: entityData,
         country,
+        step,
       });
     }
     return responseData;

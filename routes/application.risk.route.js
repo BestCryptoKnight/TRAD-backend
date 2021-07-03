@@ -25,6 +25,7 @@ const {
   checkForAutomation,
   applicationDrawerDetails,
   sendNotificationsToUser,
+  sendDecisionLetter,
 } = require('./../helper/application.helper');
 const {
   getEntityDetailsByBusinessNumber,
@@ -593,7 +594,7 @@ router.get('/details/:applicationId', async function (req, res) {
       response.orderOnHand = application.orderOnHand;
       response.outstandingAmount = application.outstandingAmount;
       // response.note = application.note;
-      const status = ['DRAFT', 'APPROVED', 'DECLINED'];
+      const status = ['DRAFT', 'APPROVED', 'DECLINED', 'SUBMITTED'];
       response.applicationStatus = StaticData.applicationStatus.filter(
         (data) => !status.includes(data.value),
       );
@@ -739,7 +740,7 @@ router.get('/search-entity', async function (req, res) {
  * Search from Entity Name
  */
 router.get('/search-entity-list', async function (req, res) {
-  if (!req.query.searchString || !req.query.country) {
+  if (!req.query.searchString || !req.query.country || !req.query.step) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -751,6 +752,7 @@ router.get('/search-entity-list', async function (req, res) {
       searchString: req.query.searchString,
       country: req.query.country,
       page: req.query.page,
+      step: req.query.step,
     });
     res.status(200).send({
       status: 'SUCCESS',
@@ -1081,9 +1083,14 @@ router.put('/:applicationId', async function (req, res) {
   try {
     const application = await Application.findOne({
       _id: req.params.applicationId,
-    })
-      .populate({ path: 'clientId', select: '_id name riskAnalystId' })
-      .lean();
+    }).lean();
+    if (!application) {
+      return {
+        status: 'ERROR',
+        messageCode: 'NO_APPLICATION_FOUND',
+        message: 'No application found',
+      };
+    }
     if (application.status === 'SUBMITTED') {
       return res.status(400).send({
         status: 'ERROR',
@@ -1091,6 +1098,8 @@ router.put('/:applicationId', async function (req, res) {
         message: "You can't change status when automation in process",
       });
     }
+    let status = req.body.status;
+    let approvedAmount = 0;
     const applicationUpdate = {
       status: req.body.status,
     };
@@ -1102,11 +1111,22 @@ router.put('/:applicationId', async function (req, res) {
           message: 'Require fields are missing',
         });
       }
+      if (parseInt(application.creditLimit) < parseInt(req.body.creditLimit)) {
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'INVALID_AMOUNT',
+          message: "Can't approve more credit limit than requested",
+        });
+      }
+      if (parseInt(application.creditLimit) > parseInt(req.body.creditLimit)) {
+        status = 'PARTIALLY_APPROVED';
+      }
       const date = new Date();
       applicationUpdate.approvalDate = date;
       const expiryDate = new Date(date.setMonth(date.getMonth() + 12));
       applicationUpdate.expiryDate = expiryDate;
       req.body.creditLimit = parseInt(req.body.creditLimit);
+      approvedAmount = req.body.creditLimit;
       applicationUpdate.acceptedAmount = req.body.creditLimit;
       const ciPolicy = await Policy.findOne({
         clientId: application.clientId,
@@ -1130,6 +1150,17 @@ router.put('/:applicationId', async function (req, res) {
         ciPolicy.discretionaryLimit < req.body.creditLimit
       ) {
         update.isEndorsedLimit = true;
+      }
+      if (req.body.description && req.body.hasOwnProperty('isPublic')) {
+        await addNote({
+          userId: req.user._id,
+          entityId: req.params.applicationId,
+          description: req.body.description,
+          userType: 'user',
+          userName: req.user.name,
+          isPublic: req.body.isPublic,
+          noteFor: 'application',
+        });
       }
       await ClientDebtor.updateOne({ _id: application.clientDebtorId }, update);
       //TODO uncomment Surrender other application on Approve status
@@ -1192,6 +1223,13 @@ router.put('/:applicationId', async function (req, res) {
         status: req.body.status,
         application,
       });
+      //TODO uncomment to send decision letter
+      // sendDecisionLetter({
+      //   reason: req.body.description || '',
+      //   status,
+      //   application,
+      //   approvedAmount,
+      // });
     }
     res.status(200).send({
       status: 'SUCCESS',

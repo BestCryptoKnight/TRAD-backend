@@ -162,12 +162,12 @@
           "paymentRiskLevel": {
             "conditionString": "The Late Payment Risk Level indicated by D&B cannot be “High”, “Very High” or “Severe”",
             "field": ["riskLevel"],
-            "value": true
+            "value": ["High", "Very High", "Severe"]
           },
           "delinquencyScore": {
             "conditionString": "The D&B Dynamic Delinquency Score cannot be lower than 386",
             "field": ["score"],
-            "value": true
+            "value": 386
           }
         }
       },

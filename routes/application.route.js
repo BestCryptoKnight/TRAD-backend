@@ -692,7 +692,7 @@ router.get('/search-entity', async function (req, res) {
  * Search from Entity Name
  */
 router.get('/search-entity-list', async function (req, res) {
-  if (!req.query.searchString || !req.query.country) {
+  if (!req.query.searchString || !req.query.country || !req.query.step) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -704,6 +704,7 @@ router.get('/search-entity-list', async function (req, res) {
       searchString: req.query.searchString,
       country: req.query.country,
       page: req.query.page,
+      step: req.query.step,
     });
     res.status(200).send({
       status: 'SUCCESS',

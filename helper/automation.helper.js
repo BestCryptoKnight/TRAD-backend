@@ -167,6 +167,7 @@ const getReportData = async ({
   try {
     let reportData;
     let reportEntityType = 'debtor';
+    let isForeignCountry = false;
     console.log('reportCode', reportCode);
     if (type === 'individual') {
       //TODO add for euifax
@@ -183,52 +184,45 @@ const getReportData = async ({
       }
       let debtorId = debtor._id;
       if (entityType === 'TRUST') {
-        const stakeHolder = await DebtorDirector.findOne({
+        const stakeHolders = await DebtorDirector.find({
+          isDeleted: false,
           debtorId: debtor._id,
         }).lean();
-        if (stakeHolder && stakeHolder.country && stakeHolder.country.code) {
-          if (stakeHolder.country.code === 'AUS') {
-            lookupNumber = stakeHolder.abn ? stakeHolder.abn : stakeHolder.acn;
-            lookupMethod = stakeHolder.abn ? 'ABN' : 'ACN';
-          } else {
-            lookupNumber = stakeHolder.acn;
-            lookupMethod = 'NCN';
+        //TODO handle case for country other than AUS/NZL
+        for (let i = 0; i < stakeHolders.length; i++) {
+          if (
+            stakeHolders[i] &&
+            stakeHolders[i].type === 'company' &&
+            stakeHolders[i].country &&
+            stakeHolders[i].country.code
+          ) {
+            if (stakeHolders[i].country.code === 'AUS') {
+              lookupNumber = stakeHolders[i].abn
+                ? stakeHolders[i].abn
+                : stakeHolders[i].acn;
+              lookupMethod = stakeHolders[i].abn ? 'ABN' : 'ACN';
+              debtorId = stakeHolders[i]._id;
+              reportEntityType = 'debtor-director';
+            } else if (stakeHolders[i].country.code === 'NZL') {
+              lookupNumber = stakeHolders[i].acn;
+              lookupMethod = 'NCN';
+              debtorId = stakeHolders[i]._id;
+              reportEntityType = 'debtor-director';
+            } else {
+              isForeignCountry = true;
+            }
+            break;
           }
         }
-        debtorId = stakeHolder._id;
-        reportEntityType = 'debtor-director';
       }
-      reportData = await CreditReport.findOne({
-        isDeleted: false,
-        isExpired: false,
-        entityId: debtorId,
-        productCode: reportCode,
-        expiryDate: { $gt: new Date() },
-      });
-      if (reportData && reportData._id) {
-        await ClientDebtor.updateOne(
-          { _id: clientDebtorId },
-          { currentReportId: reportData._id },
-        );
-      }
-      reportData =
-        reportData && reportData.creditReport ? reportData.creditReport : null;
-      if (!reportData) {
-        const reportCodes = {
-          HXBSC: ['HXBCA', 'HXPAA', 'HXPYA'],
-          HXBCA: ['HXPAA', 'HXPYA'],
-          HXPYA: ['HXPAA'],
-          HNBCau: ['NPA'],
-        };
-        if (reportCodes[reportCode] && reportCodes[reportCode].length !== 0) {
-          reportData = await CreditReport.findOne({
-            isDeleted: false,
-            isExpired: false,
-            entityId: debtorId,
-            productCode: { $in: reportCodes[reportCode] },
-            expiryDate: { $gt: new Date() },
-          });
-        }
+      if (!isForeignCountry) {
+        reportData = await CreditReport.findOne({
+          isDeleted: false,
+          isExpired: false,
+          entityId: debtorId,
+          productCode: reportCode,
+          expiryDate: { $gt: new Date() },
+        });
         if (reportData && reportData._id) {
           await ClientDebtor.updateOne(
             { _id: clientDebtorId },
@@ -239,54 +233,83 @@ const getReportData = async ({
           reportData && reportData.creditReport
             ? reportData.creditReport
             : null;
-      }
-      console.log('lookupNumber :: ', lookupNumber);
-      if (!reportData && lookupNumber) {
-        reportData = await fetchCreditReport({
-          productCode: reportCode,
-          searchField: lookupMethod,
-          searchValue: lookupNumber,
-        });
-        console.log('HERE:::::::::::::::::::::::::');
-        console.log('Report DATA', JSON.stringify(reportData, null, 3));
-        //TODO don't store failed report data
-        if (
-          reportData &&
-          reportData.Envelope.Body.Response &&
-          reportData.Envelope.Body.Response.Messages.ErrorCount &&
-          parseInt(reportData.Envelope.Body.Response.Messages.ErrorCount) === 0
-        ) {
-          await storeReportData({
-            debtorId: debtorId,
-            productCode: reportCode,
-            reportFrom: 'illion',
-            reportName: reportData.Envelope.Body.Response.Header.ProductName,
-            reportData: reportData.Envelope.Body.Response,
-            entityType: reportEntityType,
-            clientDebtorId: clientDebtorId,
-          });
-          reportData = reportData.Envelope.Body.Response;
-          if (
-            reportData.DynamicDelinquencyScore &&
-            reportData.DynamicDelinquencyScore &&
-            reportData.DynamicDelinquencyScore.Score
-          ) {
-            await Debtor.updateOne(
-              { _id: debtor._id },
-              { riskRating: reportData.DynamicDelinquencyScore.Score },
+        if (!reportData) {
+          const reportCodes = {
+            HXBSC: ['HXBCA', 'HXPAA', 'HXPYA'],
+            HXBCA: ['HXPAA', 'HXPYA'],
+            HXPYA: ['HXPAA'],
+            HNBCau: ['NPA'],
+          };
+          if (reportCodes[reportCode] && reportCodes[reportCode].length !== 0) {
+            reportData = await CreditReport.findOne({
+              isDeleted: false,
+              isExpired: false,
+              entityId: debtorId,
+              productCode: { $in: reportCodes[reportCode] },
+              expiryDate: { $gt: new Date() },
+            });
+          }
+          if (reportData && reportData._id) {
+            await ClientDebtor.updateOne(
+              { _id: clientDebtorId },
+              { currentReportId: reportData._id },
             );
           }
-        } else if (
-          reportData &&
-          reportData.Envelope.Body.Response &&
-          reportData.Envelope.Body.Response.Messages.ErrorCount &&
-          parseInt(reportData.Envelope.Body.Response.Messages.ErrorCount) !== 0
-        ) {
-          reportData = null;
+          reportData =
+            reportData && reportData.creditReport
+              ? reportData.creditReport
+              : null;
+        }
+        console.log('lookupNumber :: ', lookupNumber);
+        if (!reportData && lookupNumber) {
+          reportData = await fetchCreditReport({
+            productCode: reportCode,
+            searchField: lookupMethod,
+            searchValue: lookupNumber,
+          });
+          console.log('HERE:::::::::::::::::::::::::');
+          console.log('Report DATA', JSON.stringify(reportData, null, 3));
+          //TODO don't store failed report data
+          if (
+            reportData &&
+            reportData.Envelope.Body.Response &&
+            reportData.Envelope.Body.Response.Messages.ErrorCount &&
+            parseInt(reportData.Envelope.Body.Response.Messages.ErrorCount) ===
+              0
+          ) {
+            await storeReportData({
+              debtorId: debtorId,
+              productCode: reportCode,
+              reportFrom: 'illion',
+              reportName: reportData.Envelope.Body.Response.Header.ProductName,
+              reportData: reportData.Envelope.Body.Response,
+              entityType: reportEntityType,
+              clientDebtorId: clientDebtorId,
+            });
+            reportData = reportData.Envelope.Body.Response;
+            if (
+              reportData.DynamicDelinquencyScore &&
+              reportData.DynamicDelinquencyScore &&
+              reportData.DynamicDelinquencyScore.Score
+            ) {
+              await Debtor.updateOne(
+                { _id: debtor._id },
+                { riskRating: reportData.DynamicDelinquencyScore.Score },
+              );
+            }
+          } else if (
+            reportData &&
+            reportData.Envelope.Body.Response &&
+            reportData.Envelope.Body.Response.Messages.ErrorCount &&
+            parseInt(reportData.Envelope.Body.Response.Messages.ErrorCount) !==
+              0
+          ) {
+            reportData = null;
+          }
         }
       }
-      return reportData;
     }
+    return { reportData, isForeignCountry };
   } catch (e) {
     Logger.log.error('Error occurred in get report data ', e);
   }
@@ -338,7 +361,6 @@ const insurerQBE = async ({ application, type, policy }) => {
   try {
     console.log('report for :', type);
     let blockers = [];
-    let response;
     const {
       identifiedReportDetails,
       identifiedPriceRange,
@@ -354,7 +376,7 @@ const insurerQBE = async ({ application, type, policy }) => {
     if (!reportCode) {
       blockers.push('Unable to get report code');
     }
-    const [reportData, entityData] = await Promise.all([
+    const [response, entityData] = await Promise.all([
       getReportData({
         type,
         reportCode,
@@ -367,8 +389,13 @@ const insurerQBE = async ({ application, type, policy }) => {
         businessNumber: application.debtorId.abn || application.debtorId.acn,
       }),
     ]);
+    const reportData = response.reportData ? response.reportData : null;
     if (!reportData) {
-      blockers.push('Unable to generate a report');
+      if (response.isForeignCountry) {
+        blockers.push('Trustee does not belong to Australia or New Zealand');
+      } else {
+        blockers.push('Unable to generate a report');
+      }
     }
     console.log('NEXT STEP ::::::::: ');
     console.log('reportData', reportData);
@@ -398,7 +425,6 @@ const insurerBond = async ({ application, type, policy }) => {
   try {
     console.log('report for :', type);
     let blockers = [];
-    let response;
     const {
       identifiedReportDetails,
       identifiedPriceRange,
@@ -414,7 +440,7 @@ const insurerBond = async ({ application, type, policy }) => {
     if (!reportCode) {
       blockers.push('Unable to get report code');
     }
-    const [reportData, entityData] = await Promise.all([
+    const [response, entityData] = await Promise.all([
       getReportData({
         type,
         reportCode,
@@ -427,8 +453,13 @@ const insurerBond = async ({ application, type, policy }) => {
         businessNumber: application.debtorId.abn || application.debtorId.acn,
       }),
     ]);
+    const reportData = response.reportData ? response.reportData : null;
     if (!reportData) {
-      blockers.push('Unable to generate a report');
+      if (response.isForeignCountry) {
+        blockers.push('Trustee does not belong to Australia or New Zealand');
+      } else {
+        blockers.push('Unable to generate a report');
+      }
     }
     console.log('NEXT STEP ::::::::: ');
     console.log('reportData', reportData);
@@ -457,7 +488,6 @@ const insurerAtradius = async ({ application, type, policy }) => {
   try {
     console.log('report for :', type);
     let blockers = [];
-    let response;
     const {
       identifiedReportDetails,
       identifiedPriceRange,
@@ -473,7 +503,7 @@ const insurerAtradius = async ({ application, type, policy }) => {
     if (!reportCode) {
       blockers.push('Unable to get report code');
     }
-    const [reportData, entityData] = await Promise.all([
+    const [response, entityData] = await Promise.all([
       getReportData({
         type,
         reportCode,
@@ -486,8 +516,13 @@ const insurerAtradius = async ({ application, type, policy }) => {
         businessNumber: application.debtorId.abn || application.debtorId.acn,
       }),
     ]);
+    const reportData = response.reportData ? response.reportData : null;
     if (!reportData) {
-      blockers.push('Unable to generate a report');
+      if (response.isForeignCountry) {
+        blockers.push('Trustee does not belong to Australia or New Zealand');
+      } else {
+        blockers.push('Unable to generate a report');
+      }
     }
     console.log('NEXT STEP ::::::::: ');
     console.log('reportData', reportData);
@@ -516,7 +551,6 @@ const insurerCoface = async ({ application, type, policy }) => {
   try {
     console.log('report for :', type);
     let blockers = [];
-    let response;
     const {
       identifiedReportDetails,
       identifiedPriceRange,
@@ -532,7 +566,7 @@ const insurerCoface = async ({ application, type, policy }) => {
     if (!reportCode) {
       blockers.push('Unable to get report code');
     }
-    const [reportData, entityData] = await Promise.all([
+    const [response, entityData] = await Promise.all([
       getReportData({
         type,
         reportCode,
@@ -545,8 +579,13 @@ const insurerCoface = async ({ application, type, policy }) => {
         businessNumber: application.debtorId.abn || application.debtorId.acn,
       }),
     ]);
+    const reportData = response.reportData ? response.reportData : null;
     if (!reportData) {
-      blockers.push('Unable to generate a report');
+      if (response.isForeignCountry) {
+        blockers.push('Trustee does not belong to Australia or New Zealand');
+      } else {
+        blockers.push('Unable to generate a report');
+      }
     }
     console.log('NEXT STEP ::::::::: ');
     console.log('reportData', reportData);
@@ -575,7 +614,6 @@ const insurerEuler = async ({ application, type, policy }) => {
   try {
     console.log('report for :', type);
     let blockers = [];
-    let response;
     const {
       identifiedReportDetails,
       identifiedPriceRange,
@@ -591,7 +629,7 @@ const insurerEuler = async ({ application, type, policy }) => {
     if (!reportCode) {
       blockers.push('Unable to get report code');
     }
-    const [reportData, entityData] = await Promise.all([
+    const [response, entityData] = await Promise.all([
       getReportData({
         type,
         reportCode,
@@ -604,8 +642,13 @@ const insurerEuler = async ({ application, type, policy }) => {
         businessNumber: application.debtorId.abn || application.debtorId.acn,
       }),
     ]);
+    const reportData = response.reportData ? response.reportData : null;
     if (!reportData) {
-      blockers.push('Unable to generate a report');
+      if (response.isForeignCountry) {
+        blockers.push('Trustee does not belong to Australia or New Zealand');
+      } else {
+        blockers.push('Unable to generate a report');
+      }
     }
     console.log('NEXT STEP ::::::::: ');
     console.log('reportData', reportData);
@@ -634,7 +677,6 @@ const insurerTrad = async ({ application, type, policy }) => {
   try {
     console.log('report for :', type);
     let blockers = [];
-    let response;
     const {
       identifiedReportDetails,
       identifiedPriceRange,
@@ -650,7 +692,7 @@ const insurerTrad = async ({ application, type, policy }) => {
     if (!reportCode) {
       blockers.push('Unable to get report code');
     }
-    const [reportData, entityData] = await Promise.all([
+    const [response, entityData] = await Promise.all([
       getReportData({
         type,
         reportCode,
@@ -663,8 +705,13 @@ const insurerTrad = async ({ application, type, policy }) => {
         businessNumber: application.debtorId.abn || application.debtorId.acn,
       }),
     ]);
+    const reportData = response.reportData ? response.reportData : null;
     if (!reportData) {
-      blockers.push('Unable to generate a report');
+      if (response.isForeignCountry) {
+        blockers.push('Trustee does not belong to Australia or New Zealand');
+      } else {
+        blockers.push('Unable to generate a report');
+      }
     }
     console.log('NEXT STEP ::::::::: ');
     console.log('reportData', reportData);

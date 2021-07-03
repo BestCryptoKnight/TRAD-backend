@@ -740,6 +740,8 @@ router.get('/search-entity-list', async function (req, res) {
     const response = await getEntityDetailsByName({
       searchString: req.query.searchString,
       country: req.query.country,
+      step: 'person',
+      page: req.query.page,
     });
     res.status(200).send({
       status: 'SUCCESS',

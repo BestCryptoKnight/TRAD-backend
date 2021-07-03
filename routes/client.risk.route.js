@@ -210,7 +210,7 @@ router.get('/credit-limit/drawer-details/:debtorId', async function (req, res) {
   try {
     const module = StaticFile.modules.find((i) => i.name === 'debtor');
     const debtor = await ClientDebtor.findOne({
-      _id: req.params.debtorId,
+      debtorId: req.params.debtorId,
     })
       .populate({
         path: 'debtorId',
@@ -481,7 +481,7 @@ router.get('/details/:clientId', async function (req, res) {
             i.name === 'riskAnalystId' ||
             i.name === 'serviceManagerId' ||
             i.name === 'insurerId'
-              ? client[i.name]['name']
+              ? client[i.name] && client[i.name]['name']
               : i.name === 'isAutoApproveAllowed'
               ? client[i.name]
                 ? 'Yes'
@@ -1315,12 +1315,20 @@ router.put('/user/:clientUserId', async function (req, res) {
         JSON.stringify({ _id: req.params.clientUserId }),
         config.jwt.secret,
       );
+      let manageColumns = [];
+      for (let i = 0; i < StaticFile.modules.length; i++) {
+        manageColumns.push({
+          moduleName: StaticFile.modules[i].name,
+          columns: StaticFile.modules[i].defaultColumns,
+        });
+      }
       updateObj = {
         hasPortalAccess: req.body.hasPortalAccess,
         signUpToken: signUpToken,
+        manageColumns: manageColumns,
       };
       //TODO uncomment for send mail on Portal-Access
-      /*let mailObj = {
+      /* let mailObj = {
         toAddress: [clientUser.email],
         subject: 'Welcome to TRAD CLIENT PORTAL',
         text: {
@@ -1328,7 +1336,6 @@ router.put('/user/:clientUserId', async function (req, res) {
           setPasswordLink:
             config.server.frontendUrls.clientPanelBase +
             config.server.frontendUrls.setPasswordPage +
-            clientUser._id +
             '?token=' +
             signUpToken,
           riskAnalystName:

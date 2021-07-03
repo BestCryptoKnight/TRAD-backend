@@ -35,8 +35,8 @@ const clientSchema = new Schema(
     inceptionDate: { type: Schema.Types.Date },
     expiryDate: { type: Schema.Types.Date },
     isAutoApproveAllowed: { type: Schema.Types.Boolean, default: true },
-    totalApplication: { type: Schema.Types.Number },
-    remainingApplication: { type: Schema.Types.Number },
+    // totalApplication: { type: Schema.Types.Number },
+    // remainingApplication: { type: Schema.Types.Number },
   },
   { timestamps: true },
 );

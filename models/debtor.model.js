@@ -20,7 +20,7 @@ const debtorSchema = new Schema(
       type: Schema.Types.String,
       enum: [
         'PROPRIETARY_LIMITED',
-        'LIMITED_COMPANY',
+        'LIMITED',
         'PARTNERSHIP',
         'SOLE_TRADER',
         'TRUST',
@@ -51,7 +51,7 @@ const debtorSchema = new Schema(
     reviewDate: { type: Schema.Types.Date },
     riskRating: { type: Schema.Types.String },
     isActive: { type: Schema.Types.Boolean, default: false },
-    isDeleted: { type: Schema.Types.Boolean, default: false },
+    // isDeleted: { type: Schema.Types.Boolean, default: false },
   },
   { timestamps: true },
 );

@@ -240,7 +240,7 @@ const getClientCreditLimit = async ({
       if (debtor.entityType) {
         debtor.entityType = formatString(debtor.entityType);
       }
-      if (debtor.entityName) {
+      if (debtor.entityName && isForRisk) {
         debtor.entityName = {
           id: debtor._id,
           value: debtor.entityName,

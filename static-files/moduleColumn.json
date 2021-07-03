@@ -1190,7 +1190,7 @@
           "label": "Report Expiry Date",
           "type": "date"
         },
-        { "name": "reportName", "label": "Report Expiry Date", "type": "date" },
+        { "name": "reportName", "label": "Report Name", "type": "date" },
         { "name": "limitType", "label": "Limit Type", "type": "string" },
         {
           "name": "clientReference",

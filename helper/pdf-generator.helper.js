@@ -1,20 +1,22 @@
 const PDFDocument = require('pdfkit');
-const fs = require('fs');
 let PdfTable = require('voilab-pdf-table');
-
-// const { getServerTime } = require('./organization.helper');
+const config = require('../config');
 
 async function generateDecisionLetter({
-  orderData,
-  organizationData,
   approvalStatus,
   rejectionReason,
   clientName,
   debtorName,
+  abn,
+  acn,
+  registrationNumber,
   requestedAmount,
   approvedAmount,
+  status,
+  serviceManagerNumber,
 }) {
   const pdfBuffer = await new Promise((resolve) => {
+    const date = new Date();
     let pdf = new PDFDocument({
         autoFirstPage: false,
         bufferPages: true,
@@ -45,9 +47,19 @@ async function generateDecisionLetter({
     /*Top Border Ends*/
     /*Header with Logo Starts*/
     pdf.rect(0, 31.2, 595.28, 69).fillOpacity(1).fill('#F4F6F8');
-    pdf.image('./upload/trad-logo.png', 30, 52, { fit: [250, 250] });
+    pdf.image(
+      `${config.server.backendServerUrl}mail-images/trad-logo.png`,
+      30,
+      52,
+      { fit: [250, 250] },
+    );
     pdf.fill('#EF7B10').font('Helvetica-Bold');
-    pdf.text('Date: 08/06/2021', 490, 70, {});
+    pdf.text(
+      `Date: ${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`,
+      490,
+      70,
+      {},
+    );
     /*Header with Logo Ends*/
     /*Page Title with Client Starts*/
     pdf.rect(0, 100.2, 595.28, 62).fillOpacity(1).fill('#003A78');
@@ -58,24 +70,34 @@ async function generateDecisionLetter({
     pdf.text('RES Check', 0, 120, {
       align: 'center',
     });
-    pdf.text('Access Hardware Pty Ltd', {
+    pdf.text(`${clientName}`, {
       align: 'center',
     });
     /*Page Title with Client Ends*/
     /*Debtor Details Starts*/
     pdf.moveDown(1.3);
     pdf.fill('#003A78').font('Helvetica').fontSize(11.25);
-    pdf.text('Debtor Name: EXPRESS GLASS 24 HOUR SERVICE PTYLIMITED', {
+    pdf.text(`Debtor Name: ${debtorName}`, {
       align: 'center',
     });
     pdf.moveDown(0.3);
-    pdf.text('ACN: 074588328', {
-      align: 'center',
-    });
-    pdf.moveDown(0.3);
-    pdf.text('ABN: 13074588328', {
-      align: 'center',
-    });
+    if (registrationNumber) {
+      pdf.text(`Registration Number: ${registrationNumber}`, {
+        align: 'center',
+      });
+    } else {
+      if (acn) {
+        pdf.text(`ACN: ${acn}`, {
+          align: 'center',
+        });
+        pdf.moveDown(0.3);
+      }
+      if (abn) {
+        pdf.text(`ABN: ${abn}`, {
+          align: 'center',
+        });
+      }
+    }
     /*Debtor Details Ends*/
     /*Applied Limit Starts*/
     pdf.rect(0, 235, 595.28, 62).fillOpacity(1).fill('#F4F6F8');
@@ -88,7 +110,7 @@ async function generateDecisionLetter({
     });
     pdf.moveDown(0.5);
     pdf.fill('#003A78').font('Helvetica-Bold').fontSize(19);
-    pdf.text('50,000.00 AUD', {
+    pdf.text(`${requestedAmount} AUD`, {
       align: 'center',
     });
     /*Applied Limit Ends*/
@@ -103,7 +125,7 @@ async function generateDecisionLetter({
     });
     pdf.moveDown(0.5);
     pdf.fill('#003A78').font('Helvetica-Bold').fontSize(19);
-    pdf.text('0.00 AUD', {
+    pdf.text(`${approvedAmount} AUD`, {
       align: 'center',
     });
     /*Applied Limit Ends*/
@@ -114,24 +136,43 @@ async function generateDecisionLetter({
     });
     pdf.moveDown(0.6);
     pdf.fill('#828F9D').font('Helvetica').fontSize(11.25);
-    pdf.text(
-      'After careful analysis, we are unable to provide a recommendation of $50,000 on EXPRESS GLASS 24 HOUR SERVICE PTYLIMITED based on the following adverse information:',
-      {
-        // align: 'center',
-      },
-    );
+    if (status === 'DECLINED') {
+      pdf.text(
+        `After careful analysis, we are unable to provide a recommendation of $${requestedAmount} on ${debtorName} based on the following adverse information:`,
+        {
+          // align: 'center',
+        },
+      );
+    } else if (status === 'APPROVED') {
+      pdf.text(
+        `After careful analysis, we are pleased to provide a recommendation of $${approvedAmount} on ${debtorName}`,
+        {
+          // align: 'center',
+        },
+      );
+    } else if (status === 'PARTIALLY_APPROVED') {
+      pdf.text(
+        `After careful analysis, we are pleased to provide a recommendation of $${approvedAmount} on ${debtorName}`,
+        {
+          // align: 'center',
+        },
+      );
+    }
     pdf.moveDown(0.6);
     pdf.fill('#FE5050').font('Helvetica').fontSize(11.25);
-    pdf.text(
-      'The director AdrianGrocott is currently involved in a failed business that was wound up by creditors. CAMPERDOWN BOWLING & RECREATION CLUB LTD (ACN: 000 248 215) This company was wound up by creditors in 2018',
-      {
+    if (status === 'DECLINED' && rejectionReason) {
+      pdf.text(rejectionReason, {
         // align: 'center',
-      },
-    );
+      });
+    } else if (status === 'PARTIALLY_APPROVED' && approvalStatus) {
+      pdf.text(approvalStatus, {
+        // align: 'center',
+      });
+    }
     pdf.moveDown(0.6);
     pdf.fill('#828F9D').font('Helvetica').fontSize(11.25);
     pdf.text(
-      'Our sources include ASIC, illion, Equifax and the TCR Internal Database.',
+      'Our sources include ASIC, illion and the TCR Internal Database.',
       {
         // align: 'center',
       },
@@ -145,12 +186,28 @@ async function generateDecisionLetter({
     });
     pdf.moveDown(0.6);
     pdf.fill('#828F9D').font('Helvetica').fontSize(11.25);
-    pdf.text(
-      'We highly recommend you cease trading with this debtor immediately. TCR can review this debtor at your request once further information can be provided. This debtor has been added to our database for monitoring purposes and we will inform you of any updates we receive. Please contact your Service Manager on 03 9842 0986 to discuss further.',
-      {
-        // align: 'center',
-      },
-    );
+    if (status === 'DECLINED') {
+      pdf.text(
+        `We highly recommend you cease trading with this debtor immediately. TCR can review this
+debtor at your request once further information can be provided. This debtor has been added
+to our database for monitoring purposes and we will inform you of any updates we receive.
+Please contact your Service Manager${
+          serviceManagerNumber ? ' on ' + serviceManagerNumber : ''
+        } to discuss further.`,
+        {
+          // align: 'center',
+        },
+      );
+    } else if (status === 'PARTIALLY_APPROVED' || status === 'APPROVED') {
+      pdf.text(
+        `The above opinion will be expired after 12 months. A review of your trading history will be required to support your credit limit. This debtor has been added to our database for monitoring purposes and we will inform you of any updates we receive. Please contact your Service Manager${
+          serviceManagerNumber ? ' on ' + serviceManagerNumber : ''
+        } for further information`,
+        {
+          // align: 'center',
+        },
+      );
+    }
     /*Conditions of Opinion Ends*/
     /*Licence Detail Starts*/
     pdf.moveDown(2);
@@ -165,17 +222,32 @@ async function generateDecisionLetter({
     // table.plugins[1].x = 0
     //   pdf.moveDown(3);
     pdf.fill('#FFFFFF').font('Helvetica').fontSize(12.75);
-    pdf.image('./upload/phone-icon.png', 233, 760, { fit: [18, 18] });
+    pdf.image(
+      `${config.server.backendServerUrl}mail-images/phone-icon.png`,
+      233,
+      760,
+      { fit: [18, 18] },
+    );
     pdf.text('(03) 9842 0986', 0, 762, {
       align: 'center',
     });
     pdf.moveDown(0.4);
-    pdf.image('./upload/message-icon.png', 178, 778, { fit: [17, 17] });
+    pdf.image(
+      `${config.server.backendServerUrl}mail-images/message-icon.png`,
+      178,
+      778,
+      { fit: [17, 17] },
+    );
     pdf.text('creditlimits@tradecreditrisk.com.au', {
       align: 'center',
     });
     pdf.moveDown(0.4);
-    pdf.image('./upload/location-icon.png', 108, 798, { fit: [17, 17] });
+    pdf.image(
+      `${config.server.backendServerUrl}mail-images/location-icon.png`,
+      108,
+      798,
+      { fit: [17, 17] },
+    );
     pdf.text('Suite 11, 857 Doncaster Road Doncaster East, Victoria 3109', {
       align: 'center',
     });
@@ -392,10 +464,10 @@ async function generateDecisionLetter({
     pdf.on('end', async () => {
       let pdfData = Buffer.concat(buffers);
       resolve(pdfData);
-      fs.writeFile('abc.pdf', pdfData, (err) => {
-        if (err) throw err;
-        console.log('The file has been saved!');
-      });
+      // fs.writeFile('abc.pdf', pdfData, (err) => {
+      //   if (err) throw err;
+      //   console.log('The file has been saved!');
+      // });
     });
     pdf.end();
   });
@@ -403,6 +475,4 @@ async function generateDecisionLetter({
   return await pdfBuffer;
 }
 
-generateDecisionLetter({});
-
-module.exports = {};
+module.exports = { generateDecisionLetter };

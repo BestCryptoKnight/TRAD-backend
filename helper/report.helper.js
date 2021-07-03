@@ -540,11 +540,10 @@ const getLimitListReport = async ({
             ? limit.debtorId[0]['address']['country']['name']
             : '';
       }
-      if (limit.debtorId && limit.debtorId[0] && limit.debtorId[0].entityName) {
-        limit.debtorId = limit.debtorId[0]['entityName']
+      limit.debtorId =
+        limit.debtorId && limit.debtorId[0] && limit.debtorId[0]['entityName']
           ? limit.debtorId[0]['entityName']
           : '';
-      }
       if (
         limit.activeApplicationId &&
         limit.activeApplicationId[0] &&
@@ -802,7 +801,7 @@ const getPendingApplicationReport = async ({
           ? formatString(application.debtorId[0]['entityType'])
           : '';
       }
-      if (
+      /*if (
         application.debtorId &&
         application.debtorId[0] &&
         application.debtorId[0].entityName
@@ -810,7 +809,14 @@ const getPendingApplicationReport = async ({
         application.debtorId = application.debtorId[0]['entityName']
           ? application.debtorId[0]['entityName']
           : '';
-      }
+      }*/
+
+      application.debtorId =
+        application.debtorId &&
+        application.debtorId[0] &&
+        application.debtorId[0].entityName
+          ? application.debtorId[0]['entityName']
+          : '';
       if (application.status) {
         application.status = formatString(application.status);
       }

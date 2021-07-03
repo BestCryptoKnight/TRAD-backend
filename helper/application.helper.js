@@ -11,6 +11,7 @@ const DebtorDirector = mongoose.model('debtor-director');
 const ClientDebtor = mongoose.model('client-debtor');
 const Note = mongoose.model('note');
 const User = mongoose.model('user');
+const ClientUser = mongoose.model('client-user');
 
 /*
  * Local Imports
@@ -37,7 +38,8 @@ const { createTask } = require('./task.helper');
 const { addNotification } = require('./notification.helper');
 const { sendNotification } = require('./socket.helper');
 const { formatString } = require('./overdue.helper');
-const { getRESChecks } = require('./dashboard.helper');
+const { generateDecisionLetter } = require('./pdf-generator.helper');
+const { sendMail } = require('./mailer.helper');
 
 //TODO add filter for expiry-date + credit-limit
 const getApplicationList = async ({
@@ -805,7 +807,7 @@ const partnerDetailsValidation = ({
     let response = false;
     switch (entityType) {
       case 'PROPRIETARY_LIMITED':
-      case 'LIMITED_COMPANY':
+      case 'LIMITED':
         response = individualCount >= 1 && companyCount === 0;
         break;
       case 'PARTNERSHIP':
@@ -879,7 +881,7 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
           expiryDate: { $gt: new Date() },
         })
           .select(
-            'clientId product policyPeriod excess discretionaryLimit inceptionDate expiryDate',
+            'clientId product noOfResChecks policyPeriod excess discretionaryLimit inceptionDate expiryDate',
           )
           .lean(),
         Policy.findOne({
@@ -892,7 +894,7 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
           expiryDate: { $gt: new Date() },
         })
           .select(
-            'clientId product policyPeriod excess discretionaryLimit inceptionDate expiryDate',
+            'clientId product noOfResChecks policyPeriod excess discretionaryLimit inceptionDate expiryDate',
           )
           .lean(),
       ]);
@@ -920,6 +922,7 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
             : ciPolicy && ciPolicy.noOfResChecks
             ? ciPolicy.noOfResChecks
             : 0;
+        console.log(noOfRESCheckCount, 'noOfRESCheckCount');
         const count = await Application.countDocuments({
           clientId: application.clientId._id,
           status: {
@@ -930,9 +933,10 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
             $lte: new Date(endDate),
           },
         }).exec();
+        console.log('count', count);
         if (count > noOfRESCheckCount) {
           continueWithAutomation = false;
-          blockers.push('Client has used all RESchecks');
+          blockers.push('Client has used all RES checks');
         }
       }
       if (continueWithAutomation) {
@@ -1269,6 +1273,81 @@ const sendNotificationsToUser = async ({
   }
 };
 
+const sendDecisionLetter = async ({
+  application,
+  reason,
+  status,
+  approvedAmount,
+}) => {
+  try {
+    const [client, debtor] = await Promise.all([
+      Client.findOne({ _id: application.clientId })
+        .populate({
+          path: 'serviceManagerId',
+          select: 'name email contactNumber',
+        })
+        .lean(),
+      Debtor.findOne({ _id: application.debtorId })
+        .select('entityName registrationNumber abn acn address')
+        .lean(),
+    ]);
+    const response = {
+      status: status,
+      clientName: client && client.name ? client.name : '',
+      debtorName: debtor && debtor.entityName ? debtor.entityName : '',
+      serviceManagerNumber:
+        client &&
+        client.serviceManagerId &&
+        client.serviceManagerId.contactNumber
+          ? client.serviceManagerId.contactNumber
+          : '',
+      requestedAmount: parseInt(application.creditLimit).toFixed(2),
+      approvedAmount: approvedAmount.toFixed(2),
+    };
+    const mailObj = {
+      toAddress: [],
+      subject: `Decision Letter for ${response.debtorName}`,
+      text: {},
+      mailFor: 'decisionLetter',
+      attachments: [],
+    };
+    if (debtor && debtor.address && debtor.address.country) {
+      if (
+        debtor.address.country.code === 'AUS' ||
+        debtor.address.country.code === 'NZL'
+      ) {
+        response.abn = debtor.abn ? debtor.abn : '';
+        response.acn = debtor.acn ? debtor.acn : '';
+      } else {
+        response.registrationNumber = debtor.registrationNumber
+          ? debtor.registrationNumber
+          : '';
+      }
+    }
+    if (status === 'DECLINED') {
+      response.rejectionReason = reason;
+    } else {
+      // response.a
+    }
+    const bufferData = await generateDecisionLetter(response);
+    mailObj.attachments.push({
+      content: bufferData,
+      filename: `decisionLetter.pdf`,
+      type: 'application/pdf',
+      disposition: 'attachment',
+    });
+    const clientUsers = await ClientUser.find({ clientId: client._id })
+      .select('email')
+      .lean();
+    mailObj.toAddress = clientUsers.map((i) => i.email);
+    console.log(mailObj, 'mailObj');
+    await sendMail(mailObj);
+  } catch (e) {
+    Logger.log.error('Error occurred in mail decision letter');
+    Logger.log.error(e.message || e);
+  }
+};
+
 module.exports = {
   getApplicationList,
   storeCompanyDetails,
@@ -1279,4 +1358,5 @@ module.exports = {
   generateNewApplication,
   applicationDrawerDetails,
   sendNotificationsToUser,
+  sendDecisionLetter,
 };
