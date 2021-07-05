@@ -1090,9 +1090,9 @@ const generateNewApplication = async ({
         { isDeleted: false },
         { $inc: { 'entityCount.application': 1 } },
       );
-      const application = await Application.create(applicationDetails);
+      const applicationData = await Application.create(applicationDetails);
       checkForAutomation({
-        applicationId: application._id,
+        applicationId: applicationData._id,
         userId: createdById,
         userType: createdByType,
       });
@@ -1100,7 +1100,7 @@ const generateNewApplication = async ({
     }
     return application;
   } catch (e) {
-    Logger.log.error('Error occurred in generate application', e.message || e);
+    Logger.log.error('Error occurred in generate application', e);
   }
 };
 

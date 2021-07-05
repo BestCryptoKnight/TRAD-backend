@@ -343,7 +343,7 @@ router.put('/list', async function (req, res) {
       });
     }
     const response = await updateList({
-      isForRisk: true,
+      isForRisk: false,
       requestBody: req.body,
       clientId: req.user.clientId,
     });
