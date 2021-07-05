@@ -336,7 +336,7 @@ const getDebtorCreditLimit = async ({
     if (requestedQuery.search) {
       aggregationQuery.push({
         $match: {
-          'debtorId.entityName': {
+          'clientId.name': {
             $regex: requestedQuery.search,
             $options: 'i',
           },

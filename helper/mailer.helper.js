@@ -21,29 +21,34 @@ const transporter = nodemailer.createTransport({
     pass: config.mailer.sendgridApiKey,
   },
 });
-const sendMail = ({ toAddress, subject, text, html, mailFor }) => {
+const sendMail = ({ toAddress, subject, text, html, mailFor, attachments }) => {
   return new Promise((resolve, reject) => {
     let toAddressStr = '';
     toAddress.forEach((toAddr) => {
       toAddressStr += toAddr + ', ';
     });
     toAddressStr.substr(0, toAddressStr.lastIndexOf(','));
+    const mailBody = {
+      from: config.mailer.fromAddress,
+      to: toAddressStr,
+      subject: subject,
+    };
     switch (mailFor) {
       case 'newAdminUser':
-        html = newAdminTemplate({
+        mailBody.html = newAdminTemplate({
           name: text.name,
           setPasswordLink: text.setPasswordLink,
         });
         break;
       case 'adminForgotPassword':
-        html = forgotPasswordAdminTemplate({
+        mailBody.html = forgotPasswordAdminTemplate({
           name: text.name,
           otp: text.otp,
           expireTime: text.expireTime,
         });
         break;
       case 'newClientUser':
-        html = newClientTemplate({
+        mailBody.html = newClientTemplate({
           name: text.name,
           setPasswordLink: text.setPasswordLink,
           riskAnalystName: text.riskAnalystName,
@@ -60,7 +65,7 @@ const sendMail = ({ toAddress, subject, text, html, mailFor }) => {
         //     resetPasswordLink: text.resetPasswordLink,
         //     forgotPasswordLink: text.forgotPasswordLink,
         // });
-        html = forgotPasswordClientTemplate({
+        mailBody.html = forgotPasswordClientTemplate({
           name: text.name,
           otp: text.otp,
           expireTime: text.expireTime,
@@ -79,12 +84,10 @@ const sendMail = ({ toAddress, subject, text, html, mailFor }) => {
         //     updatedBy: text.updatedBy,
         // });
         break;
+      case 'decisionLetter':
+        mailBody.attachments = attachments;
+        break;
     }
-    const mailBody = {
-      from: config.mailer.fromAddress,
-      to: toAddressStr,
-      subject: subject,
-    };
     /*if (html) {
       mailBody.html = html;
     } else {
