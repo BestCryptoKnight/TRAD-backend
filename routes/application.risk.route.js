@@ -1224,12 +1224,12 @@ router.put('/:applicationId', async function (req, res) {
         application,
       });
       //TODO uncomment to send decision letter
-      // sendDecisionLetter({
-      //   reason: req.body.description || '',
-      //   status,
-      //   application,
-      //   approvedAmount,
-      // });
+      /*sendDecisionLetter({
+        reason: req.body.description || '',
+        status,
+        application,
+        approvedAmount,
+      });*/
     }
     res.status(200).send({
       status: 'SUCCESS',

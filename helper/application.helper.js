@@ -1307,7 +1307,7 @@ const sendDecisionLetter = async ({
     const mailObj = {
       toAddress: [],
       subject: `Decision Letter for ${response.debtorName}`,
-      text: {},
+      text: `Decision Letter for ${response.debtorName}`,
       mailFor: 'decisionLetter',
       attachments: [],
     };
@@ -1327,7 +1327,7 @@ const sendDecisionLetter = async ({
     if (status === 'DECLINED') {
       response.rejectionReason = reason;
     } else {
-      // response.a
+      response.approvalStatus = reason;
     }
     const bufferData = await generateDecisionLetter(response);
     mailObj.attachments.push({
@@ -1344,7 +1344,7 @@ const sendDecisionLetter = async ({
     await sendMail(mailObj);
   } catch (e) {
     Logger.log.error('Error occurred in mail decision letter');
-    Logger.log.error(e.message || e);
+    Logger.log.error(e);
   }
 };
 

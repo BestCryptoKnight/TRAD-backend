@@ -1,8 +1,10 @@
 const PDFDocument = require('pdfkit');
+const fs = require('fs');
 let PdfTable = require('voilab-pdf-table');
 const config = require('../config');
+const axios = require('axios');
 
-async function generateDecisionLetter({
+const generateDecisionLetter = async ({
   approvalStatus,
   rejectionReason,
   clientName,
@@ -14,9 +16,10 @@ async function generateDecisionLetter({
   approvedAmount,
   status,
   serviceManagerNumber,
-}) {
-  const pdfBuffer = await new Promise((resolve) => {
+}) => {
+  const pdfBuffer = await new Promise(async (resolve) => {
     const date = new Date();
+    let buffer;
     let pdf = new PDFDocument({
         autoFirstPage: false,
         bufferPages: true,
@@ -47,12 +50,11 @@ async function generateDecisionLetter({
     /*Top Border Ends*/
     /*Header with Logo Starts*/
     pdf.rect(0, 31.2, 595.28, 69).fillOpacity(1).fill('#F4F6F8');
-    pdf.image(
+    buffer = await getBase64(
       `${config.server.backendServerUrl}mail-images/trad-logo.png`,
-      30,
-      52,
-      { fit: [250, 250] },
     );
+    // console.log('buffer 1', buffer);
+    pdf.image(buffer, 30, 52, { fit: [250, 250] });
     pdf.fill('#EF7B10').font('Helvetica-Bold');
     pdf.text(
       `Date: ${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`,
@@ -222,32 +224,29 @@ Please contact your Service Manager${
     // table.plugins[1].x = 0
     //   pdf.moveDown(3);
     pdf.fill('#FFFFFF').font('Helvetica').fontSize(12.75);
-    pdf.image(
+    buffer = await getBase64(
       `${config.server.backendServerUrl}mail-images/phone-icon.png`,
-      233,
-      760,
-      { fit: [18, 18] },
     );
+    // console.log('buffer 2', buffer);
+    pdf.image(buffer, 233, 760, { fit: [18, 18] });
     pdf.text('(03) 9842 0986', 0, 762, {
       align: 'center',
     });
     pdf.moveDown(0.4);
-    pdf.image(
+    buffer = await getBase64(
       `${config.server.backendServerUrl}mail-images/message-icon.png`,
-      178,
-      778,
-      { fit: [17, 17] },
     );
+    // console.log('buffer 3', buffer);
+    pdf.image(buffer, 178, 778, { fit: [17, 17] });
     pdf.text('creditlimits@tradecreditrisk.com.au', {
       align: 'center',
     });
     pdf.moveDown(0.4);
-    pdf.image(
+    buffer = await getBase64(
       `${config.server.backendServerUrl}mail-images/location-icon.png`,
-      108,
-      798,
-      { fit: [17, 17] },
     );
+    // console.log('buffer 4', buffer);
+    pdf.image(buffer, 108, 798, { fit: [17, 17] });
     pdf.text('Suite 11, 857 Doncaster Road Doncaster East, Victoria 3109', {
       align: 'center',
     });
@@ -464,15 +463,24 @@ Please contact your Service Manager${
     pdf.on('end', async () => {
       let pdfData = Buffer.concat(buffers);
       resolve(pdfData);
-      // fs.writeFile('abc.pdf', pdfData, (err) => {
-      //   if (err) throw err;
-      //   console.log('The file has been saved!');
-      // });
+      fs.writeFile('abc.pdf', pdfData, (err) => {
+        if (err) throw err;
+        console.log('The file has been saved!');
+      });
     });
     pdf.end();
   });
-
   return await pdfBuffer;
-}
+};
+
+const getBase64 = async (url) => {
+  try {
+    const image = await axios.get(url, { responseType: 'arraybuffer' });
+    let raw = Buffer.from(image.data).toString('base64');
+    return 'data:' + image.headers['content-type'] + ';base64,' + raw;
+  } catch (e) {
+    console.log('Error occurred in get base 64', e);
+  }
+};
 
 module.exports = { generateDecisionLetter };

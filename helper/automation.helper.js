@@ -1204,8 +1204,6 @@ const checkPriceRangeGuidelines = async ({
           dynamicDelinquencyScore: reportData.DynamicDelinquencyScore,
           value: guidelines.paymentRiskLevel.value,
         });
-      } else {
-        response.isBlocker = true;
       }
       if (response.isBlocker) {
         blockers.push(
@@ -1219,8 +1217,6 @@ const checkPriceRangeGuidelines = async ({
           dynamicDelinquencyScore: reportData.DynamicDelinquencyScore,
           value: guidelines.delinquencyScore.value,
         });
-      } else {
-        response.isBlocker = true;
       }
       if (response.isBlocker) {
         blockers.push('The D&B Dynamic Delinquency Score is lower than 386');
