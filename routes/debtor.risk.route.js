@@ -21,7 +21,7 @@ const {
   getClientDebtorDetails,
   convertToCSV,
   getDebtorCreditLimit,
-  formatCreditLimitList,
+  formatCSVList,
 } = require('./../helper/client-debtor.helper');
 const {
   getStakeholderDetails,
@@ -34,7 +34,10 @@ const {
 } = require('./../helper/abr.helper');
 const { generateNewApplication } = require('./../helper/application.helper');
 const { addAuditLog, getEntityName } = require('./../helper/audit-log.helper');
-const { getDebtorFullAddress } = require('./../helper/debtor.helper');
+const {
+  getDebtorFullAddress,
+  getDebtorListWithDetails,
+} = require('./../helper/debtor.helper');
 
 /**
  * Get Column Names
@@ -150,137 +153,92 @@ router.get('/', async function (req, res) {
     const debtorColumn = req.user.manageColumns.find(
       (i) => i.moduleName === 'debtor',
     );
-    req.query.sortBy = req.query.sortBy || '_id';
-    req.query.sortOrder = req.query.sortOrder || 'desc';
-    let queryFilter = {
-      // isActive: true,
-    };
+    let hasFullAccess = true;
     if (req.accessTypes && req.accessTypes.indexOf('full-access') === -1) {
-      const clients = await Client.find({
-        isDeleted: false,
-        $or: [
-          { riskAnalystId: req.user._id },
-          { serviceManagerId: req.user._id },
-        ],
-      })
-        .select({ _id: 1 })
-        .lean();
-      const clientIds = clients.map((i) => i._id);
-      const clientDebtor = await ClientDebtor.find({
-        clientId: { $in: clientIds },
-      })
-        .select('_id')
-        .lean();
-      const debtorIds = clientDebtor.map((i) => i._id);
-      queryFilter = {
-        // isDeleted: false,
-        _id: { $in: debtorIds },
-      };
+      hasFullAccess = false;
     }
-
-    let sortingOptions = {};
-    if (req.query.entityType) {
-      queryFilter.entityType = req.query.entityType;
-    }
-    if (req.query.sortBy && req.query.sortOrder) {
-      const addressFields = [
-        'fullAddress',
-        'property',
-        'unitNumber',
-        'streetNumber',
-        'streetName',
-        'streetType',
-        'suburb',
-        'state',
-        'country',
-        'postCode',
-      ];
-      if (addressFields.includes(req.query.sortBy)) {
-        req.query.sortBy = 'address.' + req.query.sortBy;
-      }
-      sortingOptions[req.query.sortBy] =
-        req.query.sortOrder === 'desc' ? -1 : 1;
-    }
-    if (req.query.search)
-      queryFilter.entityName = { $regex: req.query.search, $options: 'i' };
-    let option = {
-      page: parseInt(req.query.page) || 1,
-      limit: parseInt(req.query.limit) || 5,
-    };
-    option.select =
-      debtorColumn.columns.toString().replace(/,/g, ' ') + ' address';
-    option.sort = sortingOptions;
-    option.lean = true;
-    let responseObj = await Debtor.paginate(queryFilter, option);
-    responseObj.headers = [];
-    for (let i = 0; i < module.manageColumns.length; i++) {
-      if (debtorColumn.columns.includes(module.manageColumns[i].name)) {
-        responseObj.headers.push(module.manageColumns[i]);
-      }
-    }
-    responseObj.docs.forEach((debtor) => {
-      if (debtorColumn.columns.includes('property')) {
-        debtor.property = debtor.address.property;
-      }
-      if (debtorColumn.columns.includes('unitNumber')) {
-        debtor.unitNumber = debtor.address.unitNumber;
-      }
-      if (debtorColumn.columns.includes('streetNumber')) {
-        debtor.streetNumber = debtor.address.streetNumber;
-      }
-      if (debtorColumn.columns.includes('streetName')) {
-        debtor.streetName = debtor.address.streetName;
-      }
-      if (debtorColumn.columns.includes('streetType')) {
-        debtor.streetType = debtor.address.streetType;
-      }
-      if (debtorColumn.columns.includes('suburb')) {
-        debtor.suburb = debtor.address.suburb;
-      }
-      if (debtorColumn.columns.includes('state')) {
-        const state =
-          debtor.address.country.code === 'AUS'
-            ? StaticData.australianStates.find((i) => {
-                if (i._id === debtor.address.state) return i;
-              })
-            : debtor.address.country.code === 'NZL'
-            ? StaticData.newZealandStates.find((i) => {
-                if (i._id === debtor.address.state) return i;
-              })
-            : { name: debtor.address.state };
-        debtor.state = state && state.name ? state.name : debtor.address.state;
-      }
-      if (debtorColumn.columns.includes('country')) {
-        debtor.country = debtor.address.country.name;
-      }
-      if (debtorColumn.columns.includes('postCode')) {
-        debtor.postCode = debtor.address.postCode;
-      }
-      if (debtorColumn.columns.includes('fullAddress')) {
-        debtor.fullAddress = getDebtorFullAddress({
-          address: debtor.address,
-          country: debtor.address.country,
-        });
-      }
-      if (debtor.entityType) {
-        debtor.entityType = debtor.entityType
-          .replace(/_/g, ' ')
-          .replace(/\w\S*/g, function (txt) {
-            return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
-          });
-      }
-      if (debtor.hasOwnProperty('isActive')) {
-        debtor.isActive = debtor.isActive ? 'Yes' : 'No';
-      }
-      delete debtor.address;
-      delete debtor.id;
+    const response = await getDebtorListWithDetails({
+      isForDownload: false,
+      requestedQuery: req.query,
+      userId: req.user._id,
+      debtorColumn: debtorColumn.columns,
+      hasFullAccess: hasFullAccess,
+      moduleColumn: module.manageColumns,
     });
     res.status(200).send({
       status: 'SUCCESS',
-      data: responseObj,
+      data: response,
     });
   } catch (e) {
     Logger.log.error('Error occurred in get debtor list ', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Download Debtor List
+ */
+router.get('/download', async function (req, res) {
+  try {
+    const module = StaticFile.modules.find((i) => i.name === 'debtor');
+    const debtorColumn = [
+      'debtorCode',
+      'entityName',
+      'abn',
+      'acn',
+      'registrationNumber',
+      'tradingName',
+      'entityType',
+      'fullAddress',
+      'property',
+      'unitNumber',
+      'streetNumber',
+      'streetName',
+      'streetType',
+      'suburb',
+      'state',
+      'country',
+      'postCode',
+      'contactNumber',
+      'riskRating',
+      'reviewDate',
+      'isActive',
+      'createdAt',
+      'updatedAt',
+    ];
+    let hasFullAccess = true;
+    if (req.accessTypes && req.accessTypes.indexOf('full-access') === -1) {
+      hasFullAccess = false;
+    }
+    const response = await getDebtorListWithDetails({
+      isForDownload: true,
+      requestedQuery: req.query,
+      userId: req.user._id,
+      debtorColumn: debtorColumn,
+      hasFullAccess: hasFullAccess,
+      moduleColumn: module.manageColumns,
+    });
+    if (response && response.docs.length !== 0) {
+      const finalArray = await formatCSVList({
+        moduleColumn: debtorColumn,
+        response: response.docs,
+      });
+      const csvResponse = await convertToCSV(finalArray);
+      const fileName = 'debtor-list-' + new Date().getTime() + '.csv';
+      res.header('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename=' + fileName);
+      res.send(csvResponse);
+    } else {
+      res.status(200).send({
+        status: 'SUCCESS',
+        message: 'No data found for download file',
+      });
+    }
+  } catch (e) {
+    Logger.log.error('Error occurred in download in csv', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -814,9 +772,9 @@ router.get('/download/:debtorId', async function (req, res) {
       debtorId: req.params.debtorId,
     });
     if (response && response.docs.length !== 0) {
-      const finalArray = await formatCreditLimitList({
-        debtorColumn,
-        creditLimits: response.docs,
+      const finalArray = await formatCSVList({
+        moduleColumn: debtorColumn,
+        response: response.docs,
       });
       const csvResponse = await convertToCSV(finalArray);
       const fileName = new Date().getTime() + '.csv';

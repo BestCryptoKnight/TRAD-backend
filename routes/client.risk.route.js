@@ -26,10 +26,11 @@ const {
   getClientDebtorDetails,
   convertToCSV,
   getClientCreditLimit,
-  formatCreditLimitList,
+  formatCSVList,
 } = require('./../helper/client-debtor.helper');
 const { getDebtorFullAddress } = require('./../helper/debtor.helper');
 const { generateNewApplication } = require('./../helper/application.helper');
+const { getClientListWithDetails } = require('./../helper/client.helper');
 
 /**
  * Search Client from RSS
@@ -600,6 +601,74 @@ router.get('/credit-limit/:clientId', async function (req, res) {
 });
 
 /**
+ * Download client list in CSV
+ */
+router.get('/download', async function (req, res) {
+  try {
+    const module = StaticFile.modules.find((i) => i.name === 'client');
+    const clientColumn = [
+      'clientCode',
+      'name',
+      'contactNumber',
+      'riskAnalystId',
+      'serviceManagerId',
+      'insurerId',
+      'fullAddress',
+      'addressLine',
+      'city',
+      'state',
+      'country',
+      'zipCode',
+      'website',
+      'sector',
+      'abn',
+      'acn',
+      'salesPerson',
+      'referredBy',
+      'inceptionDate',
+      'expiryDate',
+      'isAutoApproveAllowed',
+      'createdAt',
+      'updatedAt',
+    ];
+    let hasFullAccess = true;
+    if (req.accessTypes && req.accessTypes.indexOf('full-access') === -1) {
+      hasFullAccess = false;
+    }
+    const response = await getClientListWithDetails({
+      requestedQuery: req.query,
+      userId: req.user._id,
+      moduleColumn: module.manageColumns,
+      isForDownload: true,
+      hasFullAccess: hasFullAccess,
+      clientColumn: clientColumn,
+    });
+    if (response && response.docs.length !== 0) {
+      const finalArray = await formatCSVList({
+        moduleColumn: clientColumn,
+        response: response.docs,
+      });
+      const csvResponse = await convertToCSV(finalArray);
+      const fileName = 'client-list-' + new Date().getTime() + '.csv';
+      res.header('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename=' + fileName);
+      res.send(csvResponse);
+    } else {
+      res.status(200).send({
+        status: 'SUCCESS',
+        message: 'No data found for download file',
+      });
+    }
+  } catch (e) {
+    Logger.log.error('Error occurred in download in csv', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
  * Download credit-limit in CSV
  */
 router.get('/download/:clientId', async function (req, res) {
@@ -635,9 +704,9 @@ router.get('/download/:clientId', async function (req, res) {
       moduleColumn: module.manageColumns,
     });
     if (response && response.docs.length !== 0) {
-      const finalArray = await formatCreditLimitList({
-        debtorColumn,
-        creditLimits: response.docs,
+      const finalArray = await formatCSVList({
+        moduleColumn: debtorColumn,
+        response: response.docs,
       });
       const csvResponse = await convertToCSV(finalArray);
       const fileName = new Date().getTime() + '.csv';
@@ -668,229 +737,21 @@ router.get('/', async function (req, res) {
     const clientColumn = req.user.manageColumns.find(
       (i) => i.moduleName === 'client',
     );
-    let queryFilter = { isDeleted: false };
+    let hasFullAccess = true;
     if (req.accessTypes && req.accessTypes.indexOf('full-access') === -1) {
-      queryFilter = {
-        isDeleted: false,
-        $or: [
-          { riskAnalystId: req.user._id },
-          { serviceManagerId: req.user._id },
-        ],
-      };
+      hasFullAccess = false;
     }
-    req.query.sortBy = req.query.sortBy || '_id';
-    req.query.sortOrder = req.query.sortOrder || 'desc';
-    req.query.limit = req.query.limit || 5;
-    req.query.page = req.query.page || 1;
-    if (req.query.sector) {
-      queryFilter.sector = req.query.sector;
-    }
-    if (req.query.inceptionStartDate && req.query.inceptionEndDate) {
-      queryFilter.inceptionDate = {
-        $gte: req.query.inceptionStartDate,
-        $lt: req.query.inceptionEndDate,
-      };
-    }
-    if (req.query.expiryStartDate && req.query.expiryEndDate) {
-      queryFilter.expiryDate = {
-        $gte: req.query.expiryStartDate,
-        $lt: req.query.expiryEndDate,
-      };
-    }
-    let sortingOptions = {};
-
-    let aggregationQuery = [];
-    if (
-      req.query.serviceManagerId ||
-      clientColumn.columns.includes('serviceManagerId')
-    ) {
-      aggregationQuery.push({
-        $lookup: {
-          from: 'users',
-          localField: 'serviceManagerId',
-          foreignField: '_id',
-          as: 'serviceManagerId',
-        },
-      });
-    }
-    if (req.query.serviceManagerId) {
-      aggregationQuery.push({
-        $match: {
-          'serviceManagerId._id': mongoose.Types.ObjectId(
-            req.query.serviceManagerId,
-          ),
-        },
-      });
-    }
-    if (
-      req.query.riskAnalystId ||
-      clientColumn.columns.includes('riskAnalystId')
-    ) {
-      aggregationQuery.push({
-        $lookup: {
-          from: 'users',
-          localField: 'riskAnalystId',
-          foreignField: '_id',
-          as: 'riskAnalystId',
-        },
-      });
-    }
-    if (req.query.riskAnalystId) {
-      aggregationQuery.push({
-        $match: {
-          'riskAnalystId._id': mongoose.Types.ObjectId(req.query.riskAnalystId),
-        },
-      });
-    }
-    if (req.query.insurerId || clientColumn.columns.includes('insurerId')) {
-      aggregationQuery.push({
-        $lookup: {
-          from: 'insurers',
-          localField: 'insurerId',
-          foreignField: '_id',
-          as: 'insurerId',
-        },
-      });
-    }
-    if (req.query.insurerId) {
-      aggregationQuery.push({
-        $match: {
-          'insurerId._id': mongoose.Types.ObjectId(req.query.insurerId),
-        },
-      });
-    }
-    clientColumn.columns.push('address');
-    const fields = clientColumn.columns.map((i) => {
-      if (
-        i === 'serviceManagerId' ||
-        i === 'riskAnalystId' ||
-        i === 'insurerId'
-      ) {
-        i = i + '.name';
-      }
-      return [i, 1];
+    const response = await getClientListWithDetails({
+      requestedQuery: req.query,
+      userId: req.user._id,
+      moduleColumn: module.manageColumns,
+      isForDownload: false,
+      hasFullAccess: hasFullAccess,
+      clientColumn: clientColumn.columns,
     });
-    aggregationQuery.push({
-      $project: fields.reduce((obj, [key, val]) => {
-        obj[key] = val;
-        return obj;
-      }, {}),
-    });
-    if (req.query.sortBy && req.query.sortOrder) {
-      const addressFields = [
-        'fullAddress',
-        'addressLine',
-        'city',
-        'state',
-        'country',
-        'zipCode',
-      ];
-      if (addressFields.includes(req.query.sortBy)) {
-        req.query.sortBy = 'address.' + req.query.sortBy;
-      }
-      sortingOptions[req.query.sortBy] =
-        req.query.sortOrder === 'desc' ? -1 : 1;
-      aggregationQuery.push({ $sort: sortingOptions });
-    }
-    /*aggregationQuery.push({
-      $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
-    });
-    aggregationQuery.push({ $limit: parseInt(req.query.limit) });*/
-    aggregationQuery.push({
-      $facet: {
-        paginatedResult: [
-          {
-            $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
-          },
-          { $limit: parseInt(req.query.limit) },
-        ],
-        totalCount: [
-          {
-            $count: 'count',
-          },
-        ],
-      },
-    });
-    aggregationQuery.unshift({ $match: queryFilter });
-
-    const clients = await Client.aggregate(aggregationQuery).allowDiskUse(true);
-
-    const headers = [];
-    for (let i = 0; i < module.manageColumns.length; i++) {
-      if (clientColumn.columns.includes(module.manageColumns[i].name)) {
-        headers.push(module.manageColumns[i]);
-      }
-    }
-    if (clients && clients.length !== 0) {
-      clients[0].paginatedResult.forEach((user) => {
-        if (
-          clientColumn.columns.includes('riskAnalystId') &&
-          user.riskAnalystId
-        ) {
-          user.riskAnalystId = user.riskAnalystId[0]
-            ? user.riskAnalystId[0].name
-            : '';
-        }
-        if (
-          clientColumn.columns.includes('serviceManagerId') &&
-          user.serviceManagerId
-        ) {
-          user.serviceManagerId = user.serviceManagerId[0]
-            ? user.serviceManagerId[0].name
-            : '';
-        }
-        if (clientColumn.columns.includes('insurerId') && user.insurerId) {
-          user.insurerId = user.insurerId[0] ? user.insurerId[0].name : '';
-        }
-        if (clientColumn.columns.includes('addressLine')) {
-          user.addressLine = user.address.addressLine;
-        }
-        if (clientColumn.columns.includes('city')) {
-          user.city = user.address.city;
-        }
-        if (clientColumn.columns.includes('state')) {
-          const state =
-            user.address.country.toLowerCase() === 'australia'
-              ? StaticData.australianStates.find((i) => {
-                  if (i._id === user.address.state) return i;
-                })
-              : user.address.country.toLowerCase() === 'new zealand'
-              ? StaticData.newZealandStates.find((i) => {
-                  if (i._id === user.address.state) return i;
-                })
-              : { name: user.address.state };
-          user.state = state && state.name ? state.name : user.address.state;
-        }
-        if (clientColumn.columns.includes('country')) {
-          user.country = user.address.country;
-        }
-        if (clientColumn.columns.includes('zipCode')) {
-          user.zipCode = user.address.zipCode;
-        }
-        if (clientColumn.columns.includes('fullAddress')) {
-          user.fullAddress = getDebtorFullAddress({
-            address: user.address,
-            country: user.address.country,
-          });
-        }
-        delete user.address;
-      });
-    }
-
-    const total =
-      clients[0]['totalCount'].length !== 0
-        ? clients[0]['totalCount'][0]['count']
-        : 0;
     res.status(200).send({
       status: 'SUCCESS',
-      data: {
-        docs: clients[0].paginatedResult,
-        headers,
-        total,
-        page: parseInt(req.query.page),
-        limit: parseInt(req.query.limit),
-        pages: Math.ceil(total / parseInt(req.query.limit)),
-      },
+      data: response,
     });
   } catch (e) {
     Logger.log.error('Error occurred in listing clients.', e);

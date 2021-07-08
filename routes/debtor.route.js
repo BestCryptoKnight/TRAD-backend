@@ -19,7 +19,7 @@ const {
   getClientDebtorDetails,
   convertToCSV,
   getClientCreditLimit,
-  formatCreditLimitList,
+  formatCSVList,
 } = require('./../helper/client-debtor.helper');
 const { getDebtorFullAddress } = require('./../helper/debtor.helper');
 const { generateNewApplication } = require('./../helper/application.helper');
@@ -421,9 +421,9 @@ router.get('/download', async function (req, res) {
       moduleColumn: module.manageColumns,
     });
     if (response && response.docs.length !== 0) {
-      const finalArray = await formatCreditLimitList({
-        debtorColumn,
-        creditLimits: response.docs,
+      const finalArray = await formatCSVList({
+        moduleColumn: debtorColumn,
+        response: response.docs,
       });
       const csvResponse = await convertToCSV(finalArray);
       res.header('Content-Type', 'text/csv');

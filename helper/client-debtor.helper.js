@@ -447,13 +447,13 @@ const getDebtorCreditLimit = async ({
   }
 };
 
-const formatCreditLimitList = async ({ creditLimits, debtorColumn }) => {
+const formatCSVList = async ({ response, moduleColumn }) => {
   try {
     const finalArray = [];
     let data = {};
-    creditLimits.forEach((i) => {
+    response.forEach((i) => {
       data = {};
-      debtorColumn.map((key) => {
+      moduleColumn.map((key) => {
         if (
           (key === 'entityName' ||
             key === 'activeApplicationId' ||
@@ -465,6 +465,7 @@ const formatCreditLimitList = async ({ creditLimits, debtorColumn }) => {
         }
         if (
           (key === 'expiryDate' ||
+            key === 'inceptionDate' ||
             key === 'createdAt' ||
             key === 'updatedAt') &&
           i[key]
@@ -498,5 +499,5 @@ module.exports = {
   convertToCSV,
   getClientCreditLimit,
   getDebtorCreditLimit,
-  formatCreditLimitList,
+  formatCSVList,
 };

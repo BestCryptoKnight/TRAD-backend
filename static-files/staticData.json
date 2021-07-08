@@ -2594,19 +2594,19 @@
     },
     {
       "name": "NZCompany",
-      "_id": "PROPRIETARY_LIMITED"
+      "_id": "BUSINESS"
     },
     {
       "name": "ASIC",
-      "_id": "PROPRIETARY_LIMITED"
+      "_id": "BUSINESS"
     },
     {
       "name": "NON_ASIC",
-      "_id": "PROPRIETARY_LIMITED"
+      "_id": "BUSINESS"
     },
     {
       "name": "OverseasCompany",
-      "_id": "PROPRIETARY_LIMITED"
+      "_id": "BUSINESS"
     },
     {
       "name": "Sole_Trader",

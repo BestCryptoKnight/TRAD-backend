@@ -13,42 +13,7 @@ const Organization = mongoose.model('organization');
 const Logger = require('./../services/logger');
 const { addAuditLog } = require('./audit-log.helper');
 const StaticData = require('./../static-files/staticData.json');
-
-const getClientDebtorList = async ({
-  hasFullAccess = false,
-  userId,
-  isForRisk = false,
-}) => {
-  try {
-    let clientIds;
-    if (!isForRisk) {
-      clientIds = [userId];
-    } else {
-      const query = hasFullAccess
-        ? { isDeleted: false }
-        : {
-            isDeleted: false,
-            $or: [{ riskAnalystId: userId }, { serviceManagerId: userId }],
-          };
-      const clients = await Client.find(query).select('_id').lean();
-      clientIds = clients.map((i) => i._id);
-    }
-    const debtors = await ClientDebtor.find({ clientId: { $in: clientIds } })
-      .populate({ path: 'debtorId', select: 'entityName' })
-      .select('_id')
-      .lean();
-    debtors.forEach((i) => {
-      i.name = i.debtorId.entityName;
-      delete i.debtorId;
-    });
-    return debtors;
-  } catch (e) {
-    Logger.log.error(
-      'Error occurred in get client-debtor list ',
-      e.message || e,
-    );
-  }
-};
+const { formatString } = require('./overdue.helper');
 
 const getDebtorList = async () => {
   try {
@@ -222,12 +187,14 @@ const getDebtorFullAddress = ({ address, country }) => {
       country = country.name;
     }
     fullAddress =
+      (address.addressLine ? address.addressLine + ', ' : '') +
       (address.property ? address.property + ', ' : '') +
       (address.unitNumber ? address.unitNumber + ', ' : '') +
       (address.streetNumber ? address.streetNumber + ', ' : '') +
       (address.streetName ? address.streetName + ', ' : '') +
       (address.streetType ? address.streetType + ', ' : '') +
       (address.suburb ? address.suburb + ', ' : '') +
+      (address.city ? address.city + ', ' : '') +
       (address.state ? address.state + ', ' : '') +
       (address.postCode ? address.postCode + ', ' : '') +
       country;
@@ -277,10 +244,200 @@ const getStreetTypeName = (streetType) => {
   }
 };
 
+const getDebtorListWithDetails = async ({
+  debtorColumn,
+  requestedQuery,
+  hasFullAccess = false,
+  userId,
+  moduleColumn,
+  isForDownload = false,
+}) => {
+  try {
+    let queryFilter = {
+      // isActive: true,
+    };
+    const addressFields = [
+      'fullAddress',
+      'property',
+      'unitNumber',
+      'streetNumber',
+      'streetName',
+      'streetType',
+      'suburb',
+      'state',
+      'country',
+      'postCode',
+    ];
+    const filterArray = [];
+    const aggregationQuery = [];
+
+    requestedQuery.sortBy = requestedQuery.sortBy || '_id';
+    requestedQuery.sortOrder = requestedQuery.sortOrder || 'desc';
+    if (!hasFullAccess && userId) {
+      const debtors = await Client.find({
+        isDeleted: false,
+        $or: [{ riskAnalystId: userId }, { serviceManagerId: userId }],
+      })
+        .select({ _id: 1 })
+        .lean();
+      const clientIds = debtors.map((i) => i._id);
+      const clientDebtor = await ClientDebtor.find({
+        clientId: { $in: clientIds },
+      })
+        .select('_id')
+        .lean();
+      const debtorIds = clientDebtor.map((i) => i._id);
+      queryFilter = {
+        _id: { $in: debtorIds },
+      };
+    }
+    if (requestedQuery.entityType) {
+      queryFilter.entityType = requestedQuery.entityType;
+      if (isForDownload) {
+        filterArray.push({
+          label: 'Entity Type',
+          value: formatString(requestedQuery.entityType),
+          type: 'string',
+        });
+      }
+    }
+    if (requestedQuery.search) {
+      queryFilter.entityName = { $regex: requestedQuery.search, $options: 'i' };
+    }
+    const fields = debtorColumn.map((i) => {
+      if (addressFields.includes(i)) {
+        i = 'address.' + i;
+      }
+      return [i, 1];
+    });
+    aggregationQuery.push({
+      $project: fields.reduce((obj, [key, val]) => {
+        obj[key] = val;
+        return obj;
+      }, {}),
+    });
+
+    if (requestedQuery.sortBy && requestedQuery.sortOrder) {
+      let sortingOptions = {};
+      if (addressFields.includes(requestedQuery.sortBy)) {
+        requestedQuery.sortBy = 'address.' + requestedQuery.sortBy;
+      }
+      sortingOptions[requestedQuery.sortBy] =
+        requestedQuery.sortOrder === 'desc' ? -1 : 1;
+      aggregationQuery.push({ $sort: sortingOptions });
+    }
+    if (requestedQuery.page && requestedQuery.limit) {
+      aggregationQuery.push({
+        $facet: {
+          paginatedResult: [
+            {
+              $skip:
+                (parseInt(requestedQuery.page) - 1) *
+                parseInt(requestedQuery.limit),
+            },
+            { $limit: parseInt(requestedQuery.limit) },
+          ],
+          totalCount: [
+            {
+              $count: 'count',
+            },
+          ],
+        },
+      });
+    }
+    aggregationQuery.unshift({ $match: queryFilter });
+
+    let debtors = await Debtor.aggregate(aggregationQuery).allowDiskUse(true);
+
+    const response =
+      debtors && debtors[0] && debtors[0]['paginatedResult']
+        ? debtors[0]['paginatedResult']
+        : debtors;
+
+    const total =
+      debtors.length !== 0 &&
+      debtors[0]['totalCount'] &&
+      debtors[0]['totalCount'].length !== 0
+        ? debtors[0]['totalCount'][0]['count']
+        : 0;
+
+    const headers = [];
+    for (let i = 0; i < moduleColumn.length; i++) {
+      if (debtorColumn.includes(moduleColumn[i].name)) {
+        headers.push(moduleColumn[i]);
+      }
+    }
+    response.forEach((debtor) => {
+      if (debtorColumn.includes('property')) {
+        debtor.property = debtor.address.property;
+      }
+      if (debtorColumn.includes('unitNumber')) {
+        debtor.unitNumber = debtor.address.unitNumber;
+      }
+      if (debtorColumn.includes('streetNumber')) {
+        debtor.streetNumber = debtor.address.streetNumber;
+      }
+      if (debtorColumn.includes('streetName')) {
+        debtor.streetName = debtor.address.streetName;
+      }
+      if (debtorColumn.includes('streetType')) {
+        debtor.streetType = getStreetTypeName(debtor.address.streetType).label;
+      }
+      if (debtorColumn.includes('suburb')) {
+        debtor.suburb = debtor.address.suburb;
+      }
+      if (debtorColumn.includes('state')) {
+        const state = getStateName(
+          debtor.address.state,
+          debtor.address.country.code,
+        );
+        debtor.state = state && state.name ? state.name : debtor.address.state;
+      }
+      if (debtorColumn.includes('country')) {
+        debtor.country = debtor.address.country.name;
+      }
+      if (debtorColumn.includes('postCode')) {
+        debtor.postCode = debtor.address.postCode;
+      }
+      if (debtorColumn.includes('fullAddress')) {
+        debtor.fullAddress = getDebtorFullAddress({
+          address: debtor.address,
+          country: debtor.address.country,
+        });
+      }
+      if (debtor.entityType) {
+        debtor.entityType = formatString(debtor.entityType);
+      }
+      if (debtor.hasOwnProperty('isActive')) {
+        debtor.isActive = debtor.isActive ? 'Yes' : 'No';
+      }
+      delete debtor.address;
+      delete debtor.id;
+    });
+    const debtorResponse = {
+      docs: response,
+      headers,
+      total,
+      page: parseInt(requestedQuery.page),
+      limit: parseInt(requestedQuery.limit),
+      pages: Math.ceil(total / parseInt(requestedQuery.limit)),
+      filterArray,
+    };
+    if (isForDownload) {
+      debtorResponse.filterArray = filterArray;
+    }
+    return debtorResponse;
+  } catch (e) {
+    Logger.log.error('Error occurred in get debtor list');
+    Logger.log.error(e);
+  }
+};
+
 module.exports = {
   getDebtorList,
   createDebtor,
   getDebtorFullAddress,
   getStateName,
   getStreetTypeName,
+  getDebtorListWithDetails,
 };
