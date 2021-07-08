@@ -1,8 +1,14 @@
+/*
+ * Module Imports
+ * */
 const PDFDocument = require('pdfkit');
-const fs = require('fs');
 let PdfTable = require('voilab-pdf-table');
-const config = require('../config');
 const axios = require('axios');
+
+/*
+ * Local Imports
+ * */
+const config = require('../config');
 
 const generateDecisionLetter = async ({
   approvalStatus,
@@ -463,10 +469,10 @@ Please contact your Service Manager${
     pdf.on('end', async () => {
       let pdfData = Buffer.concat(buffers);
       resolve(pdfData);
-      fs.writeFile('abc.pdf', pdfData, (err) => {
+      /*fs.writeFile('abc.pdf', pdfData, (err) => {
         if (err) throw err;
         console.log('The file has been saved!');
-      });
+      });*/
     });
     pdf.end();
   });

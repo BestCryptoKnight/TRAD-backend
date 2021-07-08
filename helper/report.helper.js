@@ -1826,8 +1826,6 @@ const getLimitHistoryReport = async ({
         ? applications[0]['totalCount'][0]['count']
         : 0;
     response.forEach((limit) => {
-      console.log(limit.debtorId);
-
       if (limit.insurerId) {
         limit.insurerId =
           limit.insurerId && limit.insurerId[0] && limit.insurerId[0]['name']
@@ -1867,11 +1865,10 @@ const getLimitHistoryReport = async ({
           ? formatString(limit.debtorId[0]['entityType'])
           : '';
       }
-      if (limit.debtorId && limit.debtorId[0] && limit.debtorId[0].entityName) {
-        limit.debtorId = limit.debtorId[0]['entityName']
+      limit.debtorId =
+        limit.debtorId && limit.debtorId[0] && limit.debtorId[0]['entityName']
           ? limit.debtorId[0]['entityName']
           : '';
-      }
       if (limit.status) {
         limit.status = formatString(limit.status);
       }

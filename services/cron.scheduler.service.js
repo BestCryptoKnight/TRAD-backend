@@ -47,7 +47,7 @@ const scheduler = async () => {
         );
         const debtors = await Debtor.find({
           reviewDate: { $lte: new Date() },
-          isActive: true,
+          // isActive: true,
         }).lean();
         const debtorIds = debtors.map((i) => i._id);
         const clientDebtors = await ClientDebtor.find({

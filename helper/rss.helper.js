@@ -649,6 +649,7 @@ let fetchInsurerDetails = async ({
       clientPolicies.forEach((policy) => {
         const clientPolicy = new Policy(policy);
         promiseArr.push(clientPolicy.save());
+        //TODO change message (policy number)
         promiseArr.push(
           addAuditLog({
             entityType: 'policy',

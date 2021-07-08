@@ -32,7 +32,13 @@ const clientUserSchema = new Schema(
     password: Schema.Types.String,
     signUpToken: Schema.Types.String,
     profileKeyPath: Schema.Types.String,
-    jwtToken: [Schema.Types.String],
+    jwtToken: [
+      {
+        token: Schema.Types.String,
+        lastAPICallTime: { type: Schema.Types.Date },
+        _id: false,
+      },
+    ],
     isDeleted: { type: Schema.Types.Boolean, default: false },
     manageColumns: [
       {
@@ -83,21 +89,27 @@ clientUserSchema.statics.findByCredentials = async function (email, password) {
 clientUserSchema.statics.findByToken = async function (token) {
   const clientUser = this;
   const jwtSecret = config.jwt.secret;
-  // let decoded;
   const d = new Date();
   let clientUserData;
   try {
     const decoded = jwt.verify(token, jwtSecret);
-    console.log(decoded);
     clientUserData = await clientUser.findOne({ _id: decoded._id });
-    if (clientUserData.jwtToken.indexOf(token) !== -1) {
-      if (decoded.expiredTime > d.getTime()) {
+    const index = clientUserData.jwtToken.findIndex((i) => {
+      return i.token === token;
+    });
+    if (index !== -1) {
+      const expireTime = new Date(
+        d.setHours(d.getHours() - config.jwt.expireTime),
+      );
+      const currentToken = clientUserData.jwtToken[index];
+      if (expireTime < currentToken.lastAPICallTime) {
+        await clientUser.updateOne(
+          { _id: decoded._id, 'jwtToken.token': token },
+          { $set: { 'jwtToken.$.lastAPICallTime': new Date() } },
+        );
         return clientUserData;
       } else {
-        clientUserData.jwtToken.splice(
-          clientUserData.jwtToken.indexOf(token),
-          1,
-        );
+        clientUserData.jwtToken.splice(index, 1);
         await clientUserData.save();
         return Promise.reject({
           status: 'TOKEN_EXPIRED',
@@ -127,7 +139,7 @@ clientUserSchema.methods.getAuthToken = function () {
     .sign(
       {
         _id: a._id.toHexString(),
-        expiredTime: parseInt(config.jwt.expireTime) * 3600000 + d.getTime(),
+        // expiredTime: parseInt(config.jwt.expireTime) * 3600000 + d.getTime(),
         access,
       },
       jwtSecret,
@@ -164,14 +176,14 @@ clientUserSchema.methods.comparePassword = function (
   });
 };
 
-clientUserSchema.methods.removeToken = function (token) {
+/*clientUserSchema.methods.removeToken = function (token) {
   const clientUser = this;
   return clientUser.update({
     $pull: {
       jwtToken: token,
     },
   });
-};
+};*/
 
 clientUserSchema.statics.generateOtp = async (user) => {
   const verificationOtp = Math.floor(Math.random() * 899999 + 100000);
@@ -180,6 +192,7 @@ clientUserSchema.statics.generateOtp = async (user) => {
   user.otpExpireTime = otpExpireTime;
   return await user.save();
 };
+
 clientUserSchema.statics.removeOtp = async (user) => {
   user.verificationOtp = null;
   user.otpExpireTime = null;

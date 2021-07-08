@@ -640,7 +640,9 @@ router.get('/download/:clientId', async function (req, res) {
         creditLimits: response.docs,
       });
       const csvResponse = await convertToCSV(finalArray);
+      const fileName = new Date().getTime() + '.csv';
       res.header('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename=' + fileName);
       res.send(csvResponse);
     } else {
       res.status(200).send({
@@ -1262,11 +1264,11 @@ router.put('/credit-limit/:debtorId', async function (req, res) {
           isActive: false,
         },
       );
-      //TODO update using current application
-      await Application.updateOne(
+      //TODO uncomment to surrender active application
+      /*await Application.updateOne(
         { clientDebtorId: clientDebtor._id, status: 'APPROVED' },
         { status: 'SURRENDERED' },
-      );
+      );*/
     }
     res.status(200).send({
       status: 'SUCCESS',

@@ -578,6 +578,27 @@ router.get('/details/:debtorId', async function (req, res) {
           'Application already exists, please create with another debtor',
       });
     } else if (application && application.status === 'APPROVED') {
+      const otherApplication = await Application.findOne({
+        debtorId: req.params.debtorId,
+        clientId: req.query.clientId,
+        status: {
+          $nin: [
+            'DECLINED',
+            'CANCELLED',
+            'WITHDRAWN',
+            'SURRENDERED',
+            'APPROVED',
+          ],
+        },
+      }).lean();
+      if (otherApplication) {
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'APPLICATION_ALREADY_EXISTS',
+          message:
+            'Application already exists, please create with another debtor',
+        });
+      }
       responseData.message =
         'You already have one approved application, do you still want to create another one?';
       responseData.messageCode = 'APPROVED_APPLICATION_ALREADY_EXISTS';
@@ -798,7 +819,9 @@ router.get('/download/:debtorId', async function (req, res) {
         creditLimits: response.docs,
       });
       const csvResponse = await convertToCSV(finalArray);
+      const fileName = new Date().getTime() + '.csv';
       res.header('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename=' + fileName);
       res.send(csvResponse);
     } else {
       res.status(200).send({
@@ -1010,10 +1033,11 @@ router.put('/credit-limit/:debtorId', async function (req, res) {
           isActive: false,
         },
       );
-      await Application.updateOne(
+      //TODO uncomment to surrender active application
+      /*await Application.updateOne(
         { clientDebtorId: clientDebtor._id, status: 'APPROVED' },
         { status: 'SURRENDERED' },
-      );
+      );*/
     }
     res.status(200).send({
       status: 'SUCCESS',

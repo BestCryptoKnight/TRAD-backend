@@ -303,6 +303,27 @@ router.get('/details/:debtorId', async function (req, res) {
           'Application already exists, please create with another debtor',
       });
     } else if (application && application.status === 'APPROVED') {
+      const otherApplication = await Application.findOne({
+        debtorId: req.params.debtorId,
+        clientId: req.user.clientId,
+        status: {
+          $nin: [
+            'DECLINED',
+            'CANCELLED',
+            'WITHDRAWN',
+            'SURRENDERED',
+            'APPROVED',
+          ],
+        },
+      }).lean();
+      if (otherApplication) {
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'APPLICATION_ALREADY_EXISTS',
+          message:
+            'Application already exists, please create with another debtor',
+        });
+      }
       responseData.message =
         'You already have one approved application, do you still want to create another one?';
       responseData.messageCode = 'APPROVED_APPLICATION_ALREADY_EXISTS';

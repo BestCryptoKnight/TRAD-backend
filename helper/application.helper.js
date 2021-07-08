@@ -723,11 +723,7 @@ const storePartnerDetails = async ({ requestBody }) => {
   }
 };
 
-const storeCreditLimitDetails = async ({
-  requestBody,
-  createdBy,
-  createdByType,
-}) => {
+const storeCreditLimitDetails = async ({ requestBody }) => {
   try {
     let application = await Application.findById(requestBody.applicationId)
       .populate({ path: 'debtorId', select: 'entityType' })
@@ -755,7 +751,7 @@ const storeCreditLimitDetails = async ({
     update.passedOverdueDetails = requestBody.passedOverdueDetails
       ? requestBody.passedOverdueDetails
       : '';
-    if (requestBody.note) {
+    /*if (requestBody.note) {
       const note = await Note.findOne({
         noteFor: 'application',
         isDeleted: false,
@@ -784,7 +780,7 @@ const storeCreditLimitDetails = async ({
         },
         { isDeleted: true },
       );
-    }
+    }*/
     await Application.updateOne({ _id: requestBody.applicationId }, update);
     application = await Application.findById(requestBody.applicationId)
       .select('_id applicationStage')

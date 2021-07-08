@@ -45,7 +45,7 @@ router.post('/login', async function (req, res) {
     let user = await User.findByCredentials(userId, password);
     if (user) {
       let token = user.getAuthToken();
-      user.jwtToken.push(token);
+      user.jwtToken.push({ token: token, lastAPICallTime: new Date() });
       user.profilePicture = getProfileUrl(user.profilePicture);
       await user.save();
       res.status(200).send({
@@ -487,9 +487,15 @@ router.post('/set-password', async (req, res) => {
 /**
  * Call for Logout
  */
-router.delete('/logout', authenticate, async (req, res) => {
+router.delete('/logout', async (req, res) => {
   try {
-    await req.user.removeToken(req.headers.authorization);
+    const token = req.header('authorization');
+    const jwtSecret = config.jwt.secret;
+    const decoded = jwt.verify(token, jwtSecret);
+    await User.updateOne(
+      { _id: decoded._id },
+      { $pull: { jwtToken: { token: token } } },
+    );
     res.status(200).send({
       status: 'SUCCESS',
       message: 'User logout successfully',

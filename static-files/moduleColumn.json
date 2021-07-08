@@ -1377,8 +1377,7 @@
         {
           "name": "accountid",
           "label": "Client Name",
-          "type": "modal",
-          "request": { "method": "GET", "url": "client/details" }
+          "type": "string"
         },
         {
           "name": "notifiedofcase",

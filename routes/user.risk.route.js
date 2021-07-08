@@ -704,7 +704,6 @@ router.put('/:userId', async function (req, res) {
  * Deletes a user
  */
 router.delete('/:userId', async function (req, res) {
-  Logger.log.info('In delete user call');
   if (
     !req.params.userId ||
     !mongoose.Types.ObjectId.isValid(req.params.userId)

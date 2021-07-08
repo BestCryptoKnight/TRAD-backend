@@ -822,7 +822,7 @@ const checkForNilCreditLimitIssues = async ({ debtorId }) => {
     };
     const applications = await Application.find({
       debtorId: debtorId,
-      status: 'SURRENDERED',
+      status: 'DECLINED',
     }).lean();
     if (applications.length !== 0) {
       response.isBlocker = true;
@@ -1107,6 +1107,7 @@ const checkGuidelines = async ({
       }
     }
     if (guidelines.courtCharges) {
+      response = {};
       if (reportData && reportData.SummaryInformation) {
         response = await checkForCourtAction({
           summaryInformation: reportData.SummaryInformation,
@@ -1117,6 +1118,7 @@ const checkGuidelines = async ({
       }
     }
     if (guidelines.courtChargesWithMinMaxAmount) {
+      response = {};
       if (reportData && reportData.SummaryInformation) {
         response = await checkForCourtAction({
           summaryInformation: reportData.SummaryInformation,
@@ -1129,6 +1131,7 @@ const checkGuidelines = async ({
       }
     }
     if (guidelines.courtChargesWithAmount) {
+      response = {};
       if (reportData && reportData.SummaryInformation) {
         response = await checkForCourtAction({
           summaryInformation: reportData.SummaryInformation,
@@ -1141,6 +1144,7 @@ const checkGuidelines = async ({
       }
     }
     if (guidelines.noAdverse) {
+      response = {};
       if (reportData && reportData.SummaryInformation) {
         response = await checkForNoAdverse({
           summaryInformation: reportData.SummaryInformation,
@@ -1151,6 +1155,7 @@ const checkGuidelines = async ({
       }
     }
     if (guidelines.noRegisteredCharges) {
+      response = {};
       if (reportData && reportData.SummaryInformation) {
         response = await checkForRegisteredCharges({
           summaryInformation: reportData.SummaryInformation,

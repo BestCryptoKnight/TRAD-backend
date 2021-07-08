@@ -965,8 +965,6 @@ router.put('/', async function (req, res) {
       case 'credit-limit':
         response = await storeCreditLimitDetails({
           requestBody: req.body,
-          createdByType: 'user',
-          createdBy: req.user._id,
         });
         break;
       case 'documents':
@@ -1011,6 +1009,16 @@ router.put('/', async function (req, res) {
             status: 'ERROR',
             messageCode: 'APPLICATION_ALREADY_EXISTS',
             message: 'Application already exists',
+          });
+        }
+        if (application && application.note) {
+          await addNote({
+            userType: 'user',
+            userId: req.user._id,
+            userName: req.user.name,
+            description: application.note,
+            noteFor: 'application',
+            entityId: req.body.applicationId,
           });
         }
         await Application.updateOne(
@@ -1163,7 +1171,7 @@ router.put('/:applicationId', async function (req, res) {
         });
       }
       await ClientDebtor.updateOne({ _id: application.clientDebtorId }, update);
-      //TODO uncomment Surrender other application on Approve status
+      //TODO uncomment to surrender other application on Approve status
       /*const applicationData = await Application.findOne({
         clientId: application.clientId,
         debtorId: application.debtorId,

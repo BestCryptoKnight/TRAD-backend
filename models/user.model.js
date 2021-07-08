@@ -31,7 +31,13 @@ const userSchema = new Schema(
     otpExpireTime: Schema.Types.Date,
     // profilePicture: Schema.Types.String,
     profileKeyPath: Schema.Types.String,
-    jwtToken: [Schema.Types.String],
+    jwtToken: [
+      {
+        token: Schema.Types.String,
+        lastAPICallTime: { type: Schema.Types.Date },
+        _id: false,
+      },
+    ],
     socketIds: [Schema.Types.String],
     role: {
       type: Schema.Types.String,
@@ -94,22 +100,32 @@ userSchema.statics.findByCredentials = async function (email, password) {
 
 userSchema.statics.findByToken = async function (token) {
   let admin = this;
-  let decoded;
   let jwtSecret = config.jwt.secret;
   let d = new Date();
   let adminData;
   try {
-    decoded = jwt.verify(token, jwtSecret);
+    const decoded = jwt.verify(token, jwtSecret);
     adminData = await admin
       .findOne({
         _id: decoded._id,
       })
       .select({ password: 0 });
-    if (adminData.jwtToken.indexOf(token) !== -1) {
-      if (decoded.expiredTime > d.getTime()) {
+    const index = adminData.jwtToken.findIndex((i) => {
+      return i.token === token;
+    });
+    if (index !== -1) {
+      const expireTime = new Date(
+        d.setHours(d.getHours() - config.jwt.expireTime),
+      );
+      const currentToken = adminData.jwtToken[index];
+      if (expireTime < currentToken.lastAPICallTime) {
+        await admin.updateOne(
+          { _id: decoded._id, 'jwtToken.token': token },
+          { $set: { 'jwtToken.$.lastAPICallTime': new Date() } },
+        );
         return adminData;
       } else {
-        adminData.jwtToken.splice(adminData.jwtToken.indexOf(token), 1);
+        adminData.jwtToken.splice(index, 1);
         await adminData.save();
         return Promise.reject({
           status: 'TOKEN_EXPIRED',
@@ -139,7 +155,7 @@ userSchema.methods.getAuthToken = function () {
     .sign(
       {
         _id: a._id.toHexString(),
-        expiredTime: parseInt(config.jwt.expireTime) * 3600000 + d.getTime(),
+        // expiredTime: parseInt(config.jwt.expireTime) * 3600000 + d.getTime(),
         access,
       },
       jwtSecret,
@@ -172,14 +188,14 @@ userSchema.methods.comparePassword = function (password, encryptedPassword) {
   });
 };
 
-userSchema.methods.removeToken = function (token) {
+/*userSchema.methods.removeToken = function (token) {
   const user = this;
   return user.update({
     $pull: {
       jwtToken: token,
     },
   });
-};
+};*/
 
 userSchema.statics.generateOtp = async (user) => {
   const verificationOtp = Math.floor(Math.random() * 899999 + 100000);
@@ -188,6 +204,7 @@ userSchema.statics.generateOtp = async (user) => {
   user.otpExpireTime = otpExpireTime;
   return await user.save();
 };
+
 userSchema.statics.removeOtp = async (user) => {
   user.verificationOtp = null;
   user.otpExpireTime = null;
