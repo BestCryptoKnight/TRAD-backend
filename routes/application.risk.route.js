@@ -1103,7 +1103,8 @@ router.put('/:applicationId', async function (req, res) {
       return res.status(400).send({
         status: 'ERROR',
         messageCode: 'AUTOMATION_IN_PROCESS',
-        message: "You can't change status when automation in process",
+        message:
+          'Automation is in process. Please change the status after some time.',
       });
     }
     let status = req.body.status;
@@ -1252,9 +1253,10 @@ router.put('/:applicationId', async function (req, res) {
   }
 });
 
-/**
+//Not in use
+/* /!**
  * Delete Application
- */
+ *!/
 router.delete('/:applicationId', async function (req, res) {
   if (
     !req.params.applicationId ||
@@ -1293,7 +1295,7 @@ router.delete('/:applicationId', async function (req, res) {
       message: e.message || 'Something went wrong, please try again later.',
     });
   }
-});
+});*/
 
 /**
  * Export Router

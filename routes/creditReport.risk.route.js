@@ -83,42 +83,67 @@ router.get('/list/:debtorId', async function (req, res) {
   }
   try {
     const debtor = await Debtor.findOne({ _id: req.params.debtorId }).lean();
+    if (!debtor) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'NO_DEBTOR_FOUND',
+        message: 'No debtor found',
+      });
+    }
     let reports = [];
-    if (debtor && debtor.entityType !== 'SOLE_TRADER' && debtor.address) {
+    const partners = [];
+    if (debtor.entityType === 'PARTNERSHIP' || debtor.entityType === 'TRUST') {
+      const stakeholders = await DebtorDirector.find({
+        debtorId: debtor._id,
+      })
+        .select('_id type entityName firstName lastName')
+        .lean();
+      stakeholders.forEach((i) => {
+        partners.push({
+          label:
+            i.type === 'company'
+              ? i.entityName
+              : i.firstName + ' ' + i.lastName,
+          value: i._id,
+          type: i.type,
+        });
+      });
+    }
+    if (debtor.entityType !== 'SOLE_TRADER' && debtor.address) {
       if (debtor.address.country && debtor.address.country.code === 'AUS') {
         reports = [
           {
-            code: 'HXBSC',
-            name: 'HTML Commercial Bureau Enquiry without ASIC Docs',
+            value: 'HXBSC',
+            label: 'HTML Commercial Bureau Enquiry without ASIC Docs',
           },
           {
-            code: 'HXBCA',
-            name:
+            value: 'HXBCA',
+            label:
               'HTML Commercial Bureau Enquiry w/ refresh ASIC w/o ASIC Docs',
           },
           {
-            code: 'HXPAA',
-            name: 'HTML Payment Analysis & ASIC Current Extract',
+            value: 'HXPAA',
+            label: 'HTML Payment Analysis & ASIC Current Extract',
           },
           {
-            code: 'HXPYA',
-            name: 'Risk of Late Payment Report (DDS)',
+            value: 'HXPYA',
+            label: 'Risk of Late Payment Report (DDS)',
           },
         ];
       } else {
         reports = [
           {
-            code: 'HNBCau',
-            name: 'HTML NZ Comm. Bureau Enq (AU Subs)',
+            value: 'HNBCau',
+            label: 'HTML NZ Comm. Bureau Enq (AU Subs)',
           },
           {
-            code: 'NPA',
-            name: 'HTML Payment Analysis with refreshed NZCO',
+            value: 'NPA',
+            label: 'HTML Payment Analysis with refreshed NZCO',
           },
         ];
       }
     }
-    res.status(200).send({ status: 'SUCCESS', data: reports });
+    res.status(200).send({ status: 'SUCCESS', data: { reports, partners } });
   } catch (e) {
     Logger.log.error('Error occurred in get report list', e.message || e);
     res.status(500).send({
@@ -181,16 +206,15 @@ router.get('/:debtorId', async function (req, res) {
       (i) => i.moduleName === 'credit-report',
     );
     const debtor = await Debtor.findOne({ _id: req.params.debtorId }).lean();
-    const entityTypes = ['TRUST'];
+    const entityTypes = ['TRUST', 'PARTNERSHIP'];
     let entityIds = [debtor._id];
     if (debtor && entityTypes.includes(debtor.entityType)) {
-      let directors = await DebtorDirector.find({
+      const directors = await DebtorDirector.find({
         debtorId: req.params.debtorId,
       }).lean();
-      directors = directors.map((i) => i._id);
-      if (directors.length !== 0) {
-        entityIds.concat(directors);
-      }
+      directors.forEach((i) => {
+        entityIds.push(i._id);
+      });
     }
     const queryFilter = {
       isDeleted: false,
@@ -213,6 +237,7 @@ router.get('/:debtorId', async function (req, res) {
     option.select = reportColumn.columns.toString().replace(/,/g, ' ');
     option.sort = sortingOptions;
     option.lean = true;
+    console.log('queryFilter', queryFilter);
     let responseObj = await CreditReport.paginate(queryFilter, option);
     responseObj.headers = [];
     for (let i = 0; i < module.manageColumns.length; i++) {
@@ -237,7 +262,11 @@ router.get('/:debtorId', async function (req, res) {
  * Generate Credit Report
  */
 router.put('/generate', async function (req, res) {
-  if (!req.body.debtorId || !req.body.productCode) {
+  if (
+    !req.body.debtorId ||
+    !req.body.productCode ||
+    !mongoose.Types.ObjectId.isValid(req.body.debtorId)
+  ) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -245,6 +274,7 @@ router.put('/generate', async function (req, res) {
     });
   }
   try {
+    const entityTypes = ['TRUST', 'PARTNERSHIP'];
     const debtor = await Debtor.findOne({ _id: req.body.debtorId })
       .select('abn acn entityType address')
       .lean();
@@ -252,7 +282,10 @@ router.put('/generate', async function (req, res) {
       const report = await CreditReport.findOne({
         isDeleted: false,
         isExpired: false,
-        entityId: debtor._id,
+        entityId:
+          entityTypes.includes(debtor.entityType) && req.body.stakeholderId
+            ? req.body.stakeholderId
+            : debtor._id,
         productCode: req.body.productCode,
         expiryDate: { $gt: new Date() },
       });
@@ -284,29 +317,37 @@ router.put('/generate', async function (req, res) {
         searchField = 'NCN';
         searchValue = debtor.acn ? debtor.acn : '';
       }
-      const entityTypes = ['TRUST'];
       let entityId = req.body.debtorId;
       let entityType = 'debtor';
-      if (debtor && entityTypes.includes(debtor.entityType)) {
-        const directors = await DebtorDirector.find({
-          debtorId: req.params.debtorId,
+      if (entityTypes.includes(debtor.entityType)) {
+        if (
+          !req.body.stakeholderId ||
+          !mongoose.Types.ObjectId.isValid(req.body.stakeholderId)
+        ) {
+          return res.status(400).send({
+            status: 'ERROR',
+            messageCode: 'REQUIRE_FIELD_MISSING',
+            message: 'Require fields are missing.',
+          });
+        }
+        const stakeholder = await DebtorDirector.findOne({
+          _id: req.body.stakeholderId,
         }).lean();
-        if (directors && directors.length !== 0) {
-          for (let i = 0; i < directors.length; i++) {
-            if (directors[i].type === 'company') {
-              entityId = directors[i]._id;
-              entityType = 'debtor-director';
-              if (directors[i].country && directors[i].country.code === 'AUS') {
-                searchValue = directors[i].abn
-                  ? directors[i].abn
-                  : directors[i].acn;
-                searchField = directors[i].abn ? 'ABN' : 'ACN';
-              } else {
-                searchValue = directors[i].acn ? directors[i].acn : '';
-                searchField = 'NCN';
-              }
-            }
-          }
+        if (!stakeholder) {
+          return res.status(400).send({
+            status: 'ERROR',
+            messageCode: 'NO_STAKEHOLDER_FOUND',
+            message: 'No stakeholder found',
+          });
+        }
+        entityId = stakeholder._id;
+        entityType = 'debtor-director';
+        if (stakeholder.country && stakeholder.country.code === 'AUS') {
+          searchValue = stakeholder.abn ? stakeholder.abn : stakeholder.acn;
+          searchField = stakeholder.abn ? 'ABN' : 'ACN';
+        } else {
+          searchValue = stakeholder.acn ? stakeholder.acn : '';
+          searchField = 'NCN';
         }
       }
       if (searchField && searchValue) {
@@ -352,14 +393,24 @@ router.put('/generate', async function (req, res) {
             data: 'Report generated successfully',
           });
         } else {
+          const message =
+            reportData.Envelope.Body.Response.Messages.Error &&
+            reportData.Envelope.Body.Response.Messages.Error.Desc &&
+            reportData.Envelope.Body.Response.Messages.Error.Num
+              ? reportData.Envelope.Body.Response.Messages.Error.Num +
+                ' - ' +
+                reportData.Envelope.Body.Response.Messages.Error.Desc
+              : 'Unable to fetch report';
           res.status(400).send({
-            status: 'UNABLE_TO_FETCH_REPORT',
-            data: 'Unable to fetch report',
+            status: 'ERROR',
+            messageCode: 'UNABLE_TO_FETCH_REPORT',
+            message: message,
           });
         }
       } else {
         res.status(400).send({
-          status: 'UNABLE_TO_FETCH_REPORT',
+          status: 'ERROR',
+          messageCode: 'UNABLE_TO_FETCH_REPORT',
           data: 'Unable to fetch report',
         });
       }

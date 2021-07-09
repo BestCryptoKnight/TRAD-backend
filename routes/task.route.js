@@ -362,9 +362,10 @@ router.get('/', async function (req, res) {
   }
 });
 
-/**
+//Not in use
+/* /!**
  * Add Task
- */
+ *!/
 router.post('/', async function (req, res) {
   if (
     !req.body.taskFrom ||
@@ -411,7 +412,7 @@ router.post('/', async function (req, res) {
       message: e.message || 'Something went wrong, please try again later.',
     });
   }
-});
+});*/
 
 /**
  * Update Column Names
@@ -503,9 +504,10 @@ router.put('/:taskId', async function (req, res) {
         entityType: task.entityType.toLowerCase(),
       });
     }
-    const client = await Client.findById(req.user.clientId)
-      .select('name')
-      .lean();
+    const clientName = await getEntityName({
+      entityId: req.user.clientId,
+      entityType: 'client',
+    });
     await addAuditLog({
       entityType: 'task',
       entityRefId: task._id,
@@ -515,7 +517,7 @@ router.put('/:taskId', async function (req, res) {
       logDescription:
         'A task' +
         (entityName ? ` for ${entityName} ` : ' ') +
-        `is successfully updated by ${client.name}`,
+        `is successfully updated by ${clientName}`,
     });
     if (task.createdById.toString() !== req.user.clientId.toString()) {
       const notification = await addNotification({
@@ -524,7 +526,7 @@ router.put('/:taskId', async function (req, res) {
         description:
           `A task ${task.title}` +
           (entityName ? ` for ${entityName} ` : ' ') +
-          `is updated by ${client.name}`,
+          `is updated by ${clientName}`,
       });
       if (notification) {
         sendNotification({

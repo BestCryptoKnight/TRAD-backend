@@ -12,8 +12,6 @@ const ClientUser = mongoose.model('client-user');
  * */
 const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
-const { getClientPolicies } = require('./../helper/rss.helper');
-const { addAuditLog } = require('./../helper/audit-log.helper');
 const { getPolicyDetails } = require('./../helper/policy.helper');
 
 /**
@@ -200,110 +198,6 @@ router.put('/column-name', async function (req, res) {
       .send({ status: 'SUCCESS', message: 'Columns updated successfully' });
   } catch (e) {
     Logger.log.error('Error occurred in update column names', e.message || e);
-    res.status(500).send({
-      status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
-    });
-  }
-});
-
-/**
- * Sync Clients Policies from RSS - Update
- */
-router.put('/sync-from-crm', async function (req, res) {
-  try {
-    const policies = await Policy.aggregate([
-      { $match: { clientId: mongoose.Types.ObjectId(req.user.clientId) } },
-      {
-        $lookup: {
-          from: 'clients',
-          localField: 'clientId',
-          foreignField: '_id',
-          as: 'client',
-        },
-      },
-      {
-        $group: {
-          _id: '$clientId',
-          clientName: { $first: '$client.name' },
-          crmClientId: { $first: '$client.crmClientId' },
-        },
-      },
-    ]).allowDiskUse(true);
-    if (!policies || policies.length === 0) {
-      Logger.log.error('No Policies found', req.params.insurerId);
-      return res.status(400).send({
-        status: 'ERROR',
-        messageCode: 'POLICY_NOT_FOUND',
-        message: 'Policies not found.',
-      });
-    }
-    let policiesFromCrm;
-    let promiseArr = [];
-    let newPolicies = [];
-    for (let i = 0; i < policies.length; i++) {
-      policiesFromCrm = await getClientPolicies({
-        clientId: policies[i]._id,
-        crmClientId: policies[i].crmClientId[0],
-        insurerId: req.params.insurerId,
-        limit: 50,
-        page: 1,
-      });
-      for (let j = 0; j < policiesFromCrm.length; j++) {
-        promiseArr.push(
-          Policy.updateOne(
-            { crmPolicyId: policiesFromCrm[j].crmPolicyId, isDeleted: false },
-            policiesFromCrm[j],
-            { upsert: true },
-          ),
-        );
-        const policy = await Policy.findOne({
-          crmPolicyId: policiesFromCrm[j].crmPolicyId,
-          isDeleted: false,
-        }).lean();
-        if (policy && policy._id) {
-          promiseArr.push(
-            addAuditLog({
-              entityType: 'policy',
-              entityRefId: policy._id,
-              userType: 'user',
-              userRefId: req.user._id,
-              actionType: 'sync',
-              logDescription: `Insurer ${policies[i].clientName[0]} policy ${policiesFromCrm[j].product} synced successfully`,
-            }),
-          );
-        } else {
-          newPolicies.push(policiesFromCrm[j].crmPolicyId);
-        }
-      }
-    }
-    await Promise.all(promiseArr);
-    let promises = [];
-    if (newPolicies.length !== 0) {
-      const policyData = await Policy.find({
-        crmPolicyId: { $in: newPolicies },
-      }).lean();
-      for (let i = 0; i < policyData.length; i++) {
-        promises.push(
-          addAuditLog({
-            entityType: 'policy',
-            entityRefId: policyData[i]._id,
-            userType: 'user',
-            userRefId: req.user._id,
-            actionType: 'sync',
-            logDescription: `Insurer ${policies[0].clientName[0]} policy ${policyData[i].product} synced successfully`,
-          }),
-        );
-      }
-    }
-    res
-      .status(200)
-      .send({ status: 'SUCCESS', message: 'Policies synced successfully' });
-  } catch (e) {
-    Logger.log.error(
-      'Error occurred in sync insurer contacts ',
-      e.message || e,
-    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

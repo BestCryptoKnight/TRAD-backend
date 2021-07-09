@@ -101,6 +101,12 @@
       "label": "Report",
       "isDefault": false,
       "accessTypes": ["read", "write", "full-access"]
+    },
+    {
+      "name": "import-application-dump",
+      "label": "Import Application",
+      "isDefault": false,
+      "accessTypes": ["read", "write", "full-access"]
     }
   ]
 }

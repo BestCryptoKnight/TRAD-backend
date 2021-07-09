@@ -658,7 +658,7 @@ router.post('/', async function (req, res) {
           userType: 'user',
           userRefId: req.user._id,
           actionType: 'add',
-          logDescription: `Insurer ${insurer.name} added successfully.`,
+          logDescription: `Insurer ${insurer.name} added by ${req.user.name}`,
         }),
       );
       const insurerContacts = await getInsurerContacts({
@@ -678,7 +678,7 @@ router.post('/', async function (req, res) {
             userType: 'user',
             userRefId: req.user._id,
             actionType: 'add',
-            logDescription: `Insurer contact ${insurerContact.name} added successfully.`,
+            logDescription: `Insurer contact ${insurerContact.name} added by ${req.user.name}`,
           }),
         );
       });
@@ -729,7 +729,7 @@ router.put('/sync-from-crm/:insurerId', async function (req, res) {
       userType: 'user',
       userRefId: req.user._id,
       actionType: 'sync',
-      logDescription: `Insurer ${insurerFromCrm.name} synced successfully.`,
+      logDescription: `Insurer ${insurerFromCrm.name} synced by ${req.user.name}`,
     });
     res
       .status(200)
@@ -877,7 +877,7 @@ router.put('/user/sync-from-crm/:insurerId', async function (req, res) {
           userType: 'user',
           userRefId: req.user._id,
           actionType: 'sync',
-          logDescription: `Insurer contact ${insurerUser.name} synced successfully.`,
+          logDescription: `Insurer contact ${insurerUser.name} synced by ${req.user.name}`,
         }),
       );
     }

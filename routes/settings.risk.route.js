@@ -16,8 +16,12 @@ const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
 const { getAccessBaseUserList } = require('./../helper/user.helper');
 const { getClientById } = require('./../helper/rss.helper');
-const { getEntityDetailsByABN } = require('./../helper/abr.helper');
+const {
+  getEntityDetailsByABN,
+  getEntityDetailsByNZBN,
+} = require('./../helper/abr.helper');
 const { fetchCreditReport } = require('./../helper/illion.helper');
+const { addAuditLog } = require('./../helper/audit-log.helper');
 
 /**
  * Get Column Names
@@ -173,6 +177,23 @@ router.get('/audit-logs', async function (req, res) {
                 null,
               ],
             },
+            documentTypeId: {
+              $cond: [
+                { $eq: ['$entityType', 'document-type'] },
+                '$entityRefId',
+                null,
+              ],
+            },
+            documentId: {
+              $cond: [
+                { $eq: ['$entityType', 'document'] },
+                '$entityRefId',
+                null,
+              ],
+            },
+            taskId: {
+              $cond: [{ $eq: ['$entityType', 'task'] }, '$entityRefId', null],
+            },
           },
         },
         {
@@ -224,6 +245,30 @@ router.get('/audit-logs', async function (req, res) {
           },
         },
         {
+          $lookup: {
+            from: 'document-types',
+            localField: 'documentTypeId',
+            foreignField: '_id',
+            as: 'documentTypeId',
+          },
+        },
+        {
+          $lookup: {
+            from: 'documents',
+            localField: 'documentId',
+            foreignField: '_id',
+            as: 'documentId',
+          },
+        },
+        {
+          $lookup: {
+            from: 'tasks',
+            localField: 'taskId',
+            foreignField: '_id',
+            as: 'taskId',
+          },
+        },
+        {
           $addFields: {
             entityRefId: {
               $cond: [
@@ -245,7 +290,25 @@ router.get('/audit-logs', async function (req, res) {
                               $cond: [
                                 { $eq: ['$entityType', 'user'] },
                                 '$userId.name',
-                                null,
+                                {
+                                  $cond: [
+                                    { $eq: ['$entityType', 'document-type'] },
+                                    '$documentTypeId.documentTitle',
+                                    {
+                                      $cond: [
+                                        { $eq: ['$entityType', 'document'] },
+                                        '$documentId.originalFileName',
+                                        {
+                                          $cond: [
+                                            { $eq: ['$entityType', 'task'] },
+                                            '$taskId.title',
+                                            null,
+                                          ],
+                                        },
+                                      ],
+                                    },
+                                  ],
+                                },
                               ],
                             },
                           ],
@@ -287,7 +350,7 @@ router.get('/audit-logs', async function (req, res) {
         },
         {
           $lookup: {
-            from: 'client-users',
+            from: 'clients',
             localField: 'clientUserId',
             foreignField: '_id',
             as: 'clientUserId',
@@ -608,6 +671,11 @@ router.get('/test-credentials', async function (req, res) {
       case 'abn':
         response = await getEntityDetailsByABN({ searchString: 51069691676 });
         break;
+      case 'nzbn':
+        response = await getEntityDetailsByNZBN({
+          searchString: 9429040933108,
+        });
+        break;
       case 'illion':
         response = await fetchCreditReport({
           productCode: 'HXBCA',
@@ -621,6 +689,9 @@ router.get('/test-credentials', async function (req, res) {
           messageCode: 'BAD_REQUEST',
           message: 'Please pass correct fields',
         });
+    }
+    if (response && response.status === 'ERROR') {
+      res.status(400).send(response);
     }
     if (response) {
       res.status(200).send({
@@ -668,6 +739,14 @@ router.post('/document-type', async function (req, res) {
         documentTitle: req.body.documentTitle,
       });
       await document.save();
+      await addAuditLog({
+        entityType: 'document-type',
+        entityRefId: document._id,
+        actionType: 'add',
+        userType: 'user',
+        userRefId: req.user._id,
+        logDescription: `A document type is successfully added by ${req.user.name}`,
+      });
       res.status(200).send({ status: 'SUCCESS', data: document });
     }
   } catch (e) {
@@ -737,7 +816,10 @@ router.put('/document-type/:documentId', async function (req, res) {
       documentFor: req.body.documentFor,
       documentTitle: req.body.documentTitle,
     }).lean();
-    if (document && document._id !== req.params.documentId) {
+    if (
+      document &&
+      document._id.toString() !== req.params.documentId.toString()
+    ) {
       return res.status(400).send({
         status: 'ERROR',
         messageCode: 'DOCUMENT_TYPE_ALREADY_EXISTS',
@@ -751,6 +833,14 @@ router.put('/document-type/:documentId', async function (req, res) {
           documentTitle: req.body.documentTitle,
         },
       );
+      await addAuditLog({
+        entityType: 'document-type',
+        entityRefId: document._id,
+        actionType: 'edit',
+        userType: 'user',
+        userRefId: req.user._id,
+        logDescription: `A document type is successfully updated by ${req.user.name}`,
+      });
       res.status(200).send({
         status: 'SUCCESS',
         message: 'Document type updated successfully',
@@ -801,6 +891,16 @@ router.put('/api-integration', async function (req, res) {
           });
         }
         update = { 'integration.abn.guid': req.body.guid };
+        break;
+      case 'nzbn':
+        if (!req.body.accessToken) {
+          return res.status(400).send({
+            status: 'ERROR',
+            messageCode: 'REQUIRE_FIELD_MISSING',
+            message: 'Require fields are missing.',
+          });
+        }
+        update = { 'integration.nzbn.accessToken': req.body.accessToken };
         break;
       case 'equifax':
         if (!req.body.username || !req.body.password) {
@@ -917,6 +1017,17 @@ router.delete('/document-type/:documentId', async function (req, res) {
       { _id: req.params.documentId },
       { isDeleted: true },
     );
+    const document = await DocumentType.findOne({
+      _id: req.params.documentId,
+    }).lean();
+    await addAuditLog({
+      entityType: 'document-type',
+      entityRefId: document._id,
+      actionType: 'delete',
+      userType: 'user',
+      userRefId: req.user._id,
+      logDescription: `A document type is successfully deleted by ${req.user.name}`,
+    });
     res.status(200).send({
       status: 'SUCCESS',
       message: 'Document type deleted successfully',

@@ -499,9 +499,8 @@ router.post('/', async function (req, res) {
         userType: 'user',
         userRefId: req.user._id,
         actionType: 'add',
-        logDescription: 'User created successfully.',
+        logDescription: `A new user ${user.name} is created by ${req.user.name}`,
       });
-      Logger.log.info('User created successfully.');
       res
         .status(200)
         .send({ status: 'SUCCESS', message: 'User created successfully' });
@@ -684,7 +683,7 @@ router.put('/:userId', async function (req, res) {
       userType: 'user',
       userRefId: req.user._id,
       actionType: 'edit',
-      logDescription: 'User updated successfully.',
+      logDescription: `User ${user.name} is updated by ${req.user.name}`,
     });
     await Promise.all(promises);
     Logger.log.info('User Updated successfully.');
@@ -724,13 +723,18 @@ router.delete('/:userId', async function (req, res) {
       });
     }
     await User.updateOne({ _id: req.params.userId }, { isDeleted: true });
+    const user = await User.findOne({ _id: req.params.userId })
+      .select('name')
+      .lean();
     await addAuditLog({
       entityType: 'user',
       entityRefId: req.params.userId,
       userType: 'user',
       userRefId: req.user._id,
       actionType: 'delete',
-      logDescription: 'User deleted successfully.',
+      logDescription: `User ${
+        user && user.name ? user.name : ''
+      } is deleted by ${req.user.name}`,
     });
     res
       .status(200)

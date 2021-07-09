@@ -19,7 +19,6 @@ const Logger = require('./../services/logger');
 const MailHelper = require('./../helper/mailer.helper');
 const RssHelper = require('./../helper/rss.helper');
 const StaticFile = require('./../static-files/moduleColumn');
-const StaticData = require('./../static-files/staticData.json');
 const { addAuditLog } = require('./../helper/audit-log.helper');
 const { getUserList } = require('./../helper/user.helper');
 const {
@@ -28,7 +27,6 @@ const {
   getClientCreditLimit,
   formatCSVList,
 } = require('./../helper/client-debtor.helper');
-const { getDebtorFullAddress } = require('./../helper/debtor.helper');
 const { generateNewApplication } = require('./../helper/application.helper');
 const { getClientListWithDetails } = require('./../helper/client.helper');
 
@@ -854,7 +852,7 @@ router.post('/', async function (req, res) {
             userType: 'user',
             userRefId: req.user._id,
             actionType: 'add',
-            logDescription: `Client contact ${clientUser.name} added successfully.`,
+            logDescription: `Client contact ${clientUser.name} added by ${req.user.name}`,
           }),
         );
       });
@@ -866,7 +864,7 @@ router.post('/', async function (req, res) {
           userType: 'user',
           userRefId: req.user._id,
           actionType: 'add',
-          logDescription: `Client ${client.name} added successfully.`,
+          logDescription: `Client ${client.name} added by ${req.user.name}`,
         }),
       );
     }
@@ -922,7 +920,7 @@ router.put('/sync-from-crm/:clientId', async function (req, res) {
       userType: 'user',
       userRefId: req.user._id,
       actionType: 'sync',
-      logDescription: `Client ${clientDataFromCrm.name} synced successfully.`,
+      logDescription: `Client ${clientDataFromCrm.name} synced by ${req.user.name}`,
     });
     res
       .status(200)
@@ -984,7 +982,7 @@ router.put('/user/sync-from-crm/:clientId', async function (req, res) {
             userType: 'user',
             userRefId: req.user._id,
             actionType: 'sync',
-            logDescription: `Client contact ${contactsFromCrm[i].name} synced successfully.`,
+            logDescription: `Client contact ${contactsFromCrm[i].name} synced by ${req.user.name}`,
           }),
         );
       }
@@ -1246,7 +1244,7 @@ router.put('/user/:clientUserId', async function (req, res) {
         userType: 'user',
         userRefId: req.user._id,
         actionType: 'edit',
-        logDescription: `Client user ${clientUser.name} updated successfully.`,
+        logDescription: `Client contact ${clientUser.name} updated by ${req.user.name}`,
       }),
     );
     await Promise.all(promises);
@@ -1334,9 +1332,10 @@ router.put('/:clientId', async function (req, res) {
   }
 });
 
-/**
+//Not in use
+/* /!**
  * Delete Client
- */
+ *!/
 router.delete('/:clientId', async function (req, res) {
   try {
     if (!req.params.clientId) {
@@ -1379,7 +1378,7 @@ router.delete('/:clientId', async function (req, res) {
       message: e.message || 'Something went wrong, please try again later.',
     });
   }
-});
+});*/
 
 /**
  * Export Router

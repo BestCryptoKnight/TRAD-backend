@@ -37,7 +37,7 @@ const addNote = async ({
       entityType: 'note',
       entityRefId: note._id,
       actionType: 'add',
-      userType: 'user',
+      userType: userType,
       userRefId: userId,
       logDescription: `A new note for ${entityName} is successfully created by ${userName}`,
     });

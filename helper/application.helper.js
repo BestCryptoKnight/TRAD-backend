@@ -9,7 +9,6 @@ const Client = mongoose.model('client');
 const Policy = mongoose.model('policy');
 const DebtorDirector = mongoose.model('debtor-director');
 const ClientDebtor = mongoose.model('client-debtor');
-const Note = mongoose.model('note');
 const User = mongoose.model('user');
 const ClientUser = mongoose.model('client-user');
 
@@ -485,6 +484,33 @@ const storeCompanyDetails = async ({
     const debtorData = await Debtor.findOne(query).lean();
     if (!debtorData) {
       isDebtorExists = false;
+    } else {
+      if (requestBody.entityType !== debtorData.entityType) {
+        if (
+          requestBody.hasOwnProperty('removeStakeholders') &&
+          requestBody.removeStakeholders
+        ) {
+          await DebtorDirector.update(
+            { debtorId: debtorData._id, isDeleted: false },
+            { isDeleted: true },
+            { multi: true },
+          );
+        } else {
+          const stakeholders = await DebtorDirector.find({
+            isDeleted: false,
+            debtorId: debtorData._id,
+          })
+            .select('_id type')
+            .lean();
+          if (stakeholders.length !== 0) {
+            return {
+              status: 'ERROR',
+              messageCode: 'ENTITY_TYPE_CHANGED',
+              message: 'Debtor entity type is changed',
+            };
+          }
+        }
+      }
     }
     if (!requestBody.applicationId) {
       if (debtorData) {
@@ -531,6 +557,9 @@ const storeCompanyDetails = async ({
       const entityData = await getEntityDetailsByNZBN({
         searchString: requestBody.abn,
       });
+      if (entityData && entityData.status === 'ERROR') {
+        return entityData;
+      }
       if (!entityData || !entityData.nzbn || !entityData.entityName) {
         return {
           status: 'ERROR',

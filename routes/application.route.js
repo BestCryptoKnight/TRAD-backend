@@ -1023,9 +1023,10 @@ router.put('/', async function (req, res) {
   }
 });
 
-/**
+//Not in use
+/* /!**
  * Update Application
- */
+ *!/
 router.put('/:applicationId', async function (req, res) {
   if (
     !req.params.applicationId ||
@@ -1108,11 +1109,12 @@ router.put('/:applicationId', async function (req, res) {
       message: e,
     });
   }
-});
+});*/
 
-/**
+//Not in use
+/* /!**
  * Delete Application
- */
+ *!/
 router.delete('/:applicationId', async function (req, res) {
   if (
     !req.params.applicationId ||
@@ -1140,7 +1142,7 @@ router.delete('/:applicationId', async function (req, res) {
       message: e.message || 'Something went wrong, please try again later.',
     });
   }
-});
+});*/
 
 /**
  * Export Router

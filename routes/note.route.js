@@ -3,7 +3,7 @@
  * */
 const express = require('express');
 const router = express.Router();
-let mongoose = require('mongoose');
+const mongoose = require('mongoose');
 const Note = mongoose.model('note');
 const Application = mongoose.model('application');
 
@@ -11,6 +11,8 @@ const Application = mongoose.model('application');
  * Local Imports
  * */
 const Logger = require('./../services/logger');
+const { addAuditLog, getEntityName } = require('./../helper/audit-log.helper');
+const { addNote } = require('./../helper/note.helper');
 
 /**
  * Get Note List
@@ -280,15 +282,19 @@ router.post('/', async function (req, res) {
     });
   }
   try {
-    const note = new Note({
-      noteFor: req.body.noteFor,
-      entityId: req.body.entityId,
-      description: req.body.description,
-      isPublic: req.body.isPublic,
-      createdByType: 'client-user',
-      createdById: req.user.clientId,
+    const clientName = await getEntityName({
+      entityId: req.user.clientId,
+      entityType: 'client',
     });
-    await note.save();
+    await addNote({
+      userId: req.user.clientId,
+      userName: clientName,
+      userType: 'client-user',
+      entityId: req.body.entityId,
+      noteFor: req.body.noteFor,
+      isPublic: req.body.isPublic,
+      description: req.body.description,
+    });
     res
       .status(200)
       .send({ status: 'SUCCESS', message: 'Note created successfully' });
@@ -321,6 +327,25 @@ router.put('/:noteId', async function (req, res) {
     if (req.body.hasOwnProperty('isPublic'))
       updateObj.isPublic = req.body.isPublic;
     await Note.updateOne({ _id: req.params.noteId }, updateObj);
+    const note = await Note.findById(req.params.noteId).lean();
+    const [entityName, clientName] = await Promise.all([
+      getEntityName({
+        entityId: note.entityId,
+        entityType: note.noteFor.toLowerCase(),
+      }),
+      getEntityName({
+        entityId: req.user.clientId,
+        entityType: 'client',
+      }),
+    ]);
+    await addAuditLog({
+      entityType: 'note',
+      entityRefId: note._id,
+      actionType: 'edit',
+      userType: 'client-user',
+      userRefId: req.user.clientId,
+      logDescription: `A note for ${entityName} is successfully updated by ${clientName}`,
+    });
     res
       .status(200)
       .send({ status: 'SUCCESS', message: 'Note updated successfully' });
@@ -348,6 +373,25 @@ router.delete('/:noteId', async function (req, res) {
   }
   try {
     await Note.updateOne({ _id: req.params.noteId }, { isDeleted: true });
+    const note = await Note.findById(req.params.noteId).lean();
+    const [entityName, clientName] = await Promise.all([
+      getEntityName({
+        entityId: note.entityId,
+        entityType: note.noteFor.toLowerCase(),
+      }),
+      getEntityName({
+        entityId: req.user.clientId,
+        entityType: 'client',
+      }),
+    ]);
+    await addAuditLog({
+      entityType: 'note',
+      entityRefId: note._id,
+      actionType: 'delete',
+      userType: 'client-user',
+      userRefId: req.user.clientId,
+      logDescription: `A note for ${entityName} is successfully deleted by ${clientName}`,
+    });
     res
       .status(200)
       .send({ status: 'SUCCESS', message: 'Note deleted successfully' });

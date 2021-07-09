@@ -485,20 +485,23 @@ router.post('/upload', upload.single('document'), async function (req, res) {
       uploadById: req.user.clientId,
       uploadByType: 'client-user',
     });
-    const entityName = await getEntityName({
-      entityId: req.body.entityRefId,
-      entityType: req.body.documentFor.toLowerCase(),
-    });
-    const client = await Client.findById(req.user.clientId)
-      .select('name')
-      .lean();
+    const [entityName, clientName] = await Promise.all([
+      getEntityName({
+        entityId: req.body.entityRefId,
+        entityType: req.body.documentFor.toLowerCase(),
+      }),
+      getEntityName({
+        entityId: req.user.clientId,
+        entityType: 'client',
+      }),
+    ]);
     await addAuditLog({
       entityType: 'document',
       entityRefId: document._id,
       actionType: 'add',
       userType: 'client-user',
       userRefId: req.user.clientId,
-      logDescription: `A new document for ${entityName} is successfully uploaded by ${client.name}`,
+      logDescription: `A new document for ${entityName} is successfully uploaded by ${clientName}`,
     });
     const documentData = await Document.findById(document._id)
       .populate({
@@ -578,20 +581,23 @@ router.delete('/:documentId', async function (req, res) {
       { isDeleted: true },
     );
     if (document.entityRefId && document.entityType) {
-      const entityName = await getEntityName({
-        entityId: document.entityRefId,
-        entityType: document.entityType.toLowerCase(),
-      });
-      const client = await Client.findById(req.user.clientId)
-        .select('name')
-        .lean();
+      const [entityName, clientName] = await Promise.all([
+        getEntityName({
+          entityId: document.entityRefId,
+          entityType: document.entityType.toLowerCase(),
+        }),
+        getEntityName({
+          entityId: req.user.clientId,
+          entityType: 'client',
+        }),
+      ]);
       await addAuditLog({
         entityType: 'document',
         entityRefId: document._id,
         actionType: 'delete',
         userType: 'client-user',
         userRefId: req.user.clientId,
-        logDescription: `A document for ${entityName} is successfully deleted by ${client.name}`,
+        logDescription: `A document for ${entityName} is successfully deleted by ${clientName}`,
       });
     }
     res

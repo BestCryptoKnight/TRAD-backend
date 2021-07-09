@@ -367,7 +367,7 @@ router.put('/sync-from-crm/:insurerId', async function (req, res) {
               userType: 'user',
               userRefId: req.user._id,
               actionType: 'sync',
-              logDescription: `Insurer ${insurer.name} and client ${policies[i].name} policy ${policiesFromCrm[j].policyNumber} synced successfully`,
+              logDescription: `Insurer ${insurer.name} and client ${policies[i].name} policy no. ${policiesFromCrm[j].policyNumber} synced by ${req.user.name}`,
             }),
           );
         } else {
@@ -395,7 +395,7 @@ router.put('/sync-from-crm/:insurerId', async function (req, res) {
             userType: 'user',
             userRefId: req.user._id,
             actionType: 'sync',
-            logDescription: `Insurer ${insurer.name} and client ${policyData[i].clientId.name} policy ${policyData[i].policyNumber} synced successfully`,
+            logDescription: `Insurer ${insurer.name} and client ${policyData[i].clientId.name} policy no. ${policyData[i].policyNumber} synced by ${req.user.name}`,
           }),
         );
       }
@@ -461,7 +461,7 @@ router.put('/client/sync-from-crm/:clientId', async function (req, res) {
               userType: 'user',
               userRefId: req.user._id,
               actionType: 'sync',
-              logDescription: `Client ${client.name} policy ${policiesFromCrm[j].policyNumber} synced successfully`,
+              logDescription: `Client ${client.name} policy no. ${policiesFromCrm[j].policyNumber} synced by ${req.user.name}`,
             }),
           );
         } else {
@@ -483,7 +483,7 @@ router.put('/client/sync-from-crm/:clientId', async function (req, res) {
             userType: 'user',
             userRefId: req.user._id,
             actionType: 'sync',
-            logDescription: `Client ${client.name} policy ${policyData[i].policyNumber} synced successfully`,
+            logDescription: `Client ${client.name} policy no. ${policyData[i].policyNumber} synced by ${req.user.name}`,
           }),
         );
       }

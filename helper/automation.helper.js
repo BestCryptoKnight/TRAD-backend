@@ -168,6 +168,7 @@ const getReportData = async ({
     let reportData;
     let reportEntityType = 'debtor';
     let isForeignCountry = false;
+    let errorMessage = 'Unable to generate a report';
     console.log('reportCode', reportCode);
     if (type === 'individual') {
       //TODO add for euifax
@@ -267,9 +268,7 @@ const getReportData = async ({
             searchField: lookupMethod,
             searchValue: lookupNumber,
           });
-          console.log('HERE:::::::::::::::::::::::::');
           console.log('Report DATA', JSON.stringify(reportData, null, 3));
-          //TODO don't store failed report data
           if (
             reportData &&
             reportData.Envelope.Body.Response &&
@@ -304,12 +303,24 @@ const getReportData = async ({
             parseInt(reportData.Envelope.Body.Response.Messages.ErrorCount) !==
               0
           ) {
+            errorMessage =
+              reportData.Envelope.Body.Response.Messages.Error &&
+              reportData.Envelope.Body.Response.Messages.Error.Desc &&
+              reportData.Envelope.Body.Response.Messages.Error.Num
+                ? 'Error Code: ' +
+                  reportData.Envelope.Body.Response.Messages.Error.Num +
+                  ' ' +
+                  'Error Message: ' +
+                  reportData.Envelope.Body.Response.Messages.Error.Desc
+                : errorMessage;
             reportData = null;
           }
         }
+      } else {
+        errorMessage = 'Trustee does not belong to Australia or New Zealand';
       }
     }
-    return { reportData, isForeignCountry };
+    return { reportData, errorMessage };
   } catch (e) {
     Logger.log.error('Error occurred in get report data ', e);
   }
@@ -391,10 +402,8 @@ const insurerQBE = async ({ application, type, policy }) => {
     ]);
     const reportData = response.reportData ? response.reportData : null;
     if (!reportData) {
-      if (response.isForeignCountry) {
-        blockers.push('Trustee does not belong to Australia or New Zealand');
-      } else {
-        blockers.push('Unable to generate a report');
+      if (response.errorMessage) {
+        blockers.push(response.errorMessage);
       }
     }
     console.log('NEXT STEP ::::::::: ');
@@ -455,10 +464,8 @@ const insurerBond = async ({ application, type, policy }) => {
     ]);
     const reportData = response.reportData ? response.reportData : null;
     if (!reportData) {
-      if (response.isForeignCountry) {
-        blockers.push('Trustee does not belong to Australia or New Zealand');
-      } else {
-        blockers.push('Unable to generate a report');
+      if (response.errorMessage) {
+        blockers.push(response.errorMessage);
       }
     }
     console.log('NEXT STEP ::::::::: ');
@@ -518,10 +525,8 @@ const insurerAtradius = async ({ application, type, policy }) => {
     ]);
     const reportData = response.reportData ? response.reportData : null;
     if (!reportData) {
-      if (response.isForeignCountry) {
-        blockers.push('Trustee does not belong to Australia or New Zealand');
-      } else {
-        blockers.push('Unable to generate a report');
+      if (response.errorMessage) {
+        blockers.push(response.errorMessage);
       }
     }
     console.log('NEXT STEP ::::::::: ');
@@ -581,10 +586,8 @@ const insurerCoface = async ({ application, type, policy }) => {
     ]);
     const reportData = response.reportData ? response.reportData : null;
     if (!reportData) {
-      if (response.isForeignCountry) {
-        blockers.push('Trustee does not belong to Australia or New Zealand');
-      } else {
-        blockers.push('Unable to generate a report');
+      if (response.errorMessage) {
+        blockers.push(response.errorMessage);
       }
     }
     console.log('NEXT STEP ::::::::: ');
@@ -644,10 +647,8 @@ const insurerEuler = async ({ application, type, policy }) => {
     ]);
     const reportData = response.reportData ? response.reportData : null;
     if (!reportData) {
-      if (response.isForeignCountry) {
-        blockers.push('Trustee does not belong to Australia or New Zealand');
-      } else {
-        blockers.push('Unable to generate a report');
+      if (response.errorMessage) {
+        blockers.push(response.errorMessage);
       }
     }
     console.log('NEXT STEP ::::::::: ');
@@ -707,10 +708,8 @@ const insurerTrad = async ({ application, type, policy }) => {
     ]);
     const reportData = response.reportData ? response.reportData : null;
     if (!reportData) {
-      if (response.isForeignCountry) {
-        blockers.push('Trustee does not belong to Australia or New Zealand');
-      } else {
-        blockers.push('Unable to generate a report');
+      if (response.errorMessage) {
+        blockers.push(response.errorMessage);
       }
     }
     console.log('NEXT STEP ::::::::: ');

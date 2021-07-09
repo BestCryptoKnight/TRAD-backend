@@ -165,8 +165,31 @@ const getEntityDetailsByNZBN = async ({ searchString }) => {
     const { data } = await axios(options);
     return data;
   } catch (e) {
-    Logger.log.error('Error in getting entity details from NZBN lookup ');
-    Logger.log.error(e);
+    Logger.log.error('Error in getting entity details from NZBN lookup');
+    Logger.log.error(e.response.data || e);
+    if (
+      e.response &&
+      e.response.data &&
+      parseInt(e.response.data.status) === 503 &&
+      e.response.data.errorDescription
+    ) {
+      return {
+        status: 'ERROR',
+        messageCode: 'SERVICE_UNAVAILABLE',
+        message: e.response.data.errorDescription,
+      };
+    } else if (
+      e.response &&
+      e.response.data &&
+      parseInt(e.response.data.status) === 500 &&
+      e.response.data.errorDescription
+    ) {
+      return {
+        status: 'ERROR',
+        messageCode: 'UPSTREAM_SERVICE_ERROR',
+        message: e.response.data.errorDescription,
+      };
+    }
   }
 };
 
@@ -526,6 +549,10 @@ const extractNZBRLookupDataFromArray = async ({
           if (isForPersonStep && entityData.entityTypeCode) {
             const entityTypeCodes = [
               'COOP',
+              'NZCompany',
+              'ASIC',
+              'NON_ASIC',
+              'OverseasCompany',
               'Sole_Trader',
               'PARTNERSHIP',
               'Trading_Trust',
@@ -613,11 +640,15 @@ const getEntityDetailsByBusinessNumber = async ({
         entityData = await getEntityDetailsByNZBN({
           searchString: searchString,
         });
-        responseData = await extractNZBRLookupData({
-          entityData,
-          country,
-          step,
-        });
+        if (entityData && entityData.status !== 'ERROR') {
+          responseData = await extractNZBRLookupData({
+            entityData,
+            country,
+            step,
+          });
+        } else {
+          responseData = entityData;
+        }
       }
     }
     return responseData;
