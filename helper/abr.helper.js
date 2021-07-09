@@ -176,7 +176,7 @@ const getEntityDetailsByNZBN = async ({ searchString }) => {
       return {
         status: 'ERROR',
         messageCode: 'SERVICE_UNAVAILABLE',
-        message: e.response.data.errorDescription,
+        message: 'NZ lookup error: ' + e.response.data.errorDescription,
       };
     } else if (
       e.response &&
@@ -187,7 +187,7 @@ const getEntityDetailsByNZBN = async ({ searchString }) => {
       return {
         status: 'ERROR',
         messageCode: 'UPSTREAM_SERVICE_ERROR',
-        message: e.response.data.errorDescription,
+        message: 'NZ lookup error: ' + e.response.data.errorDescription,
       };
     }
   }
