@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 const Client = mongoose.model('client');
 const ClientDebtor = mongoose.model('client-debtor');
 const Debtor = mongoose.model('debtor');
+const DebtorDirector = mongoose.model('debtor-director');
 const Organization = mongoose.model('organization');
 
 /*
@@ -244,6 +245,26 @@ const getStreetTypeName = (streetType) => {
   }
 };
 
+const checkDirectorsOfDebtor = async ({ parameter, value }) => {
+  try {
+    const debtor = await Debtor.findOne({
+      [parameter]: value,
+      isDeleted: false,
+    });
+    if (!debtor) {
+      return 0;
+    }
+    const debtorDirectors = await DebtorDirector.find({
+      debtorId: debtor._id,
+      isDeleted: false,
+    }).select({ _id: 1 });
+    return debtorDirectors.length;
+  } catch (e) {
+    Logger.log.error('Error occurred in get state name');
+    Logger.log.error(e.message || e);
+  }
+};
+
 const getDebtorListWithDetails = async ({
   debtorColumn,
   requestedQuery,
@@ -440,4 +461,5 @@ module.exports = {
   getStateName,
   getStreetTypeName,
   getDebtorListWithDetails,
+  checkDirectorsOfDebtor,
 };

@@ -52,7 +52,7 @@ let uploadFile = ({ file, filePath, fileType }) => {
         return resolve(data);
       });
     } catch (e) {
-      Logger.log.error('Error in getting pre-signed URL', e.message || e);
+      Logger.log.error('Error in upload', e.message || e);
     }
   });
 };

@@ -1648,6 +1648,27 @@
         "expiryDate",
         "createdAt"
       ]
+    },
+    {
+      "name": "import-application",
+      "manageColumns": [
+        { "name": "clientCode", "label": "Client Code", "type": "string" },
+        { "name": "debtorCode", "label": "Debtor Code", "type": "string" },
+        { "name": "abn", "label": "Debtor ABN", "type": "string" },
+        { "name": "acn", "label": "Debtor ACN", "type": "string" },
+        {
+          "name": "companyRegistrationNumber",
+          "label": "Company Registration Number",
+          "type": "string"
+        },
+        {
+          "name": "entityName",
+          "label": "Debtor Entity Name",
+          "type": "string"
+        },
+        { "name": "creditLimit", "label": "Credit Limit", "type": "string" },
+        { "name": "reason", "label": "Reason", "type": "string" }
+      ]
     }
   ]
 }
