@@ -109,15 +109,10 @@ const readExcelFile = async (fileBuffer) => {
       ].columnName = column.address.substr(0, column.address.length - 1);
     }
     for (let i = 0; i < Object.keys(stakeHolderHeaders).length; i++) {
-      console.log(
-        'Object.keys(stakeHolderHeaders)[i]',
-        Object.keys(stakeHolderHeaders)[i],
-      );
       const column = stakeHolderWorksheet.model.rows[0].cells.find(
         (cell) => cell.value === Object.keys(stakeHolderHeaders)[i],
       );
       if (!column || !column.address) {
-        console.log('error...');
         return {
           isImportCompleted: false,
           reasonForInCompletion: 'Missing Headers from Stakeholders sheet',
@@ -128,7 +123,10 @@ const readExcelFile = async (fileBuffer) => {
       ].columnName = column.address.substr(0, column.address.length - 1);
     }
     for (let i = 1; i < stakeHolderWorksheet.model.rows.length; i++) {
-      if (stakeHolderWorksheet.model.rows[i].cells) {
+      if (
+        stakeHolderWorksheet.model.rows[i].cells &&
+        stakeHolderWorksheet.model.rows[i].cells.length !== 0
+      ) {
         const rowNumber = stakeHolderWorksheet.model.rows[i].number;
         let stakeholder = {
           debtorCode: stakeHolderWorksheet.model.rows[i].cells.find(
@@ -297,7 +295,10 @@ const readExcelFile = async (fileBuffer) => {
       i < applicationWorksheet.model.rows.length;
       i++
     ) {
-      if (applicationWorksheet.model.rows[i].cells) {
+      if (
+        applicationWorksheet.model.rows[i].cells &&
+        applicationWorksheet.model.rows[i].cells.length !== 0
+      ) {
         const rowNumber = applicationWorksheet.model.rows[i].number;
         // console.log('applicationWorksheet.model.rows[i].cells::', applicationWorksheet.model.rows[i].cells);
         let application = {
@@ -455,27 +456,34 @@ const readExcelFile = async (fileBuffer) => {
           });
           continue;
         }
+        /*Validation on Mandatory fields start*/
         if (
           !application.clientCode ||
           (!application.debtorCode &&
             !application.abn &&
             !application.acn &&
-            !application.companyRegistrationNumber) ||
-          (!application.debtorCode &&
-            (!application.address.countryCode ||
-              !countryList.find(
-                (c) => c._id === application.address.countryCode,
-              ))) ||
-          !application.creditLimit ||
-          isNaN(application.creditLimit) ||
-          !application.extendedTerms ||
-          (application.extendedTerms.toLowerCase() !== 'yes' &&
-            application.extendedTerms.toLowerCase() !== 'no') ||
-          !application.overdueAmounts ||
-          (application.overdueAmounts.toLowerCase() !== 'yes' &&
-            application.overdueAmounts.toLowerCase() !== 'no')
+            !application.companyRegistrationNumber)
         ) {
-          let reason = 'Mandatory fields are missing.';
+          unProcessedApplications.push({
+            ...application,
+            reason:
+              'Missing mandatory fields as a part of Client (Client Code) or Debtor (Debtor Code, ABN, or ACN)',
+          });
+          continue;
+        }
+        if (
+          !application.debtorCode &&
+          (!application.address.countryCode ||
+            !countryList.find((c) => c._id === application.address.countryCode))
+        ) {
+          unProcessedApplications.push({
+            ...application,
+            reason: 'No or invalid value found for country.',
+          });
+          continue;
+        }
+        if (!application.creditLimit || isNaN(application.creditLimit)) {
+          let reason = '';
           if (
             application.hasOwnProperty('creditLimit') &&
             isNaN(application.creditLimit)
@@ -487,21 +495,31 @@ const readExcelFile = async (fileBuffer) => {
           ) {
             reason = 'Credit Limit must be a positive number.';
           }
-          console.log(
-            countryList.find((c) => c._id === application.address.countryCode),
-          );
-          if (
-            application.address.countryCode &&
-            !countryList.find((c) => c._id === application.address.countryCode)
-          ) {
-            reason = 'Invalid country entered.';
-          }
           unProcessedApplications.push({
             ...application,
             reason: reason,
           });
           continue;
         }
+        if (
+          !application.extendedTerms ||
+          (application.extendedTerms.toLowerCase() !== 'yes' &&
+            application.extendedTerms.toLowerCase() !== 'no') ||
+          !application.overdueAmounts ||
+          (application.overdueAmounts.toLowerCase() !== 'yes' &&
+            application.overdueAmounts.toLowerCase() !== 'no') ||
+          (application.extendedTerms.toLowerCase() === 'yes' &&
+            !application.detailsForExtendedTerms) ||
+          (application.overdueAmounts.toLowerCase() === 'yes' &&
+            !application.detailsForOverdueAmounts)
+        ) {
+          unProcessedApplications.push({
+            ...application,
+            reason: 'Missing clarity on extended terms or overdue amounts.',
+          });
+          continue;
+        }
+        /*Validation on Mandatory fields end*/
         if (
           !application.debtorCode &&
           (application.abn ||
@@ -1642,23 +1660,12 @@ const generateApplications = async (importId, userId) => {
           { $inc: { 'entityCount.application': 1, 'entityCount.debtor': 1 } },
         ),
       );
-      // await Organization.updateOne(
-      //   { isDeleted: false },
-      //   { $inc: { 'entityCount.application': 1, 'entityCount.debtor': 1 } },
-      // );
-      promiseArr.push(
-        checkForAutomation({
-          applicationId: application._id,
-          userType: 'user',
-          userId: userId,
-        }),
-      );
-      // await checkForAutomation({
-      //   applicationId: application._id,
-      //   userType: 'user',
-      //   userId: userId,
-      // });
       await Promise.all(promiseArr);
+      await checkForAutomation({
+        applicationId: application._id,
+        userType: 'user',
+        userId: userId,
+      });
     }
     return {
       applicationCount: importApplicationDump.applications.length,
