@@ -194,6 +194,9 @@ router.get('/audit-logs', async function (req, res) {
             taskId: {
               $cond: [{ $eq: ['$entityType', 'task'] }, '$entityRefId', null],
             },
+            claimId: {
+              $cond: [{ $eq: ['$entityType', 'claim'] }, '$entityRefId', null],
+            },
           },
         },
         {
@@ -269,6 +272,14 @@ router.get('/audit-logs', async function (req, res) {
           },
         },
         {
+          $lookup: {
+            from: 'clients',
+            localField: 'claimId',
+            foreignField: '_id',
+            as: 'claimId',
+          },
+        },
+        {
           $addFields: {
             entityRefId: {
               $cond: [
@@ -302,7 +313,15 @@ router.get('/audit-logs', async function (req, res) {
                                           $cond: [
                                             { $eq: ['$entityType', 'task'] },
                                             '$taskId.title',
-                                            null,
+                                            {
+                                              $cond: [
+                                                {
+                                                  $eq: ['$entityType', 'claim'],
+                                                },
+                                                '$claimId.name',
+                                                null,
+                                              ],
+                                            },
                                           ],
                                         },
                                       ],

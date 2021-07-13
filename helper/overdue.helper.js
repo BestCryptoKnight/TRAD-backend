@@ -10,6 +10,7 @@ const Overdue = mongoose.model('overdue');
  * Local Imports
  * */
 const Logger = require('./../services/logger');
+const { addAuditLog } = require('./audit-log.helper');
 
 const getLastOverdueList = async ({ date, query, counter = 0 }) => {
   try {

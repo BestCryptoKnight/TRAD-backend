@@ -875,8 +875,13 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
     let continueWithAutomation = true;
     let blockers = [];
 
+    if (!application) {
+      continueWithAutomation = false;
+      blockers.push('No Application found');
+    }
+
     //TODO uncomment after flag added in client
-    if (!application.clientId.isAutoApproveAllowed) {
+    if (continueWithAutomation && !application.clientId.isAutoApproveAllowed) {
       continueWithAutomation = false;
       blockers.push('Automation is not Allowed');
     }

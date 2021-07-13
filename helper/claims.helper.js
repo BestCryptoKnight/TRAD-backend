@@ -9,6 +9,7 @@ const Client = mongoose.model('client');
  * */
 const Logger = require('./../services/logger');
 const { getClaimsDetails, addClaimDetail } = require('./rss.helper');
+const { addAuditLog } = require('./audit-log.helper');
 
 const getClaimsList = async ({
   hasFullAccess = false,
@@ -124,7 +125,13 @@ const getClaimsList = async ({
   }
 };
 
-const addClaimInRSS = async ({ requestBody }) => {
+const addClaimInRSS = async ({
+  requestBody,
+  userType,
+  userId,
+  clientId,
+  userName,
+}) => {
   try {
     const keys = [
       'name',
@@ -159,6 +166,17 @@ const addClaimInRSS = async ({ requestBody }) => {
       'repaymentplanlength',
     ];
     const claim = {};
+    let client;
+    if (userType === 'client-user' && clientId) {
+      client = await Client.findOne({ _id: clientId })
+        .select('_id crmClientId name')
+        .lean();
+      requestBody.accountid = client.crmClientId;
+    } else {
+      client = await Client.findOne({ crmClientId: requestBody.accountid })
+        .select('_id crmClientId name')
+        .lean();
+    }
     keys.map((key) => {
       if (
         key === 'claimsinforequested' ||
@@ -171,10 +189,20 @@ const addClaimInRSS = async ({ requestBody }) => {
       claim[key] = requestBody[key];
     });
     const response = await addClaimDetail({ claim: claim });
+    await addAuditLog({
+      entityType: 'claim',
+      userType: userType,
+      logDescription: `A new claim for client ${client.name} is added by ${
+        userType === 'user' ? userName : client.name
+      }`,
+      userRefId: userId,
+      actionType: 'add',
+      entityRefId: client._id,
+    });
     return response;
   } catch (e) {
     Logger.log.error('Error occurred while adding claim in RSS');
-    Logger.log.error(e.message || e);
+    Logger.log.error(e);
   }
 };
 

@@ -213,7 +213,12 @@ router.post('/', async function (req, res) {
     });
   }
   try {
-    await addClaimInRSS({ requestBody: req.body });
+    await addClaimInRSS({
+      requestBody: req.body,
+      userType: 'user',
+      userId: req.user._id,
+      userName: req.user.name,
+    });
     res.status(200).send({
       status: 'SUCCESS',
       data: 'Claim added successfully',
