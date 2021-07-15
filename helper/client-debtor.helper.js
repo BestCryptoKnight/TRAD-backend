@@ -10,6 +10,8 @@ const ClientDebtor = mongoose.model('client-debtor');
 const Logger = require('./../services/logger');
 const { Parser } = require('json2csv');
 const { formatString } = require('./overdue.helper');
+const { addNotification } = require('./notification.helper');
+const { sendNotification } = require('./socket.helper');
 
 const getClientDebtorDetails = async ({ debtor, manageColumns }) => {
   try {
@@ -494,10 +496,80 @@ const convertToCSV = (arr) => {
   return csv;
 };
 
+const checkForExpiringLimit = async ({ startDate, endDate }) => {
+  try {
+    const creditLimits = await ClientDebtor.find({
+      expiryDate: { $gte: startDate, $lte: endDate },
+      isActive: true,
+    })
+      .populate({
+        path: 'clientId',
+        populate: { path: 'riskAnalystId' },
+      })
+      .populate('debtorId')
+      .select('_id clientId debtorId')
+      .lean();
+    console.log(creditLimits);
+    const response = [];
+    creditLimits.forEach((i) => {
+      if (
+        i.clientId &&
+        i.clientId.name &&
+        i.clientId.riskAnalystId &&
+        i.clientId.riskAnalystId._id &&
+        i.debtorId &&
+        i.debtorId._id &&
+        i.debtorId.entityName
+      ) {
+        response.push({
+          id: i.debtorId._id + i.clientId.riskAnalystId._id,
+          clientName: i.clientId.name,
+          debtorId: i.debtorId._id,
+          debtorName: i.debtorId.entityName,
+          riskAnalystId: i.clientId.riskAnalystId._id,
+        });
+      }
+    });
+    const filteredData = Array.from(new Set(response.map((s) => s.id))).map(
+      (id) => {
+        return {
+          id: id,
+          clientName: response.find((i) => i.id === id).clientName,
+          debtorId: response.find((i) => i.id === id).debtorId,
+          debtorName: response.find((i) => i.id === id).debtorName,
+          riskAnalystId: response.find((i) => i.id === id).riskAnalystId,
+        };
+      },
+    );
+    console.log(filteredData, 'filteredData');
+    for (let i = 0; i < filteredData.length; i++) {
+      const notification = await addNotification({
+        userId: filteredData[i].riskAnalystId,
+        userType: 'user',
+        description: `Credit limit for ${filteredData[i].clientName} - ${filteredData[i].debtorName} is expiring today`,
+      });
+      if (notification) {
+        sendNotification({
+          notificationObj: {
+            type: 'CREDIT_LIMIT_EXPIRING',
+            data: notification,
+          },
+          type: notification.userType,
+          userId: notification.userId,
+        });
+      }
+    }
+  } catch (e) {
+    Logger.log.error('Error occurred in check for expiring credit limit');
+    Logger.log.error(e);
+  }
+};
+
 module.exports = {
   getClientDebtorDetails,
   convertToCSV,
   getClientCreditLimit,
   getDebtorCreditLimit,
   formatCSVList,
+  checkForExpiringLimit,
 };

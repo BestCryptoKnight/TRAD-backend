@@ -11,6 +11,7 @@ const ClientUser = mongoose.model('client-user');
 const Logger = require('./../services/logger');
 const StaticData = require('./../static-files/staticData.json');
 const { getDebtorFullAddress } = require('./debtor.helper');
+const config = require('./../config');
 
 const getClientList = async ({
   hasFullAccess = false,
@@ -364,4 +365,42 @@ const getClientListWithDetails = async ({
   }
 };
 
-module.exports = { getClientList, getUserClientList, getClientListWithDetails };
+const removeClientUserToken = async () => {
+  try {
+    const users = await ClientUser.find({
+      isDeleted: false,
+      hasPortalAccess: true,
+    }).lean();
+    const date = new Date();
+    const expireTime = new Date(
+      date.setHours(date.getHours() - config.jwt.expireTime),
+    );
+    const promises = [];
+    for (let i = 0; i < users.length; i++) {
+      if (users[i].jwtToken.length !== 0) {
+        console.log('user[i].jwtToken ', users[i].jwtToken.length);
+        users[i].jwtToken = users[i].jwtToken.filter((i) => {
+          return expireTime < i.lastAPICallTime;
+        });
+        console.log('user[i].jwtToken ', users[i].jwtToken);
+        promises.push(
+          ClientUser.updateOne(
+            { _id: users[i]._id },
+            { $set: { jwtToken: users[i].jwtToken } },
+          ),
+        );
+      }
+    }
+    await Promise.all(promises);
+  } catch (e) {
+    Logger.log.error('Error occurred remove token from DB');
+    Logger.log.error(e);
+  }
+};
+
+module.exports = {
+  getClientList,
+  getUserClientList,
+  getClientListWithDetails,
+  removeClientUserToken,
+};

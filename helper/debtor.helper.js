@@ -7,6 +7,7 @@ const ClientDebtor = mongoose.model('client-debtor');
 const Debtor = mongoose.model('debtor');
 const DebtorDirector = mongoose.model('debtor-director');
 const Organization = mongoose.model('organization');
+const CreditReport = mongoose.model('credit-report');
 
 /*
  * Local Imports
@@ -15,6 +16,8 @@ const Logger = require('./../services/logger');
 const { addAuditLog } = require('./audit-log.helper');
 const StaticData = require('./../static-files/staticData.json');
 const { formatString } = require('./overdue.helper');
+const { addNotification } = require('./notification.helper');
+const { sendNotification } = require('./socket.helper');
 
 const getDebtorList = async () => {
   try {
@@ -454,6 +457,164 @@ const getDebtorListWithDetails = async ({
   }
 };
 
+const checkForExpiringReports = async ({ startDate, endDate }) => {
+  try {
+    const reports = await CreditReport.find({
+      isDeleted: false,
+      expiryDate: { $gte: startDate, $lte: endDate },
+    }).lean();
+    if (reports.length !== 0) {
+      const debtorIds = [];
+      const stakeholderIds = [];
+      reports.forEach((i) => {
+        if (i.entityType === 'debtor') {
+          debtorIds.push(i.entityId);
+        } else {
+          stakeholderIds.push(i.entityId);
+        }
+      });
+      if (stakeholderIds.length !== 0) {
+        const stakeholders = await DebtorDirector.find({
+          _id: { $in: stakeholderIds },
+        })
+          .select('debtorId')
+          .lean();
+        if (stakeholders.length !== 0) {
+          stakeholders.forEach((i) => {
+            debtorIds.push(i.debtorId);
+          });
+        }
+      }
+      const clientDebtors = await ClientDebtor.find({
+        debtorId: { $in: debtorIds },
+      })
+        .populate({
+          path: 'clientId',
+          populate: { path: 'riskAnalystId serviceManagerId' },
+        })
+        .populate('debtorId')
+        .lean();
+      const response = [];
+      clientDebtors.forEach((i) => {
+        if (
+          i.clientId &&
+          i.clientId.riskAnalystId &&
+          i.clientId.riskAnalystId._id &&
+          i.debtorId &&
+          i.debtorId._id &&
+          i.debtorId.entityName
+        ) {
+          response.push({
+            id: i.debtorId._id + i.clientId.riskAnalystId._id,
+            debtorId: i.debtorId._id,
+            debtorName: i.debtorId.entityName,
+            riskAnalystId: i.clientId.riskAnalystId._id,
+          });
+        }
+      });
+      const filteredData = Array.from(new Set(response.map((s) => s.id))).map(
+        (id) => {
+          return {
+            id: id,
+            debtorId: response.find((i) => i.id === id).debtorId,
+            debtorName: response.find((i) => i.id === id).debtorName,
+            riskAnalystId: response.find((i) => i.id === id).riskAnalystId,
+          };
+        },
+      );
+      console.log(filteredData, 'filteredData');
+      for (let i = 0; i < filteredData.length; i++) {
+        const notification = await addNotification({
+          userId: filteredData[i].riskAnalystId,
+          userType: 'user',
+          description: `Credit report for ${filteredData[i].debtorName} is expiring today`,
+        });
+        if (notification) {
+          sendNotification({
+            notificationObj: {
+              type: 'REPORT_EXPIRING',
+              data: notification,
+            },
+            type: notification.userType,
+            userId: notification.userId,
+          });
+        }
+      }
+    }
+  } catch (e) {
+    Logger.log.error('Error occurred in check for expiring reports');
+    Logger.log.error(e.message || e);
+  }
+};
+
+const checkForReviewDebtor = async ({ endDate }) => {
+  try {
+    const debtors = await Debtor.find({
+      reviewDate: { $lte: endDate },
+      // isActive: true,
+    }).lean();
+    const debtorIds = debtors.map((i) => i._id);
+    const clientDebtors = await ClientDebtor.find({
+      debtorId: { $in: debtorIds },
+    })
+      .populate({
+        path: 'clientId',
+        populate: { path: 'riskAnalystId serviceManagerId' },
+      })
+      .populate('debtorId')
+      .lean();
+    const response = [];
+    clientDebtors.forEach((i) => {
+      if (
+        i.clientId &&
+        i.clientId.riskAnalystId &&
+        i.clientId.riskAnalystId._id &&
+        i.debtorId &&
+        i.debtorId._id &&
+        i.debtorId.entityName
+      ) {
+        response.push({
+          id: i.debtorId._id + i.clientId.riskAnalystId._id,
+          debtorId: i.debtorId._id,
+          debtorName: i.debtorId.entityName,
+          riskAnalystId: i.clientId.riskAnalystId._id,
+        });
+      }
+    });
+    const filteredData = Array.from(new Set(response.map((s) => s.id))).map(
+      (id) => {
+        return {
+          id: id,
+          debtorId: response.find((i) => i.id === id).debtorId,
+          debtorName: response.find((i) => i.id === id).debtorName,
+          riskAnalystId: response.find((i) => i.id === id).riskAnalystId,
+        };
+      },
+    );
+    console.log(filteredData, 'filteredData');
+    for (let i = 0; i < filteredData.length; i++) {
+      const notification = await addNotification({
+        userId: filteredData[i].riskAnalystId,
+        userType: 'user',
+        description: `Review Debtor ${filteredData[i].debtorName}`,
+      });
+      if (notification) {
+        sendNotification({
+          notificationObj: {
+            type: 'REVIEW_DEBTOR',
+            data: notification,
+          },
+          type: notification.userType,
+          userId: notification.userId,
+        });
+      }
+    }
+  } catch (e) {
+    Logger.log.error('Error occurred in check for review debtor');
+    Logger.log.error(e.message || e);
+  }
+};
+
 module.exports = {
   getDebtorList,
   createDebtor,
@@ -462,4 +623,6 @@ module.exports = {
   getStreetTypeName,
   getDebtorListWithDetails,
   checkDirectorsOfDebtor,
+  checkForExpiringReports,
+  checkForReviewDebtor,
 };
