@@ -93,7 +93,19 @@ const readExcelFile = async (fileBuffer) => {
     };
 
     const applicationWorksheet = workbook.getWorksheet('Applications');
+    if (!applicationWorksheet) {
+      return {
+        isImportCompleted: false,
+        reasonForInCompletion: 'Missing Applications worksheet',
+      };
+    }
     const stakeHolderWorksheet = workbook.getWorksheet('Stakeholders');
+    if (!stakeHolderWorksheet) {
+      return {
+        isImportCompleted: false,
+        reasonForInCompletion: 'Missing Stakeholders worksheet',
+      };
+    }
     for (let i = 0; i < Object.keys(applicationHeaders).length; i++) {
       const column = applicationWorksheet.model.rows[0].cells.find(
         (cell) => cell.value === Object.keys(applicationHeaders)[i],
@@ -122,10 +134,11 @@ const readExcelFile = async (fileBuffer) => {
         Object.keys(stakeHolderHeaders)[i]
       ].columnName = column.address.substr(0, column.address.length - 1);
     }
+    console.log('Headers processed...');
     for (let i = 1; i < stakeHolderWorksheet.model.rows.length; i++) {
       if (
-        stakeHolderWorksheet.model.rows[i].cells &&
-        stakeHolderWorksheet.model.rows[i].cells.length !== 0
+        stakeHolderWorksheet.model.rows[i].cells
+        // stakeHolderWorksheet.model.rows[i].cells.length !== 0
       ) {
         const rowNumber = stakeHolderWorksheet.model.rows[i].number;
         let stakeholder = {
@@ -296,8 +309,8 @@ const readExcelFile = async (fileBuffer) => {
       i++
     ) {
       if (
-        applicationWorksheet.model.rows[i].cells &&
-        applicationWorksheet.model.rows[i].cells.length !== 0
+        applicationWorksheet.model.rows[i].cells
+        // applicationWorksheet.model.rows[i].cells.length !== 0
       ) {
         const rowNumber = applicationWorksheet.model.rows[i].number;
         // console.log('applicationWorksheet.model.rows[i].cells::', applicationWorksheet.model.rows[i].cells);
@@ -720,6 +733,8 @@ const readExcelFile = async (fileBuffer) => {
         applications.push(application);
       }
     }
+    console.log('data processed...');
+
     // console.log('applications::', JSON.stringify(applications, null, 3));
     // console.log(
     //   'unProcessedApplications::',

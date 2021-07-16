@@ -36,6 +36,11 @@ router.post('/', upload.single('dump-file'), async function (req, res) {
   try {
     let helperResponse = await readExcelFile(req.file.buffer);
     if (!helperResponse.isImportCompleted) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'REQUIRE_FIELD_MISSING',
+        message: helperResponse.reasonForInCompletion,
+      });
     } else {
       const module = StaticFile.modules.find(
         (i) => i.name === 'import-application',
@@ -45,12 +50,7 @@ router.post('/', upload.single('dump-file'), async function (req, res) {
         docs: helperResponse.unProcessedApplications,
         toBeProcessedApplicationCount: helperResponse.applications.length,
       };
-      if (helperResponse.applications.length === 0) {
-        return res.status(400).send({
-          status: 'NO_APPLICATIONS_PRESENT',
-          message: 'No applications are present to be processed.',
-        });
-      } else {
+      if (helperResponse.applications.length !== 0) {
         let importApplicationDump = new ImportApplicationDump({
           applications: helperResponse.applications,
         });
