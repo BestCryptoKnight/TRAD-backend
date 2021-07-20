@@ -971,7 +971,14 @@ router.put('/user/sync-from-crm/:clientId', async function (req, res) {
     });
     let promiseArr = [];
     for (let i = 0; i < contactsFromCrm.length; i++) {
+      const clientUser = await ClientUser.findOne({
+        crmContactId: contactsFromCrm[i].crmContactId,
+        isDeleted: false,
+      }).lean();
       contactsFromCrm[i].clientId = req.params.clientId;
+      if (!clientUser || !clientUser.hasOwnProperty('hasPortalAccess')) {
+        contactsFromCrm[i].hasPortalAccess = false;
+      }
       promiseArr.push(
         ClientUser.updateOne(
           { crmContactId: contactsFromCrm[i].crmContactId, isDeleted: false },
@@ -979,10 +986,7 @@ router.put('/user/sync-from-crm/:clientId', async function (req, res) {
           { upsert: true },
         ),
       );
-      const clientUser = await ClientUser.findOne({
-        crmContactId: contactsFromCrm[i].crmContactId,
-        isDeleted: false,
-      }).lean();
+      //TODO add logs for new records
       if (clientUser && clientUser._id) {
         promiseArr.push(
           addAuditLog({
