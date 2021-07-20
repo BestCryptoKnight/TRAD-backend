@@ -180,7 +180,10 @@ router.get(
       if (response && response.status && response.status === 'ERROR') {
         return res.status(400).send(response);
       }
-      res.status(200).send({ status: 'SUCCESS', data: response });
+      res.status(200).send({
+        status: 'SUCCESS',
+        data: { response: response, header: 'Stakeholder Details' },
+      });
     } catch (e) {
       Logger.log.error(
         'Error occurred in get stakeholder modal details ',
@@ -262,7 +265,10 @@ router.get('/drawer/:debtorId', async function (req, res) {
       debtor: { debtorId: debtor },
       manageColumns: module.manageColumns,
     });
-    res.status(200).send({ status: 'SUCCESS', data: response });
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: { response: response, header: 'Debtor Details' },
+    });
   } catch (e) {
     Logger.log.error(
       'Error occurred in get debtor modal details ',

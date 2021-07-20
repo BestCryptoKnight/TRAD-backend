@@ -1,7 +1,11 @@
+/*
+ * Module Imports
+ * */
 const axios = require('axios');
-var parser = require('xml2json');
+const parser = require('xml2json');
 const mongoose = require('mongoose');
 const Organization = mongoose.model('organization');
+
 /*
  * Local Imports
  * */
@@ -76,8 +80,6 @@ let fetchCreditReport = ({ productCode, searchField, searchValue }) => {
     }
   });
 };
-// fetchCreditReport({});
-// let report = null;
 
 let processObj = (obj) => {
   let processedObject = {};
@@ -139,8 +141,75 @@ let processIllionReport = (report) => {
   return processedReport;
 };
 
-// processIllionReport();
+const createProfile = async ({ illion, alertIds, profileName }) => {
+  try {
+    const url =
+      'https://b2b.clt.illion.com.au/CommercialMonitoring/api/Profile/CreateProfile';
+    const requestBody = {
+      requestHeader: {
+        subscriber: {
+          subscriberId: illion.subscriberId,
+          userId: illion.userId,
+          password: illion.password,
+        },
+      },
+      profileName: profileName,
+      profileColour: 'None',
+      alertIds: alertIds,
+      useInternalReferenceNumber: false,
+    };
+    const options = {
+      method: 'POST',
+      url: url,
+      data: requestBody,
+    };
+    const { data } = await axios(options);
+    return data;
+  } catch (e) {
+    Logger.log.error('Error occurred in create illion profile');
+    Logger.log.error(e.message || e);
+  }
+};
+
+const updateProfile = async ({ requestedData }) => {
+  try {
+    const organization = await Organization.findOne({
+      isDeleted: false,
+    })
+      .select({ 'integration.illion': 1 })
+      .lean();
+    const url =
+      'https://b2b.clt.illion.com.au/CommercialMonitoring/api/Profile/UpdateProfile';
+    const requestBody = {
+      requestHeader: {
+        subscriber: {
+          subscriberId: organization.integration.illion.subscriberId,
+          userId: organization.integration.illion.userId,
+          password: organization.integration.illion.password,
+        },
+      },
+      profileId: requestedData.profileId,
+      profileName: requestedData.profileName,
+      profileColour: requestedData.profileColour,
+      locked: requestedData.locked,
+      profileAlerts: requestedData.profileAlerts,
+      useInternalReferenceNumber: requestedData.useInternalReferenceNumber,
+    };
+    const options = {
+      method: 'POST',
+      url: url,
+      data: requestBody,
+    };
+    const { data } = await axios(options);
+    return data;
+  } catch (e) {
+    Logger.log.error('Error occurred in update illion profile');
+    Logger.log.error(e.message || e);
+  }
+};
 
 module.exports = {
   fetchCreditReport,
+  createProfile,
+  updateProfile,
 };

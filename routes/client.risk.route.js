@@ -228,7 +228,10 @@ router.get('/credit-limit/drawer-details/:debtorId', async function (req, res) {
       debtor,
       manageColumns: module.manageColumns,
     });
-    res.status(200).send({ status: 'SUCCESS', data: response });
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: { response: response, header: 'Credit Limit Details' },
+    });
   } catch (e) {
     Logger.log.error(
       'Error occurred in get debtor modal details ',
@@ -390,7 +393,7 @@ router.get('/user/:clientId', async function (req, res) {
 });
 
 /**
- * Get Client User details
+ * Get Client User drawer details
  */
 router.get('/user-details/:clientUserId', async function (req, res) {
   if (!req.params.clientUserId) {
@@ -426,7 +429,10 @@ router.get('/user-details/:clientUserId', async function (req, res) {
         });
       }
     });
-    res.status(200).send({ status: 'SUCCESS', data: response });
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: { response: response, header: 'Contact Details' },
+    });
   } catch (e) {
     Logger.log.error('Error occurred in listing clients.', e.message || e);
     res.status(500).send({
@@ -490,7 +496,10 @@ router.get('/details/:clientId', async function (req, res) {
         });
       }
     });
-    res.status(200).send({ status: 'SUCCESS', data: response });
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: { response: response, header: 'Client Details' },
+    });
   } catch (e) {
     Logger.log.error(
       'Error occurred in get client modal details ',
@@ -1189,9 +1198,13 @@ router.put('/user/:clientUserId', async function (req, res) {
         signUpToken: signUpToken,
         manageColumns: manageColumns,
       };
-      //TODO uncomment for send mail on Portal-Access
-      /* let mailObj = {
-        toAddress: [clientUser.email],
+      //TODO change dummy email id to client's user email id for send mail on Portal-Access
+      let mailObj = {
+        toAddress: [
+          'parth@team.humanpixel.com.au',
+          'jill@team.humanpixel.com.au',
+        ],
+        // toAddress: [clientUser.email],
         subject: 'Welcome to TRAD CLIENT PORTAL',
         text: {
           name: clientUser.name,
@@ -1227,7 +1240,7 @@ router.put('/user/:clientUserId', async function (req, res) {
         },
         mailFor: 'newClientUser',
       };
-      promises.push(MailHelper.sendMail(mailObj));*/
+      promises.push(MailHelper.sendMail(mailObj));
       message = 'Login access sent successfully';
     } else {
       //TODO revert portal access

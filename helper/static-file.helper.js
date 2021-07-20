@@ -31,7 +31,7 @@ if (config.staticServing.isCloudFrontEnabled) {
   };
 }
 
-let uploadFile = ({ file, filePath, fileType }) => {
+let uploadFile = ({ file, filePath, fileType, isPublicFile = false }) => {
   return new Promise(async (resolve, reject) => {
     try {
       let s3SigningParams = {
@@ -40,6 +40,9 @@ let uploadFile = ({ file, filePath, fileType }) => {
         Key: filePath,
         ContentType: fileType,
       };
+      if (isPublicFile) {
+        s3SigningParams.ACL = 'public-read';
+      }
       s3.upload(s3SigningParams, function (err, data) {
         if (err) {
           Logger.log.error(

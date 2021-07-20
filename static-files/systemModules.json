@@ -46,7 +46,7 @@
       "name": "insurer",
       "label": "Insurer",
       "isDefault": false,
-      "accessTypes": ["read", "write", "full-access"]
+      "accessTypes": ["read", "write"]
     },
     {
       "name": "overdue",

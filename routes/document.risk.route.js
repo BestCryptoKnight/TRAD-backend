@@ -536,11 +536,10 @@ router.put('/column-name', async function (req, res) {
     !req.body.columns ||
     !req.body.columnFor
   ) {
-    Logger.log.error('Require fields are missing');
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Something went wrong, please try again.',
+      message: 'Require fields are missing.',
     });
   }
   try {

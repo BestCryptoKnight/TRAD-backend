@@ -35,11 +35,25 @@ const organizationSchema = new Schema(
       nzbn: {
         accessToken: Schema.Types.String,
       },
+      illionAlert: {
+        userId: Schema.Types.String,
+        password: Schema.Types.String,
+        subscriberId: Schema.Types.String,
+      },
     },
     entityCount: {
       client: { type: Schema.Types.Number, default: 0 },
       debtor: { type: Schema.Types.Number, default: 0 },
       application: { type: Schema.Types.Number, default: 0 },
+    },
+    illionProfileEmail: Schema.Types.String,
+    illionProfile: {
+      profileId: Schema.Types.String,
+      profileName: Schema.Types.String,
+      locked: Schema.Types.Boolean,
+      useInternalReference: Schema.Types.Boolean,
+      colour: Schema.Types.Mixed,
+      alerts: Schema.Types.Mixed,
     },
   },
   { timestamps: true },

@@ -14,6 +14,7 @@ const config = require('../config');
 const MailHelper = require('./mailer.helper');
 const Logger = require('../services/logger');
 const StaticFile = require('./../static-files/systemModules');
+const { createProfile } = require('./illion.helper');
 
 const createSuperAdmin = () => {
   return new Promise(async (resolve, reject) => {
@@ -93,7 +94,75 @@ const createDefaultInsurer = () => {
   });
 };
 
+const checkForIllionProfile = async () => {
+  try {
+    const organization = await Organization.findOne({
+      isDeleted: false,
+    }).lean();
+    if (!organization.illionProfile || !organization.illionProfile.profileId) {
+      const alertIds = [
+        1,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        47,
+        48,
+        49,
+        121,
+        122,
+        276,
+        277,
+        278,
+        292,
+        293,
+        294,
+      ];
+      if (
+        organization.integration.illion &&
+        organization.integration.illion.userId &&
+        organization.integration.illion.password &&
+        organization.integration.illion.subscriberId
+      ) {
+        const response = await createProfile({
+          illion: organization.integration.illion,
+          alertIds,
+          profileName: organization.name,
+        });
+        console.log('illion profile', response);
+        if (response && response.profile) {
+          await Organization.updateOne(
+            { isDeleted: false },
+            { $set: { illionProfile: response.profile } },
+          );
+        }
+      }
+    } else {
+      Logger.log.info('Illion profile already exists.');
+    }
+  } catch (e) {
+    Logger.log.error('Error occurred in check for illion profile');
+    Logger.log.error(e.message || e);
+  }
+};
+
 module.exports = {
   createSuperAdmin,
   createDefaultInsurer,
+  checkForIllionProfile,
 };

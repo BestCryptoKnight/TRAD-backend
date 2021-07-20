@@ -304,7 +304,10 @@ router.get('/drawer-details/:applicationId', async function (req, res) {
       application,
       manageColumns: module.manageColumns,
     });
-    res.status(200).send({ status: 'SUCCESS', data: response });
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: { response: response, header: 'Application Details' },
+    });
   } catch (e) {
     Logger.log.error(
       'Error occurred in get application modal details ',

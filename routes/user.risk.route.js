@@ -277,11 +277,10 @@ router.get('/:userId', async function (req, res) {
     !req.params.userId ||
     !mongoose.Types.ObjectId.isValid(req.params.userId)
   ) {
-    Logger.log.error('User id not found in query params.');
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Something went wrong, please try again',
+      message: 'Require fields are missing.',
     });
   }
   let userId = req.params.userId;
@@ -545,11 +544,10 @@ router.put('/profile', async function (req, res) {
  */
 router.put('/column-name', async function (req, res) {
   if (!req.body.hasOwnProperty('isReset') || !req.body.columns) {
-    Logger.log.error('Require fields are missing');
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Something went wrong, please try again.',
+      message: 'Require fields are missing.',
     });
   }
   try {

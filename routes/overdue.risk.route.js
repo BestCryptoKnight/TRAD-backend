@@ -212,7 +212,10 @@ router.get('/details/:overdueId', async function (req, res) {
       overdueId: req.params.overdueId,
       isForRisk: true,
     });
-    return res.status(200).send({ status: 'SUCCESS', data: overdue });
+    return res.status(200).send({
+      status: 'SUCCESS',
+      data: { response: overdue, header: 'Overdue Details' },
+    });
   } catch (e) {
     Logger.log.error('Error occurred in get drawer details', e.message || e);
     res.status(500).send({
