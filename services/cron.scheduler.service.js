@@ -10,6 +10,7 @@ const Task = mongoose.model('task');
  * Local Imports
  * */
 const Logger = require('./logger');
+const config = require('./../config');
 const { sendNotification } = require('./../helper/socket.helper');
 const { addNotification } = require('./../helper/notification.helper');
 const { removeUserToken } = require('./../helper/user.helper');
@@ -19,6 +20,7 @@ const {
   checkForExpiringReports,
   checkForReviewDebtor,
 } = require('./../helper/debtor.helper');
+const { retrieveAlertListFromIllion } = require('./../helper/alert.helper');
 
 const scheduler = async () => {
   try {
@@ -96,8 +98,34 @@ const scheduler = async () => {
         timezone: 'Australia/Sydney',
       },
     );
+
+    /* /!*
+    Retrieve Alert List
+     *!/
+    cron.schedule(
+      config.illion.cronString,
+      async () => {
+        Logger.log.trace(
+          'Retrieve alert list at 1 AM acc. to Australia/Sydney timezone',
+          new Date(),
+        );
+        let start = new Date();
+        start.setHours(0, 0, 0, 0);
+        let end = new Date();
+        end.setHours(23, 59, 59, 999);
+        start = new Date(
+          start.toString().split('GMT')[0] + ' UTC',
+        ).toISOString();
+        end = new Date(start.toString().split('GMT')[0] + ' UTC').toISOString();
+        await retrieveAlertListFromIllion({ startDate: start, endDate: end });
+      },
+      {
+        scheduled: true,
+        timezone: 'Australia/Sydney',
+      },
+    );*/
   } catch (e) {
-    Logger.log.error('Error occurred in scheduling cron ', e.message || e);
+    Logger.log.error('Error occurred in retrieve alert list', e.message || e);
   }
 };
 

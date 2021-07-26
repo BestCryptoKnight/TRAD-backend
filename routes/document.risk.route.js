@@ -22,6 +22,7 @@ const {
   getPreSignedUrl,
   createZipFile,
   downloadDocument,
+  uploadFile,
 } = require('./../helper/static-file.helper');
 const { addAuditLog, getEntityName } = require('./../helper/audit-log.helper');
 
@@ -523,6 +524,38 @@ router.post('/upload', upload.single('document'), async function (req, res) {
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Upload for Document publicly
+ */
+router.post('/upload-public', upload.single('document'), async (req, res) => {
+  req.body = JSON.parse(JSON.stringify(req.body));
+  if (!req.body.filePath) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require field is missing.',
+    });
+  }
+  try {
+    const s3Response = await uploadFile({
+      file: req.file.buffer,
+      filePath: req.body.filePath + '/' + req.file.originalname,
+      fileType: req.file.mimetype,
+      isPublicFile: true,
+    });
+    res.status(200).send({ status: 'success', data: s3Response });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in upload document for public access',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later',
     });
   }
 });

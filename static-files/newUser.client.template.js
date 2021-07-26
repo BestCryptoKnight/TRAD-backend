@@ -88,17 +88,18 @@ module.exports = ({
                             <tr>
                                 <td align="center" valign="center" width="80"
                                     style="padding: 20px 5% 5px 5%; font-size: 22px; font-family: GoogleSans-Medium; color: #003A78; background-color: white">
-                                    We are glad to serve and decrease your financial risks.
+                                    Check out our client portal and get daily updates on all your credit limits, claims
+                                    and alerts.
                                 </td>
                             </tr>
 
-                            <tr>
+                            <!--<tr>
                                 <td align="center" valign="center" width="60"
                                     style="padding: 5px 15%; font-size: 15px; line-height: 24px; font-family: GoogleSans-Regular; color: #828F9D; background-color: white">
                                     Check out our client portal and get daily updates on all your credit limits, claims
                                     and alerts.
                                 </td>
-                            </tr>
+                            </tr>-->
 
                             <tr>
                                 <td align="center" valign="center"

@@ -46,14 +46,14 @@ const organizationSchema = new Schema(
       debtor: { type: Schema.Types.Number, default: 0 },
       application: { type: Schema.Types.Number, default: 0 },
     },
-    illionProfileEmail: Schema.Types.String,
-    illionProfile: {
+    illionAlertProfile: {
       profileId: Schema.Types.String,
       profileName: Schema.Types.String,
       locked: Schema.Types.Boolean,
       useInternalReference: Schema.Types.Boolean,
       colour: Schema.Types.Mixed,
       alerts: Schema.Types.Mixed,
+      email: Schema.Types.String,
     },
   },
   { timestamps: true },

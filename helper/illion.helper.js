@@ -12,6 +12,9 @@ const Organization = mongoose.model('organization');
 const Logger = require('./../services/logger');
 let config = require('./../config');
 
+/*
+Fetch Credit Report
+ */
 let fetchCreditReport = ({ productCode, searchField, searchValue }) => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -141,16 +144,19 @@ let processIllionReport = (report) => {
   return processedReport;
 };
 
-const createProfile = async ({ illion, alertIds, profileName }) => {
+/*
+Create Profile for Alert
+ */
+const createProfile = async ({ illionAlert, alertIds, profileName }) => {
   try {
     const url =
       'https://b2b.clt.illion.com.au/CommercialMonitoring/api/Profile/CreateProfile';
     const requestBody = {
       requestHeader: {
         subscriber: {
-          subscriberId: illion.subscriberId,
-          userId: illion.userId,
-          password: illion.password,
+          subscriberId: illionAlert.subscriberId,
+          userId: illionAlert.userId,
+          password: illionAlert.password,
         },
       },
       profileName: profileName,
@@ -171,21 +177,24 @@ const createProfile = async ({ illion, alertIds, profileName }) => {
   }
 };
 
+/*
+Update Alert Profile
+ */
 const updateProfile = async ({ requestedData }) => {
   try {
     const organization = await Organization.findOne({
       isDeleted: false,
     })
-      .select({ 'integration.illion': 1 })
+      .select({ 'integration.illionAlert': 1 })
       .lean();
     const url =
       'https://b2b.clt.illion.com.au/CommercialMonitoring/api/Profile/UpdateProfile';
     const requestBody = {
       requestHeader: {
         subscriber: {
-          subscriberId: organization.integration.illion.subscriberId,
-          userId: organization.integration.illion.userId,
-          password: organization.integration.illion.password,
+          subscriberId: organization.integration.illionAlert.subscriberId,
+          userId: organization.integration.illionAlert.userId,
+          password: organization.integration.illionAlert.password,
         },
       },
       profileId: requestedData.profileId,
@@ -208,8 +217,239 @@ const updateProfile = async ({ requestedData }) => {
   }
 };
 
+/*
+Subscribe Alert Profile
+ */
+const subscribeProfile = async ({ requestedData }) => {
+  try {
+    const organization = await Organization.findOne({
+      isDeleted: false,
+    })
+      .select({ 'integration.illionAlert': 1, illionAlertProfile: 1 })
+      .lean();
+    const url =
+      'https://b2b.clt.illion.com.au/CommercialMonitoring/api/Profile/SubscribeProfile';
+    const requestBody = {
+      requestHeader: {
+        subscriber: {
+          subscriberId: organization.integration.illionAlert.subscriberId,
+          userId: organization.integration.illionAlert.userId,
+          password: organization.integration.illionAlert.password,
+        },
+      },
+      profileId: organization.illionAlertProfile.profileId,
+      userConfiguration: {
+        email: requestedData.email,
+      },
+      'userConfiguration/profileEmailNotificationType': {
+        realtimeEmail: requestedData.profileEmailNotificationType.realtimeEmail,
+        dailySummary: requestedData.profileEmailNotificationType.dailySummary,
+        weeklySummary: requestedData.profileEmailNotificationType.weeklySummary,
+      },
+    };
+    const options = {
+      method: 'POST',
+      url: url,
+      data: requestBody,
+    };
+    const { data } = await axios(options);
+    return data;
+  } catch (e) {
+    Logger.log.error('Error occurred in subscribe profile');
+    Logger.log.error(e);
+  }
+};
+
+/*
+Unsubscribe Alert Profile
+ */
+const unSubscribeProfile = async () => {
+  try {
+    const organization = await Organization.findOne({
+      isDeleted: false,
+    })
+      .select({ 'integration.illionAlert': 1, illionAlertProfile: 1 })
+      .lean();
+    const url =
+      'https://b2b.clt.illion.com.au/CommercialMonitoring/api/Profile/UnsubscribeProfile';
+    const requestBody = {
+      requestHeader: {
+        subscriber: {
+          subscriberId: organization.integration.illionAlert.subscriberId,
+          userId: organization.integration.illionAlert.userId,
+          password: organization.integration.illionAlert.password,
+        },
+      },
+      profileId: organization.illionAlertProfile.profileId,
+      userConfiguration: {
+        email: organization.illionAlertProfile.email,
+      },
+    };
+    const options = {
+      method: 'POST',
+      url: url,
+      data: requestBody,
+    };
+    const { data } = await axios(options);
+    return data;
+  } catch (e) {
+    Logger.log.error('Error occurred in subscribe profile');
+    Logger.log.error(e);
+  }
+};
+
+/*
+Get Alert Profiles
+ */
+const getProfiles = async () => {
+  try {
+    const organization = await Organization.findOne({
+      isDeleted: false,
+    })
+      .select({ 'integration.illionAlert': 1 })
+      .lean();
+    const url =
+      'https://b2b.clt.illion.com.au/CommercialMonitoring/api/Profile/ProfileDetails';
+    const requestBody = {
+      requestHeader: {
+        subscriber: {
+          subscriberId: organization.integration.illionAlert.subscriberId,
+          userId: organization.integration.illionAlert.userId,
+          password: organization.integration.illionAlert.password,
+        },
+      },
+    };
+    const options = {
+      method: 'POST',
+      url: url,
+      data: requestBody,
+    };
+    const { data } = await axios(options);
+    return data;
+  } catch (e) {
+    Logger.log.error('Error occurred in get alert profiles');
+    Logger.log.error(e);
+  }
+};
+
+/*
+Add Entities to Alert Profile
+ */
+const addEntitiesToProfile = async ({ entities, integration }) => {
+  try {
+    const url =
+      'https://b2b.clt.illion.com.au/CommercialMonitoring/api/Entities/AddEntities';
+    const requestBody = {
+      requestHeader: {
+        subscriber: {
+          subscriberId: integration.illionAlert.subscriberId,
+          userId: integration.illionAlert.userId,
+          password: integration.illionAlert.password,
+        },
+      },
+      billingHeader: {
+        billingReference: 'TRAD@2021',
+        contact: 'TRAD@2021',
+      },
+      entities: entities,
+    };
+    const options = {
+      method: 'POST',
+      url: url,
+      data: requestBody,
+    };
+    const { data } = await axios(options);
+    return data;
+  } catch (e) {
+    Logger.log.error('Error occurred in add entities in alert profile');
+    Logger.log.error(e);
+  }
+};
+
+/*
+Retrieve Alert list
+ */
+const retrieveAlertList = async ({
+  startDate,
+  endDate,
+  integration,
+  illionAlertProfile,
+}) => {
+  try {
+    const url =
+      'https://b2b.clt.illion.com.au/CommercialMonitoring/api/Profile/AlertList';
+    const requestBody = {
+      requestHeader: {
+        subscriber: {
+          subscriberId: integration.illionAlert.subscriberId,
+          userId: integration.illionAlert.userId,
+          password: integration.illionAlert.password,
+        },
+      },
+      profileId: illionAlertProfile.profileId,
+      alertFromDate: startDate,
+      alertToDate: endDate,
+    };
+    const options = {
+      method: 'POST',
+      url: url,
+      data: requestBody,
+    };
+    const { data } = await axios(options);
+    return data;
+  } catch (e) {
+    Logger.log.error('Error occurred in retrieve alert list');
+    Logger.log.error(e);
+  }
+};
+
+/*
+Retrieve Detailed Alert list
+ */
+const retrieveDetailedAlertList = async ({
+  startDate,
+  endDate,
+  monitoringArray,
+  integration,
+  illionAlertProfile,
+}) => {
+  try {
+    const url =
+      'https://b2b.clt.illion.com.au/CommercialMonitoring/api/Profile/DetailedAlertList';
+    const requestBody = {
+      requestHeader: {
+        subscriber: {
+          subscriberId: integration.illionAlert.subscriberId,
+          userId: integration.illionAlert.userId,
+          password: integration.illionAlert.password,
+        },
+      },
+      profileId: illionAlertProfile.profileId,
+      alertFromDate: startDate,
+      alertToDate: endDate,
+      productMonitoring: monitoringArray,
+    };
+    const options = {
+      method: 'POST',
+      url: url,
+      data: requestBody,
+    };
+    const { data } = await axios(options);
+    return data;
+  } catch (e) {
+    Logger.log.error('Error occurred in retrieve detailed alert list');
+    Logger.log.error(e);
+  }
+};
+
 module.exports = {
   fetchCreditReport,
   createProfile,
   updateProfile,
+  retrieveAlertList,
+  retrieveDetailedAlertList,
+  getProfiles,
+  subscribeProfile,
+  unSubscribeProfile,
+  addEntitiesToProfile,
 };

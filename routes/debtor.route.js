@@ -427,12 +427,17 @@ router.get('/download', async function (req, res) {
       moduleColumn: module.manageColumns,
     });
     if (response && response.docs.length !== 0) {
+      const client = await Client.findOne({ _id: req.user.clientId })
+        .select('clientCode')
+        .lean();
       const finalArray = await formatCSVList({
         moduleColumn: debtorColumn,
         response: response.docs,
       });
       const csvResponse = await convertToCSV(finalArray);
+      const fileName = client.clientCode + '-credit-limit' + '.csv';
       res.header('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename=' + fileName);
       res.send(csvResponse);
     } else {
       res.status(200).send({

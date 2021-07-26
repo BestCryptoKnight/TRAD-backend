@@ -18,6 +18,8 @@ const StaticData = require('./../static-files/staticData.json');
 const { formatString } = require('./overdue.helper');
 const { addNotification } = require('./notification.helper');
 const { sendNotification } = require('./socket.helper');
+const { createTask } = require('./task.helper');
+const { addEntitiesToProfile } = require('./illion.helper');
 
 const getDebtorList = async () => {
   try {
@@ -156,6 +158,8 @@ const createDebtor = async ({
         userRefId: userId,
         logDescription: `A debtor ${debtor.entityName} is successfully added by ${userName}`,
       });
+      const entityList = [{}];
+      addEntitiesInAlertProfile({ entityList });
     }
     return { debtor, clientDebtor };
   } catch (e) {
@@ -615,6 +619,108 @@ const checkForReviewDebtor = async ({ endDate }) => {
   }
 };
 
+const createTaskOnAlert = async ({ debtorABN, debtorACN }) => {
+  try {
+    const debtors = await Debtor.find({
+      $or: [{ abn: { $in: debtorABN } }, { acn: { $in: debtorACN } }],
+    }).lean();
+    const debtorIds = debtors.map((i) => i._id);
+    const clientDebtors = await ClientDebtor.find({
+      debtorId: { $in: debtorIds },
+    })
+      .populate({
+        path: 'clientId',
+        populate: { path: 'riskAnalystId' },
+      })
+      .populate('debtorId')
+      .lean();
+    const response = [];
+    clientDebtors.forEach((i) => {
+      if (
+        i.clientId &&
+        i.clientId.riskAnalystId &&
+        i.clientId.riskAnalystId._id &&
+        i.debtorId &&
+        i.debtorId._id &&
+        i.debtorId.entityName
+      ) {
+        response.push({
+          id: i.debtorId._id + i.clientId.riskAnalystId._id,
+          debtorId: i.debtorId._id,
+          debtorName: i.debtorId.entityName,
+          riskAnalystId: i.clientId.riskAnalystId._id,
+        });
+      }
+    });
+    const filteredData = Array.from(new Set(response.map((s) => s.id))).map(
+      (id) => {
+        return {
+          id: id,
+          debtorId: response.find((i) => i.id === id).debtorId,
+          debtorName: response.find((i) => i.id === id).debtorName,
+          riskAnalystId: response.find((i) => i.id === id).riskAnalystId,
+        };
+      },
+    );
+    console.log(filteredData, 'filteredData');
+    const date = new Date();
+    for (let i = 0; i < filteredData.length; i++) {
+      const data = {
+        title: `High/Medium/Low Alert on ${filteredData[i].debtorName}`,
+        createdByType: 'user',
+        createdById: filteredData[i].riskAnalystId,
+        assigneeType: 'user',
+        assigneeId: filteredData[i].riskAnalystId,
+        dueDate: new Date(date.setDate(date.getDate() + 7)),
+        entityType: 'debtor',
+        entityId: filteredData[i].debtorId,
+      };
+      await createTask(data);
+      const notification = await addNotification({
+        userId: filteredData[i].riskAnalystId,
+        userType: 'user',
+        description: `High/Medium/Low Alert on ${filteredData[i].debtorName}`,
+      });
+      if (notification) {
+        sendNotification({
+          notificationObj: {
+            type: 'ALERT',
+            data: notification,
+          },
+          type: notification.userType,
+          userId: notification.userId,
+        });
+      }
+    }
+  } catch (e) {
+    Logger.log.error('Error occurred in create task on alert');
+    Logger.log.error(e);
+  }
+};
+
+const addEntitiesInAlertProfile = async ({ entityList }) => {
+  try {
+    const organization = await Organization.findOne({
+      isDeleted: false,
+    })
+      .select({ 'integration.illionAlert': 1, illionAlertProfile: 1 })
+      .lean();
+    const lookupType = {
+      ABN: 0,
+      ACN: 1,
+      NCN: 2,
+    };
+    entityList.forEach((i) => {
+      i.lookupMethod = lookupType[i.lookupMethod];
+      i.profileId = organization.illionAlertProfile.profileId;
+    });
+    await addEntitiesInAlertProfile({ entityList });
+  } catch (e) {
+    Logger.log.error('Error occurred in add entities in alert profile');
+    Logger.log.error(e.message || e);
+  }
+};
+
 module.exports = {
   getDebtorList,
   createDebtor,
@@ -625,4 +731,6 @@ module.exports = {
   checkDirectorsOfDebtor,
   checkForExpiringReports,
   checkForReviewDebtor,
+  createTaskOnAlert,
+  addEntitiesInAlertProfile,
 };

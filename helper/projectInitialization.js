@@ -99,7 +99,10 @@ const checkForIllionProfile = async () => {
     const organization = await Organization.findOne({
       isDeleted: false,
     }).lean();
-    if (!organization.illionProfile || !organization.illionProfile.profileId) {
+    if (
+      !organization.illionAlertProfile ||
+      !organization.illionAlertProfile.profileId
+    ) {
       const alertIds = [
         1,
         3,
@@ -134,13 +137,13 @@ const checkForIllionProfile = async () => {
         294,
       ];
       if (
-        organization.integration.illion &&
-        organization.integration.illion.userId &&
-        organization.integration.illion.password &&
-        organization.integration.illion.subscriberId
+        organization.integration.illionAlert &&
+        organization.integration.illionAlert.userId &&
+        organization.integration.illionAlert.password &&
+        organization.integration.illionAlert.subscriberId
       ) {
         const response = await createProfile({
-          illion: organization.integration.illion,
+          illionAlert: organization.integration.illionAlert,
           alertIds,
           profileName: organization.name,
         });
@@ -148,7 +151,7 @@ const checkForIllionProfile = async () => {
         if (response && response.profile) {
           await Organization.updateOne(
             { isDeleted: false },
-            { $set: { illionProfile: response.profile } },
+            { $set: { illionAlertProfile: response.profile } },
           );
         }
       }

@@ -37,7 +37,7 @@ router.put('/profile', async function (req, res) {
     if (response && response.profile) {
       await Organization.updateOne(
         { isDeleted: false },
-        { $set: { illionProfile: response.profile } },
+        { $set: { illionAlertProfile: response.profile } },
       );
     }
     res.status(200).send({
