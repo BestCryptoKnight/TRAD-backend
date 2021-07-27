@@ -208,6 +208,13 @@
           "request": { "method": "PUT", "url": "client/user" }
         },
         {
+          "name": "sendDecisionLetter",
+          "label": "Decision Letter",
+          "type": "boolean",
+          "isDisabled": false,
+          "request": { "method": "PUT", "url": "client/user" }
+        },
+        {
           "name": "hasLeftCompany",
           "label": "Left Company",
           "type": "string"

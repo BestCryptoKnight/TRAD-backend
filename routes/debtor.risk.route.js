@@ -33,11 +33,12 @@ const {
   getEntityDetailsByName,
 } = require('./../helper/abr.helper');
 const { generateNewApplication } = require('./../helper/application.helper');
-const { addAuditLog, getEntityName } = require('./../helper/audit-log.helper');
+const { addAuditLog } = require('./../helper/audit-log.helper');
+const { getDebtorListWithDetails } = require('./../helper/debtor.helper');
 const {
-  getDebtorFullAddress,
-  getDebtorListWithDetails,
-} = require('./../helper/debtor.helper');
+  listEntitySpecificAlerts,
+  getAlertDetail,
+} = require('./../helper/alert.helper');
 
 /**
  * Get Column Names
@@ -247,6 +248,74 @@ router.get('/download', async function (req, res) {
 });
 
 /**
+ * Get Alert List
+ */
+router.get('/alert-list/:debtorId', async function (req, res) {
+  if (
+    !req.params.debtorId ||
+    !mongoose.Types.ObjectId.isValid(req.params.debtorId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const alertColumn = [
+      'alertType',
+      'alertCategory',
+      'alertPriority',
+      'createdAt',
+    ];
+    const response = await listEntitySpecificAlerts({
+      debtorId: req.params.debtorId,
+      requestedQuery: req.query,
+      alertColumn,
+    });
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: response,
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in get alert list', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Get Alert Detail
+ */
+router.get('/alert/:alertId', async function (req, res) {
+  if (
+    !req.params.alertId ||
+    !mongoose.Types.ObjectId.isValid(req.params.alertId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const response = await getAlertDetail({ alertId: req.params.alertId });
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: response,
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in get alert list', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
  * Get Stakeholder drawer details
  */
 router.get(
@@ -274,7 +343,7 @@ router.get(
       }
       res.status(200).send({
         status: 'SUCCESS',
-        data: { response: response, header: 'Stakeholder Details' },
+        data: { response, header: 'Stakeholder Details' },
       });
     } catch (e) {
       Logger.log.error(
@@ -454,7 +523,7 @@ router.get('/drawer-details/:debtorId', async function (req, res) {
     });
     res.status(200).send({
       status: 'SUCCESS',
-      data: { response: response, header: 'Credit Limit Details' },
+      data: { response, header: 'Credit Limit Details' },
     });
   } catch (e) {
     Logger.log.error(
@@ -503,7 +572,7 @@ router.get('/drawer/:debtorId', async function (req, res) {
     });
     res.status(200).send({
       status: 'SUCCESS',
-      data: { response: response, header: 'Debtor Details' },
+      data: { response, header: 'Debtor Details' },
     });
   } catch (e) {
     Logger.log.error(

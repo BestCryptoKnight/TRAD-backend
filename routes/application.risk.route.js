@@ -25,7 +25,6 @@ const {
   checkForAutomation,
   applicationDrawerDetails,
   sendNotificationsToUser,
-  sendDecisionLetter,
 } = require('./../helper/application.helper');
 const {
   getEntityDetailsByBusinessNumber,
@@ -46,6 +45,10 @@ const {
 const { getAuditLogs, addAuditLog } = require('./../helper/audit-log.helper');
 const { addNote } = require('./../helper/note.helper');
 const { generateExcel } = require('../helper/excel.helper.js');
+const {
+  listEntitySpecificAlerts,
+  getAlertDetail,
+} = require('./../helper/alert.helper');
 
 /**
  * Get Column Names
@@ -339,7 +342,7 @@ router.get('/drawer-details/:applicationId', async function (req, res) {
     });
     res.status(200).send({
       status: 'SUCCESS',
-      data: { response: response, header: 'Application Details' },
+      data: { response, header: 'Application Details' },
     });
   } catch (e) {
     Logger.log.error(
@@ -763,6 +766,74 @@ router.get('/search-entity-list', async function (req, res) {
     });
   } catch (e) {
     Logger.log.error('Error occurred in search by entity name', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Get Alert List
+ */
+router.get('/alert-list/:debtorId', async function (req, res) {
+  if (
+    !req.params.debtorId ||
+    !mongoose.Types.ObjectId.isValid(req.params.debtorId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const alertColumn = [
+      'alertType',
+      'alertCategory',
+      'alertPriority',
+      'createdAt',
+    ];
+    const response = await listEntitySpecificAlerts({
+      debtorId: req.params.debtorId,
+      requestedQuery: req.query,
+      alertColumn,
+    });
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: response,
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in get alert list', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Get Alert Detail
+ */
+router.get('/alert/:alertId', async function (req, res) {
+  if (
+    !req.params.alertId ||
+    !mongoose.Types.ObjectId.isValid(req.params.alertId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const response = await getAlertDetail({ alertId: req.params.alertId });
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: response,
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in get alert list', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

@@ -238,7 +238,7 @@ router.get('/details/:clientId', async function (req, res) {
     });
     res.status(200).send({
       status: 'SUCCESS',
-      data: { response: response, header: 'Client Details' },
+      data: { response, header: 'Client Details' },
     });
   } catch (e) {
     Logger.log.error(

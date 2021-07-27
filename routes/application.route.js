@@ -306,7 +306,7 @@ router.get('/drawer-details/:applicationId', async function (req, res) {
     });
     res.status(200).send({
       status: 'SUCCESS',
-      data: { response: response, header: 'Application Details' },
+      data: { response, header: 'Application Details' },
     });
   } catch (e) {
     Logger.log.error(

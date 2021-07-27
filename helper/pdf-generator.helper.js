@@ -57,7 +57,7 @@ const generateDecisionLetter = async ({
     /*Header with Logo Starts*/
     pdf.rect(0, 31.2, 595.28, 69).fillOpacity(1).fill('#F4F6F8');
     buffer = await getBase64(
-      `${config.server.backendServerUrl}mail-images/trad-logo.png`,
+      `${config.staticServing.bucketURL}static-files/mail-images/trad-logo.png`,
     );
     // console.log('buffer 1', buffer);
     pdf.image(buffer, 30, 52, { fit: [250, 250] });
@@ -231,7 +231,7 @@ Please contact your Service Manager${
     //   pdf.moveDown(3);
     pdf.fill('#FFFFFF').font('Helvetica').fontSize(12.75);
     buffer = await getBase64(
-      `${config.server.backendServerUrl}mail-images/phone-icon.png`,
+      `${config.staticServing.bucketURL}static-files/mail-images/phone-icon.png`,
     );
     // console.log('buffer 2', buffer);
     pdf.image(buffer, 233, 760, { fit: [18, 18] });
@@ -240,7 +240,7 @@ Please contact your Service Manager${
     });
     pdf.moveDown(0.4);
     buffer = await getBase64(
-      `${config.server.backendServerUrl}mail-images/message-icon.png`,
+      `${config.staticServing.bucketURL}static-files/mail-images/message-icon.png`,
     );
     // console.log('buffer 3', buffer);
     pdf.image(buffer, 178, 778, { fit: [17, 17] });
@@ -249,7 +249,7 @@ Please contact your Service Manager${
     });
     pdf.moveDown(0.4);
     buffer = await getBase64(
-      `${config.server.backendServerUrl}mail-images/location-icon.png`,
+      `${config.staticServing.bucketURL}static-files/mail-images/location-icon.png`,
     );
     // console.log('buffer 4', buffer);
     pdf.image(buffer, 108, 798, { fit: [17, 17] });

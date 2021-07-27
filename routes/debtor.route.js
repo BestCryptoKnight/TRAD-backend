@@ -182,7 +182,7 @@ router.get(
       }
       res.status(200).send({
         status: 'SUCCESS',
-        data: { response: response, header: 'Stakeholder Details' },
+        data: { response, header: 'Stakeholder Details' },
       });
     } catch (e) {
       Logger.log.error(
@@ -267,7 +267,7 @@ router.get('/drawer/:debtorId', async function (req, res) {
     });
     res.status(200).send({
       status: 'SUCCESS',
-      data: { response: response, header: 'Debtor Details' },
+      data: { response, header: 'Debtor Details' },
     });
   } catch (e) {
     Logger.log.error(

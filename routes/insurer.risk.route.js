@@ -363,7 +363,7 @@ router.get('/user-details/:userId', async function (req, res) {
     });
     res.status(200).send({
       status: 'SUCCESS',
-      data: { response: response, header: 'Contact Details' },
+      data: { response, header: 'Contact Details' },
     });
   } catch (e) {
     Logger.log.error('Error occurred in get insurer details ', e.message || e);

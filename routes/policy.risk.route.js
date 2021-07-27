@@ -116,7 +116,7 @@ router.get('/client/policy-details/:policyId', async function (req, res) {
     const response = await getPolicyDetails({ policyData });
     res.status(200).send({
       status: 'SUCCESS',
-      data: { response: response, header: 'Policy Details' },
+      data: { response, header: 'Policy Details' },
     });
   } catch (e) {
     Logger.log.error('Error occurred in get policy details ', e.message || e);
@@ -149,7 +149,7 @@ router.get('/details/:policyId', async function (req, res) {
     const response = await getPolicyDetails({ policyData });
     res.status(200).send({
       status: 'SUCCESS',
-      data: { response: response, header: 'Policy Details' },
+      data: { response, header: 'Policy Details' },
     });
   } catch (e) {
     Logger.log.error('Error occurred in get policy details ', e.message || e);

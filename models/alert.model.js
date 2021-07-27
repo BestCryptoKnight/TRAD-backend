@@ -10,7 +10,15 @@ const Schema = mongoose.Schema;
  */
 const alertSchema = new Schema(
   {
-    isDeleted: { type: Schema.Types.Boolean, default: false },
+    entityId: { type: Schema.Types.ObjectId },
+    entityType: {
+      type: Schema.Types.String,
+      enum: ['debtor', 'debtor-director'],
+    },
+    alertId: { type: Schema.Types.String },
+    alertType: { type: Schema.Types.String },
+    alertCategory: { type: Schema.Types.String },
+    alertPriority: { type: Schema.Types.String },
     companyNumbers: { type: Schema.Types.Mixed },
     companyName: { type: Schema.Types.String },
     countryCode: { type: Schema.Types.String },
@@ -65,6 +73,7 @@ const alertSchema = new Schema(
     },
     personalInsolvencyChange: { type: Schema.Types.Mixed },
     hasPersonalInsolvencyChange: { type: Schema.Types.Boolean, default: false },
+    isDeleted: { type: Schema.Types.Boolean, default: false },
   },
   { timestamps: true },
 );

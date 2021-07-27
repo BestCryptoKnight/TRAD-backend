@@ -59,7 +59,7 @@ module.exports = ({
                             <tr>
                                 <td align="center" valign="center" height="85" style="background-color: #F4F6F8;">
                                     <img height="40"
-                                        src="${config.server.backendServerUrl}mail-images/tcr-logo.png" />
+                                        src="${config.staticServing.bucketURL}static-files/mail-images/tcr-logo.png" />
                                 </td>
                             </tr>
 
@@ -136,7 +136,7 @@ module.exports = ({
                                                                 <tr>
                                                                     <td style="padding: 3px 0; vertical-align: top;">
                                                                         <img height="18"
-                                                                            src="${config.server.backendServerUrl}mail-images/account_circle_white.png" />
+                                                                            src="${config.staticServing.bucketURL}static-files/mail-images/account_circle_white.png" />
                                                                     </td>
                                                                     <td
                                                                         style="padding: 3px 0; font-size: 13px; color: white">
@@ -147,7 +147,7 @@ module.exports = ({
         mailTemplate += `<tr>
                                                                     <td style="padding: 3px 0; vertical-align: top;">
                                                                         <img height="16"
-                                                                            src="${config.server.backendServerUrl}mail-images/phone_in_talk_white.png" />
+                                                                            src="${config.staticServing.bucketURL}static-files/mail-images/phone_in_talk_white.png" />
                                                                     </td>
                                                                     <td
                                                                         style="padding: 3px 0; font-size: 13px; color: white">
@@ -161,7 +161,7 @@ module.exports = ({
       mailTemplate += `<tr>
                                                                     <td style="padding: 3px 0; vertical-align: top;">
                                                                         <img height="18"
-                                                                            src="${config.server.backendServerUrl}mail-images/mail_white.png" />
+                                                                            src="${config.staticServing.bucketURL}static-files/mail-images/mail_white.png" />
                                                                     </td>
                                                                     <td
                                                                         style="padding: 3px 0; font-size: 13px; color: white">
@@ -196,7 +196,7 @@ module.exports = ({
                                                                 <tr>
                                                                     <td style="padding: 3px 0; vertical-align: top;">
                                                                         <img height="18"
-                                                                            src="${config.server.backendServerUrl}mail-images/account_circle_white.png" />
+                                                                            src="${config.staticServing.bucketURL}static-files/mail-images/account_circle_white.png" />
                                                                     </td>
                                                                     <td
                                                                         style="padding: 3px 0; font-size: 13px; color: white">
@@ -207,7 +207,7 @@ module.exports = ({
         mailTemplate += `<tr>
                                                                     <td style="padding: 3px 0; vertical-align: top;">
                                                                         <img height="16"
-                                                                            src="${config.server.backendServerUrl}mail-images/phone_in_talk_white.png" />
+                                                                            src="${config.staticServing.bucketURL}static-files/mail-images/phone_in_talk_white.png" />
                                                                     </td>
                                                                     <td
                                                                         style="padding: 3px 0; font-size: 13px; color: white">
@@ -221,7 +221,7 @@ module.exports = ({
       mailTemplate += `<tr>
                                                                     <td style="padding: 3px 0; vertical-align: top;">
                                                                         <img height="18"
-                                                                            src="${config.server.backendServerUrl}mail-images/mail_white.png" />
+                                                                            src="${config.staticServing.bucketURL}static-files/mail-images/mail_white.png" />
                                                                     </td>
                                                                     <td
                                                                         style="padding: 3px 0; font-size: 13px; color: white">
@@ -252,7 +252,7 @@ module.exports = ({
                                                     <tr>
                                                         <td align="center">
                                                             <img height="30"
-                                                                src="${config.server.backendServerUrl}mail-images/call.png" />
+                                                                src="${config.staticServing.bucketURL}static-files/mail-images/call.png" />
                                                         </td>
                                                     </tr>
                                                     <tr style="font-size: 13px; color: #003A78">
@@ -271,7 +271,7 @@ module.exports = ({
                                                     <tr>
                                                         <td align="center">
                                                             <img height="30"
-                                                                src="${config.server.backendServerUrl}mail-images/mail.png" />
+                                                                src="${config.staticServing.bucketURL}static-files/mail-images/mail.png" />
                                                         </td>
                                                     </tr>
                                                     <tr style="font-size: 13px; color: #003A78">
@@ -290,7 +290,7 @@ module.exports = ({
                                                     <tr>
                                                         <td align="center">
                                                             <img height="30"
-                                                                src="${config.server.backendServerUrl}mail-images/location.png" />
+                                                                src="${config.staticServing.bucketURL}static-files/mail-images/location.png" />
                                                         </td>
                                                     </tr>
                                                     <tr style="font-size: 13px; color: #003A78">
@@ -308,7 +308,7 @@ module.exports = ({
                             <tr>
                                 <td align="center" style="padding: 30px 0 5px 0">
                                     <img height="40"
-                                        src="${config.server.backendServerUrl}mail-images/trad-icon.png" />
+                                        src="${config.staticServing.bucketURL}static-files/mail-images/trad-icon.png" />
                                 </td>
                             </tr>
 
@@ -326,19 +326,19 @@ module.exports = ({
                                             <td>
                                                 <a style="text-decoration: none">
                                                     <img height="30" style="cursor:pointer;"
-                                                        src="${config.server.backendServerUrl}mail-images/facebook.png" />
+                                                        src="${config.staticServing.bucketURL}static-files/mail-images/facebook.png" />
                                                 </a>
                                             </td>
                                             <td>
                                                 <a style="text-decoration: none">
                                                     <img height="30" style="cursor:pointer;"
-                                                        src="${config.server.backendServerUrl}mail-images/linkedin.png" />
+                                                        src="${config.staticServing.bucketURL}static-files/mail-images/linkedin.png" />
                                                 </a>
                                             </td>
                                             <td>
                                                 <a style="text-decoration: none">
                                                     <img height="30" style="cursor:pointer;"
-                                                        src="${config.server.backendServerUrl}mail-images/twitter.png" />
+                                                        src="${config.staticServing.bucketURL}static-files/mail-images/twitter.png" />
                                                 </a>
                                             </td>
                                         </tr>

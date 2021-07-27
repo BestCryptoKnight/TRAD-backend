@@ -230,7 +230,7 @@ router.get('/credit-limit/drawer-details/:debtorId', async function (req, res) {
     });
     res.status(200).send({
       status: 'SUCCESS',
-      data: { response: response, header: 'Credit Limit Details' },
+      data: { response, header: 'Credit Limit Details' },
     });
   } catch (e) {
     Logger.log.error(
@@ -431,7 +431,7 @@ router.get('/user-details/:clientUserId', async function (req, res) {
     });
     res.status(200).send({
       status: 'SUCCESS',
-      data: { response: response, header: 'Contact Details' },
+      data: { response, header: 'Contact Details' },
     });
   } catch (e) {
     Logger.log.error('Error occurred in listing clients.', e.message || e);
@@ -498,7 +498,7 @@ router.get('/details/:clientId', async function (req, res) {
     });
     res.status(200).send({
       status: 'SUCCESS',
-      data: { response: response, header: 'Client Details' },
+      data: { response, header: 'Client Details' },
     });
   } catch (e) {
     Logger.log.error(

@@ -4,6 +4,8 @@
 const mongoose = require('mongoose');
 const Organization = mongoose.model('organization');
 const Alert = mongoose.model('alert');
+const Debtor = mongoose.model('debtor');
+const DebtorDirector = mongoose.model('debtor-director');
 
 /*
  * Local Imports
@@ -70,4 +72,105 @@ const retrieveAlertListFromIllion = async ({ startDate, endDate }) => {
   }
 };
 
-module.exports = { retrieveAlertListFromIllion };
+const listEntitySpecificAlerts = async ({
+  debtorId,
+  requestedQuery,
+  alertColumn,
+}) => {
+  try {
+    const debtor = await Debtor.findOne({ _id: debtorId }).lean();
+    const entityTypes = ['TRUST', 'PARTNERSHIP'];
+    let entityIds = [debtor._id];
+    if (debtor && entityTypes.includes(debtor.entityType)) {
+      const directors = await DebtorDirector.find({
+        debtorId: debtorId,
+      }).lean();
+      directors.forEach((i) => {
+        entityIds.push(i._id);
+      });
+    }
+    const queryFilter = {
+      entityId: { $in: entityIds },
+    };
+    const query = [];
+    const fields = alertColumn.map((i) => [i, 1]);
+    query.push({
+      $project: fields.reduce((obj, [key, val]) => {
+        obj[key] = val;
+        return obj;
+      }, {}),
+    });
+    if (requestedQuery.page && requestedQuery.limit) {
+      query.push({
+        $facet: {
+          paginatedResult: [
+            {
+              $skip:
+                (parseInt(requestedQuery.page) - 1) *
+                parseInt(requestedQuery.limit),
+            },
+            { $limit: parseInt(requestedQuery.limit) },
+          ],
+          totalCount: [
+            {
+              $count: 'count',
+            },
+          ],
+        },
+      });
+    }
+    query.unshift({ $match: queryFilter });
+    const alerts = await Alert.aggregate(query).allowDiskUse(true);
+    const response =
+      alerts && alerts[0] && alerts[0]['paginatedResult']
+        ? alerts[0]['paginatedResult']
+        : alerts;
+
+    const total =
+      alerts.length !== 0 &&
+      alerts[0]['totalCount'] &&
+      alerts[0]['totalCount'].length !== 0
+        ? alerts[0]['totalCount'][0]['count']
+        : 0;
+    const headers = [
+      { label: 'Alert Type', name: 'alertType', type: 'string' },
+      { label: 'Alert Category', name: 'alertCategory', type: 'string' },
+      { label: 'Alert Priority', name: 'alertPriority', type: 'string' },
+      { label: 'Alert Date', name: 'createdAt', type: 'date' },
+    ];
+    return {
+      docs: response,
+      headers,
+      total,
+      page: parseInt(requestedQuery.page),
+      limit: parseInt(requestedQuery.limit),
+      pages: Math.ceil(total / parseInt(requestedQuery.limit)),
+    };
+  } catch (e) {
+    Logger.log.error('Error occurred in get list of alerts');
+    Logger.log.error(e);
+  }
+};
+
+const getAlertDetail = async ({ alertId }) => {
+  try {
+    const alert = await Alert.findOne({ _id: alertId }).lean();
+    if (!alert) {
+      return {
+        status: 'ERROR',
+        messageCode: 'NO_ALERT_FOUND',
+        message: 'No alert found',
+      };
+    }
+    return alert;
+  } catch (e) {
+    Logger.log.error('Error occurred in get alert details');
+    Logger.log.error(e);
+  }
+};
+
+module.exports = {
+  retrieveAlertListFromIllion,
+  listEntitySpecificAlerts,
+  getAlertDetail,
+};

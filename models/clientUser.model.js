@@ -23,6 +23,7 @@ const clientUserSchema = new Schema(
     contactNumber: { type: Schema.Types.String },
     department: { type: Schema.Types.String },
     hasPortalAccess: { type: Schema.Types.Boolean, default: false },
+    sendDecisionLetter: { type: Schema.Types.Boolean, default: false },
     hasLeftCompany: { type: Schema.Types.Boolean },
     isDecisionMaker: { type: Schema.Types.Boolean },
     crmContactId: { type: Schema.Types.String },

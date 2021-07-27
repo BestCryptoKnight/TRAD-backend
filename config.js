@@ -68,6 +68,7 @@ module.exports = {
       process.env.IS_CLOUD_FRONT_ENABLED === 'true' ? true : false,
     cloudFrontKeyId: process.env.CLOUD_FRONT_KEY_ID,
     cloudFrontUrl: process.env.CLOUD_FRONT_URL,
+    bucketURL: process.env.S3_BUCKET_URL,
   },
   illion: {
     environment: process.env.ILLION_ENVIRONMENT,
