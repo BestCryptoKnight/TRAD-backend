@@ -20,6 +20,7 @@ const clientDebtorSchema = new Schema(
     expiryDate: { type: Schema.Types.Date },
     activeApplicationId: { type: Schema.Types.ObjectId, ref: 'application' },
     currentReportId: { type: Schema.Types.ObjectId, ref: 'credit-report' },
+    isFromOldSystem: { type: Schema.Types.Boolean, default: false },
   },
   { timestamps: true },
 );

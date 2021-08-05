@@ -135,8 +135,7 @@ let connectDb = function () {
 const ProjectInitialization = require('./helper/projectInitialization');
 ProjectInitialization.createSuperAdmin();
 ProjectInitialization.createDefaultInsurer();
-//TODO uncomment to check for illion alert profile
-// ProjectInitialization.checkForIllionProfile();
+ProjectInitialization.checkForIllionProfile();
 
 connectDb();
 module.exports = app;

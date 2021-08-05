@@ -22,6 +22,7 @@ const {
   convertToCSV,
   getDebtorCreditLimit,
   formatCSVList,
+  downloadDecisionLetter,
 } = require('./../helper/client-debtor.helper');
 const {
   getStakeholderDetails,
@@ -38,6 +39,7 @@ const { getDebtorListWithDetails } = require('./../helper/debtor.helper');
 const {
   listEntitySpecificAlerts,
   getAlertDetail,
+  checkForEntityInProfile,
 } = require('./../helper/alert.helper');
 
 /**
@@ -302,6 +304,9 @@ router.get('/alert/:alertId', async function (req, res) {
   }
   try {
     const response = await getAlertDetail({ alertId: req.params.alertId });
+    if (response && response.status && response.status === 'ERROR') {
+      return res.status(400).send(response);
+    }
     res.status(200).send({
       status: 'SUCCESS',
       data: response,
@@ -750,6 +755,40 @@ router.get('/credit-limit/:debtorId', async function (req, res) {
 });
 
 /**
+ * Download Decision Letter
+ */
+router.get(
+  '/download/decision-letter/:creditLimitId',
+  async function (req, res) {
+    try {
+      const { bufferData, applicationNumber } = await downloadDecisionLetter({
+        creditLimitId: req.params.creditLimitId,
+      });
+      if (bufferData) {
+        const fileName = applicationNumber + '_ResCheckDecision.pdf';
+        res
+          .writeHead(200, {
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': 'attachment; filename=' + fileName,
+          })
+          .end(bufferData);
+      } else {
+        res.status(200).send({
+          status: 'SUCCESS',
+          message: 'No decision letter found',
+        });
+      }
+    } catch (e) {
+      Logger.log.error('Error occurred in download in csv', e);
+      res.status(500).send({
+        status: 'ERROR',
+        message: e.message || 'Something went wrong, please try again later.',
+      });
+    }
+  },
+);
+
+/**
  * Search from ABN/ACN Number
  */
 router.get('/search-entity', async function (req, res) {
@@ -1017,6 +1056,20 @@ router.post('/stakeholder/:debtorId', async function (req, res) {
       debtorId: req.params.debtorId,
     });
     await DebtorDirector.updateOne(query, update, { upsert: true });
+    query.isDeleted = false;
+    query.debtorId = req.params.debtorId;
+    const stakeholder = await DebtorDirector.findOne(query).lean();
+    if (
+      (stakeholder?.country?.code === 'AUS' ||
+        stakeholder?.country?.code === 'NZL') &&
+      stakeholder?.type === 'company'
+    ) {
+      checkForEntityInProfile({
+        action: 'add',
+        entityId: stakeholder._id,
+        entityType: 'stakeholder',
+      });
+    }
     res.status(200).send({
       status: 'SUCCESS',
       message: 'Stakeholder added successfully',
@@ -1387,6 +1440,20 @@ router.delete('/stakeholder/:stakeholderId', async function (req, res) {
       { _id: req.params.stakeholderId },
       { isDeleted: true },
     );
+    const stakeholder = await DebtorDirector.findOne({
+      _id: req.params.stakeholderId,
+    }).lean();
+    if (
+      (stakeholder?.country?.code === 'AUS' ||
+        stakeholder?.country?.code === 'NZL') &&
+      stakeholder?.type === 'company'
+    ) {
+      checkForEntityInProfile({
+        action: 'remove',
+        entityId: stakeholder._id,
+        entityType: 'stakeholder',
+      });
+    }
     res.status(200).send({
       status: 'SUCCESS',
       message: 'Stakeholder deleted successfully',

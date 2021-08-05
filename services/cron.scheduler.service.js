@@ -99,6 +99,7 @@ const scheduler = async () => {
       },
     );
 
+    //TODO uncomment after to retrieve alert list
     /* /!*
     Retrieve Alert List
      *!/
@@ -109,14 +110,21 @@ const scheduler = async () => {
           'Retrieve alert list at 1 AM acc. to Australia/Sydney timezone',
           new Date(),
         );
-        let start = new Date();
-        start.setHours(0, 0, 0, 0);
         let end = new Date();
-        end.setHours(23, 59, 59, 999);
-        start = new Date(
+        console.log(end);
+        let start = new Date();
+        start = new Date(start.setDate(start.getDate() - 1));
+        start.setHours(0, 0, 0, 0);
+        console.log('start', start);
+        // start = start.setDate(start.getDate() - 1)
+        console.log('end', end);
+        // end.setHours(23, 59, 59, 999);
+        /!*start = new Date(
           start.toString().split('GMT')[0] + ' UTC',
         ).toISOString();
-        end = new Date(start.toString().split('GMT')[0] + ' UTC').toISOString();
+        console.log(start);
+        end = new Date(end.toString().split('GMT')[0] + ' UTC').toISOString();
+        console.log(end);*!/
         await retrieveAlertListFromIllion({ startDate: start, endDate: end });
       },
       {

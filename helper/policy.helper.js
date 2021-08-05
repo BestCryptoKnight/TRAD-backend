@@ -1,4 +1,10 @@
 /*
+ * Module Imports
+ * */
+const mongoose = require('mongoose');
+const Policy = mongoose.model('policy');
+
+/*
  * Local Imports
  * */
 const Logger = require('./../services/logger');
@@ -189,6 +195,34 @@ const getPolicyDetails = ({ policyData }) => {
   }
 };
 
+const checkForEndorsedLimit = async ({ clientId, creditLimit }) => {
+  try {
+    let isEndorsedLimit = false;
+    const ciPolicy = await Policy.findOne({
+      clientId: clientId,
+      product: { $regex: '.*Credit Insurance.*' },
+      inceptionDate: { $lte: new Date() },
+      expiryDate: { $gt: new Date() },
+    })
+      .select(
+        'clientId product policyPeriod discretionaryLimit inceptionDate expiryDate',
+      )
+      .lean();
+    if (
+      ciPolicy &&
+      ciPolicy.discretionaryLimit &&
+      ciPolicy.discretionaryLimit < creditLimit
+    ) {
+      isEndorsedLimit = true;
+    }
+    return isEndorsedLimit;
+  } catch (e) {
+    Logger.log.error('Error occurred in check for endorsed limit');
+    Logger.log.error(e);
+  }
+};
+
 module.exports = {
   getPolicyDetails,
+  checkForEndorsedLimit,
 };

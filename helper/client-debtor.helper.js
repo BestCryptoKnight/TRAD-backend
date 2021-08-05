@@ -12,6 +12,7 @@ const { Parser } = require('json2csv');
 const { formatString } = require('./overdue.helper');
 const { addNotification } = require('./notification.helper');
 const { sendNotification } = require('./socket.helper');
+const { generateDecisionLetter } = require('./pdf-generator.helper');
 
 const getClientDebtorDetails = async ({ debtor, manageColumns }) => {
   try {
@@ -223,7 +224,7 @@ const getClientCreditLimit = async ({
       }
     }
     response.forEach((debtor) => {
-      debtor._id = debtor.debtorId._id || debtor._id;
+      // debtor._id = debtor.debtorId._id || debtor._id;
       if (
         debtor.activeApplicationId &&
         debtor.activeApplicationId.applicationId
@@ -234,6 +235,7 @@ const getClientCreditLimit = async ({
         };
       }
       if (debtor.debtorId) {
+        delete debtor.debtorId._id;
         for (let key in debtor.debtorId) {
           debtor[key] = debtor.debtorId[key];
         }
@@ -565,6 +567,71 @@ const checkForExpiringLimit = async ({ startDate, endDate }) => {
   }
 };
 
+const downloadDecisionLetter = async ({
+  creditLimitId,
+  queryType = 'credit-debtor',
+}) => {
+  try {
+    const query = {};
+    if (queryType === 'debtor') {
+      query.debtorId = creditLimitId;
+    } else {
+      query._id = creditLimitId;
+    }
+    const clientDebtor = await ClientDebtor.findOne(query)
+      .populate({
+        path: 'clientId',
+        populate: {
+          path: 'serviceManagerId',
+          select: 'name email contactNumber',
+        },
+      })
+      .populate({
+        path: 'debtorId',
+        select: 'entityName registrationNumber abn acn address',
+      })
+      .populate('activeApplicationId')
+      .lean();
+    let bufferData;
+    if (!clientDebtor.isFromOldSystem) {
+      const response = {
+        status:
+          parseInt(clientDebtor.creditLimit) >
+          parseInt(clientDebtor.activeApplicationId.creditLimit)
+            ? 'PARTIALLY_APPROVED'
+            : 'APPROVED',
+        clientName:
+          clientDebtor.clientId && clientDebtor.clientId.name
+            ? clientDebtor.clientId.name
+            : '',
+        debtorName:
+          clientDebtor.debtorId && clientDebtor.debtorId.entityName
+            ? clientDebtor.debtorId.entityName
+            : '',
+        serviceManagerNumber:
+          clientDebtor.clientId &&
+          clientDebtor.clientId.serviceManagerId &&
+          clientDebtor.clientId.serviceManagerId.contactNumber
+            ? clientDebtor.clientId.serviceManagerId.contactNumber
+            : '',
+        requestedAmount: parseInt(
+          clientDebtor.activeApplicationId.creditLimit,
+        ).toFixed(2),
+        approvedAmount: clientDebtor.creditLimit.toFixed(2),
+        approvalStatus: clientDebtor.activeApplicationId.note,
+      };
+      bufferData = await generateDecisionLetter(response);
+    } else {
+    }
+    return {
+      applicationNumber: clientDebtor.activeApplicationId.applicationId,
+      bufferData,
+    };
+  } catch (e) {
+    Logger.log.error('Error occurred in download decision letter', e);
+  }
+};
+
 module.exports = {
   getClientDebtorDetails,
   convertToCSV,
@@ -572,4 +639,5 @@ module.exports = {
   getDebtorCreditLimit,
   formatCSVList,
   checkForExpiringLimit,
+  downloadDecisionLetter,
 };

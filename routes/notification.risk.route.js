@@ -10,6 +10,7 @@ const Notification = mongoose.model('notification');
  * Local Imports
  * */
 const Logger = require('./../services/logger');
+const { getAlertDetail } = require('./../helper/alert.helper');
 
 /**
  * Get Notification list
@@ -100,19 +101,92 @@ router.get('/', async function (req, res) {
  */
 router.get('/list', async function (req, res) {
   try {
-    const notifications = await Notification.find({
-      isDeleted: false,
-      userId: req.user._id,
-      isRead: false,
-    })
-      .select('_id description createdAt')
-      .lean();
+    const notifications = await Notification.aggregate([
+      {
+        $match: {
+          isDeleted: false,
+          userId: req.user._id,
+          isRead: false,
+        },
+      },
+      {
+        $addFields: {
+          alertId: {
+            $cond: [{ $eq: ['$entityType', 'alert'] }, '$entityId', null],
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: 'alerts',
+          localField: 'alertId',
+          foreignField: '_id',
+          as: 'alertId',
+        },
+      },
+      { $unwind: { path: '$alertId', preserveNullAndEmptyArrays: true } },
+      {
+        $addFields: {
+          entityId: {
+            $cond: [
+              { $eq: ['$entityType', 'alert'] },
+              {
+                priority: '$alertId.alertPriority',
+                _id: '$alertId._id',
+              },
+              null,
+            ],
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          description: 1,
+          createdAt: 1,
+          entityType: 1,
+          entityId: 1,
+        },
+      },
+    ]).allowDiskUse(true);
     res.status(200).send({
       status: 'SUCCESS',
       data: notifications,
     });
   } catch (e) {
     Logger.log.error('Error occurred in get notification list ', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Get Alert Detail
+ */
+router.get('/alert/:alertId', async function (req, res) {
+  if (
+    !req.params.alertId ||
+    !mongoose.Types.ObjectId.isValid(req.params.alertId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const response = await getAlertDetail({ alertId: req.params.alertId });
+    if (response && response.status && response.status === 'ERROR') {
+      return res.status(400).send(response);
+    }
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: response,
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in get alert list', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

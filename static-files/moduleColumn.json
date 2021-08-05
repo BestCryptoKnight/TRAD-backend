@@ -879,7 +879,7 @@
             "url": "application/drawer-details"
           }
         },
-        { "name": "creditLimit", "label": "Credit Limit", "type": "string" },
+        { "name": "creditLimit", "label": "Credit Limit", "type": "amount" },
         {
           "name": "isEndorsedLimit",
           "label": "Credit Type",

@@ -9,7 +9,6 @@ let User = mongoose.model('user');
 const Client = mongoose.model('client');
 const ClientDebtor = mongoose.model('client-debtor');
 const ClientUser = mongoose.model('client-user');
-const Application = mongoose.model('application');
 
 /*
  * Local Imports
@@ -26,9 +25,11 @@ const {
   convertToCSV,
   getClientCreditLimit,
   formatCSVList,
+  downloadDecisionLetter,
 } = require('./../helper/client-debtor.helper');
 const { generateNewApplication } = require('./../helper/application.helper');
 const { getClientListWithDetails } = require('./../helper/client.helper');
+const { checkForEntityInProfile } = require('./../helper/alert.helper');
 
 /**
  * Search Client from RSS
@@ -195,54 +196,57 @@ router.get('/credit-limit/column-name', async function (req, res) {
 /**
  * Get Credit-Limit Modal details
  */
-router.get('/credit-limit/drawer-details/:debtorId', async function (req, res) {
-  if (
-    !req.params.debtorId ||
-    !mongoose.Types.ObjectId.isValid(req.params.debtorId)
-  ) {
-    return res.status(400).send({
-      status: 'ERROR',
-      messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Require fields are missing',
-    });
-  }
-  try {
-    const module = StaticFile.modules.find((i) => i.name === 'debtor');
-    const debtor = await ClientDebtor.findOne({
-      debtorId: req.params.debtorId,
-    })
-      .populate({
-        path: 'debtorId',
-        select: { _id: 0, isDeleted: 0, createdAt: 0, updatedAt: 0 },
-      })
-      .select({ _id: 0, isDeleted: 0, clientId: 0, __v: 0 })
-      .lean();
-    if (!debtor) {
+router.get(
+  '/credit-limit/drawer-details/:creditLimitId',
+  async function (req, res) {
+    if (
+      !req.params.creditLimitId ||
+      !mongoose.Types.ObjectId.isValid(req.params.creditLimitId)
+    ) {
       return res.status(400).send({
         status: 'ERROR',
-        messageCode: 'NO_DEBTOR_FOUND',
-        message: 'No debtor found',
+        messageCode: 'REQUIRE_FIELD_MISSING',
+        message: 'Require fields are missing',
       });
     }
-    const response = await getClientDebtorDetails({
-      debtor,
-      manageColumns: module.manageColumns,
-    });
-    res.status(200).send({
-      status: 'SUCCESS',
-      data: { response, header: 'Credit Limit Details' },
-    });
-  } catch (e) {
-    Logger.log.error(
-      'Error occurred in get debtor modal details ',
-      e.message || e,
-    );
-    res.status(500).send({
-      status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
-    });
-  }
-});
+    try {
+      const module = StaticFile.modules.find((i) => i.name === 'debtor');
+      const debtor = await ClientDebtor.findOne({
+        _id: req.params.creditLimitId,
+      })
+        .populate({
+          path: 'debtorId',
+          select: { _id: 0, isDeleted: 0, createdAt: 0, updatedAt: 0 },
+        })
+        .select({ _id: 0, isDeleted: 0, clientId: 0, __v: 0 })
+        .lean();
+      if (!debtor) {
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'NO_DEBTOR_FOUND',
+          message: 'No debtor found',
+        });
+      }
+      const response = await getClientDebtorDetails({
+        debtor,
+        manageColumns: module.manageColumns,
+      });
+      res.status(200).send({
+        status: 'SUCCESS',
+        data: { response, header: 'Credit Limit Details' },
+      });
+    } catch (e) {
+      Logger.log.error(
+        'Error occurred in get debtor modal details ',
+        e.message || e,
+      );
+      res.status(500).send({
+        status: 'ERROR',
+        message: e.message || 'Something went wrong, please try again later.',
+      });
+    }
+  },
+);
 
 /**
  * Get User List
@@ -334,19 +338,12 @@ router.get('/user/:clientId', async function (req, res) {
       aggregationQuery,
     ).allowDiskUse(true);
     const headers = [];
-    let checkForLink = false;
     for (let i = 0; i < module.manageColumns.length; i++) {
       if (clientColumn.columns.includes(module.manageColumns[i].name)) {
-        if (
-          module.manageColumns[i].name === 'name' ||
-          module.manageColumns[i].name === 'hasPortalAccess'
-        ) {
-          checkForLink = true;
-        }
         headers.push(module.manageColumns[i]);
       }
     }
-    if (checkForLink && clientUsers.length !== 0) {
+    if (clientUsers.length !== 0) {
       clientUsers[0]['paginatedResult'].forEach((user) => {
         if (user.name && user.name.length !== 0) {
           user.name = {
@@ -360,10 +357,16 @@ router.get('/user/:clientId', async function (req, res) {
             value: user.hasPortalAccess,
           };
         }
-        if (user.isDecisionMaker && user.isDecisionMaker.length !== 0) {
+        if (user.hasOwnProperty('sendDecisionLetter')) {
+          user.sendDecisionLetter = {
+            id: user._id,
+            value: user.sendDecisionLetter,
+          };
+        }
+        if (user.hasOwnProperty('isDecisionMaker')) {
           user.isDecisionMaker = user.isDecisionMaker ? 'Yes' : 'No';
         }
-        if (user.hasLeftCompany && user.hasLeftCompany.length !== 0) {
+        if (user.hasOwnProperty('hasLeftCompany')) {
           user.hasLeftCompany = user.hasLeftCompany ? 'Yes' : 'No';
         }
       });
@@ -676,6 +679,41 @@ router.get('/download', async function (req, res) {
 });
 
 /**
+ * Download Decision Letter
+ */
+router.get(
+  '/download/decision-letter/:creditLimitId',
+  async function (req, res) {
+    try {
+      const { bufferData, applicationNumber } = await downloadDecisionLetter({
+        creditLimitId: req.params.creditLimitId,
+        queryType: 'debtor',
+      });
+      if (bufferData) {
+        const fileName = applicationNumber + '_ResCheckDecision.pdf';
+        res
+          .writeHead(200, {
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': 'attachment; filename=' + fileName,
+          })
+          .end(bufferData);
+      } else {
+        res.status(200).send({
+          status: 'SUCCESS',
+          message: 'No decision letter found',
+        });
+      }
+    } catch (e) {
+      Logger.log.error('Error occurred in download in csv', e);
+      res.status(500).send({
+        status: 'ERROR',
+        message: e.message || 'Something went wrong, please try again later.',
+      });
+    }
+  },
+);
+
+/**
  * Download credit-limit in CSV
  */
 router.get('/download/:clientId', async function (req, res) {
@@ -982,6 +1020,9 @@ router.put('/user/sync-from-crm/:clientId', async function (req, res) {
       if (!clientUser || !clientUser.hasOwnProperty('hasPortalAccess')) {
         contactsFromCrm[i].hasPortalAccess = false;
       }
+      if (!clientUser || !clientUser.hasOwnProperty('sendDecisionLetter')) {
+        contactsFromCrm[i].sendDecisionLetter = false;
+      }
       promiseArr.push(
         ClientUser.updateOne(
           { crmContactId: contactsFromCrm[i].crmContactId, isDeleted: false },
@@ -1100,10 +1141,10 @@ router.put('/credit-limit/column-name', async function (req, res) {
 /**
  * Update credit-limit
  */
-router.put('/credit-limit/:debtorId', async function (req, res) {
+router.put('/credit-limit/:creditLimitId', async function (req, res) {
   if (
-    !req.params.debtorId ||
-    !mongoose.Types.ObjectId.isValid(req.params.debtorId) ||
+    !req.params.creditLimitId ||
+    !mongoose.Types.ObjectId.isValid(req.params.creditLimitId) ||
     !req.body.action
   ) {
     return res.status(400).send({
@@ -1114,7 +1155,7 @@ router.put('/credit-limit/:debtorId', async function (req, res) {
   }
   try {
     const clientDebtor = await ClientDebtor.findOne({
-      debtorId: req.params.debtorId,
+      _id: req.params.creditLimitId,
     }).lean();
     if (req.body.action === 'modify') {
       if (!req.body.creditLimit || !/^\d+$/.test(req.body.creditLimit)) {
@@ -1132,18 +1173,20 @@ router.put('/credit-limit/:debtorId', async function (req, res) {
       });
     } else {
       await ClientDebtor.updateOne(
-        { debtorId: req.params.debtorId },
+        { _id: req.params.creditLimitId },
         {
           creditLimit: undefined,
           activeApplicationId: undefined,
           isActive: false,
         },
       );
-      //TODO uncomment to surrender active application
-      /*await Application.updateOne(
-        { clientDebtorId: clientDebtor._id, status: 'APPROVED' },
-        { status: 'SURRENDERED' },
-      );*/
+      if (clientDebtor?.debtorId) {
+        checkForEntityInProfile({
+          entityId: clientDebtor.debtorId,
+          action: 'remove',
+          entityType: 'debtor',
+        });
+      }
     }
     res.status(200).send({
       status: 'SUCCESS',
@@ -1165,7 +1208,8 @@ router.put('/user/:clientUserId', async function (req, res) {
   if (
     !req.params.clientUserId ||
     !mongoose.Types.ObjectId.isValid(req.params.clientUserId) ||
-    !req.body.hasOwnProperty('hasPortalAccess')
+    (!req.body.hasOwnProperty('hasPortalAccess') &&
+      !req.body.hasOwnProperty('sendDecisionLetter'))
   ) {
     return res.status(400).send({
       status: 'ERROR',
@@ -1180,81 +1224,88 @@ router.put('/user/:clientUserId', async function (req, res) {
     const clientUser = await ClientUser.findOne({
       _id: req.params.clientUserId,
     }).lean();
-    if (req.body.hasPortalAccess) {
-      const client = await Client.findOne({
-        _id: clientUser.clientId,
-      })
-        .populate({
-          path: 'riskAnalystId serviceManagerId',
-          select: 'name email contactNumber',
+    if (req.body.hasOwnProperty('hasPortalAccess')) {
+      if (req.body.hasPortalAccess) {
+        const client = await Client.findOne({
+          _id: clientUser.clientId,
         })
-        .lean();
-      const signUpToken = jwt.sign(
-        JSON.stringify({ _id: req.params.clientUserId }),
-        config.jwt.secret,
-      );
-      let manageColumns = [];
-      for (let i = 0; i < StaticFile.modules.length; i++) {
-        manageColumns.push({
-          moduleName: StaticFile.modules[i].name,
-          columns: StaticFile.modules[i].defaultColumns,
-        });
+          .populate({
+            path: 'riskAnalystId serviceManagerId',
+            select: 'name email contactNumber',
+          })
+          .lean();
+        const signUpToken = jwt.sign(
+          JSON.stringify({ _id: req.params.clientUserId }),
+          config.jwt.secret,
+        );
+        let manageColumns = [];
+        for (let i = 0; i < StaticFile.modules.length; i++) {
+          manageColumns.push({
+            moduleName: StaticFile.modules[i].name,
+            columns: StaticFile.modules[i].defaultColumns,
+          });
+        }
+        updateObj = {
+          hasPortalAccess: req.body.hasPortalAccess,
+          signUpToken: signUpToken,
+          manageColumns: manageColumns,
+        };
+        //TODO change dummy email id to client's user email id for send mail on Portal-Access
+        let mailObj = {
+          toAddress: [
+            'parth@team.humanpixel.com.au',
+            'jill@team.humanpixel.com.au',
+          ],
+          // toAddress: [clientUser.email],
+          subject: 'Welcome to TRAD CLIENT PORTAL',
+          text: {
+            name: clientUser.name,
+            setPasswordLink:
+              config.server.frontendUrls.clientPanelBase +
+              config.server.frontendUrls.setPasswordPage +
+              '?token=' +
+              signUpToken,
+            riskAnalystName:
+              client.riskAnalystId && client.riskAnalystId.name
+                ? client.riskAnalystId.name
+                : null,
+            serviceManagerName:
+              client.serviceManagerId && client.serviceManagerId.name
+                ? client.serviceManagerId.name
+                : null,
+            riskAnalystNumber:
+              client.riskAnalystId && client.riskAnalystId.contactNumber
+                ? client.riskAnalystId.contactNumber
+                : null,
+            serviceManagerNumber:
+              client.serviceManagerId && client.serviceManagerId.contactNumber
+                ? client.serviceManagerId.contactNumber
+                : null,
+            riskAnalystEmail:
+              client.riskAnalystId && client.riskAnalystId.email
+                ? client.riskAnalystId.email
+                : null,
+            serviceManagerEmail:
+              client.serviceManagerId && client.serviceManagerId.email
+                ? client.serviceManagerId.email
+                : null,
+          },
+          mailFor: 'newClientUser',
+        };
+        promises.push(MailHelper.sendMail(mailObj));
+        message = 'Login access sent successfully';
+      } else {
+        //TODO revert portal access
+        updateObj = {
+          hasPortalAccess: req.body.hasPortalAccess,
+        };
+        message = 'Portal access revert successfully';
       }
+    } else if (req.body.hasOwnProperty('sendDecisionLetter')) {
+      message = 'Contact details updated successfully';
       updateObj = {
-        hasPortalAccess: req.body.hasPortalAccess,
-        signUpToken: signUpToken,
-        manageColumns: manageColumns,
+        sendDecisionLetter: req.body.sendDecisionLetter,
       };
-      //TODO change dummy email id to client's user email id for send mail on Portal-Access
-      let mailObj = {
-        toAddress: [
-          'parth@team.humanpixel.com.au',
-          'jill@team.humanpixel.com.au',
-        ],
-        // toAddress: [clientUser.email],
-        subject: 'Welcome to TRAD CLIENT PORTAL',
-        text: {
-          name: clientUser.name,
-          setPasswordLink:
-            config.server.frontendUrls.clientPanelBase +
-            config.server.frontendUrls.setPasswordPage +
-            '?token=' +
-            signUpToken,
-          riskAnalystName:
-            client.riskAnalystId && client.riskAnalystId.name
-              ? client.riskAnalystId.name
-              : null,
-          serviceManagerName:
-            client.serviceManagerId && client.serviceManagerId.name
-              ? client.serviceManagerId.name
-              : null,
-          riskAnalystNumber:
-            client.riskAnalystId && client.riskAnalystId.contactNumber
-              ? client.riskAnalystId.contactNumber
-              : null,
-          serviceManagerNumber:
-            client.serviceManagerId && client.serviceManagerId.contactNumber
-              ? client.serviceManagerId.contactNumber
-              : null,
-          riskAnalystEmail:
-            client.riskAnalystId && client.riskAnalystId.email
-              ? client.riskAnalystId.email
-              : null,
-          serviceManagerEmail:
-            client.serviceManagerId && client.serviceManagerId.email
-              ? client.serviceManagerId.email
-              : null,
-        },
-        mailFor: 'newClientUser',
-      };
-      promises.push(MailHelper.sendMail(mailObj));
-      message = 'Login access sent successfully';
-    } else {
-      //TODO revert portal access
-      updateObj = {
-        hasPortalAccess: req.body.hasPortalAccess,
-      };
-      message = 'Portal access revert successfully';
     }
     await ClientUser.updateOne({ _id: req.params.clientUserId }, updateObj);
     promises.push(

@@ -104,6 +104,7 @@ router.get('/entity-list', async function (req, res) {
     const clients = await getClientList({
       hasFullAccess: hasFullAccess,
       userId: req.user._id,
+      sendCRMIds: true,
     });
     res.status(200).send({
       status: 'SUCCESS',

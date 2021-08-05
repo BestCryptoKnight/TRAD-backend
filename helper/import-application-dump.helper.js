@@ -134,11 +134,10 @@ const readExcelFile = async (fileBuffer) => {
         Object.keys(stakeHolderHeaders)[i]
       ].columnName = column.address.substr(0, column.address.length - 1);
     }
-    console.log('Headers processed...');
     for (let i = 1; i < stakeHolderWorksheet.model.rows.length; i++) {
       if (
-        stakeHolderWorksheet.model.rows[i].cells
-        // stakeHolderWorksheet.model.rows[i].cells.length !== 0
+        stakeHolderWorksheet.model.rows[i].cells &&
+        stakeHolderWorksheet.model.rows[i].cells.length !== 0
       ) {
         const rowNumber = stakeHolderWorksheet.model.rows[i].number;
         let stakeholder = {
@@ -309,8 +308,8 @@ const readExcelFile = async (fileBuffer) => {
       i++
     ) {
       if (
-        applicationWorksheet.model.rows[i].cells
-        // applicationWorksheet.model.rows[i].cells.length !== 0
+        applicationWorksheet.model.rows[i].cells &&
+        applicationWorksheet.model.rows[i].cells.length !== 0
       ) {
         const rowNumber = applicationWorksheet.model.rows[i].number;
         // console.log('applicationWorksheet.model.rows[i].cells::', applicationWorksheet.model.rows[i].cells);

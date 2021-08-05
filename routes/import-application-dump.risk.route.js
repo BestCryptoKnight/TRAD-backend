@@ -50,13 +50,11 @@ router.post('/', upload.single('dump-file'), async function (req, res) {
         docs: helperResponse.unProcessedApplications,
         toBeProcessedApplicationCount: helperResponse.applications.length,
       };
-      if (helperResponse.applications.length !== 0) {
-        let importApplicationDump = new ImportApplicationDump({
-          applications: helperResponse.applications,
-        });
-        await importApplicationDump.save();
-        responseBody.importId = importApplicationDump._id;
-      }
+      let importApplicationDump = new ImportApplicationDump({
+        applications: helperResponse.applications,
+      });
+      await importApplicationDump.save();
+      responseBody.importId = importApplicationDump._id;
       res.status(200).send({
         status: 'SUCCESS',
         data: responseBody,

@@ -19,7 +19,10 @@ const { formatString } = require('./overdue.helper');
 const { addNotification } = require('./notification.helper');
 const { sendNotification } = require('./socket.helper');
 const { createTask } = require('./task.helper');
-const { addEntitiesToProfile } = require('./illion.helper');
+const {
+  addEntitiesToProfile,
+  removeEntitiesFromProfile,
+} = require('./illion.helper');
 
 const getDebtorList = async () => {
   try {
@@ -158,8 +161,6 @@ const createDebtor = async ({
         userRefId: userId,
         logDescription: `A debtor ${debtor.entityName} is successfully added by ${userName}`,
       });
-      const entityList = [{}];
-      addEntitiesInAlertProfile({ entityList });
     }
     return { debtor, clientDebtor };
   } catch (e) {
@@ -698,7 +699,7 @@ const createTaskOnAlert = async ({ debtorABN, debtorACN }) => {
   }
 };
 
-const addEntitiesInAlertProfile = async ({ entityList }) => {
+const updateEntitiesToAlertProfile = async ({ entityList, action }) => {
   try {
     const organization = await Organization.findOne({
       isDeleted: false,
@@ -714,7 +715,18 @@ const addEntitiesInAlertProfile = async ({ entityList }) => {
       i.lookupMethod = lookupType[i.lookupMethod];
       i.profileId = organization.illionAlertProfile.profileId;
     });
-    await addEntitiesInAlertProfile({ entityList });
+    console.log('entityList :: ', entityList);
+    if (action === 'add') {
+      await addEntitiesToProfile({
+        entities: entityList,
+        integration: organization.integration,
+      });
+    } else if (action === 'remove') {
+      await removeEntitiesFromProfile({
+        entities: entityList,
+        integration: organization.integration,
+      });
+    }
   } catch (e) {
     Logger.log.error('Error occurred in add entities in alert profile');
     Logger.log.error(e.message || e);
@@ -732,5 +744,5 @@ module.exports = {
   checkForExpiringReports,
   checkForReviewDebtor,
   createTaskOnAlert,
-  addEntitiesInAlertProfile,
+  updateEntitiesToAlertProfile,
 };

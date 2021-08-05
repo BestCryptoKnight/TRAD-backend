@@ -20,6 +20,7 @@ const {
   convertToCSV,
   getClientCreditLimit,
   formatCSVList,
+  downloadDecisionLetter,
 } = require('./../helper/client-debtor.helper');
 const { getDebtorFullAddress } = require('./../helper/debtor.helper');
 const { generateNewApplication } = require('./../helper/application.helper');
@@ -27,6 +28,7 @@ const {
   getStakeholderList,
   getStakeholderDetails,
 } = require('./../helper/stakeholder.helper');
+const { checkForEntityInProfile } = require('./../helper/alert.helper');
 
 /**
  * Get Column Names
@@ -455,10 +457,45 @@ router.get('/download', async function (req, res) {
 });
 
 /**
+ * Download Decision Letter
+ */
+router.get(
+  '/download/decision-letter/:creditLimitId',
+  async function (req, res) {
+    try {
+      const { bufferData, applicationNumber } = await downloadDecisionLetter({
+        creditLimitId: req.params.creditLimitId,
+        queryType: 'debtor',
+      });
+      if (bufferData) {
+        const fileName = applicationNumber + '_ResCheckDecision.pdf';
+        res
+          .writeHead(200, {
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': 'attachment; filename=' + fileName,
+          })
+          .end(bufferData);
+      } else {
+        res.status(200).send({
+          status: 'SUCCESS',
+          message: 'No decision letter found',
+        });
+      }
+    } catch (e) {
+      Logger.log.error('Error occurred in download in csv', e);
+      res.status(500).send({
+        status: 'ERROR',
+        message: e.message || 'Something went wrong, please try again later.',
+      });
+    }
+  },
+);
+
+/**
  * Get Debtor Details
  */
-router.get('/:debtorId', async function (req, res) {
-  if (!req.params.debtorId) {
+router.get('/:creditLimitId', async function (req, res) {
+  if (!req.params.creditLimitId) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -467,8 +504,7 @@ router.get('/:debtorId', async function (req, res) {
   }
   try {
     let debtor = await ClientDebtor.findOne({
-      debtorId: req.params.debtorId,
-      clientId: req.user.clientId,
+      _id: req.params.creditLimitId,
     })
       .populate({
         path: 'debtorId',
@@ -597,10 +633,10 @@ router.put('/column-name', async function (req, res) {
 /**
  * Update credit-limit
  */
-router.put('/credit-limit/:debtorId', async function (req, res) {
+router.put('/credit-limit/:creditLimitId', async function (req, res) {
   if (
-    !req.params.debtorId ||
-    !mongoose.Types.ObjectId.isValid(req.params.debtorId) ||
+    !req.params.creditLimitId ||
+    !mongoose.Types.ObjectId.isValid(req.params.creditLimitId) ||
     !req.body.action
   ) {
     return res.status(400).send({
@@ -611,7 +647,7 @@ router.put('/credit-limit/:debtorId', async function (req, res) {
   }
   try {
     const clientDebtor = await ClientDebtor.findOne({
-      debtorId: req.params.debtorId,
+      _id: req.params.creditLimitId,
     }).lean();
     if (req.body.action === 'modify') {
       if (!req.body.creditLimit || !/^\d+$/.test(req.body.creditLimit)) {
@@ -629,17 +665,20 @@ router.put('/credit-limit/:debtorId', async function (req, res) {
       });
     } else {
       await ClientDebtor.updateOne(
-        { debtorId: req.params.debtorId },
+        { _id: req.params.creditLimitId },
         {
           creditLimit: undefined,
           activeApplicationId: undefined,
           isActive: false,
         },
       );
-      await Application.updateOne(
-        { clientDebtorId: clientDebtor._id, status: 'APPROVED' },
-        { status: 'SURRENDERED' },
-      );
+      if (clientDebtor?.debtorId) {
+        checkForEntityInProfile({
+          entityId: clientDebtor.debtorId,
+          action: 'remove',
+          entityType: 'debtor',
+        });
+      }
     }
     res.status(200).send({
       status: 'SUCCESS',

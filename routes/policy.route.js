@@ -121,9 +121,9 @@ router.get('/', async function (req, res) {
       (i) => i.moduleName === 'client-policy',
     );
     const sortingOptions = {};
-    if (req.query.sortBy && req.query.sortOrder) {
-      sortingOptions[req.query.sortBy] = req.query.sortOrder;
-    }
+    req.query.sortBy = req.query.sortBy || 'expiryDate';
+    req.query.sortOrder = req.query.sortOrder || 'desc';
+    sortingOptions[req.query.sortBy] = req.query.sortOrder;
     if (req.query.search) {
       queryFilter = Object.assign({}, queryFilter, {
         $or: [
