@@ -369,11 +369,7 @@ router.post('/', async function (req, res) {
           objToSave.role === 'riskAnalyst'
             ? { riskAnalystId: user._id }
             : { serviceManagerId: user._id };
-        await Client.update(
-          { _id: req.body.clientIds },
-          { $set: update },
-          { multi: true },
-        );
+        await Client.updateMany({ _id: req.body.clientIds }, { $set: update });
       }
       let signUpToken = jwt.sign(
         JSON.stringify({ _id: user._id }),
@@ -489,7 +485,7 @@ router.put('/:userId', async function (req, res) {
         user.role === 'riskAnalyst'
           ? { riskAnalystId: null }
           : { serviceManagerId: null };
-      await Client.update(query, removeUser, { multi: true });
+      await Client.updateMany(query, removeUser);
     } else if (req.body.role === user.role && req.body.clientIds.length === 0) {
       const query =
         user.role === 'riskAnalyst'
@@ -499,7 +495,7 @@ router.put('/:userId', async function (req, res) {
         user.role === 'riskAnalyst'
           ? { riskAnalystId: null }
           : { serviceManagerId: null };
-      await Client.update(query, removeUser, { multi: true });
+      await Client.updateMany(query, removeUser);
     }
     if (
       req.body.hasOwnProperty('clientIds') &&
@@ -518,10 +514,9 @@ router.put('/:userId', async function (req, res) {
 
       if (clients.length === 0) {
         promises.push(
-          Client.update(
+          Client.updateMany(
             { _id: { $in: req.body.clientIds } },
             { $set: query },
-            { multi: true },
           ),
         );
       } else {
@@ -537,18 +532,10 @@ router.put('/:userId', async function (req, res) {
         });
         sameClients = sameClients.concat(newClients);
         promises.push(
-          Client.update(
-            { _id: { $in: sameClients } },
-            { $set: query },
-            { multi: true },
-          ),
+          Client.updateMany({ _id: { $in: sameClients } }, { $set: query }),
         );
         promises.push(
-          Client.update(
-            { _id: { $in: oldClients } },
-            { $set: removeUser },
-            { multi: true },
-          ),
+          Client.updateMany({ _id: { $in: oldClients } }, { $set: removeUser }),
         );
       }
     }

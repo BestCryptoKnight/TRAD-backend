@@ -1260,7 +1260,8 @@ const storeReportData = async ({
 }) => {
   try {
     const date = new Date();
-    const expiryDate = new Date(date.setMonth(date.getMonth() + 12));
+    let expiryDate = new Date(date.setMonth(date.getMonth() + 12));
+    expiryDate = new Date(expiryDate.setDate(expiryDate.getDate() - 1));
     const response = await CreditReport.create({
       entityId: debtorId,
       entityType,

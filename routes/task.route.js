@@ -267,9 +267,9 @@ router.get('/', async function (req, res) {
     const taskColumn = req.user.manageColumns.find(
       (i) => i.moduleName === req.query.columnFor,
     );
-    if (req.query.columnFor === 'task') {
+    /* if (req.query.columnFor === 'task') {
       req.query.requestedEntityId = req.user.clientId;
-    }
+    }*/
     taskColumn.columns.push('isCompleted');
     const query = await aggregationQuery({
       taskColumn: taskColumn.columns,

@@ -1279,10 +1279,9 @@ router.put('/', async function (req, res) {
     });
   }
   try {
-    await ClientDebtor.update(
+    await ClientDebtor.updateMany(
       { _id: { $in: req.body.debtorIds } },
       { isActive: false },
-      { multi: true },
     );
     res.status(200).send({
       status: 'SUCCESS',
@@ -1400,10 +1399,9 @@ router.delete('/stakeholder', async function (req, res) {
     });
   }
   try {
-    await DebtorDirector.update(
+    await DebtorDirector.updateMany(
       { debtorId: req.query.debtorId },
       { isDeleted: true },
-      { multi: true },
     );
     res.status(200).send({
       status: 'SUCCESS',

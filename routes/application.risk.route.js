@@ -1170,7 +1170,8 @@ router.put('/:applicationId', async function (req, res) {
       }
       const date = new Date();
       applicationUpdate.approvalDate = date;
-      const expiryDate = new Date(date.setMonth(date.getMonth() + 12));
+      let expiryDate = new Date(date.setMonth(date.getMonth() + 12));
+      expiryDate = new Date(expiryDate.setDate(expiryDate.getDate() - 1));
       applicationUpdate.expiryDate = expiryDate;
       req.body.creditLimit = parseInt(req.body.creditLimit);
       approvedAmount = req.body.creditLimit;

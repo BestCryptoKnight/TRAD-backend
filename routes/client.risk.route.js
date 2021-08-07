@@ -687,7 +687,6 @@ router.get(
     try {
       const { bufferData, applicationNumber } = await downloadDecisionLetter({
         creditLimitId: req.params.creditLimitId,
-        queryType: 'debtor',
       });
       if (bufferData) {
         const fileName = applicationNumber + '_ResCheckDecision.pdf';

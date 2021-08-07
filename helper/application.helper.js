@@ -492,10 +492,9 @@ const storeCompanyDetails = async ({
           requestBody.hasOwnProperty('removeStakeholders') &&
           requestBody.removeStakeholders
         ) {
-          await DebtorDirector.update(
+          await DebtorDirector.updateMany(
             { debtorId: debtorData._id, isDeleted: false },
             { isDeleted: true },
-            { multi: true },
           );
         } else {
           const stakeholders = await DebtorDirector.find({
@@ -1113,7 +1112,8 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
     if (blockers.length === 0 && identifiedInsurer !== 'euler') {
       //TODO approve credit limit
       update.approvalDate = date;
-      const expiryDate = new Date(date.setMonth(date.getMonth() + 12));
+      let expiryDate = new Date(date.setMonth(date.getMonth() + 12));
+      expiryDate = new Date(expiryDate.setDate(expiryDate.getDate() - 1));
       update.expiryDate = expiryDate;
       update.status = 'APPROVED';
       update.acceptedAmount = application.creditLimit;

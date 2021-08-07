@@ -498,6 +498,7 @@ const aggregationQuery = async ({
         (parseInt(requestedQuery.page) - 1) * parseInt(requestedQuery.limit),
     });
     query.push({ $limit: parseInt(requestedQuery.limit) });*/
+    console.log(queryFilter, '--------');
     query.unshift({ $match: queryFilter });
 
     return query;

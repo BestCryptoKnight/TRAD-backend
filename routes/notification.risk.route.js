@@ -154,7 +154,29 @@ router.get('/list', async function (req, res) {
       data: notifications,
     });
   } catch (e) {
-    Logger.log.error('Error occurred in get notification list ', e);
+    Logger.log.error('Error occurred in get notification list', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Mark all unread notifications as read
+ */
+router.get('/markAllAsRead', async function (req, res) {
+  try {
+    await Notification.updateMany(
+      { isDeleted: false, userId: req.user._id, isRead: false },
+      { isRead: true },
+    );
+    res.status(200).send({
+      status: 'SUCCESS',
+      message: 'Notifications marked as read',
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in mark all as read', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

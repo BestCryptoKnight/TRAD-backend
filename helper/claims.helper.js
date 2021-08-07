@@ -3,12 +3,20 @@
  * */
 const mongoose = require('mongoose');
 const Client = mongoose.model('client');
+const FormData = require('form-data');
+const fs = require('fs');
+const Path = require('path');
 
 /*
  * Local Imports
  * */
 const Logger = require('./../services/logger');
-const { getClaimsDetails, addClaimDetail } = require('./rss.helper');
+const {
+  getClaimsDetails,
+  addClaimDetail,
+  getDocuments,
+  uploadDocument,
+} = require('./rss.helper');
 const { addAuditLog } = require('./audit-log.helper');
 const { addNotification } = require('./notification.helper');
 const { sendNotification } = require('./socket.helper');
@@ -230,4 +238,86 @@ const addClaimInRSS = async ({
   }
 };
 
-module.exports = { getClaimsList, addClaimInRSS };
+const listDocuments = async ({ crmId, requestedQuery }) => {
+  try {
+    const { documents, totalCount } = await getDocuments({
+      parent: 'Claim',
+      parentId: crmId,
+      page: requestedQuery.page,
+      limit: requestedQuery.limit,
+    });
+    console.log('Response..........', documents);
+    documents.forEach((i) => {
+      delete i.parentid;
+    });
+    const headers = [
+      {
+        name: 'name',
+        label: 'File Name',
+        type: 'string',
+      },
+      {
+        name: 'description',
+        label: 'Description',
+        type: 'string',
+      },
+      {
+        name: 'size',
+        label: 'File Size',
+        type: 'string',
+      },
+      {
+        name: 'modified',
+        label: 'Modified Date',
+        type: 'date',
+      },
+    ];
+    return {
+      docs: documents,
+      headers,
+      total: totalCount,
+      page: parseInt(requestedQuery.page),
+      limit: parseInt(requestedQuery.limit),
+      pages: Math.ceil(totalCount / parseInt(requestedQuery.limit)),
+    };
+  } catch (e) {
+    Logger.log.error('Error occurred in get document list');
+    Logger.log.error(e.message || e);
+  }
+};
+
+const uploadDocumentInRSS = async ({
+  fileBuffer,
+  parentId,
+  parentObject,
+  fileName,
+}) => {
+  try {
+    const filePath = Path.join(__dirname, '../upload/documents', fileName);
+    fs.writeFileSync(filePath, fileBuffer);
+    const fileStream = fs.createReadStream(filePath);
+
+    const formData = new FormData();
+    formData.append('file', fileStream);
+    formData.append('ParentId', parentId);
+    formData.append('ParentObject', parentObject);
+    await uploadDocument({ formData });
+
+    fs.unlink(filePath, (err) => {
+      if (err) {
+        Logger.log.error('Error while deleting file', err.message || err);
+      }
+      Logger.log.trace('File deleted successfully');
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in upload document');
+    Logger.log.error(e);
+  }
+};
+
+module.exports = {
+  getClaimsList,
+  addClaimInRSS,
+  listDocuments,
+  uploadDocumentInRSS,
+};

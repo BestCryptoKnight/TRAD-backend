@@ -363,7 +363,8 @@ router.put('/generate', async function (req, res) {
           parseInt(reportData.Envelope.Body.Response.Messages.ErrorCount) === 0
         ) {
           const date = new Date();
-          const expiryDate = new Date(date.setMonth(date.getMonth() + 12));
+          let expiryDate = new Date(date.setMonth(date.getMonth() + 12));
+          expiryDate = new Date(expiryDate.setDate(expiryDate.getDate() - 1));
           await CreditReport.create({
             entityId: entityId,
             productCode: req.body.productCode,

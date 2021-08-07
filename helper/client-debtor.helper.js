@@ -567,17 +567,11 @@ const checkForExpiringLimit = async ({ startDate, endDate }) => {
   }
 };
 
-const downloadDecisionLetter = async ({
-  creditLimitId,
-  queryType = 'credit-debtor',
-}) => {
+const downloadDecisionLetter = async ({ creditLimitId }) => {
   try {
-    const query = {};
-    if (queryType === 'debtor') {
-      query.debtorId = creditLimitId;
-    } else {
-      query._id = creditLimitId;
-    }
+    const query = {
+      _id: creditLimitId,
+    };
     const clientDebtor = await ClientDebtor.findOne(query)
       .populate({
         path: 'clientId',
@@ -593,7 +587,8 @@ const downloadDecisionLetter = async ({
       .populate('activeApplicationId')
       .lean();
     let bufferData;
-    if (!clientDebtor.isFromOldSystem) {
+    if (clientDebtor?.isFromOldSystem) {
+    } else {
       const response = {
         status:
           parseInt(clientDebtor.creditLimit) >
@@ -621,7 +616,6 @@ const downloadDecisionLetter = async ({
         approvalStatus: clientDebtor.activeApplicationId.note,
       };
       bufferData = await generateDecisionLetter(response);
-    } else {
     }
     return {
       applicationNumber: clientDebtor.activeApplicationId.applicationId,

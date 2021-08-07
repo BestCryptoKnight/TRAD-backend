@@ -14,6 +14,9 @@ const InsurerUser = mongoose.model('insurer-user');
 const Logger = require('../services/logger');
 const { addAuditLog } = require('./audit-log.helper');
 
+/*
+Get Client List
+ */
 const getClients = async ({ searchKeyword }) => {
   try {
     const url = 'https://apiv4.reallysimplesystems.com/accounts';
@@ -42,6 +45,9 @@ const getClients = async ({ searchKeyword }) => {
   }
 };
 
+/*
+Get Clients by CRMIds
+ */
 const getClientsById = async ({ crmIds }) => {
   try {
     const url = 'https://apiv4.reallysimplesystems.com/accounts';
@@ -99,6 +105,9 @@ const getClientsById = async ({ crmIds }) => {
   }
 };
 
+/*
+Get Insurer List
+ */
 const getInsurers = async ({ searchKeyword }) => {
   try {
     const url = 'https://apiv4.reallysimplesystems.com/accounts';
@@ -134,6 +143,9 @@ const getInsurers = async ({ searchKeyword }) => {
   }
 };
 
+/*
+Get Insurer Details by CRMId
+ */
 const getInsurerById = async ({ insurerCRMId }) => {
   try {
     const url =
@@ -172,7 +184,10 @@ const getInsurerById = async ({ insurerCRMId }) => {
   }
 };
 
-let getClientById = async ({ clientId }) => {
+/*
+Get Client Details by CRMId
+ */
+const getClientById = async ({ clientId }) => {
   try {
     const url = 'https://apiv4.reallysimplesystems.com/accounts/' + clientId;
     const organization = await Organization.findOne({
@@ -218,13 +233,18 @@ let getClientById = async ({ clientId }) => {
   }
 };
 
-let getInsurersById = async ({ crmIds }) => {
+/*
+Get Insurers by CRMIds
+ */
+const getInsurersById = async ({ crmIds }) => {
   try {
     let url = 'https://apiv4.reallysimplesystems.com/accounts';
     const query = { type: 'Underwriter', id: { $in: crmIds } };
     let organization = await Organization.findOne({
       isDeleted: false,
-    }).select({ 'integration.rss': 1 });
+    })
+      .select({ 'integration.rss': 1 })
+      .lean();
     let options = {
       method: 'GET',
       url: url,
@@ -260,7 +280,10 @@ let getInsurersById = async ({ crmIds }) => {
   }
 };
 
-let getPolicyById = async ({ policyId }) => {
+/*
+Get Policy Details by CRMId
+ */
+const getPolicyById = async ({ policyId }) => {
   try {
     let url = 'https://apiv4.reallysimplesystems.com/policies/' + policyId;
     let organization = await Organization.findOne({
@@ -284,6 +307,9 @@ let getPolicyById = async ({ policyId }) => {
   }
 };
 
+/*
+Get Client Contacts by Client CRMId
+ */
 const getClientContacts = async ({ clientId }) => {
   try {
     const url =
@@ -292,7 +318,9 @@ const getClientContacts = async ({ clientId }) => {
       '/contacts';
     const organization = await Organization.findOne({
       isDeleted: false,
-    }).select({ 'integration.rss': 1 });
+    })
+      .select({ 'integration.rss': 1 })
+      .lean();
     const options = {
       method: 'GET',
       url: url,
@@ -336,6 +364,9 @@ const getClientContacts = async ({ clientId }) => {
   }
 };
 
+/*
+Get Client Policies
+ */
 const getClientPolicies = async ({
   clientId,
   insurerId = null,
@@ -452,6 +483,9 @@ const getClientPolicies = async ({
   }
 };
 
+/*
+Get Insurer Contacts
+ */
 const getInsurerContacts = async ({
   crmInsurerId,
   insurerId,
@@ -469,7 +503,9 @@ const getInsurerContacts = async ({
       page;
     let organization = await Organization.findOne({
       isDeleted: false,
-    }).select({ 'integration.rss': 1 });
+    })
+      .select({ 'integration.rss': 1 })
+      .lean();
     let options = {
       method: 'GET',
       url: url,
@@ -512,7 +548,10 @@ const getInsurerContacts = async ({
   }
 };
 
-let fetchInsurerDetails = async ({
+/*
+Get Insurer Details by name
+ */
+const fetchInsurerDetails = async ({
   underwriterName,
   crmClientId,
   clientId,
@@ -670,6 +709,9 @@ let fetchInsurerDetails = async ({
   }
 };
 
+/*
+Get Claim List
+ */
 const getClaimsDetails = async ({
   crmIds = [],
   page = 1,
@@ -709,6 +751,9 @@ const getClaimsDetails = async ({
   }
 };
 
+/*
+Get Claim Details by CRMId
+ */
 const getClaimById = async ({ crmId }) => {
   try {
     const url = 'https://apiv4.reallysimplesystems.com/claims/' + crmId;
@@ -730,6 +775,9 @@ const getClaimById = async ({ crmId }) => {
   }
 };
 
+/*
+Add Claim in RSS
+ */
 const addClaimDetail = async ({ claim }) => {
   try {
     const url = 'https://apiv4.reallysimplesystems.com/claims';
@@ -752,6 +800,88 @@ const addClaimDetail = async ({ claim }) => {
   }
 };
 
+/*
+Get Module Specific Document List
+ */
+const getDocuments = async ({ parent, parentId, page = 1, limit = 20 }) => {
+  try {
+    const url = `https://apiv4.reallysimplesystems.com/documents?q={"parentobject":"${parent}","parentid":${parentId}}&limit=${limit}&page=${page}`;
+    const organization = await Organization.findOne({
+      isDeleted: false,
+    })
+      .select({ 'integration.rss': 1 })
+      .lean();
+    const options = {
+      method: 'GET',
+      url: url,
+      headers: {
+        Authorization: 'Bearer ' + organization.integration.rss.accessToken,
+      },
+    };
+    const { data } = await axios(options);
+    const documents = data.list.map((document) => document.record);
+    const totalCount =
+      data && data.metadata && data.metadata['total_count']
+        ? data.metadata['total_count']
+        : 0;
+    return { documents, totalCount };
+  } catch (e) {
+    Logger.log.error('Error occurred in get document list from RSS');
+    Logger.log.error(e.message || e);
+  }
+};
+
+/*
+Upload Document
+ */
+const uploadDocument = async ({ formData }) => {
+  try {
+    const url = 'https://apiv4.reallysimplesystems.com/documents';
+    const organization = await Organization.findOne({ isDeleted: false })
+      .select({ 'integration.rss': 1 })
+      .lean();
+    const options = {
+      method: 'POST',
+      url: url,
+      headers: {
+        Authorization: 'Bearer ' + organization.integration.rss.accessToken,
+        'Content-Type': 'multipart/form-data',
+        ...formData.getHeaders(),
+      },
+      data: formData,
+    };
+    const { data } = await axios(options);
+    console.log('file uploaded successfully::', data);
+    return data;
+  } catch (e) {
+    Logger.log.error('Error occurred in upload document in RSS');
+    Logger.log.error(e.response ? e.response.data : e.message);
+  }
+};
+
+const downloadDocument = async ({ documentId }) => {
+  try {
+    const url = `https://apiv4.reallysimplesystems.com/documents/${documentId}/content`;
+    const organization = await Organization.findOne({ isDeleted: false })
+      .select({ 'integration.rss': 1 })
+      .lean();
+    const options = {
+      method: 'GET',
+      url: url,
+      headers: {
+        Authorization: 'Bearer ' + organization.integration.rss.accessToken,
+        'Content-Type': 'multipart/form-data',
+      },
+    };
+    const { data, headers } = await axios(options);
+    console.log(headers);
+    return { data, headers };
+  } catch (e) {
+    Logger.log.error('Error occurred in download document');
+    Logger.log.error(e);
+  }
+};
+
 module.exports = {
   getClients,
   getInsurers,
@@ -767,4 +897,7 @@ module.exports = {
   getClaimsDetails,
   getClaimById,
   addClaimDetail,
+  getDocuments,
+  uploadDocument,
+  downloadDocument,
 };

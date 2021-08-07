@@ -3,6 +3,7 @@
  * */
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
 const mongoose = require('mongoose');
 const ClientUser = mongoose.model('client-user');
 const Client = mongoose.model('client');
@@ -12,8 +13,16 @@ const Client = mongoose.model('client');
  * */
 const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
-const { getClaimsList, addClaimInRSS } = require('./../helper/claims.helper');
-const { getClaimById } = require('./../helper/rss.helper');
+const {
+  getClaimsList,
+  addClaimInRSS,
+  listDocuments,
+  uploadDocumentInRSS,
+} = require('./../helper/claims.helper');
+const { getClaimById, downloadDocument } = require('./../helper/rss.helper');
+
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 /**
  * Get Column Names
@@ -123,6 +132,72 @@ router.get('/', async function (req, res) {
 });
 
 /**
+ * Get Claim Specific Documents
+ */
+router.get('/document/download/:entityId', async function (req, res) {
+  if (!req.params.entityId) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const { data, headers } = await downloadDocument({
+      documentId: req.params.entityId,
+    });
+    res.setHeader('Content-Type', headers?.['content-type']);
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename=' +
+        headers?.['content-disposition']?.split('filename=')[1],
+    );
+    res.send(data);
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred while getting specific entity claims ',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Get Claim Specific Documents
+ */
+router.get('/document/:entityId', async function (req, res) {
+  if (!req.params.entityId) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const response = await listDocuments({
+      crmId: req.params.entityId,
+      requestedQuery: req.query,
+    });
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: response,
+    });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred while getting specific entity claims ',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
  * Get Claim Detail
  */
 router.get('/:entityId', async function (req, res) {
@@ -206,6 +281,35 @@ router.post('/', async function (req, res) {
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
     });
+  }
+});
+
+/**
+ * Upload Document
+ */
+router.post('/document', upload.single('document'), async function (req, res) {
+  req.body = JSON.parse(JSON.stringify(req.body));
+  if (!req.body.parentId) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require field is missing.',
+    });
+  }
+  try {
+    await uploadDocumentInRSS({
+      parentId: req.body.parentId,
+      parentObject: 'Claim',
+      fileBuffer: req.file.buffer,
+      fileName: req.file.originalname,
+    });
+    res.status(200).send({
+      status: 'SUCCESS',
+      message: 'Document uploaded successfully',
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in upload document');
+    Logger.log.error(e.message || e);
   }
 });
 

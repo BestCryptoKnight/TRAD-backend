@@ -122,6 +122,28 @@ router.get('/list', async function (req, res) {
 });
 
 /**
+ * Mark all unread notifications as read
+ */
+router.get('/markAllAsRead', async function (req, res) {
+  try {
+    await Notification.updateMany(
+      { isDeleted: false, userId: req.user.clientId, isRead: false },
+      { isRead: true },
+    );
+    res.status(200).send({
+      status: 'SUCCESS',
+      message: 'Notifications marked as read',
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in mark all as read', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
  * Update notification status
  */
 router.put('/markAsRead/:notificationId', async function (req, res) {
