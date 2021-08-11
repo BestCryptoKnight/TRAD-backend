@@ -302,6 +302,7 @@ router.post('/document', upload.single('document'), async function (req, res) {
       parentObject: 'Claim',
       fileBuffer: req.file.buffer,
       fileName: req.file.originalname,
+      description: req.body.description,
     });
     res.status(200).send({
       status: 'SUCCESS',

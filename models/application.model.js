@@ -53,6 +53,18 @@ const applicationSchema = new Schema(
     requestDate: { type: Schema.Types.Date },
     approvalDate: { type: Schema.Types.Date },
     expiryDate: { type: Schema.Types.Date },
+    clientReference: { type: Schema.Types.String },
+    comments: { type: Schema.Types.String },
+    limitType: {
+      type: Schema.Types.String,
+      enum: [
+        'ENDORSED',
+        'DISCRETIONARY_LIMIT',
+        'CREDIT_CHECK',
+        'HEALTH_CHECK',
+        'MONITORING',
+      ],
+    },
     isDeleted: { type: Schema.Types.Boolean, default: false },
   },
   { timestamps: true },

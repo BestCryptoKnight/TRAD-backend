@@ -10,7 +10,6 @@ const Debtor = mongoose.model('debtor');
 const DebtorDirector = mongoose.model('debtor-director');
 const Application = mongoose.model('application');
 const ClientDebtor = mongoose.model('client-debtor');
-const Policy = mongoose.model('policy');
 
 /*
  * Local Imports
@@ -45,12 +44,12 @@ const {
   getSpecificEntityDocumentList,
 } = require('./../helper/document.helper');
 const { getAuditLogs, addAuditLog } = require('./../helper/audit-log.helper');
-const { addNote } = require('./../helper/note.helper');
 const { generateExcel } = require('../helper/excel.helper.js');
 const {
   listEntitySpecificAlerts,
   getAlertDetail,
 } = require('./../helper/alert.helper');
+const { checkForEndorsedLimit } = require('./../helper/policy.helper');
 
 /**
  * Get Column Names
@@ -320,7 +319,7 @@ router.get('/drawer-details/:applicationId', async function (req, res) {
     });
   }
   try {
-    const module = StaticFile.modules.find((i) => i.name === 'application');
+    let module = StaticFile.modules.find((i) => i.name === 'application');
     const application = await Application.findById(req.params.applicationId)
       .populate({
         path: 'clientId debtorId',
@@ -338,9 +337,11 @@ router.get('/drawer-details/:applicationId', async function (req, res) {
         message: 'No application found',
       });
     }
+    module = JSON.parse(JSON.stringify(module));
     const response = await applicationDrawerDetails({
       application,
       manageColumns: module.manageColumns,
+      isEditable: req.query.isEditableDrawer,
     });
     res.status(200).send({
       status: 'SUCCESS',
@@ -1118,7 +1119,10 @@ router.put('/:applicationId', async function (req, res) {
   if (
     !req.params.applicationId ||
     !mongoose.Types.ObjectId.isValid(req.params.applicationId) ||
-    !req.body.status
+    !req.body.update ||
+    (req.body.update !== 'credit-limit' && req.body.update !== 'field') ||
+    (req.body.update === 'credit-limit' &&
+      (!req.body.status || !req.body.comments))
   ) {
     return res.status(400).send({
       status: 'ERROR',
@@ -1131,114 +1135,118 @@ router.put('/:applicationId', async function (req, res) {
       _id: req.params.applicationId,
     }).lean();
     if (!application) {
-      return {
+      return res.status(400).send({
         status: 'ERROR',
         messageCode: 'NO_APPLICATION_FOUND',
         message: 'No application found',
-      };
-    }
-    if (application.status === 'SUBMITTED') {
-      return res.status(400).send({
-        status: 'ERROR',
-        messageCode: 'AUTOMATION_IN_PROCESS',
-        message:
-          'Automation is in process. Please change the status after some time.',
       });
     }
-    let status = req.body.status;
-    let approvedAmount = 0;
-    const applicationUpdate = {
-      status: req.body.status,
-    };
-    if (req.body.status === 'APPROVED') {
-      if (!req.body.creditLimit || !/^\d+$/.test(req.body.creditLimit)) {
+    const applicationUpdate = {};
+
+    if (req.body.update === 'field') {
+      if (req.body.expiryDate) {
+        applicationUpdate.expiryDate = req.body.expiryDate;
+      }
+      if (req.body.limitType) {
+        applicationUpdate.limitType = req.body.limitType;
+      }
+      if (req.body.clientReference) {
+        applicationUpdate.clientReference = req.body.clientReference;
+      }
+      if (req.body.comments) {
+        applicationUpdate.comments = req.body.comments;
+      }
+    } else if (req.body.update === 'credit-limit') {
+      if (application.status === 'SUBMITTED') {
         return res.status(400).send({
           status: 'ERROR',
-          messageCode: 'REQUIRE_FIELD_MISSING',
-          message: 'Require fields are missing',
+          messageCode: 'AUTOMATION_IN_PROCESS',
+          message:
+            'Automation is in process. Please change the status after some time.',
         });
       }
-      if (parseInt(application.creditLimit) < parseInt(req.body.creditLimit)) {
-        return res.status(400).send({
-          status: 'ERROR',
-          messageCode: 'INVALID_AMOUNT',
-          message: "Can't approve more credit limit than requested",
+      let status = req.body.status;
+      let approvedAmount = 0;
+      applicationUpdate.status = req.body.status;
+      if (req.body.status === 'APPROVED') {
+        if (!req.body.creditLimit || !/^\d+$/.test(req.body.creditLimit)) {
+          return res.status(400).send({
+            status: 'ERROR',
+            messageCode: 'REQUIRE_FIELD_MISSING',
+            message: 'Require fields are missing',
+          });
+        }
+        if (
+          parseInt(application.creditLimit) < parseInt(req.body.creditLimit)
+        ) {
+          return res.status(400).send({
+            status: 'ERROR',
+            messageCode: 'INVALID_AMOUNT',
+            message: "Can't approve more credit limit than requested",
+          });
+        }
+        if (
+          parseInt(application.creditLimit) > parseInt(req.body.creditLimit)
+        ) {
+          status = 'PARTIALLY_APPROVED';
+        }
+
+        const date = new Date();
+        applicationUpdate.approvalDate = date;
+        let expiryDate = new Date(date.setMonth(date.getMonth() + 12));
+        expiryDate = new Date(expiryDate.setDate(expiryDate.getDate() - 1));
+        applicationUpdate.expiryDate = application?.expiryDate || expiryDate;
+        applicationUpdate.acceptedAmount = parseInt(req.body.creditLimit);
+        approvedAmount = applicationUpdate.acceptedAmount;
+
+        const update = {
+          creditLimit: applicationUpdate.acceptedAmount,
+          isEndorsedLimit: false,
+          activeApplicationId: application._id,
+          expiryDate: applicationUpdate.expiryDate,
+        };
+        update.isEndorsedLimit = await checkForEndorsedLimit({
+          creditLimit: applicationUpdate.acceptedAmount,
+          clientId: application.clientId,
         });
-      }
-      if (parseInt(application.creditLimit) > parseInt(req.body.creditLimit)) {
-        status = 'PARTIALLY_APPROVED';
-      }
-      const date = new Date();
-      applicationUpdate.approvalDate = date;
-      let expiryDate = new Date(date.setMonth(date.getMonth() + 12));
-      expiryDate = new Date(expiryDate.setDate(expiryDate.getDate() - 1));
-      applicationUpdate.expiryDate = expiryDate;
-      req.body.creditLimit = parseInt(req.body.creditLimit);
-      approvedAmount = req.body.creditLimit;
-      applicationUpdate.acceptedAmount = req.body.creditLimit;
-      const ciPolicy = await Policy.findOne({
-        clientId: application.clientId,
-        product: { $regex: '.*Credit Insurance.*' },
-        inceptionDate: { $lte: new Date() },
-        expiryDate: { $gt: new Date() },
-      })
-        .select(
-          'clientId product policyPeriod discretionaryLimit inceptionDate expiryDate',
-        )
-        .lean();
-      const update = {
-        creditLimit: req.body.creditLimit,
-        isEndorsedLimit: false,
-        activeApplicationId: application._id,
-        expiryDate: expiryDate,
-      };
-      if (
-        ciPolicy &&
-        ciPolicy.discretionaryLimit &&
-        ciPolicy.discretionaryLimit < req.body.creditLimit
-      ) {
-        update.isEndorsedLimit = true;
-      }
-      await ClientDebtor.updateOne({ _id: application.clientDebtorId }, update);
-      //TODO uncomment to surrender other application on Approve status
-      /*const applicationData = await Application.findOne({
-        clientId: application.clientId,
-        debtorId: application.debtorId,
-        clientDebtorId: application.clientDebtorId,
-        status: 'APPROVED',
-      }).lean();
-      if (applicationData && applicationData._id) {
-        await Application.updateOne(
-          { _id: applicationData._id },
-          { status: 'SURRENDERED' },
+        await ClientDebtor.updateOne(
+          { _id: application.clientDebtorId },
+          update,
         );
-      }*/
-    } else if (
-      req.body.status === 'DECLINED' ||
-      req.body.status === 'CANCELLED' ||
-      req.body.status === 'WITHDRAWN' ||
-      req.body.status === 'SURRENDERED'
-    ) {
-      await ClientDebtor.updateOne(
-        { _id: req.params.debtorId },
-        {
-          creditLimit: undefined,
-          activeApplicationId: undefined,
-          isActive: false,
-        },
-      );
-    }
-    if (req.body.description && req.body.hasOwnProperty('isPublic')) {
-      await addNote({
-        userId: req.user._id,
-        entityId: req.params.applicationId,
-        description: req.body.description,
-        userType: 'user',
-        userName: req.user.name,
-        isPublic: req.body.isPublic,
-        noteFor: 'application',
-      });
-      applicationUpdate.note = req.body.description;
+      } else if (
+        req.body.status === 'DECLINED' ||
+        req.body.status === 'CANCELLED' ||
+        req.body.status === 'WITHDRAWN'
+      ) {
+        await ClientDebtor.updateOne(
+          { _id: req.params.debtorId },
+          {
+            creditLimit: undefined,
+            activeApplicationId: undefined,
+            isActive: false,
+          },
+        );
+      }
+
+      if (req.body.comments) {
+        applicationUpdate.comments = req.body.description;
+      }
+      if (req.body.status === 'APPROVED' || req.body.status === 'DECLINED') {
+        sendNotificationsToUser({
+          userName: req.user.name,
+          userId: req.user._id,
+          userType: 'user',
+          status: req.body.status,
+          application,
+        });
+        //TODO uncomment to send decision letter
+        /*sendDecisionLetter({
+          reason: req.body.comments || '',
+          status,
+          application,
+          approvedAmount,
+        });*/
+      }
     }
     //TODO notify user
     await Application.updateOne(
@@ -1253,25 +1261,9 @@ router.put('/:applicationId', async function (req, res) {
       userRefId: req.user._id,
       logDescription: `An application ${application.applicationId} is updated by ${req.user.name}`,
     });
-    if (req.body.status === 'APPROVED' || req.body.status === 'DECLINED') {
-      sendNotificationsToUser({
-        userName: req.user.name,
-        userId: req.user._id,
-        userType: 'user',
-        status: req.body.status,
-        application,
-      });
-      //TODO uncomment to send decision letter
-      /*sendDecisionLetter({
-        reason: req.body.description || '',
-        status,
-        application,
-        approvedAmount,
-      });*/
-    }
     res.status(200).send({
       status: 'SUCCESS',
-      message: 'Application status updated successfully',
+      message: 'Application updated successfully',
     });
   } catch (e) {
     Logger.log.error('Error occurred in generating application ', e);

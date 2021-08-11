@@ -528,7 +528,7 @@ router.get('/drawer-details/:debtorId', async function (req, res) {
     });
     res.status(200).send({
       status: 'SUCCESS',
-      data: { response, header: 'Credit Limit Details' },
+      data: { response, header: 'Debtor Details' },
     });
   } catch (e) {
     Logger.log.error(
@@ -875,7 +875,7 @@ router.get('/download/:debtorId', async function (req, res) {
       'contactNumber',
       'activeApplicationId',
       'creditLimit',
-      'isEndorsedLimit',
+      'limitType',
       'expiryDate',
       'abn',
       'acn',

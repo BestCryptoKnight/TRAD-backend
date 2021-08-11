@@ -4,8 +4,6 @@
 const mongoose = require('mongoose');
 const Client = mongoose.model('client');
 const FormData = require('form-data');
-const fs = require('fs');
-const Path = require('path');
 
 /*
  * Local Imports
@@ -291,24 +289,17 @@ const uploadDocumentInRSS = async ({
   parentId,
   parentObject,
   fileName,
+  description,
 }) => {
   try {
-    const filePath = Path.join(__dirname, '../upload/documents', fileName);
-    fs.writeFileSync(filePath, fileBuffer);
-    const fileStream = fs.createReadStream(filePath);
-
     const formData = new FormData();
-    formData.append('file', fileStream);
+    formData.append('file', fileBuffer, { filename: fileName });
     formData.append('ParentId', parentId);
     formData.append('ParentObject', parentObject);
+    if (description) {
+      formData.append('description', description);
+    }
     await uploadDocument({ formData });
-
-    fs.unlink(filePath, (err) => {
-      if (err) {
-        Logger.log.error('Error while deleting file', err.message || err);
-      }
-      Logger.log.trace('File deleted successfully');
-    });
   } catch (e) {
     Logger.log.error('Error occurred in upload document');
     Logger.log.error(e);

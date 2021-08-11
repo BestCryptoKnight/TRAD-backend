@@ -768,49 +768,13 @@ const storeCreditLimitDetails = async ({ requestBody }) => {
         ? 2
         : 3,
     };
-    update.outstandingAmount = requestBody.outstandingAmount
-      ? requestBody.outstandingAmount
-      : undefined;
-    update.orderOnHand = requestBody.orderOnHand
-      ? requestBody.orderOnHand
-      : undefined;
-    update.note = requestBody.note ? requestBody.note : '';
-    update.extendedPaymentTermsDetails = requestBody.extendedPaymentTermsDetails
-      ? requestBody.extendedPaymentTermsDetails
-      : '';
-    update.passedOverdueDetails = requestBody.passedOverdueDetails
-      ? requestBody.passedOverdueDetails
-      : '';
-    /*if (requestBody.note) {
-      const note = await Note.findOne({
-        noteFor: 'application',
-        isDeleted: false,
-        entityId: requestBody.applicationId,
-      }).lean();
-      if (note) {
-        await Note.updateOne(
-          { _id: note._id },
-          { description: requestBody.note },
-        );
-      } else {
-        await Note.create({
-          description: requestBody.note,
-          noteFor: 'application',
-          entityId: requestBody.applicationId,
-          createdByType: createdByType,
-          createdById: createdBy,
-        });
-      }
-    } else {
-      await Note.updateOne(
-        {
-          noteFor: 'application',
-          isDeleted: false,
-          entityId: requestBody.applicationId,
-        },
-        { isDeleted: true },
-      );
-    }*/
+    update.outstandingAmount = requestBody?.outstandingAmount || undefined;
+    update.orderOnHand = requestBody?.orderOnHand || undefined;
+    update.note = requestBody?.note || '';
+    update.extendedPaymentTermsDetails =
+      requestBody?.extendedPaymentTermsDetails || '';
+    update.passedOverdueDetails = requestBody?.passedOverdueDetails || '';
+    update.clientReference = requestBody?.clientReference || '';
     await Application.updateOne({ _id: requestBody.applicationId }, update);
     application = await Application.findById(requestBody.applicationId)
       .select('_id applicationStage')
@@ -888,8 +852,8 @@ const submitApplication = async ({
         userType === 'user' ? userName : application.clientId.name
       }`,
     });
-    //TODO do not monitor for endorsed limit
-    addEntitiesToAlertProfile({ debtorId: application.debtorId });
+    //TODO do not monitor for endorsed limit + call on application approve or surrendered
+    /*addEntitiesToAlertProfile({ debtorId: application.debtorId });*/
     return 'Application submitted successfully.';
   } catch (e) {
     Logger.log.error('Error occurred in submit application');
@@ -1213,7 +1177,11 @@ const generateNewApplication = async ({
   }
 };
 
-const applicationDrawerDetails = async ({ application, manageColumns }) => {
+const applicationDrawerDetails = async ({
+  application,
+  manageColumns,
+  isEditable = false,
+}) => {
   try {
     let createdBy;
     if (application.createdByType === 'client-user') {
@@ -1227,6 +1195,22 @@ const applicationDrawerDetails = async ({ application, manageColumns }) => {
     }
     let response = [];
     let value = '';
+    if (isEditable) {
+      let extractedObj;
+      for (let i = 0; i < manageColumns.length; i++) {
+        if (
+          manageColumns[i].name === 'limitType' ||
+          manageColumns[i].name === 'expiryDate'
+        ) {
+          extractedObj = manageColumns.splice(i, 1)[0];
+          extractedObj.type =
+            extractedObj.name === 'limitType'
+              ? 'editableString'
+              : 'editableDate';
+          manageColumns.splice(0, 0, extractedObj);
+        }
+      }
+    }
     manageColumns.forEach((i) => {
       value =
         i.name === 'clientId'
@@ -1245,7 +1229,11 @@ const applicationDrawerDetails = async ({ application, manageColumns }) => {
           : application[i.name]
           ? application[i.name]
           : '';
-      if (i.name === 'status' || i.name === 'entityType') {
+      if (
+        i.name === 'status' ||
+        i.name === 'entityType' ||
+        i.name === 'limitType'
+      ) {
         value = formatString(value);
       }
       response.push({
@@ -1268,6 +1256,7 @@ const sendNotificationsToUser = async ({
   status,
 }) => {
   try {
+    const client = await Client.findOne({ _id: application.clientId }).lean();
     if (status === 'APPROVED') {
       await addAuditLog({
         entityType: 'application',
@@ -1276,9 +1265,9 @@ const sendNotificationsToUser = async ({
         userType: 'system',
         logDescription: `An application ${application.applicationId} is being approved`,
       });
-      if (application.clientId && application.clientId._id) {
+      if (application.clientId) {
         const clientNotification = await addNotification({
-          userId: application.clientId._id,
+          userId: application.clientId,
           userType: 'client-user',
           description: `An application ${application.applicationId} is being approved`,
         });
@@ -1289,13 +1278,13 @@ const sendNotificationsToUser = async ({
               data: clientNotification,
             },
             type: 'client-user',
-            userId: application.clientId._id,
+            userId: application.clientId,
           });
         }
       }
-      if (application.clientId && application.clientId.riskAnalystId) {
+      if (client?.riskAnalystId) {
         const userNotification = await addNotification({
-          userId: application.clientId.riskAnalystId,
+          userId: client.riskAnalystId,
           userType: 'user',
           description: `An application ${application.applicationId} is being approved`,
         });
@@ -1306,22 +1295,18 @@ const sendNotificationsToUser = async ({
               data: userNotification,
             },
             type: 'user',
-            userId: application.clientId.riskAnalystId,
+            userId: client.riskAnalystId,
           });
         }
       }
-    } else if (
-      status === 'REVIEW_APPLICATION' &&
-      application.clientId &&
-      application.clientId.riskAnalystId
-    ) {
+    } else if (status === 'REVIEW_APPLICATION' && client?.riskAnalystId) {
       const date = new Date();
       const data = {
         title: `Review Application ${application.applicationId}`,
         createdByType: userType,
         createdById: userId,
         assigneeType: 'user',
-        assigneeId: application.clientId.riskAnalystId,
+        assigneeId: client.riskAnalystId,
         dueDate: new Date(date.setDate(date.getDate() + 7)),
         entityType: 'application',
         entityId: application._id,
@@ -1358,9 +1343,9 @@ const sendNotificationsToUser = async ({
         userType: 'system',
         logDescription: `An application ${application.applicationId} is being declined by ${userName}`,
       });
-      if (application.clientId && application.clientId._id) {
+      if (application.clientId) {
         const clientNotification = await addNotification({
-          userId: application.clientId._id,
+          userId: application.clientId,
           userType: 'client-user',
           description: `An application ${application.applicationId} is being declined by ${userName}`,
         });
@@ -1371,7 +1356,7 @@ const sendNotificationsToUser = async ({
               data: clientNotification,
             },
             type: 'client-user',
-            userId: application.clientId._id,
+            userId: application.clientId,
           });
         }
       }

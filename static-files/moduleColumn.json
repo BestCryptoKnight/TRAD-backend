@@ -74,6 +74,16 @@
           "type": "amount"
         },
         {
+          "name": "limitType",
+          "label": "Limit Type",
+          "type": "string"
+        },
+        {
+          "name": "clientReference",
+          "label": "Client Reference",
+          "type": "string"
+        },
+        {
           "name": "isExtendedPaymentTerms",
           "label": "Has Extended Payment Terms",
           "type": "string"
@@ -539,8 +549,8 @@
         },
         { "name": "creditLimit", "label": "Credit Limit", "type": "string" },
         {
-          "name": "isEndorsedLimit",
-          "label": "Credit Type",
+          "name": "limitType",
+          "label": "Limit Type",
           "type": "string"
         },
         { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
@@ -885,6 +895,11 @@
           "label": "Credit Type",
           "type": "string"
         },
+        {
+          "name": "limitType",
+          "label": "Limit Type",
+          "type": "string"
+        },
         { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
         { "name": "abn", "label": "ABN", "type": "string" },
         { "name": "acn", "label": "ACN", "type": "string" },
@@ -1044,11 +1059,6 @@
         {
           "name": "remainingApplication",
           "label": "Remaining Application",
-          "type": "string"
-        },
-        {
-          "name": "renewalType",
-          "label": "Renewal Type",
           "type": "string"
         }
       ],
@@ -1252,11 +1262,6 @@
           "name": "serviceManagerId",
           "label": "Service Manager",
           "type": "string"
-        },
-        {
-          "name": "renewalType",
-          "label": "Renewal Type",
-          "type": "string"
         }
       ],
       "defaultColumns": [
@@ -1302,7 +1307,36 @@
           "name": "applicationCount",
           "label": "Application Count",
           "type": "string"
-        }
+        },
+        {
+          "name": "applicationId",
+          "label": "Application Number",
+          "type": "string"
+        },
+        {
+          "name": "status",
+          "label": "Application Status",
+          "type": "string"
+        },
+        {
+          "name": "requestedAmount",
+          "label": "Requested Amount",
+          "type": "amount"
+        },
+        {
+          "name": "acceptedAmount",
+          "label": "Approved Amount",
+          "type": "amount"
+        },
+        { "name": "approvalDate", "label": "Approval Date", "type": "date" },
+        { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
+        { "name": "limitType", "label": "Limit Type", "type": "string" },
+        {
+          "name": "clientReference",
+          "label": "Client Reference",
+          "type": "string"
+        },
+        { "name": "comments", "label": "Comments", "type": "string" }
       ],
       "defaultColumns": [
         "clientId",

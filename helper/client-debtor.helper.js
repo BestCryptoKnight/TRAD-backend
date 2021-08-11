@@ -84,7 +84,6 @@ const getClientCreditLimit = async ({
   try {
     const clientDebtorDetails = [
       'creditLimit',
-      'isEndorsedLimit',
       'expiryDate',
       'activeApplicationId',
       'createdAt',
@@ -117,7 +116,10 @@ const getClientCreditLimit = async ({
         },
       });
     }
-    if (debtorColumn.includes('activeApplicationId')) {
+    if (
+      debtorColumn.includes('activeApplicationId') ||
+      debtorColumn.includes('limitType')
+    ) {
       aggregationQuery.push(
         {
           $lookup: {
@@ -139,6 +141,7 @@ const getClientCreditLimit = async ({
       i = !clientDebtorDetails.includes(i) ? 'debtorId.' + i : i;
       return [i, 1];
     });
+    console.log(fields);
     fields.push(['debtorId._id', 1]);
     aggregationQuery.push({
       $project: fields.reduce((obj, [key, val]) => {
@@ -225,14 +228,14 @@ const getClientCreditLimit = async ({
     }
     response.forEach((debtor) => {
       // debtor._id = debtor.debtorId._id || debtor._id;
-      if (
-        debtor.activeApplicationId &&
-        debtor.activeApplicationId.applicationId
-      ) {
+      if (debtor.activeApplicationId?.applicationId) {
         debtor.activeApplicationId = {
           _id: debtor.activeApplicationId._id,
           value: debtor.activeApplicationId.applicationId,
         };
+      }
+      if (debtor.activeApplicationId?.limitType) {
+        debtor.limitType = debtor.activeApplicationId.limitType;
       }
       if (debtor.debtorId) {
         delete debtor.debtorId._id;
@@ -250,11 +253,11 @@ const getClientCreditLimit = async ({
           value: debtor.entityName,
         };
       }
-      if (debtor.hasOwnProperty('isEndorsedLimit')) {
+      /*if (debtor.hasOwnProperty('isEndorsedLimit')) {
         debtor.isEndorsedLimit = debtor.isEndorsedLimit
           ? 'Endorsed'
           : 'Assessed';
-      }
+      }*/
     });
     return {
       docs: response,
@@ -279,7 +282,6 @@ const getDebtorCreditLimit = async ({
   try {
     const clientDebtorDetails = [
       'creditLimit',
-      'isEndorsedLimit',
       'expiryDate',
       'activeApplicationId',
       'createdAt',
@@ -305,7 +307,10 @@ const getDebtorCreditLimit = async ({
         },
       },
     ];
-    if (debtorColumn.includes('activeApplicationId')) {
+    if (
+      debtorColumn.includes('activeApplicationId') ||
+      debtorColumn.includes('limitType')
+    ) {
       aggregationQuery.push(
         {
           $lookup: {
@@ -406,14 +411,14 @@ const getDebtorCreditLimit = async ({
       }
     }
     response.forEach((debtor) => {
-      if (
-        debtor.activeApplicationId &&
-        debtor.activeApplicationId.applicationId
-      ) {
+      if (debtor.activeApplicationId?.applicationId) {
         debtor.activeApplicationId = {
           _id: debtor.activeApplicationId._id,
           value: debtor.activeApplicationId.applicationId,
         };
+      }
+      if (debtor.activeApplicationId?.limitType) {
+        debtor.limitType = debtor.activeApplicationId.limitType;
       }
       if (debtor.clientId && debtor.clientId.contactNumber) {
         debtor.contactNumber = debtor.clientId.contactNumber;
@@ -431,11 +436,6 @@ const getDebtorCreditLimit = async ({
         };
       }
       delete debtor.clientId;
-      if (debtor.hasOwnProperty('isEndorsedLimit')) {
-        debtor.isEndorsedLimit = debtor.isEndorsedLimit
-          ? 'Endorsed'
-          : 'Assessed';
-      }
     });
     return {
       docs: response,
@@ -613,7 +613,7 @@ const downloadDecisionLetter = async ({ creditLimitId }) => {
           clientDebtor.activeApplicationId.creditLimit,
         ).toFixed(2),
         approvedAmount: clientDebtor.creditLimit.toFixed(2),
-        approvalStatus: clientDebtor.activeApplicationId.note,
+        approvalStatus: clientDebtor.activeApplicationId.comments,
       };
       bufferData = await generateDecisionLetter(response);
     }

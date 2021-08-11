@@ -430,7 +430,9 @@ const getLimitListReport = async ({
       reportColumn.includes('creditLimit') ||
       reportColumn.includes('acceptedAmount') ||
       reportColumn.includes('approvalDate') ||
-      reportColumn.includes('expiryDate')
+      reportColumn.includes('comments') ||
+      reportColumn.includes('clientReference') ||
+      reportColumn.includes('limitType')
     ) {
       query.push({
         $lookup: {
@@ -459,7 +461,9 @@ const getLimitListReport = async ({
         i === 'creditLimit' ||
         i === 'acceptedAmount' ||
         i === 'approvalDate' ||
-        i === 'expiryDate'
+        i === 'limitType' ||
+        i === 'clientReference' ||
+        i === 'comments'
       ) {
         i = 'activeApplicationId.' + i;
       }
@@ -580,7 +584,7 @@ const getLimitListReport = async ({
           ? limit.activeApplicationId[0].approvalDate
           : '';
       }
-      if (
+      /*if (
         limit.activeApplicationId &&
         limit.activeApplicationId[0] &&
         limit.activeApplicationId[0].expiryDate
@@ -588,6 +592,16 @@ const getLimitListReport = async ({
         limit.expiryDate = limit.activeApplicationId[0].expiryDate
           ? limit.activeApplicationId[0].expiryDate
           : '';
+      }*/
+      if (limit?.activeApplicationId[0]?.limitType) {
+        limit.limitType = limit.activeApplicationId[0]?.limitType || '';
+      }
+      if (limit?.activeApplicationId[0]?.comments) {
+        limit.comments = limit.activeApplicationId[0]?.comments || '';
+      }
+      if (limit?.activeApplicationId[0]?.clientReference) {
+        limit.clientReference =
+          limit.activeApplicationId[0]?.clientReference || '';
       }
       delete limit.activeApplicationId;
     });
@@ -986,7 +1000,10 @@ const getReviewReport = async ({
     if (
       reportColumn.includes('requestedCreditLimit') ||
       reportColumn.includes('approvalDate') ||
-      reportColumn.includes('applicationExpiryDate')
+      reportColumn.includes('applicationExpiryDate') ||
+      reportColumn.includes('comments') ||
+      reportColumn.includes('clientReference') ||
+      reportColumn.includes('limitType')
     ) {
       query.push({
         $lookup: {
@@ -1020,6 +1037,9 @@ const getReviewReport = async ({
       }
       if (i === 'requestedCreditLimit') {
         i = 'activeApplicationId.creditLimit';
+      }
+      if (i === 'limitType' || i === 'clientReference' || i === 'comments') {
+        i = 'activeApplicationId.' + i;
       }
       if (i === 'applicationExpiryDate') {
         i = 'activeApplicationId.expiryDate';
@@ -1071,7 +1091,6 @@ const getReviewReport = async ({
       clientDebtors[0]['totalCount'].length !== 0
         ? clientDebtors[0]['totalCount'][0]['count']
         : 0;
-
     response.forEach((limit) => {
       if (limit.insurerId) {
         limit.insurerId =
@@ -1161,6 +1180,16 @@ const getReviewReport = async ({
         limit.reportExpiryDate = limit.currentReportId[0].expiryDate
           ? limit.currentReportId[0].expiryDate
           : '';
+      }
+      if (limit?.activeApplicationId[0]?.limitType) {
+        limit.limitType = limit.activeApplicationId[0]?.limitType || '';
+      }
+      if (limit?.activeApplicationId[0]?.comments) {
+        limit.comments = limit.activeApplicationId[0]?.comments || '';
+      }
+      if (limit?.activeApplicationId[0]?.clientReference) {
+        limit.clientReference =
+          limit.activeApplicationId[0]?.clientReference || '';
       }
       delete limit.currentReportId;
       delete limit.activeApplicationId;
@@ -1527,6 +1556,27 @@ const getUsagePerClientReport = async ({
       });
     }
 
+    if (
+      reportColumn.includes('applicationId') ||
+      reportColumn.includes('status') ||
+      reportColumn.includes('requestedAmount') ||
+      reportColumn.includes('acceptedAmount') ||
+      reportColumn.includes('approvalDate') ||
+      reportColumn.includes('expiryDate') ||
+      reportColumn.includes('comments') ||
+      reportColumn.includes('clientReference') ||
+      reportColumn.includes('limitType')
+    ) {
+      query.push({
+        $lookup: {
+          from: 'applications',
+          localField: 'activeApplicationId',
+          foreignField: '_id',
+          as: 'activeApplicationId',
+        },
+      });
+    }
+
     const fields = reportColumn.map((i) => {
       if (i === 'clientId' || i === 'insurerId') {
         i = i + '.name';
@@ -1668,6 +1718,37 @@ const getUsagePerClientReport = async ({
       if (limit.hasOwnProperty('isActive')) {
         limit.isActive = limit.isActive ? 'Yes' : 'No';
       }
+      if (limit?.activeApplicationId?.[0]?.applicationId) {
+        limit.applicationId =
+          limit?.activeApplicationId[0]?.applicationId || '';
+      }
+      if (limit?.activeApplicationId?.[0]?.creditLimit) {
+        limit.requestedAmount =
+          limit?.activeApplicationId[0]?.creditLimit || '';
+      }
+      if (limit?.activeApplicationId?.[0]?.status) {
+        limit.status = limit?.activeApplicationId[0]?.status || '';
+      }
+      if (limit?.activeApplicationId?.[0]?.acceptedAmount) {
+        limit.acceptedAmount =
+          limit?.activeApplicationId[0]?.acceptedAmount || '';
+      }
+      if (limit?.activeApplicationId?.[0]?.approvalDate) {
+        limit.approvalDate = limit?.activeApplicationId[0]?.approvalDate || '';
+      }
+      if (limit?.activeApplicationId?.[0]?.expiryDate) {
+        limit.expiryDate = limit?.activeApplicationId[0]?.expiryDate || '';
+      }
+      if (limit?.activeApplicationId?.[0]?.limitType) {
+        limit.limitType = limit?.activeApplicationId[0]?.limitType || '';
+      }
+      if (limit?.activeApplicationId?.[0]?.clientReference) {
+        limit.clientReference =
+          limit?.activeApplicationId[0]?.clientReference || '';
+      }
+      if (limit?.activeApplicationId?.[0]?.comments) {
+        limit.comments = limit?.activeApplicationId[0]?.comments || '';
+      }
       if (isCreditLimitSelected) {
         limit.creditLimit = limit.creditLimit ? limit.creditLimit : 0;
       }
@@ -1680,7 +1761,7 @@ const getUsagePerClientReport = async ({
     return { response, total };
   } catch (e) {
     Logger.log.error('Error occurred in get limit list report');
-    Logger.log.error(e.message || e);
+    Logger.log.error(e);
   }
 };
 

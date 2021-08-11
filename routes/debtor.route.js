@@ -414,7 +414,7 @@ router.get('/download', async function (req, res) {
       'entityType',
       'activeApplicationId',
       'creditLimit',
-      'isEndorsedLimit',
+      'limitType',
       'expiryDate',
       'abn',
       'registrationNumber',

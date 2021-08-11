@@ -233,7 +233,7 @@ router.get(
       });
       res.status(200).send({
         status: 'SUCCESS',
-        data: { response, header: 'Credit Limit Details' },
+        data: { response, header: 'Debtor Details' },
       });
     } catch (e) {
       Logger.log.error(
@@ -733,7 +733,7 @@ router.get('/download/:clientId', async function (req, res) {
       'entityType',
       'activeApplicationId',
       'creditLimit',
-      'isEndorsedLimit',
+      'limitType',
       'expiryDate',
       'abn',
       'registrationNumber',

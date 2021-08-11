@@ -210,7 +210,7 @@ const checkForEndorsedLimit = async ({ clientId, creditLimit }) => {
       .lean();
     if (
       ciPolicy &&
-      ciPolicy.discretionaryLimit &&
+      ciPolicy?.discretionaryLimit &&
       ciPolicy.discretionaryLimit < creditLimit
     ) {
       isEndorsedLimit = true;

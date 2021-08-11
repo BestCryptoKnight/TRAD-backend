@@ -8,8 +8,6 @@ const ClientUser = mongoose.model('client-user');
 const Application = mongoose.model('application');
 const DebtorDirector = mongoose.model('debtor-director');
 const Debtor = mongoose.model('debtor');
-const ClientDebtor = mongoose.model('client-debtor');
-const Policy = mongoose.model('policy');
 
 /*
  * Local Imports
@@ -40,13 +38,8 @@ const {
   getApplicationDocumentList,
   getSpecificEntityDocumentList,
 } = require('./../helper/document.helper');
-const {
-  getAuditLogs,
-  getEntityName,
-  addAuditLog,
-} = require('./../helper/audit-log.helper');
+const { getAuditLogs, addAuditLog } = require('./../helper/audit-log.helper');
 const { generateExcel } = require('../helper/excel.helper.js');
-const { addNote } = require('./../helper/note.helper');
 
 /**
  * Get Column Names
@@ -967,6 +960,63 @@ router.put('/', async function (req, res) {
       status: 'SUCCESS',
       message: message,
       data: response,
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in generating application ', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e,
+    });
+  }
+});
+
+/**
+ * Update Application
+ */
+router.put('/:applicationId', async function (req, res) {
+  if (
+    !req.params.applicationId ||
+    !mongoose.Types.ObjectId.isValid(req.params.applicationId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const application = await Application.findOne({
+      _id: req.params.applicationId,
+    })
+      .populate({ path: 'clientId', select: '_id name' })
+      .lean();
+    if (!application) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'NO_APPLICATION_FOUND',
+        message: 'No application found',
+      });
+    }
+    const applicationUpdate = {};
+    if (req.body.clientReference) {
+      applicationUpdate.clientReference = req.body.clientReference;
+    }
+    //TODO notify user
+    await Application.updateOne(
+      { _id: req.params.applicationId },
+      applicationUpdate,
+    );
+    await addAuditLog({
+      entityType: 'application',
+      entityRefId: application._id,
+      actionType: 'edit',
+      userType: 'user',
+      userRefId: req.user.clientId,
+      logDescription: `An application ${application.applicationId} is updated by ${application.clientId?.name}`,
+    });
+    res.status(200).send({
+      status: 'SUCCESS',
+      message: 'Application updated successfully',
     });
   } catch (e) {
     Logger.log.error('Error occurred in generating application ', e);
