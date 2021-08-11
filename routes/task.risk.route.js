@@ -127,6 +127,14 @@ router.get('/user-list', async function (req, res) {
     users.forEach((i) => (i.type = 'user'));
     clients.forEach((i) => (i.type = 'client-user'));
     users = users.concat(clients);
+    if (req.query.forFilter) {
+      const allUsers = {
+        _id: 'all_user',
+        name: 'All User',
+        type: 'user',
+      };
+      users.splice(0, 0, allUsers);
+    }
     res.status(200).send({ status: 'SUCCESS', data: users });
   } catch (e) {
     Logger.log.error('Error occurred in get user list ', e.message || e);

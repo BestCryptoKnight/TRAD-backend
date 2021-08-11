@@ -671,13 +671,14 @@ router.put('/credit-limit/:creditLimitId', async function (req, res) {
           isActive: false,
         },
       );
-      if (clientDebtor?.debtorId) {
+      //TODO uncomment to remove entity from alert profile
+      /*if (clientDebtor?.debtorId) {
         checkForEntityInProfile({
           entityId: clientDebtor.debtorId,
           action: 'remove',
           entityType: 'debtor',
         });
-      }
+      }*/
     }
     res.status(200).send({
       status: 'SUCCESS',

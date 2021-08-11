@@ -733,12 +733,13 @@ router.get('/:entityId', async function (req, res) {
     });
   }
   try {
-    let queryFilter = {
+    const queryFilter = {
       isDeleted: false,
     };
     switch (req.query.listFor) {
       case 'debtor-application':
         queryFilter.debtorId = mongoose.Types.ObjectId(req.params.entityId);
+        queryFilter.clientId = mongoose.Types.ObjectId(req.user.clientId);
         break;
       default:
         return res.status(400).send({

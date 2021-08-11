@@ -1165,11 +1165,10 @@ const generateNewApplication = async ({
         userId: createdById,
         userType: createdByType,
       });
-      if (applicationData?.debtorId) {
+      //TODO uncomment to add entity into alert profile
+      /*if (applicationData?.debtorId) {
         addEntitiesToAlertProfile({ debtorId: applicationData.debtorId });
-      }
-
-      //TODO call application automation helper
+      }*/
     }
     return application;
   } catch (e) {

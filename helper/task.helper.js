@@ -154,6 +154,7 @@ const aggregationQuery = async ({
         ],
       });
     }
+
     if (!hasFullAccess && !listCreatedBy && isForRisk) {
       queryFilter = Object.assign({}, queryFilter, {
         $or: [
@@ -392,12 +393,25 @@ const aggregationQuery = async ({
       );
     }
 
-    if (requestedQuery.assigneeId) {
+    if (requestedQuery.assigneeId && requestedQuery.assigneeId !== 'all_user') {
       query.push({
         $match: {
           'assigneeId._id': mongoose.Types.ObjectId(requestedQuery.assigneeId),
         },
       });
+    } else if (isForRisk && !requestedQuery.requestedEntityId) {
+      if (requestedQuery.assigneeId !== 'all_user') {
+        query.push({
+          $match: {
+            $or: [
+              { assigneeId: mongoose.Types.ObjectId(userId) },
+              {
+                'assigneeId._id': mongoose.Types.ObjectId(userId),
+              },
+            ],
+          },
+        });
+      }
     }
 
     if (taskColumn.includes('createdById') || requestedQuery.createdById) {
@@ -498,7 +512,6 @@ const aggregationQuery = async ({
         (parseInt(requestedQuery.page) - 1) * parseInt(requestedQuery.limit),
     });
     query.push({ $limit: parseInt(requestedQuery.limit) });*/
-    console.log(queryFilter, '--------');
     query.unshift({ $match: queryFilter });
 
     return query;

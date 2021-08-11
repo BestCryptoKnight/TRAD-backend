@@ -593,13 +593,13 @@ const getLimitListReport = async ({
           ? limit.activeApplicationId[0].expiryDate
           : '';
       }*/
-      if (limit?.activeApplicationId[0]?.limitType) {
+      if (limit?.activeApplicationId?.[0]?.limitType) {
         limit.limitType = limit.activeApplicationId[0]?.limitType || '';
       }
-      if (limit?.activeApplicationId[0]?.comments) {
+      if (limit?.activeApplicationId?.[0]?.comments) {
         limit.comments = limit.activeApplicationId[0]?.comments || '';
       }
-      if (limit?.activeApplicationId[0]?.clientReference) {
+      if (limit?.activeApplicationId?.[0]?.clientReference) {
         limit.clientReference =
           limit.activeApplicationId[0]?.clientReference || '';
       }

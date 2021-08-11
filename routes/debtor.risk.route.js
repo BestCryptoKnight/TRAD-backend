@@ -1059,7 +1059,8 @@ router.post('/stakeholder/:debtorId', async function (req, res) {
     query.isDeleted = false;
     query.debtorId = req.params.debtorId;
     const stakeholder = await DebtorDirector.findOne(query).lean();
-    if (
+    //TODO uncomment to add entity into alert profile
+    /*if (
       (stakeholder?.country?.code === 'AUS' ||
         stakeholder?.country?.code === 'NZL') &&
       stakeholder?.type === 'company'
@@ -1069,7 +1070,7 @@ router.post('/stakeholder/:debtorId', async function (req, res) {
         entityId: stakeholder._id,
         entityType: 'stakeholder',
       });
-    }
+    }*/
     res.status(200).send({
       status: 'SUCCESS',
       message: 'Stakeholder added successfully',
@@ -1438,7 +1439,8 @@ router.delete('/stakeholder/:stakeholderId', async function (req, res) {
       { _id: req.params.stakeholderId },
       { isDeleted: true },
     );
-    const stakeholder = await DebtorDirector.findOne({
+    //TODO uncomment to remove entity from alert profile
+    /*const stakeholder = await DebtorDirector.findOne({
       _id: req.params.stakeholderId,
     }).lean();
     if (
@@ -1451,7 +1453,7 @@ router.delete('/stakeholder/:stakeholderId', async function (req, res) {
         entityId: stakeholder._id,
         entityType: 'stakeholder',
       });
-    }
+    }*/
     res.status(200).send({
       status: 'SUCCESS',
       message: 'Stakeholder deleted successfully',

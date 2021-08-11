@@ -1121,8 +1121,7 @@ router.put('/:applicationId', async function (req, res) {
     !mongoose.Types.ObjectId.isValid(req.params.applicationId) ||
     !req.body.update ||
     (req.body.update !== 'credit-limit' && req.body.update !== 'field') ||
-    (req.body.update === 'credit-limit' &&
-      (!req.body.status || !req.body.comments))
+    (req.body.update === 'credit-limit' && !req.body.status)
   ) {
     return res.status(400).send({
       status: 'ERROR',
