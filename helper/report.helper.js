@@ -1710,7 +1710,7 @@ const getUsagePerClientReport = async ({
             ? limit.debtorId[0]['address']['country']['name']
             : '';
       }
-      if (limit.debtorId && limit.debtorId[0] && limit.debtorId[0].entityName) {
+      if (limit.debtorId && limit.debtorId[0]) {
         limit.debtorId = limit.debtorId[0]['entityName']
           ? limit.debtorId[0]['entityName']
           : '';
