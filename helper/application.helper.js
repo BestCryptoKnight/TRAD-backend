@@ -93,7 +93,7 @@ const getApplicationList = async ({
       };
     }
     if (requestedQuery.status) {
-      queryFilter.status = requestedQuery.status.split(',');
+      queryFilter.status = { $in: requestedQuery.status.split(',') };
       if (isForDownload) {
         filterArray.push({
           label: 'Application Status',
