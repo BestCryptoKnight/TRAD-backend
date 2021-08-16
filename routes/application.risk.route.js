@@ -603,13 +603,7 @@ router.get('/details/:applicationId', async function (req, res) {
       response.orderOnHand = application.orderOnHand;
       response.outstandingAmount = application.outstandingAmount;
       // response.note = application.note;
-      const status = [
-        'DRAFT',
-        'APPROVED',
-        'DECLINED',
-        'SUBMITTED',
-        'SURRENDERED',
-      ];
+      const status = ['DRAFT', 'APPROVED', 'DECLINED'];
       response.applicationStatus = StaticData.applicationStatus.filter(
         (data) => !status.includes(data.value),
       );

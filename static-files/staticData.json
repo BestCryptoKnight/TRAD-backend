@@ -1023,20 +1023,12 @@
       "label": "Withdrawn"
     },
     {
-      "value": "SUBMITTED",
-      "label": "Submitted"
-    },
-    {
       "value": "UNDER_REVIEW",
       "label": "Under Review"
     },
     {
       "value": "AWAITING_INFORMATION",
       "label": "Awaiting Information"
-    },
-    {
-      "value": "SURRENDERED",
-      "label": "Surrendered"
     }
   ],
   "countryList": [

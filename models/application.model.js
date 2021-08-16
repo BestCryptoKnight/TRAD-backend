@@ -28,7 +28,6 @@ const applicationSchema = new Schema(
         'SUBMITTED',
         'UNDER_REVIEW',
         'AWAITING_INFORMATION',
-        'SURRENDERED',
       ],
       default: 'DRAFT',
     },
