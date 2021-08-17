@@ -17,7 +17,6 @@ const Application = mongoose.model('application');
 const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
 const {
-  createTask,
   getDebtorList,
   aggregationQuery,
   getApplicationList,
@@ -362,58 +361,6 @@ router.get('/', async function (req, res) {
   }
 });
 
-//Not in use
-/* /!**
- * Add Task
- *!/
-router.post('/', async function (req, res) {
-  if (
-    !req.body.taskFrom ||
-    !req.body.title ||
-    !req.body.assigneeId ||
-    !req.body.dueDate
-  ) {
-    return res.status(400).send({
-      status: 'ERROR',
-      messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Require fields are missing',
-    });
-  }
-  try {
-    const data = {
-      title: req.body.title,
-      createdByType: 'client-user',
-      createdById: req.user.clientId,
-      assigneeType: req.body.assigneeId.split('|')[0],
-      assigneeId: req.body.assigneeId.split('|')[1],
-      dueDate: req.body.dueDate,
-    };
-    if (req.body.entityType) {
-      data.entityType = req.body.entityType.toLowerCase();
-    }
-    if (req.body.entityId) {
-      data.entityId = req.body.entityId;
-    }
-    if (req.body.description) {
-      data.description = req.body.description;
-    }
-    if (req.body.priority) {
-      data.priority = req.body.priority.toUpperCase();
-    }
-    const task = await createTask(data);
-    //TODO add audit log
-    res
-      .status(200)
-      .send({ status: 'SUCCESS', message: 'Task created successfully' });
-  } catch (e) {
-    Logger.log.error('Error occurred in create task ', e.message || e);
-    res.status(500).send({
-      status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
-    });
-  }
-});*/
-
 /**
  * Update Column Names
  */
@@ -485,8 +432,8 @@ router.put('/:taskId', async function (req, res) {
   }
   try {
     let updateObj = {};
-    if (req.body.title) updateObj.title = req.body.title;
     if (req.body.description) updateObj.description = req.body.description;
+    if (req.body.comments) updateObj.comments = req.body.comments;
     if (req.body.priority) updateObj.priority = req.body.priority.toUpperCase();
     if (req.body.entityType)
       updateObj.entityType = req.body.entityType.toLowerCase();
@@ -524,7 +471,7 @@ router.put('/:taskId', async function (req, res) {
         userId: task.createdById,
         userType: task.createdByType,
         description:
-          `A task ${task.title}` +
+          `A task ${task.description}` +
           (entityName ? ` for ${entityName} ` : ' ') +
           `is updated by ${clientName}`,
       });

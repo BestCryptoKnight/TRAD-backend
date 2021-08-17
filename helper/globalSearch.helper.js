@@ -209,8 +209,8 @@ const getTaskList = async ({
         $or: [{ assigneeId: userId }, { createdById: userId }],
       };
     }
-    queryFilter.title = { $regex: searchString, $options: 'i' };
-    const tasks = await Task.find(queryFilter).select('_id title').lean();
+    queryFilter.description = { $regex: searchString, $options: 'i' };
+    const tasks = await Task.find(queryFilter).select('_id description').lean();
     tasks.forEach((task) => {
       task.module = 'task';
       task.hasSubModule = false;

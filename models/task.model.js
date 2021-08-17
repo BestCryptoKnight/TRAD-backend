@@ -10,8 +10,8 @@ const Schema = mongoose.Schema;
  */
 const taskSchema = new Schema(
   {
-    title: { type: Schema.Types.String },
     description: { type: Schema.Types.String },
+    comments: { type: Schema.Types.String },
     priority: {
       type: Schema.Types.String,
       enum: ['URGENT', 'HIGH', 'MEDIUM', 'LOW'],

@@ -40,13 +40,13 @@ const scheduler = async () => {
           dueDate: { $gte: start, $lte: end },
           isDeleted: false,
         })
-          .select('title assigneeId assigneeType dueDate')
+          .select('description assigneeId assigneeType dueDate')
           .lean();
         for (let i = 0; i < tasks.length; i++) {
           const notification = await addNotification({
             userId: tasks[i].assigneeId,
             userType: tasks[i].assigneeType,
-            description: `${tasks[i].title} is due today`,
+            description: `${tasks[i].description} is due today`,
           });
           if (notification) {
             sendNotification({

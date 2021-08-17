@@ -1313,7 +1313,7 @@ const sendNotificationsToUser = async ({
     } else if (status === 'REVIEW_APPLICATION' && client?.riskAnalystId) {
       const date = new Date();
       const data = {
-        title: `Review Application ${application.applicationId}`,
+        description: `Review Application ${application.applicationId}`,
         createdByType: userType,
         createdById: userId,
         assigneeType: 'user',
@@ -1334,7 +1334,7 @@ const sendNotificationsToUser = async ({
       const notification = await addNotification({
         userId: task.assigneeId,
         userType: task.assigneeType,
-        description: `A new task ${task.title} is assigned by system`,
+        description: `A new task ${task.description} is assigned by system`,
       });
       if (notification) {
         sendNotification({

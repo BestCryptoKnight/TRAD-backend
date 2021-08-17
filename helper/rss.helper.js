@@ -462,6 +462,7 @@ const getClientPolicies = async ({
         descriptionOfTrade: crmPolicy.record['descriptionoftrade'],
         inceptionDate: crmPolicy.record['inceptiondate'],
         expiryDate: crmPolicy.record['expirydate'],
+        isDeleted: false,
       });
     });
     if (data.metadata['has_more']) {

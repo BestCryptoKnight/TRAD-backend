@@ -122,8 +122,8 @@
       "name": "application-task",
       "manageColumns": [
         { "name": "priority", "label": "Priority", "type": "string" },
-        { "name": "title", "label": "Title", "type": "string" },
         { "name": "description", "label": "Description", "type": "string" },
+        { "name": "comments", "label": "Comments", "type": "string" },
         { "name": "entityType", "label": "Entity Type", "type": "string" },
         { "name": "entityId", "label": "Entity Name", "type": "modal" },
         { "name": "createdById", "label": "Created By", "type": "string" },
@@ -134,8 +134,8 @@
       ],
       "defaultColumns": [
         "priority",
-        "title",
         "description",
+        "comments",
         "entityType",
         "assigneeId",
         "dueDate"
@@ -476,8 +476,8 @@
       "name": "client-task",
       "manageColumns": [
         { "name": "priority", "label": "Priority", "type": "string" },
-        { "name": "title", "label": "Title", "type": "string" },
         { "name": "description", "label": "Description", "type": "string" },
+        { "name": "comments", "label": "Comments", "type": "string" },
         { "name": "entityType", "label": "Entity Type", "type": "string" },
         { "name": "entityId", "label": "Entity Name", "type": "modal" },
         { "name": "createdById", "label": "Created By", "type": "string" },
@@ -488,8 +488,8 @@
       ],
       "defaultColumns": [
         "priority",
-        "title",
         "description",
+        "comments",
         "entityId",
         "assigneeId",
         "dueDate"
@@ -817,8 +817,8 @@
       "name": "debtor-task",
       "manageColumns": [
         { "name": "priority", "label": "Priority", "type": "string" },
-        { "name": "title", "label": "Title", "type": "string" },
         { "name": "description", "label": "Description", "type": "string" },
+        { "name": "comments", "label": "Comments", "type": "string" },
         { "name": "entityType", "label": "Entity Type", "type": "string" },
         { "name": "entityId", "label": "Entity Name", "type": "modal" },
         { "name": "createdById", "label": "Created By", "type": "string" },
@@ -829,8 +829,8 @@
       ],
       "defaultColumns": [
         "priority",
-        "title",
         "description",
+        "comments",
         "entityId",
         "assigneeId",
         "dueDate"
@@ -1617,8 +1617,8 @@
       "name": "task",
       "manageColumns": [
         { "name": "priority", "label": "Priority", "type": "string" },
-        { "name": "title", "label": "Title", "type": "string" },
         { "name": "description", "label": "Description", "type": "string" },
+        { "name": "comments", "label": "Comments", "type": "string" },
         { "name": "entityType", "label": "Entity Type", "type": "string" },
         { "name": "entityId", "label": "Entity Name", "type": "modal" },
         { "name": "createdById", "label": "Created By", "type": "string" },
@@ -1629,8 +1629,8 @@
       ],
       "defaultColumns": [
         "priority",
-        "title",
         "description",
+        "comments",
         "entityType",
         "assigneeId",
         "dueDate"

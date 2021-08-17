@@ -667,7 +667,7 @@ const createTaskOnAlert = async ({ debtorABN, debtorACN }) => {
     const date = new Date();
     for (let i = 0; i < filteredData.length; i++) {
       const data = {
-        title: `High/Medium/Low Alert on ${filteredData[i].debtorName}`,
+        description: `High/Medium/Low Alert on ${filteredData[i].debtorName}`,
         createdByType: 'user',
         createdById: filteredData[i].riskAnalystId,
         assigneeType: 'user',

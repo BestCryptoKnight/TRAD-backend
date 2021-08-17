@@ -13,9 +13,9 @@ const Application = mongoose.model('application');
  * */
 const Logger = require('./../services/logger');
 
-let createTask = async ({
-  title,
+const createTask = async ({
   description,
+  comments,
   priority,
   entityType,
   entityId,
@@ -27,8 +27,8 @@ let createTask = async ({
 }) => {
   try {
     const task = await Task.create({
-      title,
       description,
+      comments,
       priority,
       entityType,
       entityId,
@@ -140,7 +140,10 @@ const aggregationQuery = async ({
       ? requestedQuery.listCreatedBy
       : false;
     if (requestedQuery.search) {
-      queryFilter.title = { $regex: `${requestedQuery.search}`, $options: 'i' };
+      queryFilter.description = {
+        $regex: `${requestedQuery.search}`,
+        $options: 'i',
+      };
     }
     if (requestedQuery.requestedEntityId) {
       queryFilter.entityId = mongoose.Types.ObjectId(

@@ -312,7 +312,7 @@ router.get('/audit-logs', async function (req, res) {
                                         {
                                           $cond: [
                                             { $eq: ['$entityType', 'task'] },
-                                            '$taskId.title',
+                                            '$taskId.description',
                                             {
                                               $cond: [
                                                 {

@@ -415,7 +415,7 @@ router.get('/', async function (req, res) {
 router.post('/', async function (req, res) {
   if (
     !req.body.taskFrom ||
-    !req.body.title ||
+    !req.body.description ||
     !req.body.assigneeId ||
     !req.body.assigneeType ||
     !req.body.dueDate
@@ -429,7 +429,7 @@ router.post('/', async function (req, res) {
   try {
     const data = {
       // priority: req.body.priority.toUpperCase(),
-      title: req.body.title,
+      description: req.body.description,
       // description: req.body.description,
       // entityType: req.body.entityType ? req.body.entityType.toLowerCase() : null,
       // entityId: req.body.entityId,
@@ -445,8 +445,8 @@ router.post('/', async function (req, res) {
     if (req.body.entityId) {
       data.entityId = req.body.entityId;
     }
-    if (req.body.description) {
-      data.description = req.body.description;
+    if (req.body.comments) {
+      data.comments = req.body.comments;
     }
     if (req.body.priority) {
       data.priority = req.body.priority.toUpperCase();
@@ -478,7 +478,7 @@ router.post('/', async function (req, res) {
         userId: task.assigneeId,
         userType: task.assigneeType,
         description:
-          `A new task ${req.body.title}` +
+          `A new task ${req.body.description}` +
           (entityName ? ` for ${entityName} ` : ' ') +
           `is assigned by ${req.user.name}`,
       });
@@ -578,8 +578,8 @@ router.put('/:taskId', async function (req, res) {
   }
   try {
     let updateObj = {};
-    if (req.body.title) updateObj.title = req.body.title;
     if (req.body.description) updateObj.description = req.body.description;
+    if (req.body.comments) updateObj.comments = req.body.comments;
     if (req.body.priority) updateObj.priority = req.body.priority.toUpperCase();
     if (req.body.entityType)
       updateObj.entityType = req.body.entityType.toLowerCase();
@@ -618,7 +618,7 @@ router.put('/:taskId', async function (req, res) {
         userId: task.createdById,
         userType: task.createdByType,
         description:
-          `A task ${task.title}` +
+          `A task ${task.description}` +
           (entityName ? ` for ${entityName} ` : ' ') +
           `is updated by ${req.user.name}`,
       });
