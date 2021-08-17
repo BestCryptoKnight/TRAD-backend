@@ -61,7 +61,7 @@ const getApplicationList = async ({
     requestedQuery.sortBy = requestedQuery.sortBy || '_id';
     requestedQuery.sortOrder = requestedQuery.sortOrder || 'desc';
 
-    queryFilter.isDeleted = false;
+    // queryFilter.isDeleted = false;
     if (requestedQuery.clientId) {
       requestedQuery.clientId = requestedQuery.clientId
         .split(',')
@@ -77,9 +77,21 @@ const getApplicationList = async ({
         });
       }
     } else if (userId) {
+      let queryCondition = { status: { $ne: 'DRAFT' } };
+      if (!hasFullAccess) {
+        const clients = await Client.find({
+          $or: [{ riskAnalystId: userId }, { serviceManagerId: userId }],
+        })
+          .select('_id')
+          .lean();
+        queryCondition = {
+          status: { $ne: 'DRAFT' },
+          clientId: { $in: clients.map((i) => mongoose.Types.ObjectId(i._id)) },
+        };
+      }
       queryFilter = Object.assign({}, queryFilter, {
         $or: [
-          { status: { $ne: 'DRAFT' } },
+          queryCondition,
           { createdById: mongoose.Types.ObjectId(userId), status: 'DRAFT' },
         ],
       });
