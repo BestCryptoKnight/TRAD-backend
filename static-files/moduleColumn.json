@@ -259,7 +259,7 @@
         {
           "name": "applicationId",
           "label": "Application Number",
-          "type": "string"
+          "type": "redirectLink"
         },
         { "name": "entityType", "label": "Entity Type", "type": "string" },
         {
@@ -774,7 +774,7 @@
         {
           "name": "applicationId",
           "label": "Application ID",
-          "type": "string"
+          "type": "redirectLink"
         },
         {
           "name": "status",
