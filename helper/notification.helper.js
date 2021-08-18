@@ -9,12 +9,20 @@ const Notification = mongoose.model('notification');
  * */
 const Logger = require('./../services/logger');
 
-const addNotification = async ({ userType, userId, description }) => {
+const addNotification = async ({
+  userType,
+  userId,
+  description,
+  entityId,
+  entityType,
+}) => {
   try {
     const notification = await Notification.create({
       userType,
       userId,
       description,
+      entityType,
+      entityId,
     });
     Logger.log.info('Notification added');
     return notification;
@@ -23,4 +31,29 @@ const addNotification = async ({ userType, userId, description }) => {
   }
 };
 
-module.exports = { addNotification };
+const getNotificationList = async ({ query }) => {
+  try {
+    const notifications = await Notification.aggregate(query).allowDiskUse(
+      true,
+    );
+    notifications.forEach((notification) => {
+      notification.hasSubModule = false;
+      switch (notification?.entityType) {
+        case 'credit-limit':
+          notification.hasSubModule = true;
+          notification.subModule = 'credit-limits';
+          break;
+        case 'credit-report':
+          notification.hasSubModule = true;
+          notification.subModule = 'credit-reports';
+          break;
+      }
+    });
+    return notifications;
+  } catch (e) {
+    Logger.log.error('Error occurred in get notification list');
+    Logger.log.error(e);
+  }
+};
+
+module.exports = { addNotification, getNotificationList };

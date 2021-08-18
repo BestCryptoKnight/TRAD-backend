@@ -11,6 +11,7 @@ const Notification = mongoose.model('notification');
  * */
 const Logger = require('./../services/logger');
 const { getAlertDetail } = require('./../helper/alert.helper');
+const { getNotificationList } = require('./../helper/notification.helper');
 
 /**
  * Get Notification list
@@ -39,29 +40,29 @@ router.get('/', async function (req, res) {
           year: { $year: '$createdAt' },
           description: '$description',
           createdAt: '$createdAt',
+          entityId: '$entityId',
+          entityType: '$entityType',
         },
       },
       { $match: { month: month, year: year } },
-    ];
-    query.push({ $sort: { createdAt: -1 } });
-    query.push({
-      $facet: {
-        paginatedResult: [
-          {
-            $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
-          },
-          { $limit: parseInt(req.query.limit) },
-        ],
-        totalCount: [
-          {
-            $count: 'count',
-          },
-        ],
+      { $sort: { createdAt: -1 } },
+      {
+        $facet: {
+          paginatedResult: [
+            {
+              $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
+            },
+            { $limit: parseInt(req.query.limit) },
+          ],
+          totalCount: [
+            {
+              $count: 'count',
+            },
+          ],
+        },
       },
-    });
-    const notifications = await Notification.aggregate(query).allowDiskUse(
-      true,
-    );
+    ];
+    const notifications = await getNotificationList({ query });
     const response = {};
     notifications[0].paginatedResult.forEach((data) => {
       if (!response[data.year + '-' + data.month + '-' + data.day]) {
@@ -101,7 +102,7 @@ router.get('/', async function (req, res) {
  */
 router.get('/list', async function (req, res) {
   try {
-    const notifications = await Notification.aggregate([
+    const query = [
       {
         $match: {
           isDeleted: false,
@@ -148,7 +149,8 @@ router.get('/list', async function (req, res) {
           entityId: 1,
         },
       },
-    ]).allowDiskUse(true);
+    ];
+    const notifications = await getNotificationList({ query });
     res.status(200).send({
       status: 'SUCCESS',
       data: notifications,

@@ -173,7 +173,7 @@ router.delete('/:importId', async function (req, res) {
 router.get('/sample-file', async function (req, res) {
   try {
     const fileBuffer = await StaticFileHelper.downloadDocument({
-      filePath: 'static-files/application-dump/Import Applications.xlsx',
+      filePath: 'static-files/application-dump/Import_Applications.xlsx',
     });
     console.log('Buffer received');
     // res.setHeader('Content-Type', 'application/xlsx');

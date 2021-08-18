@@ -1281,6 +1281,8 @@ const sendNotificationsToUser = async ({
           userId: application.clientId,
           userType: 'client-user',
           description: `An application ${application.applicationId} is being approved`,
+          entityType: 'application',
+          entityId: application._id,
         });
         if (clientNotification) {
           sendNotification({
@@ -1298,6 +1300,8 @@ const sendNotificationsToUser = async ({
           userId: client.riskAnalystId,
           userType: 'user',
           description: `An application ${application.applicationId} is being approved`,
+          entityId: application._id,
+          entityType: 'application',
         });
         if (userNotification) {
           sendNotification({
@@ -1335,6 +1339,8 @@ const sendNotificationsToUser = async ({
         userId: task.assigneeId,
         userType: task.assigneeType,
         description: `A new task ${task.description} is assigned by system`,
+        entityId: task._id,
+        entityType: 'task',
       });
       if (notification) {
         sendNotification({
@@ -1359,6 +1365,8 @@ const sendNotificationsToUser = async ({
           userId: application.clientId,
           userType: 'client-user',
           description: `An application ${application.applicationId} is being declined by ${userName}`,
+          entityId: application._id,
+          entityType: 'application',
         });
         if (clientNotification) {
           sendNotification({

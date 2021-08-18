@@ -3,13 +3,14 @@
  * */
 const express = require('express');
 const router = express.Router();
-let mongoose = require('mongoose');
+const mongoose = require('mongoose');
 const Notification = mongoose.model('notification');
 
 /*
  * Local Imports
  * */
 const Logger = require('./../services/logger');
+const { getNotificationList } = require('./../helper/notification.helper');
 
 /**
  * Get Notification list
@@ -38,29 +39,29 @@ router.get('/', async function (req, res) {
           year: { $year: '$createdAt' },
           description: '$description',
           createdAt: '$createdAt',
+          entityId: '$entityId',
+          entityType: '$entityType',
         },
       },
       { $match: { month: month, year: year } },
-    ];
-    query.push({ $sort: { createdAt: -1 } });
-    query.push({
-      $facet: {
-        paginatedResult: [
-          {
-            $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
-          },
-          { $limit: parseInt(req.query.limit) },
-        ],
-        totalCount: [
-          {
-            $count: 'count',
-          },
-        ],
+      { $sort: { createdAt: -1 } },
+      {
+        $facet: {
+          paginatedResult: [
+            {
+              $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
+            },
+            { $limit: parseInt(req.query.limit) },
+          ],
+          totalCount: [
+            {
+              $count: 'count',
+            },
+          ],
+        },
       },
-    });
-    const notifications = await Notification.aggregate(query).allowDiskUse(
-      true,
-    );
+    ];
+    const notifications = await getNotificationList({ query });
     const response = {};
     notifications[0].paginatedResult.forEach((data) => {
       console.log(data);
@@ -101,13 +102,25 @@ router.get('/', async function (req, res) {
  */
 router.get('/list', async function (req, res) {
   try {
-    const notifications = await Notification.find({
-      isDeleted: false,
-      userId: req.user.clientId,
-      isRead: false,
-    })
-      .select('_id description createdAt')
-      .lean();
+    const query = [
+      {
+        $match: {
+          isDeleted: false,
+          userId: req.user.clientId,
+          isRead: false,
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          description: 1,
+          createdAt: 1,
+          entityType: 1,
+          entityId: 1,
+        },
+      },
+    ];
+    const notifications = await getNotificationList({ query });
     res.status(200).send({
       status: 'SUCCESS',
       data: notifications,

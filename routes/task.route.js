@@ -474,6 +474,8 @@ router.put('/:taskId', async function (req, res) {
           `A task ${task.description}` +
           (entityName ? ` for ${entityName} ` : ' ') +
           `is updated by ${clientName}`,
+        entityType: 'task',
+        entityId: task._id,
       });
       if (notification) {
         sendNotification({

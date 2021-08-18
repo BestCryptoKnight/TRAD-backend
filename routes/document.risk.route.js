@@ -533,7 +533,7 @@ router.post('/upload', upload.single('document'), async function (req, res) {
  */
 router.post('/upload-public', upload.single('document'), async (req, res) => {
   req.body = JSON.parse(JSON.stringify(req.body));
-  if (!req.body.filePath) {
+  if (!req.body.filePath || !req.body.hasOwnProperty('isPublicFile')) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -545,7 +545,7 @@ router.post('/upload-public', upload.single('document'), async (req, res) => {
       file: req.file.buffer,
       filePath: req.body.filePath + '/' + req.file.originalname,
       fileType: req.file.mimetype,
-      isPublicFile: true,
+      isPublicFile: req.body.isPublicFile,
     });
     res.status(200).send({ status: 'success', data: s3Response });
   } catch (e) {

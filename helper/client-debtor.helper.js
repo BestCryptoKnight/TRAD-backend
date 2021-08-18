@@ -529,6 +529,7 @@ const checkForExpiringLimit = async ({ startDate, endDate }) => {
           debtorId: i.debtorId._id,
           debtorName: i.debtorId.entityName,
           riskAnalystId: i.clientId.riskAnalystId._id,
+          creditLimitId: i._id,
         });
       }
     });
@@ -540,6 +541,7 @@ const checkForExpiringLimit = async ({ startDate, endDate }) => {
           debtorId: response.find((i) => i.id === id).debtorId,
           debtorName: response.find((i) => i.id === id).debtorName,
           riskAnalystId: response.find((i) => i.id === id).riskAnalystId,
+          creditLimitId: response.find((i) => i.id === id).creditLimitId,
         };
       },
     );
@@ -549,6 +551,8 @@ const checkForExpiringLimit = async ({ startDate, endDate }) => {
         userId: filteredData[i].riskAnalystId,
         userType: 'user',
         description: `Credit limit for ${filteredData[i].clientName} - ${filteredData[i].debtorName} is expiring today`,
+        entityType: 'credit-limit',
+        entityId: filteredData[i]?.debtorId,
       });
       if (notification) {
         sendNotification({

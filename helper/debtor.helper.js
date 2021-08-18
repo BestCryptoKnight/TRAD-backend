@@ -533,6 +533,8 @@ const checkForExpiringReports = async ({ startDate, endDate }) => {
           userId: filteredData[i].riskAnalystId,
           userType: 'user',
           description: `Credit report for ${filteredData[i].debtorName} is expiring today`,
+          entityType: 'credit-report',
+          entityId: filteredData[i]?.debtorId,
         });
         if (notification) {
           sendNotification({
@@ -602,6 +604,8 @@ const checkForReviewDebtor = async ({ endDate }) => {
         userId: filteredData[i].riskAnalystId,
         userType: 'user',
         description: `Review Debtor ${filteredData[i].debtorName}`,
+        entityType: 'debtor',
+        entityId: filteredData[i].debtorId,
       });
       if (notification) {
         sendNotification({
@@ -681,6 +685,8 @@ const createTaskOnAlert = async ({ debtorABN, debtorACN }) => {
         userId: filteredData[i].riskAnalystId,
         userType: 'user',
         description: `High/Medium/Low Alert on ${filteredData[i].debtorName}`,
+        entityId: filteredData[i]?.debtorId,
+        entityType: 'alert',
       });
       if (notification) {
         sendNotification({

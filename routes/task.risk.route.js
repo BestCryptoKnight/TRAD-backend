@@ -481,6 +481,8 @@ router.post('/', async function (req, res) {
           `A new task ${req.body.description}` +
           (entityName ? ` for ${entityName} ` : ' ') +
           `is assigned by ${req.user.name}`,
+        entityType: 'task',
+        entityId: task._id,
       });
       if (notification) {
         sendNotification({
@@ -621,6 +623,8 @@ router.put('/:taskId', async function (req, res) {
           `A task ${task.description}` +
           (entityName ? ` for ${entityName} ` : ' ') +
           `is updated by ${req.user.name}`,
+        entityId: task._id,
+        entityType: 'task',
       });
       if (notification) {
         sendNotification({
