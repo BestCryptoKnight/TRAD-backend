@@ -135,7 +135,7 @@ router.get('/list', async function (req, res) {
                 priority: '$alertId.alertPriority',
                 _id: '$alertId._id',
               },
-              null,
+              '$entityId',
             ],
           },
         },
