@@ -20,7 +20,7 @@ const notificationSchema = new Schema(
         'alert',
         'application',
         'debtor',
-        'client-debtor',
+        'credit-limit',
         'claim',
         'credit-report',
         'overdue',

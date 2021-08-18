@@ -41,11 +41,13 @@ const getNotificationList = async ({ query }) => {
       switch (notification?.entityType) {
         case 'credit-limit':
           notification.hasSubModule = true;
-          notification.subModule = 'credit-limits';
+          notification.subModule = notification.entityType;
+          notification.entityType = 'debtor';
           break;
         case 'credit-report':
           notification.hasSubModule = true;
-          notification.subModule = 'credit-reports';
+          notification.subModule = notification.entityType;
+          notification.entityType = 'debtor';
           break;
       }
     });
