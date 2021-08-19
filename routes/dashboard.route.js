@@ -31,7 +31,7 @@ router.get('/', async function (req, res) {
         expiryDate: { $gt: new Date() },
       })
         .select(
-          'clientId product policyPeriod discretionaryLimit aggregateOfCreditLimit inceptionDate expiryDate',
+          'clientId product policyPeriod noOfResChecks discretionaryLimit aggregateOfCreditLimit inceptionDate expiryDate',
         )
         .lean(),
       Policy.findOne({
@@ -41,7 +41,7 @@ router.get('/', async function (req, res) {
         expiryDate: { $gt: new Date() },
       })
         .select(
-          'clientId product policyPeriod discretionaryLimit inceptionDate expiryDate',
+          'clientId product noOfResChecks policyPeriod discretionaryLimit inceptionDate expiryDate',
         )
         .lean(),
     ]);
