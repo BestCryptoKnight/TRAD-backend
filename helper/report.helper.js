@@ -429,7 +429,7 @@ const getLimitListReport = async ({
       reportColumn.includes('applicationId') ||
       reportColumn.includes('creditLimit') ||
       reportColumn.includes('acceptedAmount') ||
-      reportColumn.includes('approvalDate') ||
+      reportColumn.includes('approvalOrDecliningDate') ||
       reportColumn.includes('comments') ||
       reportColumn.includes('clientReference') ||
       reportColumn.includes('limitType')
@@ -460,7 +460,7 @@ const getLimitListReport = async ({
         i === 'applicationId' ||
         i === 'creditLimit' ||
         i === 'acceptedAmount' ||
-        i === 'approvalDate' ||
+        i === 'approvalOrDecliningDate' ||
         i === 'limitType' ||
         i === 'clientReference' ||
         i === 'comments'
@@ -578,10 +578,11 @@ const getLimitListReport = async ({
       if (
         limit.activeApplicationId &&
         limit.activeApplicationId[0] &&
-        limit.activeApplicationId[0].approvalDate
+        limit.activeApplicationId[0].approvalOrDecliningDate
       ) {
-        limit.approvalDate = limit.activeApplicationId[0].approvalDate
-          ? limit.activeApplicationId[0].approvalDate
+        limit.approvalOrDecliningDate = limit.activeApplicationId[0]
+          .approvalOrDecliningDate
+          ? limit.activeApplicationId[0].approvalOrDecliningDate
           : '';
       }
       /*if (
@@ -999,7 +1000,7 @@ const getReviewReport = async ({
     }
     if (
       reportColumn.includes('requestedCreditLimit') ||
-      reportColumn.includes('approvalDate') ||
+      reportColumn.includes('approvalOrDecliningDate') ||
       reportColumn.includes('applicationExpiryDate') ||
       reportColumn.includes('comments') ||
       reportColumn.includes('clientReference') ||
@@ -1032,7 +1033,7 @@ const getReviewReport = async ({
       if (i === 'country') {
         i = 'debtorId.address.' + i;
       }
-      if (i === 'approvalDate') {
+      if (i === 'approvalOrDecliningDate') {
         i = 'activeApplicationId.' + i;
       }
       if (i === 'requestedCreditLimit') {
@@ -1148,10 +1149,11 @@ const getReviewReport = async ({
       if (
         limit.activeApplicationId &&
         limit.activeApplicationId[0] &&
-        limit.activeApplicationId[0].approvalDate
+        limit.activeApplicationId[0].approvalOrDecliningDate
       ) {
-        limit.approvalDate = limit.activeApplicationId[0].approvalDate
-          ? limit.activeApplicationId[0].approvalDate
+        limit.approvalOrDecliningDate = limit.activeApplicationId[0]
+          .approvalOrDecliningDate
+          ? limit.activeApplicationId[0].approvalOrDecliningDate
           : '';
       }
       if (
@@ -1561,7 +1563,7 @@ const getUsagePerClientReport = async ({
       reportColumn.includes('status') ||
       reportColumn.includes('requestedAmount') ||
       reportColumn.includes('acceptedAmount') ||
-      reportColumn.includes('approvalDate') ||
+      reportColumn.includes('approvalOrDecliningDate') ||
       reportColumn.includes('expiryDate') ||
       reportColumn.includes('comments') ||
       reportColumn.includes('clientReference') ||
@@ -1733,8 +1735,9 @@ const getUsagePerClientReport = async ({
         limit.acceptedAmount =
           limit?.activeApplicationId[0]?.acceptedAmount || '';
       }
-      if (limit?.activeApplicationId?.[0]?.approvalDate) {
-        limit.approvalDate = limit?.activeApplicationId[0]?.approvalDate || '';
+      if (limit?.activeApplicationId?.[0]?.approvalOrDecliningDate) {
+        limit.approvalOrDecliningDate =
+          limit?.activeApplicationId[0]?.approvalOrDecliningDate || '';
       }
       if (limit?.activeApplicationId?.[0]?.expiryDate) {
         limit.expiryDate = limit?.activeApplicationId[0]?.expiryDate || '';

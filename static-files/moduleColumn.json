@@ -60,7 +60,11 @@
           "type": "amount"
         },
         { "name": "requestDate", "label": "Requested Date", "type": "date" },
-        { "name": "approvalDate", "label": "Approval Date", "type": "date" },
+        {
+          "name": "approvalOrDecliningDate",
+          "label": "Approval Date",
+          "type": "date"
+        },
         { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
         { "name": "createdById", "label": "Submitted By", "type": "string" },
         {
@@ -278,7 +282,11 @@
           "type": "amount"
         },
         { "name": "requestDate", "label": "Requested Date", "type": "date" },
-        { "name": "approvalDate", "label": "Approval Date", "type": "date" },
+        {
+          "name": "approvalOrDecliningDate",
+          "label": "Approval Date",
+          "type": "date"
+        },
         { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
         { "name": "createdById", "label": "Submitted By", "type": "string" },
         {
@@ -295,6 +303,7 @@
         "creditLimit",
         "applicationId",
         "requestDate",
+        "approvalOrDecliningDate",
         "createdById"
       ]
     },
@@ -792,7 +801,11 @@
           "type": "amount"
         },
         { "name": "requestDate", "label": "Requested Date", "type": "date" },
-        { "name": "approvalDate", "label": "Approval Date", "type": "date" },
+        {
+          "name": "approvalOrDecliningDate",
+          "label": "Approval Date",
+          "type": "date"
+        },
         { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
         { "name": "createdById", "label": "Submitted By", "type": "string" },
         {
@@ -809,7 +822,7 @@
         "creditLimit",
         "status",
         "requestDate",
-        "approvalDate",
+        "approvalOrDecliningDate",
         "acceptedAmount"
       ]
     },
@@ -1100,7 +1113,11 @@
           "label": "Approved Amount",
           "type": "amount"
         },
-        { "name": "approvalDate", "label": "Approval Date", "type": "date" },
+        {
+          "name": "approvalOrDecliningDate",
+          "label": "Approval Date",
+          "type": "date"
+        },
         { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
         { "name": "limitType", "label": "Limit Type", "type": "string" },
         {
@@ -1188,7 +1205,7 @@
           "type": "amount"
         },
         {
-          "name": "approvalDate",
+          "name": "approvalOrDecliningDate",
           "label": "Application Approval Date",
           "type": "date"
         },
@@ -1328,7 +1345,11 @@
           "label": "Approved Amount",
           "type": "amount"
         },
-        { "name": "approvalDate", "label": "Approval Date", "type": "date" },
+        {
+          "name": "approvalOrDecliningDate",
+          "label": "Approval Date",
+          "type": "date"
+        },
         { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
         { "name": "limitType", "label": "Limit Type", "type": "string" },
         {
@@ -1388,7 +1409,11 @@
           "label": "Approved Amount",
           "type": "amount"
         },
-        { "name": "approvalDate", "label": "Approval Date", "type": "date" },
+        {
+          "name": "approvalOrDecliningDate",
+          "label": "Approval Date",
+          "type": "date"
+        },
         { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
         { "name": "limitType", "label": "Limit Type", "type": "string" },
         {
@@ -1407,7 +1432,7 @@
         "country",
         "applicationId",
         "acceptedAmount",
-        "approvalDate",
+        "approvalOrDecliningDate",
         "expiryDate"
       ]
     },

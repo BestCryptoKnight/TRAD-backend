@@ -69,11 +69,11 @@ const getRESChecks = async ({
     const query = {
       clientId: mongoose.Types.ObjectId(clientId),
       status: {
-        $nin: ['DRAFT'],
+        $in: ['APPROVED', 'DECLINED'],
       },
     };
     if (startDate && endDate) {
-      query.createdAt = {
+      query.approvalOrDecliningDate = {
         $gte: new Date(startDate),
         $lte: new Date(endDate),
       };
@@ -159,7 +159,7 @@ const getApprovedAmount = async ({
       status: 'APPROVED',
     };
     if (startDate && endDate) {
-      query.updatedAt = {
+      query.approvalOrDecliningDate = {
         $gte: new Date(startDate),
         $lte: new Date(endDate),
       };
@@ -212,7 +212,7 @@ const getApprovedApplication = async ({
       },
     };
     if (startDate && endDate) {
-      query.updatedAt = {
+      query.approvalOrDecliningDate = {
         $gte: new Date(startDate),
         $lte: new Date(endDate),
       };

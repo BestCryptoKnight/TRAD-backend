@@ -1087,7 +1087,7 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
     const date = new Date();
     if (blockers.length === 0 && identifiedInsurer !== 'euler') {
       //TODO approve credit limit
-      update.approvalDate = date;
+      update.approvalOrDecliningDate = date;
       let expiryDate = new Date(date.setMonth(date.getMonth() + 12));
       expiryDate = new Date(expiryDate.setDate(expiryDate.getDate() - 1));
       update.expiryDate = expiryDate;

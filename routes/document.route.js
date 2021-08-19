@@ -455,8 +455,7 @@ router.post('/upload', upload.single('document'), async function (req, res) {
     !req.body.documentFor ||
     (req.body.documentFor !== 'application' && !req.body.description) ||
     !req.body.documentType ||
-    !req.body.entityId ||
-    !req.body.hasOwnProperty('isPublic')
+    !req.body.entityId
   ) {
     return res.status(400).send({
       status: 'ERROR',
@@ -476,7 +475,7 @@ router.post('/upload', upload.single('document'), async function (req, res) {
     const document = await uploadDocument({
       entityType: req.body.documentFor.toLowerCase(),
       description: req.body.description ? req.body.description : null,
-      isPublic: req.body.isPublic,
+      isPublic: true,
       entityRefId: req.body.entityId,
       documentTypeId: req.body.documentType,
       originalFileName: req.file.originalname,

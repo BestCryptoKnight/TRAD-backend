@@ -270,12 +270,7 @@ router.get('/details/:noteId', async function (req, res) {
  * Create Note
  */
 router.post('/', async function (req, res) {
-  if (
-    !req.body.noteFor ||
-    !req.body.entityId ||
-    !req.body.description ||
-    !req.body.hasOwnProperty('isPublic')
-  ) {
+  if (!req.body.noteFor || !req.body.entityId || !req.body.description) {
     return res.status(400).send({
       status: 'ERROR',
       message: 'Something went wrong.',
@@ -292,7 +287,7 @@ router.post('/', async function (req, res) {
       userType: 'client-user',
       entityId: req.body.entityId,
       noteFor: req.body.noteFor,
-      isPublic: req.body.isPublic,
+      isPublic: true,
       description: req.body.description,
     });
     res

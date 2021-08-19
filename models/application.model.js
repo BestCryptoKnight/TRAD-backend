@@ -50,7 +50,7 @@ const applicationSchema = new Schema(
     },
     createdById: { type: Schema.Types.ObjectId },
     requestDate: { type: Schema.Types.Date },
-    approvalDate: { type: Schema.Types.Date },
+    approvalOrDecliningDate: { type: Schema.Types.Date },
     expiryDate: { type: Schema.Types.Date },
     clientReference: { type: Schema.Types.String },
     comments: { type: Schema.Types.String },

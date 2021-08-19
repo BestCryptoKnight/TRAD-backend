@@ -1185,13 +1185,12 @@ router.put('/:applicationId', async function (req, res) {
         }
 
         const date = new Date();
-        applicationUpdate.approvalDate = date;
+        applicationUpdate.approvalOrDecliningDate = date;
         let expiryDate = new Date(date.setMonth(date.getMonth() + 12));
         expiryDate = new Date(expiryDate.setDate(expiryDate.getDate() - 1));
         applicationUpdate.expiryDate = application?.expiryDate || expiryDate;
         applicationUpdate.acceptedAmount = parseInt(req.body.creditLimit);
         approvedAmount = applicationUpdate.acceptedAmount;
-
         const update = {
           creditLimit: applicationUpdate.acceptedAmount,
           isEndorsedLimit: false,
@@ -1211,6 +1210,7 @@ router.put('/:applicationId', async function (req, res) {
         req.body.status === 'CANCELLED' ||
         req.body.status === 'WITHDRAWN'
       ) {
+        applicationUpdate.approvalOrDecliningDate = new Date();
         await ClientDebtor.updateOne(
           { _id: req.params.debtorId },
           {
