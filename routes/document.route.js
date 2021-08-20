@@ -201,10 +201,9 @@ router.get('/:entityId', async function (req, res) {
     const module = StaticFile.modules.find(
       (i) => i.name === req.query.documentFor + '-document',
     );
-    const documentColumn = req.user.manageColumns.find(
+    let documentColumn = req.user.manageColumns.find(
       (i) => i.moduleName === req.query.documentFor + '-document',
     );
-
     let query;
     let aggregationQuery = [];
     let sortingOptions = {};
@@ -215,6 +214,7 @@ router.get('/:entityId', async function (req, res) {
     sortingOptions[req.query.sortBy] = req.query.sortOrder === 'desc' ? -1 : 1;
 
     if (req.query.documentFor === 'application') {
+      documentColumn = documentColumn || {};
       documentColumn.columns = [
         'documentTypeId',
         'description',
@@ -486,7 +486,7 @@ router.post('/upload', upload.single('document'), async function (req, res) {
     });
     const [entityName, clientName] = await Promise.all([
       getEntityName({
-        entityId: req.body.entityRefId,
+        entityId: req.body.entityId,
         entityType: req.body.documentFor.toLowerCase(),
       }),
       getEntityName({
