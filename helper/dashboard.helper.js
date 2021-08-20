@@ -122,12 +122,12 @@ const getApplicationStatus = async ({
         ],
       },
     };
-    if (startDate && endDate) {
+    /*if (startDate && endDate) {
       query.updatedAt = {
         $gte: new Date(startDate),
         $lte: new Date(endDate),
       };
-    }
+    }*/
     const data = await Application.aggregate([
       {
         $match: query,

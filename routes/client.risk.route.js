@@ -1254,7 +1254,7 @@ router.put('/user/:clientUserId', async function (req, res) {
         let mailObj = {
           toAddress: [
             'parth@team.humanpixel.com.au',
-            'jill@team.humanpixel.com.au',
+            'chandani@team.humanpixel.com.au',
           ],
           // toAddress: [clientUser.email],
           subject: 'Welcome to TRAD CLIENT PORTAL',
