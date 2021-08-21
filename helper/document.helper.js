@@ -52,7 +52,7 @@ const uploadDocument = ({
         fileType: mimeType,
       });
       console.log('s3Response : ', s3Response);
-      const document = await Document.create({
+      let document = await Document.create({
         keyPath: s3Response.key || s3Response.Key,
         documentTypeId,
         description,
@@ -64,6 +64,7 @@ const uploadDocument = ({
         isPublic,
         mimeType,
       });
+      document = JSON.parse(JSON.stringify(document));
       const [documentType, entityName] = await Promise.all([
         DocumentType.findOne({ _id: documentTypeId })
           .select('documentTitle')

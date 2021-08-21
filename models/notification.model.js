@@ -27,7 +27,7 @@ const notificationSchema = new Schema(
         'task',
       ],
     },
-    entityId: { type: Schema.Types.ObjectId },
+    entityId: { type: Schema.Types.Mixed },
     isDeleted: { type: Schema.Types.Boolean, default: false },
   },
   { timestamps: true },
