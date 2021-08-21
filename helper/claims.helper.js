@@ -203,7 +203,7 @@ const addClaimInRSS = async ({
       logDescription: `A new claim for client ${client.name} is added by ${
         userType === 'user' ? userName : client.name
       }`,
-      userRefId: userId,
+      userRefId: userType === 'user' ? userId : clientId,
       actionType: 'add',
       entityRefId: client._id,
     });
@@ -211,8 +211,8 @@ const addClaimInRSS = async ({
     if (userType === 'user') {
       notificationObj.userId = client._id;
       notificationObj.userType = 'client-user';
-    } else {
-      notificationObj.userId = userId;
+    } else if (client?.riskAnalystId) {
+      notificationObj.userId = client.riskAnalystId;
       notificationObj.userType = 'user';
     }
     notificationObj.description = `A new claim ${
