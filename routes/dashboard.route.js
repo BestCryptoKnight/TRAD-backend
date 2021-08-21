@@ -36,7 +36,10 @@ router.get('/', async function (req, res) {
         .lean(),
       Policy.findOne({
         clientId: req.user.clientId,
-        product: { $regex: '.*Risk Management Package.*' },
+        $or: [
+          { product: { $regex: '.*Risk Management Package.*' } },
+          { product: { $regex: '.*Risk Management.*' } },
+        ],
         inceptionDate: { $lte: new Date() },
         expiryDate: { $gt: new Date() },
       })

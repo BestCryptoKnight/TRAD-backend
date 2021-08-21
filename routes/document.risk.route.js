@@ -180,7 +180,7 @@ router.get('/:entityId', async function (req, res) {
     const module = StaticFile.modules.find(
       (i) => i.name === req.query.documentFor + '-document',
     );
-    const documentColumn = req.user.manageColumns.find(
+    let documentColumn = req.user.manageColumns.find(
       (i) => i.moduleName === req.query.documentFor + '-document',
     );
 
@@ -194,6 +194,7 @@ router.get('/:entityId', async function (req, res) {
     sortingOptions[req.query.sortBy] = req.query.sortOrder === 'desc' ? -1 : 1;
 
     if (req.query.documentFor === 'application') {
+      documentColumn = documentColumn || {};
       documentColumn.columns = [
         'documentTypeId',
         'description',

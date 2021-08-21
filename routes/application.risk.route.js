@@ -1185,7 +1185,7 @@ router.put('/:applicationId', async function (req, res) {
         }
 
         const date = new Date();
-        applicationUpdate.approvalOrDecliningDate = date;
+        applicationUpdate.approvalOrDecliningDate = new Date();
         let expiryDate = new Date(date.setMonth(date.getMonth() + 12));
         expiryDate = new Date(expiryDate.setDate(expiryDate.getDate() - 1));
         applicationUpdate.expiryDate = application?.expiryDate || expiryDate;

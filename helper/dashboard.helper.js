@@ -183,8 +183,22 @@ const getApprovedAmount = async ({
           total: {
             $sum: '$creditLimit',
           },
-          approvedAmount: {
+          /* approvedAmount: {
             $sum: '$clientDebtorId.creditLimit',
+          },*/
+          approvedAmount: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ['$clientDebtorId.activeApplicationId', '$_id'] },
+                    { $eq: ['$clientDebtorId.isActive', true] },
+                  ],
+                },
+                '$clientDebtorId.creditLimit',
+                0,
+              ],
+            },
           },
         },
       },

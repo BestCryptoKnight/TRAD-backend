@@ -33,17 +33,17 @@ const addNotification = async ({
 
 const getNotificationList = async ({ query }) => {
   try {
-    const notifications = await Notification.aggregate(query).allowDiskUse(
+    const notificationList = await Notification.aggregate(query).allowDiskUse(
       true,
     );
+    const notifications =
+      notificationList?.[0]?.['paginatedResult'] || notificationList;
+
+    const total = notificationList?.[0]?.['totalCount']?.[0]?.['count'] || 0;
     notifications.forEach((notification) => {
       notification.hasSubModule = false;
       switch (notification?.entityType) {
         case 'credit-limit':
-          notification.hasSubModule = true;
-          notification.subModule = notification.entityType;
-          notification.entityType = 'debtor';
-          break;
         case 'credit-report':
           notification.hasSubModule = true;
           notification.subModule = notification.entityType;
@@ -51,7 +51,7 @@ const getNotificationList = async ({ query }) => {
           break;
       }
     });
-    return notifications;
+    return { notifications, total };
   } catch (e) {
     Logger.log.error('Error occurred in get notification list');
     Logger.log.error(e);

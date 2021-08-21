@@ -62,9 +62,9 @@ router.get('/', async function (req, res) {
         },
       },
     ];
-    const notifications = await getNotificationList({ query });
+    const { notifications, total } = await getNotificationList({ query });
     const response = {};
-    notifications[0].paginatedResult.forEach((data) => {
+    notifications.forEach((data) => {
       if (!response[data.year + '-' + data.month + '-' + data.day]) {
         response[data.year + '-' + data.month + '-' + data.day] = [];
       }
@@ -72,12 +72,12 @@ router.get('/', async function (req, res) {
         _id: data._id,
         description: data.description,
         createdAt: data.createdAt,
+        entityId: data.entityId,
+        entityType: data.entityType,
+        hasSubmodule: data.hasSubModule,
+        subModule: data.subModule,
       });
     });
-    const total =
-      notifications[0]['totalCount'].length !== 0
-        ? notifications[0]['totalCount'][0]['count']
-        : 0;
     res.status(200).send({
       status: 'SUCCESS',
       data: {
@@ -150,7 +150,7 @@ router.get('/list', async function (req, res) {
         },
       },
     ];
-    const notifications = await getNotificationList({ query });
+    const { notifications } = await getNotificationList({ query });
     res.status(200).send({
       status: 'SUCCESS',
       data: notifications,
