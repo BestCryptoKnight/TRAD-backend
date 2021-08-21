@@ -312,7 +312,7 @@ router.get('/download', async function (req, res) {
           'applicationId',
           'creditLimit',
           'acceptedAmount',
-          'approvalDate',
+          'approvalOrDecliningDate',
           'expiryDate',
           'limitType',
           'clientReference',

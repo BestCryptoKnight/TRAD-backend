@@ -513,13 +513,12 @@
           }
         },
         { "name": "uploadById", "label": "Uploaded By", "type": "string" },
-        { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+        { "name": "createdAt", "label": "Created Date", "type": "date" }
       ],
       "defaultColumns": [
         "description",
         "documentTypeId",
-        "updatedAt",
+        "createdAt",
         "uploadById",
         "originalFileName"
       ]
@@ -853,8 +852,7 @@
           }
         },
         { "name": "uploadById", "label": "Uploaded By", "type": "string" },
-        { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+        { "name": "createdAt", "label": "Created Date", "type": "date" }
       ],
       "defaultColumns": [
         "description",

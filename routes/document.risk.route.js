@@ -493,31 +493,20 @@ router.post('/upload', upload.single('document'), async function (req, res) {
       mimeType: req.file.mimetype,
       uploadById: req.user._id,
       uploadByType: 'user',
+      userName: req.user.name,
     });
-    const entityName = await getEntityName({
-      entityId: req.body.entityId,
-      entityType: req.body.documentFor.toLowerCase(),
-    });
-    await addAuditLog({
-      entityType: 'document',
-      entityRefId: document._id,
-      actionType: 'add',
-      userType: 'user',
-      userRefId: req.user._id,
-      logDescription: `A new document for ${entityName} is successfully uploaded by ${req.user.name}`,
-    });
-    const documentData = await Document.findById(document._id)
-      .populate({
-        path: 'documentTypeId',
-        select: { documentTitle: 1, _id: 0 },
-      })
-      .select('documentTypeId description originalFileName keyPath isPublic')
-      .lean();
-    documentData.documentTypeId = documentData.documentTypeId.documentTitle;
     res.status(200).send({
       status: 'SUCCESS',
       message: 'Document uploaded successfully',
-      data: documentData,
+      data: {
+        _id: document._id,
+        documentTypeId: document.documentTypeId,
+        description: document.description,
+        originalFileName: document.originalFileName,
+        uploadById: document.uploadById,
+        isPublic: document.isPublic,
+        createdAt: document.createdAt,
+      },
     });
   } catch (e) {
     Logger.log.error('Error occurred in upload document ', e);

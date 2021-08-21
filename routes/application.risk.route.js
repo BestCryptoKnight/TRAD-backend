@@ -229,7 +229,7 @@ router.get('/download', async function (req, res) {
       'creditLimit',
       'acceptedAmount',
       'requestDate',
-      'approvalDate',
+      'approvalOrDecliningDate',
       'expiryDate',
       'createdById',
       'outstandingAmount',

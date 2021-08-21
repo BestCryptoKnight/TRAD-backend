@@ -5,14 +5,18 @@ const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
 const Document = mongoose.model('document');
+const DocumentType = mongoose.model('document-type');
+const Client = mongoose.model('client');
 
 /*
  * Local Imports
  * */
 const Logger = require('./../services/logger');
 const { uploadFile } = require('./static-file.helper');
+const { addAuditLog, getEntityName } = require('./audit-log.helper');
 
-let deleteImage = ({ filePath, fileName }) => {
+//Not in use
+/*let deleteImage = ({ filePath, fileName }) => {
   fileName = fileName.substring(fileName.lastIndexOf('/') + 1);
   const imagePath = path.join(filePath, fileName);
   fs.unlink(imagePath, (err) => {
@@ -24,7 +28,7 @@ let deleteImage = ({ filePath, fileName }) => {
     }
     Logger.log.trace('File deleted successfully');
   });
-};
+};*/
 
 const uploadDocument = ({
   documentTypeId,
@@ -37,6 +41,7 @@ const uploadDocument = ({
   isPublic,
   bufferData,
   mimeType,
+  userName,
 }) => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -59,6 +64,31 @@ const uploadDocument = ({
         isPublic,
         mimeType,
       });
+      const [documentType, entityName] = await Promise.all([
+        DocumentType.findOne({ _id: documentTypeId })
+          .select('documentTitle')
+          .lean(),
+        getEntityName({
+          entityId: entityRefId,
+          entityType: entityType,
+        }),
+      ]);
+      if (uploadByType === 'client-user') {
+        userName = await getEntityName({
+          entityId: uploadById,
+          entityType: 'client',
+        });
+      }
+      await addAuditLog({
+        entityType: 'document',
+        entityRefId: document._id,
+        actionType: 'add',
+        userType: uploadByType,
+        userRefId: uploadById,
+        logDescription: `A new document for ${entityName} is successfully uploaded by ${userName}`,
+      });
+      document.documentTypeId = documentType?.documentTitle || '';
+      document.uploadById = userName;
       return resolve(document);
     } catch (e) {
       Logger.log.error(
@@ -206,7 +236,6 @@ const getSpecificEntityDocumentList = async ({
 };
 
 module.exports = {
-  deleteImage,
   uploadDocument,
   getApplicationDocumentList,
   getSpecificEntityDocumentList,

@@ -809,7 +809,9 @@ const submitApplication = async ({
   try {
     const application = await Application.findOne({
       _id: applicationId,
-    }).lean();
+    })
+      .populate({ path: 'clientId', select: '_id name' })
+      .lean();
     const applicationData = await Application.findOne({
       debtorId: application.debtorId,
       clientId: application.clientId,
