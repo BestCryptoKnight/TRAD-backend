@@ -329,6 +329,62 @@ router.get('/user/:insurerId', async function (req, res) {
 });
 
 /**
+ * Get Insurer Modal details
+ */
+router.get('/details/:insurerId', async function (req, res) {
+  if (!req.params.insurerId) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing',
+    });
+  }
+  try {
+    const module = StaticFile.modules.find((i) => i.name === 'insurer');
+    const insurer = await Insurer.findOne({
+      _id: req.params.insurerId,
+    }).lean();
+    console.log(insurer);
+    let response = [];
+    module.manageColumns.forEach((i) => {
+      if (
+        i.name === 'addressLine' ||
+        i.name === 'city' ||
+        i.name === 'state' ||
+        i.name === 'country' ||
+        i.name === 'zipCode'
+      ) {
+        response.push({
+          label: i.label,
+          value: insurer['address'][i.name] || '',
+          type: i.type,
+        });
+      }
+      if (insurer.hasOwnProperty(i.name)) {
+        response.push({
+          label: i.label,
+          value: insurer[i.name] || '',
+          type: i.type,
+        });
+      }
+    });
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: { response, header: 'Insurer Details' },
+    });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in get client modal details ',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
  * Get Insurer Contact Modal Details
  */
 router.get('/user-details/:userId', async function (req, res) {

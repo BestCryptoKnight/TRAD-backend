@@ -344,7 +344,7 @@ router.get('/', async function (req, res) {
             'client-user': 'client/user-details',
             debtor: 'debtor/drawer',
             application: 'application/drawer-details',
-            insurer: 'insurer/user-details',
+            insurer: 'insurer/details',
             claim: 'claim',
             overdue: 'overdue',
           };
