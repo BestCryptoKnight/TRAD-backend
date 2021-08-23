@@ -108,6 +108,7 @@ userSchema.statics.findByToken = async function (token) {
     adminData = await admin
       .findOne({
         _id: decoded._id,
+        isDeleted: false,
       })
       .select({ password: 0 });
     const index = adminData.jwtToken.findIndex((i) => {
