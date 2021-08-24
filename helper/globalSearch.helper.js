@@ -212,6 +212,7 @@ const getTaskList = async ({
     queryFilter.description = { $regex: searchString, $options: 'i' };
     const tasks = await Task.find(queryFilter).select('_id description').lean();
     tasks.forEach((task) => {
+      task.title = task.description;
       task.module = 'task';
       task.hasSubModule = false;
     });
