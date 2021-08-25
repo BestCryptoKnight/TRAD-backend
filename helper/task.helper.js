@@ -176,7 +176,7 @@ const aggregationQuery = async ({
     if (requestedQuery.isCompleted) {
       queryFilter.isCompleted = requestedQuery.isCompleted === 'true';
     }
-    if (requestedQuery.startDate) {
+    /*if (requestedQuery.startDate) {
       queryFilter.dueDate = {
         $gte: new Date(requestedQuery.startDate),
       };
@@ -185,6 +185,21 @@ const aggregationQuery = async ({
       queryFilter.dueDate = {
         $lt: new Date(requestedQuery.endDate),
       };
+    }*/
+
+    if (requestedQuery.startDate || requestedQuery.endDate) {
+      let dateQuery = {};
+      if (requestedQuery.startDate) {
+        dateQuery = {
+          $gte: new Date(requestedQuery.startDate),
+        };
+      }
+      if (requestedQuery.endDate) {
+        dateQuery = Object.assign({}, dateQuery, {
+          $lte: new Date(requestedQuery.endDate),
+        });
+      }
+      queryFilter.dueDate = dateQuery;
     }
     let sortingOptions = {};
 
