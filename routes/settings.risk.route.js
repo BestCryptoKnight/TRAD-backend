@@ -852,24 +852,26 @@ router.put('/document-type/:documentId', async function (req, res) {
           documentTitle: req.body.documentTitle,
         },
       );
-      await addAuditLog({
-        entityType: 'document-type',
-        entityRefId: document._id,
-        actionType: 'edit',
-        userType: 'user',
-        userRefId: req.user._id,
-        logDescription: `A document type is successfully updated by ${req.user.name}`,
-      });
-      res.status(200).send({
-        status: 'SUCCESS',
-        message: 'Document type updated successfully',
-      });
+      const document = await DocumentType.findOne({
+        _id: req.params.documentId,
+      }).lean();
+      if (document) {
+        await addAuditLog({
+          entityType: 'document-type',
+          entityRefId: document?._id,
+          actionType: 'edit',
+          userType: 'user',
+          userRefId: req.user._id,
+          logDescription: `A document type is successfully updated by ${req.user.name}`,
+        });
+        res.status(200).send({
+          status: 'SUCCESS',
+          message: 'Document type updated successfully',
+        });
+      }
     }
   } catch (e) {
-    Logger.log.error(
-      'Error occurred in update document types ',
-      e.message || e,
-    );
+    Logger.log.error('Error occurred in update document types ', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

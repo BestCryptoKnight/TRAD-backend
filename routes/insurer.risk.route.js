@@ -929,16 +929,18 @@ router.put('/user/sync-from-crm/:insurerId', async function (req, res) {
         crmContactId: contactsFromCrm[i].crmContactId,
         isDeleted: false,
       }).lean();
-      promiseArr.push(
-        addAuditLog({
-          entityType: 'insurer-user',
-          entityRefId: insurerUser._id,
-          userType: 'user',
-          userRefId: req.user._id,
-          actionType: 'sync',
-          logDescription: `Insurer contact ${insurerUser.name} synced by ${req.user.name}`,
-        }),
-      );
+      if (insurerUser) {
+        promiseArr.push(
+          addAuditLog({
+            entityType: 'insurer-user',
+            entityRefId: insurerUser._id,
+            userType: 'user',
+            userRefId: req.user._id,
+            actionType: 'sync',
+            logDescription: `Insurer contact ${insurerUser.name} synced by ${req.user.name}`,
+          }),
+        );
+      }
     }
     await Promise.all(promiseArr);
     res.status(200).send({
@@ -946,10 +948,7 @@ router.put('/user/sync-from-crm/:insurerId', async function (req, res) {
       message: 'Insurer Contacts synced successfully',
     });
   } catch (e) {
-    Logger.log.error(
-      'Error occurred in sync insurer contacts ',
-      e.message || e,
-    );
+    Logger.log.error('Error occurred in sync insurer contacts ', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

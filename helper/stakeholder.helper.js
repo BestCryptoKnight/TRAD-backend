@@ -10,6 +10,7 @@ const DebtorDirector = mongoose.model('debtor-director');
 const Logger = require('./../services/logger');
 const { formatString } = require('./overdue.helper');
 const { getDebtorFullAddress } = require('./debtor.helper');
+const StaticData = require('./../static-files/staticData.json');
 
 const getStakeholderDetails = async ({ stakeholderId, manageColumns }) => {
   try {

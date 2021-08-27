@@ -114,7 +114,12 @@ const getApplicationList = async ({
         });
       }
     }
-    if (requestedQuery.clientId || applicationColumn.includes('clientId')) {
+    if (
+      requestedQuery.clientId ||
+      applicationColumn.includes('clientId') ||
+      requestedQuery.riskAnalystId ||
+      requestedQuery.serviceManagerId
+    ) {
       query.push(
         {
           $lookup: {
@@ -135,6 +140,24 @@ const getApplicationList = async ({
       query.push({
         $match: {
           'clientId._id': { $in: requestedQuery.clientId },
+        },
+      });
+    }
+    if (requestedQuery.riskAnalystId) {
+      query.push({
+        $match: {
+          'clientId.riskAnalystId': mongoose.Types.ObjectId(
+            requestedQuery.riskAnalystId,
+          ),
+        },
+      });
+    }
+    if (requestedQuery.serviceManagerId) {
+      query.push({
+        $match: {
+          'clientId.serviceManagerId': mongoose.Types.ObjectId(
+            requestedQuery.serviceManagerId,
+          ),
         },
       });
     }
