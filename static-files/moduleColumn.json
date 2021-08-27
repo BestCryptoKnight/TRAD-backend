@@ -1195,7 +1195,7 @@
           "label": "Report Expiry Date",
           "type": "date"
         },
-        { "name": "reportName", "label": "Report Name", "type": "date" }
+        { "name": "reportName", "label": "Report Name", "type": "string" }
       ],
       "defaultColumns": [
         "clientId",

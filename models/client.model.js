@@ -35,6 +35,7 @@ const clientSchema = new Schema(
     inceptionDate: { type: Schema.Types.Date },
     expiryDate: { type: Schema.Types.Date },
     isAutoApproveAllowed: { type: Schema.Types.Boolean, default: true },
+    merchantCode: { type: Schema.Types.Mixed },
     // totalApplication: { type: Schema.Types.Number },
     // remainingApplication: { type: Schema.Types.Number },
   },
