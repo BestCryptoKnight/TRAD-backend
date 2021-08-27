@@ -1232,8 +1232,8 @@ const applicationDrawerDetails = async ({
           ? application['debtorId']['entityName']
           : i.name === 'entityType'
           ? application['debtorId'][i.name]
-          : i.name === 'createdById'
-          ? createdBy?.['name']
+          : i.name === 'createdById' && createdBy?.['name']
+          ? createdBy['name']
           : i.name === 'isExtendedPaymentTerms' ||
             i.name === 'isPassedOverdueAmount'
           ? application[i.name]
@@ -1249,6 +1249,7 @@ const applicationDrawerDetails = async ({
       ) {
         value = formatString(value);
       }
+      console.log('Value', value, 'i.label', i.label);
       response.push({
         label: i.label,
         value: value,
