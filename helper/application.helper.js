@@ -1249,7 +1249,6 @@ const applicationDrawerDetails = async ({
       ) {
         value = formatString(value);
       }
-      console.log('Value', value, 'i.label', i.label);
       response.push({
         label: i.label,
         value: value,

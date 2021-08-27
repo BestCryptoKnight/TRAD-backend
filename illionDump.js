@@ -641,7 +641,7 @@ const importApplications = async () => {
               const update = {
                 clientId: client._id,
                 debtorId: debtor._id,
-                isActive: inActiveStatus.includes(application.status),
+                isActive: !inActiveStatus.includes(application.status),
                 isFromOldSystem: true,
                 isEndorsedLimit: application.isEndorsedLimit,
                 creditLimit: application.acceptedAmount,
