@@ -1010,11 +1010,16 @@ router.put('/user/sync-from-crm/:clientId', async function (req, res) {
       clientId: client.crmClientId,
     });
     let promiseArr = [];
+    let query = {};
     for (let i = 0; i < contactsFromCrm.length; i++) {
-      const clientUser = await ClientUser.findOne({
-        crmContactId: contactsFromCrm[i].crmContactId,
+      query = {
         isDeleted: false,
-      }).lean();
+        $or: [
+          { crmContactId: contactsFromCrm[i].crmContactId },
+          { email: contactsFromCrm[i].email },
+        ],
+      };
+      const clientUser = await ClientUser.findOne(query).lean();
       contactsFromCrm[i].clientId = req.params.clientId;
       if (!clientUser || !clientUser.hasOwnProperty('hasPortalAccess')) {
         contactsFromCrm[i].hasPortalAccess = false;

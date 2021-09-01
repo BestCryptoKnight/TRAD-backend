@@ -94,7 +94,10 @@ clientUserSchema.statics.findByToken = async function (token) {
   let clientUserData;
   try {
     const decoded = jwt.verify(token, jwtSecret);
-    clientUserData = await clientUser.findOne({ _id: decoded._id });
+    clientUserData = await clientUser.findOne({
+      _id: decoded._id,
+      hasPortalAccess: true,
+    });
     const index = clientUserData.jwtToken.findIndex((i) => {
       return i.token === token;
     });
