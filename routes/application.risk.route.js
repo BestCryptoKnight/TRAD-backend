@@ -50,6 +50,7 @@ const {
   getAlertDetail,
 } = require('./../helper/alert.helper');
 const { checkForEndorsedLimit } = require('./../helper/policy.helper');
+const { getUserList } = require('./../helper/user.helper');
 
 /**
  * Get Column Names
@@ -137,11 +138,17 @@ router.get('/entity-list', async function (req, res) {
       getClientList({ hasFullAccess: hasFullAccess, userId: req.user._id }),
       getDebtorList(),
     ]);
+    const { riskAnalystList, serviceManagerList } = await getUserList();
     res.status(200).send({
       status: 'SUCCESS',
       data: {
         clients: { field: 'clientId', data: clients },
         debtors: { field: 'debtorId', data: debtors },
+        riskAnalystList: { field: 'riskAnalystId', data: riskAnalystList },
+        serviceManagerList: {
+          field: 'serviceManagerId',
+          data: serviceManagerList,
+        },
         streetType: { field: 'streetType', data: StaticData.streetType },
         australianStates: { field: 'state', data: StaticData.australianStates },
         newZealandStates: { field: 'state', data: StaticData.newZealandStates },
@@ -602,6 +609,10 @@ router.get('/details/:applicationId', async function (req, res) {
       response.passedOverdueDetails = application.passedOverdueDetails;
       response.orderOnHand = application.orderOnHand;
       response.outstandingAmount = application.outstandingAmount;
+      response.clientReference = application.clientReference;
+      response.expiryDate = application.expiryDate;
+      response.comments = application.comments;
+      response.limitType = application.limitType;
       // response.note = application.note;
       const status = ['DRAFT', 'APPROVED', 'DECLINED'];
       response.applicationStatus = StaticData.applicationStatus.filter(

@@ -551,6 +551,7 @@ router.get('/details/:applicationId', async function (req, res) {
       response.passedOverdueDetails = application.passedOverdueDetails;
       response.orderOnHand = application.orderOnHand;
       response.outstandingAmount = application.outstandingAmount;
+      response.clientReference = application.clientReference;
       // response.note = application.note;
       const status = ['DRAFT', 'APPROVED', 'DECLINED'];
       response.applicationStatus = StaticData.applicationStatus.filter(
