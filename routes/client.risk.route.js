@@ -1001,22 +1001,43 @@ router.put('/user/sync-from-crm/:clientId', async function (req, res) {
     }
     let client = await Client.findOne({ _id: req.params.clientId });
     if (!client) {
-      Logger.log.error('No Client found', req.params.crmId);
       return res
         .status(400)
-        .send({ status: 'ERROR', message: 'Client not found.' });
+        .send({ status: 'ERROR', message: 'Client not found' });
     }
+    const clientUsers = await ClientUser.find({
+      isDeleted: false,
+      clientId: req.params.clientId,
+    })
+      .select('email crmContactId')
+      .lean();
+    const oldUsers = clientUsers.map((i) => i.email.toLowerCase());
+    const newUsers = [];
     let contactsFromCrm = await RssHelper.getClientContacts({
       clientId: client.crmClientId,
+    });
+    contactsFromCrm.forEach((i) => {
+      if (oldUsers.includes(i.email.toLowerCase())) {
+        oldUsers.splice(oldUsers.indexOf(i.email.toLowerCase()), 1);
+      } else {
+        newUsers.push(i.email);
+      }
     });
     let promiseArr = [];
     let query = {};
     for (let i = 0; i < contactsFromCrm.length; i++) {
       query = {
-        isDeleted: false,
+        // isDeleted: false,
         $or: [
           { crmContactId: contactsFromCrm[i].crmContactId },
-          { email: contactsFromCrm[i].email },
+          {
+            email: {
+              $regex: new RegExp(
+                '^' + contactsFromCrm[i].email.toLowerCase() + '$',
+                'i',
+              ),
+            },
+          },
         ],
       };
       const clientUser = await ClientUser.findOne(query).lean();
@@ -1027,15 +1048,20 @@ router.put('/user/sync-from-crm/:clientId', async function (req, res) {
       if (!clientUser || !clientUser.hasOwnProperty('sendDecisionLetter')) {
         contactsFromCrm[i].sendDecisionLetter = false;
       }
+      query =
+        clientUser && clientUser._id
+          ? {
+              _id: clientUser._id,
+            }
+          : { crmContactId: contactsFromCrm[i].crmContactId };
       promiseArr.push(
-        ClientUser.updateOne(
-          { crmContactId: contactsFromCrm[i].crmContactId, isDeleted: false },
-          contactsFromCrm[i],
-          { upsert: true },
-        ),
+        ClientUser.updateOne(query, contactsFromCrm[i], { upsert: true }),
       );
-      //TODO add logs for new records
-      if (clientUser && clientUser._id) {
+      if (
+        clientUser &&
+        clientUser._id &&
+        !newUsers.includes(contactsFromCrm[i].email.toLowerCase())
+      ) {
         promiseArr.push(
           addAuditLog({
             entityType: 'client-user',
@@ -1048,7 +1074,32 @@ router.put('/user/sync-from-crm/:clientId', async function (req, res) {
         );
       }
     }
+    if (oldUsers?.length !== 0) {
+      promiseArr.push(
+        ClientUser.updateMany(
+          { email: { $in: oldUsers } },
+          { isDeleted: true },
+        ),
+      );
+    }
     await Promise.all(promiseArr);
+    if (newUsers?.length !== 0) {
+      const clientUsers = await ClientUser.find({
+        crmContactId: { $in: newUsers },
+      })
+        .select('_id name')
+        .lean();
+      clientUsers.forEach((i) => {
+        addAuditLog({
+          entityType: 'client-user',
+          entityRefId: i._id,
+          userType: 'user',
+          userRefId: req.user._id,
+          actionType: 'sync',
+          logDescription: `Client contact ${i.name} added by ${req.user.name}`,
+        });
+      });
+    }
     res.status(200).send({
       status: 'SUCCESS',
       message: 'Client Contacts synced successfully',
