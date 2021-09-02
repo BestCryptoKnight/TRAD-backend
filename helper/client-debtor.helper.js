@@ -501,7 +501,7 @@ const convertToCSV = (arr) => {
 const checkForExpiringLimit = async ({ startDate, endDate }) => {
   try {
     const creditLimits = await ClientDebtor.find({
-      expiryDate: { $gte: startDate, $lte: endDate },
+      expiryDate: { $exists: true, $ne: null, $gte: startDate, $lte: endDate },
       isActive: true,
     })
       .populate({

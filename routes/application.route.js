@@ -859,10 +859,10 @@ router.put('/', async function (req, res) {
   if (
     req.body.stepper === 'company' &&
     (!req.body.address ||
-      !req.body.address.state ||
       !req.body.address.country ||
-      !req.body.address.postCode ||
       !req.body.entityType ||
+      (req.body.entityType === 'TRUST' &&
+        (!req.body.address.state || !req.body.address.postCode)) ||
       (!req.body.abn && !req.body.acn && !req.body.registrationNumber) ||
       !req.body.entityName)
   ) {

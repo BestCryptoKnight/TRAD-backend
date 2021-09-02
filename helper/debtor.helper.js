@@ -466,7 +466,7 @@ const checkForExpiringReports = async ({ startDate, endDate }) => {
   try {
     const reports = await CreditReport.find({
       isDeleted: false,
-      expiryDate: { $gte: startDate, $lte: endDate },
+      expiryDate: { $exists: true, $ne: null, $gte: startDate, $lte: endDate },
     }).lean();
     if (reports.length !== 0) {
       const debtorIds = [];
@@ -557,7 +557,7 @@ const checkForExpiringReports = async ({ startDate, endDate }) => {
 const checkForReviewDebtor = async ({ endDate }) => {
   try {
     const debtors = await Debtor.find({
-      reviewDate: { $lte: endDate },
+      reviewDate: { $exists: true, $ne: null, $lte: endDate },
       // isActive: true,
     }).lean();
     const debtorIds = debtors.map((i) => i._id);
