@@ -74,7 +74,11 @@ const getDrawerDetails = async ({ overdueId, isForRisk = false }) => {
     let response = [];
     if (overdue) {
       const overdueColumns = [
-        { name: 'status', label: 'Status', type: 'status' },
+        {
+          name: 'status',
+          label: 'Status',
+          type: isForRisk ? 'status' : 'string',
+        },
         { name: 'month', label: 'Month-Year', type: 'string' },
         { name: 'clientId', label: 'Client Name', type: 'string' },
         { name: 'debtorId', label: 'Debtor Name', type: 'string' },
@@ -115,10 +119,12 @@ const getDrawerDetails = async ({ overdueId, isForRisk = false }) => {
           value = formatString(value);
         }
         if (i.name === 'status') {
-          value = {
-            value: value,
-            label: formatString(value),
-          };
+          value = isForRisk
+            ? {
+                value: value,
+                label: formatString(value),
+              }
+            : formatString(value);
         }
         response.push({
           label: i.label,
@@ -717,8 +723,8 @@ const addNotifications = async ({ userId, overdueIds, type, userName }) => {
           logDescription: description,
         });
         const notification = await addNotification({
-          userId: userId,
-          userType: type,
+          userId: type === 'user' ? overdue?.clientId?._id : userId,
+          userType: type === 'user' ? 'client-user' : 'user',
           description: description,
           entityId: overdue._id,
           entityType: 'overdue',
@@ -729,8 +735,8 @@ const addNotifications = async ({ userId, overdueIds, type, userName }) => {
               type: 'OVERDUE',
               data: notification,
             },
-            type: type === 'user' ? 'client-user' : 'user',
-            userId: type === 'user' ? overdue?.clientId?._id : userId,
+            type: notification.userType,
+            userId: notification.userId,
           });
         }
       }
