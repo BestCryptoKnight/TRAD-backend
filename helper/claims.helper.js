@@ -39,10 +39,12 @@ const getClaimsList = async ({
         .lean();
       clientCRMIds = clients.map((i) => i.crmClientId);
     } else if (requestedQuery.clientId) {
-      /*const client = await Client.findOne({ _id: requestedQuery.clientId })
+      const client = await Client.findOne({ _id: requestedQuery.clientId })
         .select('crmClientId')
-        .lean();*/
-      clientCRMIds = [requestedQuery.clientId];
+        .lean();
+      if (client?.crmClientId) {
+        clientCRMIds = [client.crmClientId];
+      }
     } else if (!isForRisk) {
       const client = await Client.findById(clientId)
         .select('_id crmClientId')
@@ -174,17 +176,14 @@ const addClaimInRSS = async ({
       'repaymentplanlength',
     ];
     const claim = {};
-    let client;
-    if (userType === 'client-user' && clientId) {
-      client = await Client.findOne({ _id: clientId })
-        .select('_id crmClientId name riskAnalystId')
-        .lean();
-      requestBody.accountid = client.crmClientId;
-    } else {
-      client = await Client.findOne({ crmClientId: requestBody.accountid })
-        .select('_id crmClientId name riskAnalystId')
-        .lean();
-    }
+    const query =
+      userType === 'client-user' && clientId
+        ? { _id: clientId }
+        : { _id: requestBody.accountid };
+    const client = await Client.findOne(query)
+      .select('_id crmClientId name riskAnalystId')
+      .lean();
+    requestBody.accountid = client?.crmClientId;
     keys.map((key) => {
       if (
         key === 'claimsinforequested' ||

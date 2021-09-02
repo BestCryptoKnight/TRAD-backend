@@ -259,10 +259,6 @@ router.post('/', async function (req, res) {
     });
   }
   try {
-    const client = await Client.findOne({ _id: req.user.clientId })
-      .select('crmClientId')
-      .lean();
-    req.body.accountid = client.crmClientId;
     const response = await addClaimInRSS({
       requestBody: req.body,
       clientId: req.user.clientId,
