@@ -7,6 +7,7 @@ const mongoose = require('mongoose');
 const ClientUser = mongoose.model('client-user');
 const ClientDebtor = mongoose.model('client-debtor');
 const Debtor = mongoose.model('debtor');
+const Client = mongoose.model('client');
 const Application = mongoose.model('application');
 
 /*

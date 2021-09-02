@@ -79,7 +79,8 @@ router.get('/entity-list', async function (req, res) {
  */
 router.get('/list', async function (req, res) {
   if (
-    !req.query.date ||
+    !req.query.month ||
+    !req.query.year ||
     !req.query.clientId ||
     !mongoose.Types.ObjectId.isValid(req.query.clientId)
   ) {
@@ -90,13 +91,14 @@ router.get('/list', async function (req, res) {
     });
   }
   try {
-    let month = new Date(req.query.date).getMonth() + 1;
-    let year = new Date(req.query.date).getFullYear();
+    // let month = new Date(req.query.date).getMonth() + 1;
+    // let year = new Date(req.query.date).getFullYear();
     const query = {
-      month: month.toString().padStart(2, '0'),
-      year: year.toString(),
+      month: req.query.month.toString().padStart(2, '0'),
+      year: req.query.year.toString(),
       clientId: req.query.clientId,
     };
+    console.log('query', query);
     const overdue = await Overdue.find(query)
       .populate({
         path: 'debtorId insurerId',

@@ -77,7 +77,7 @@ router.get('/entity-list', async function (req, res) {
  * Get Month & Year Overdue
  */
 router.get('/list', async function (req, res) {
-  if (!req.query.date) {
+  if (!req.query.month || !req.query.year) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -85,11 +85,11 @@ router.get('/list', async function (req, res) {
     });
   }
   try {
-    let month = new Date(req.query.date).getMonth() + 1;
-    let year = new Date(req.query.date).getFullYear();
+    // let month = new Date(req.query.date).getMonth() + 1;
+    // let year = new Date(req.query.date).getFullYear();
     const query = {
-      month: month.toString().padStart(2, '0'),
-      year: year.toString(),
+      month: req.query.month.toString().padStart(2, '0'),
+      year: req.query.year.toString(),
       clientId: req.user.clientId,
     };
     const overdue = await Overdue.find(query)
