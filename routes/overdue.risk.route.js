@@ -432,6 +432,8 @@ router.put('/list', async function (req, res) {
     const response = await updateList({
       isForRisk: true,
       requestBody: req.body,
+      userId: req.user._id,
+      userName: req.user.name,
     });
     if (response && response.status && response.status === 'ERROR') {
       return res.status(400).send(response);

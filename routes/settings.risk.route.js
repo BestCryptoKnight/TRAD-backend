@@ -964,8 +964,14 @@ router.put('/api-integration', async function (req, res) {
     const organization = await Organization.findOne({
       isDeleted: false,
       _id: req.user.organizationId,
-    }).select({ integration: 1 });
-    res.status(200).send({ status: 'SUCCESS', data: organization });
+    })
+      .select({ integration: 1 })
+      .lean();
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: organization,
+      message: 'Credentials updated successfully',
+    });
   } catch (e) {
     Logger.log.error(
       'Error occurred in updating api integration ',
