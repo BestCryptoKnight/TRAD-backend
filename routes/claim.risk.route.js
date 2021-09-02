@@ -286,7 +286,7 @@ router.post('/', async function (req, res) {
     });
   }
   try {
-    await addClaimInRSS({
+    const response = await addClaimInRSS({
       requestBody: req.body,
       userType: 'user',
       userId: req.user._id,
@@ -294,7 +294,8 @@ router.post('/', async function (req, res) {
     });
     res.status(200).send({
       status: 'SUCCESS',
-      data: 'Claim added successfully',
+      message: 'Claim added successfully',
+      claimId: response?.record?.id | '',
     });
   } catch (e) {
     Logger.log.error(

@@ -263,14 +263,15 @@ router.post('/', async function (req, res) {
       .select('crmClientId')
       .lean();
     req.body.accountid = client.crmClientId;
-    await addClaimInRSS({
+    const response = await addClaimInRSS({
       requestBody: req.body,
       clientId: req.user.clientId,
       userType: 'client-user',
     });
     res.status(200).send({
       status: 'SUCCESS',
-      data: 'Claim added successfully',
+      message: 'Claim added successfully',
+      claimId: response?.record?.id | '',
     });
   } catch (e) {
     Logger.log.error(
