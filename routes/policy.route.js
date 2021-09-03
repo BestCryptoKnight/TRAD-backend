@@ -13,6 +13,7 @@ const ClientUser = mongoose.model('client-user');
 const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
 const { getPolicyDetails } = require('./../helper/policy.helper');
+const { getRegexForSearch } = require('./../helper/audit-log.helper');
 
 /**
  * Get Column Names
@@ -127,8 +128,18 @@ router.get('/', async function (req, res) {
     if (req.query.search) {
       queryFilter = Object.assign({}, queryFilter, {
         $or: [
-          { product: { $regex: req.query.search, $options: 'i' } },
-          { policyPeriod: { $regex: req.query.search, $options: 'i' } },
+          {
+            product: {
+              $regex: getRegexForSearch(req.query.search),
+              $options: 'i',
+            },
+          },
+          {
+            policyPeriod: {
+              $regex: getRegexForSearch(req.query.search),
+              $options: 'i',
+            },
+          },
         ],
       });
     }

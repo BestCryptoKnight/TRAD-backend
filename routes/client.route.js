@@ -12,6 +12,7 @@ const ClientUser = mongoose.model('client-user');
  * */
 const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
+const { getRegexForSearch } = require('./../helper/audit-log.helper');
 
 /**
  * Get Column Names
@@ -103,7 +104,10 @@ router.get('/user', async function (req, res) {
       queryFilter.isDecisionMaker = req.query.isDecisionMaker === 'true';
     }
     if (req.query.search) {
-      queryFilter.name = { $regex: `${req.query.search}`, $options: 'i' };
+      queryFilter.name = {
+        $regex: getRegexForSearch(req.query.search),
+        $options: 'i',
+      };
     }
     let sortingOptions = {};
     let aggregationQuery = [

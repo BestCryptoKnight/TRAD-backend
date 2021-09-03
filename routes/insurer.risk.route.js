@@ -20,7 +20,10 @@ const {
   getInsurersById,
   getInsurerById,
 } = require('./../helper/rss.helper');
-const { addAuditLog } = require('./../helper/audit-log.helper');
+const {
+  addAuditLog,
+  getRegexForSearch,
+} = require('./../helper/audit-log.helper');
 
 /**
  * Search Insurer From CRM
@@ -88,7 +91,10 @@ router.get('/client-list/:insurerId', async function (req, res) {
   try {
     const query = {
       insurerId: req.params.insurerId,
-      name: { $regex: `${req.query.searchKeyword}`, $options: 'i' },
+      name: {
+        $regex: getRegexForSearch(req.query.searchKeyword),
+        $options: 'i',
+      },
     };
     const clients = await Client.find(query).select({ _id: 1, name: 1 }).lean();
     res.status(200).send({ status: 'SUCCESS', data: clients });
@@ -248,8 +254,18 @@ router.get('/user/:insurerId', async function (req, res) {
     if (req.query.search) {
       queryFilter = Object.assign({}, queryFilter, {
         $or: [
-          { name: { $regex: req.query.search, $options: 'i' } },
-          { email: { $regex: req.query.search, $options: 'i' } },
+          {
+            name: {
+              $regex: getRegexForSearch(req.query.search),
+              $options: 'i',
+            },
+          },
+          {
+            email: {
+              $regex: getRegexForSearch(req.query.search),
+              $options: 'i',
+            },
+          },
         ],
       });
     }
@@ -287,8 +303,7 @@ router.get('/user/:insurerId', async function (req, res) {
       aggregationQuery,
     ).allowDiskUse(true);
     insurerUser[0].paginatedResult.forEach((user) => {
-      console.log('insurerUser ', user);
-      if (user.name) {
+      if (user?.name) {
         user.name = {
           _id: user._id,
           value: user.name,
@@ -536,7 +551,10 @@ router.get('/', async function (req, res) {
       isDeleted: false,
     };
     if (req.query.search)
-      queryFilter.name = { $regex: req.query.search, $options: 'i' };
+      queryFilter.name = {
+        $regex: getRegexForSearch(req.query.search),
+        $options: 'i',
+      };
     let sortingOptions = {};
     if (req.query.sortBy && req.query.sortOrder) {
       sortingOptions[req.query.sortBy] = req.query.sortOrder;
@@ -783,7 +801,7 @@ router.put('/sync-from-crm/:insurerId', async function (req, res) {
     });
     await Insurer.updateOne({ _id: req.params.insurerId }, insurerFromCrm);
     await addAuditLog({
-      entityType: 'client',
+      entityType: 'insurer',
       entityRefId: req.params.clientId,
       userType: 'user',
       userRefId: req.user._id,

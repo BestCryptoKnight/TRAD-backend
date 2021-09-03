@@ -680,10 +680,9 @@ router.delete('/:taskId', async function (req, res) {
       actionType: 'delete',
       userType: 'user',
       userRefId: req.user._id,
-      logDescription:
-        `A task` + entityName
-          ? `for ${entityName} `
-          : ' ' + `is successfully updated by ${req.user.name}`,
+      logDescription: `A task ${
+        entityName ? `for ${entityName} ` : ''
+      } is successfully updated by ${req.user.name}`,
     });
     res
       .status(200)

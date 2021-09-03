@@ -13,6 +13,7 @@ const { formatString } = require('./overdue.helper');
 const { addNotification } = require('./notification.helper');
 const { sendNotification } = require('./socket.helper');
 const { generateDecisionLetter } = require('./pdf-generator.helper');
+const { getRegexForSearch } = require('./audit-log.helper');
 
 const getClientDebtorDetails = async ({ debtor, manageColumns }) => {
   try {
@@ -154,7 +155,7 @@ const getClientCreditLimit = async ({
       aggregationQuery.push({
         $match: {
           'debtorId.entityName': {
-            $regex: requestedQuery.search,
+            $regex: getRegexForSearch(requestedQuery.search),
             $options: 'i',
           },
         },
@@ -346,7 +347,7 @@ const getDebtorCreditLimit = async ({
       aggregationQuery.push({
         $match: {
           'clientId.name': {
-            $regex: requestedQuery.search,
+            $regex: getRegexForSearch(requestedQuery.search),
             $options: 'i',
           },
         },

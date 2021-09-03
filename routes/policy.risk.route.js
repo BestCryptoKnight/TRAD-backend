@@ -15,7 +15,10 @@ const Insurer = mongoose.model('insurer');
 const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
 const { getClientPolicies } = require('./../helper/rss.helper');
-const { addAuditLog } = require('./../helper/audit-log.helper');
+const {
+  addAuditLog,
+  getRegexForSearch,
+} = require('./../helper/audit-log.helper');
 const { getPolicyDetails } = require('./../helper/policy.helper');
 
 /**
@@ -178,11 +181,6 @@ router.get('/:entityId', async function (req, res) {
     switch (req.query.listFor) {
       case 'insurer-policy':
         queryFilter.insurerId = req.params.entityId;
-        /*queryFilter.product = { $regex: '.*Credit Insurance.*' };
-        break;
-      case 'insurer-matrix':
-        queryFilter.insurerId = req.params.entityId;
-        queryFilter.product = { $regex: '.*Risk Management Package.*' };*/
         break;
       case 'client-policy':
         queryFilter.clientId = req.params.entityId;
@@ -205,8 +203,18 @@ router.get('/:entityId', async function (req, res) {
     if (req.query.search) {
       queryFilter = Object.assign({}, queryFilter, {
         $or: [
-          { product: { $regex: req.query.search, $options: 'i' } },
-          { policyPeriod: { $regex: req.query.search, $options: 'i' } },
+          {
+            product: {
+              $regex: getRegexForSearch(req.query.search),
+              $options: 'i',
+            },
+          },
+          {
+            policyPeriod: {
+              $regex: getRegexForSearch(req.query.search),
+              $options: 'i',
+            },
+          },
         ],
       });
     }

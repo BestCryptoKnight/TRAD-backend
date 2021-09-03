@@ -75,4 +75,17 @@ const getEntityName = async ({ entityType, entityId }) => {
   }
 };
 
-module.exports = { addAuditLog, getAuditLogs, getEntityName };
+const getRegexForSearch = (search) => {
+  try {
+    return search.trim().replace(/([.?*+^$[\]\\(){}|-])/g, '\\$1');
+  } catch (e) {
+    Logger.log.error('Error occurred in get regex for search', e.message || e);
+  }
+};
+
+module.exports = {
+  addAuditLog,
+  getAuditLogs,
+  getEntityName,
+  getRegexForSearch,
+};

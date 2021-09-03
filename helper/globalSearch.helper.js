@@ -16,6 +16,7 @@ const Task = mongoose.model('task');
  * Local Imports
  * */
 const Logger = require('./../services/logger');
+const { getRegexForSearch } = require('./audit-log.helper');
 
 const getUserList = async ({ moduleAccess, userId, searchString }) => {
   try {
@@ -28,7 +29,10 @@ const getUserList = async ({ moduleAccess, userId, searchString }) => {
     if (access && access.accessTypes.indexOf('full-access') === -1) {
       queryFilter._id = userId;
     }
-    queryFilter.name = { $regex: searchString, $options: 'i' };
+    queryFilter.name = {
+      $regex: getRegexForSearch(searchString),
+      $options: 'i',
+    };
     const users = await User.find(queryFilter).select('_id name').lean();
     users.forEach((user) => {
       user.title = user.name;
@@ -69,7 +73,10 @@ const getClientList = async ({
     } else {
       queryFilter._id = clientId;
     }
-    queryFilter.name = { $regex: searchString, $options: 'i' };
+    queryFilter.name = {
+      $regex: getRegexForSearch(searchString),
+      $options: 'i',
+    };
     let clients = await Client.find(queryFilter).select('_id name').lean();
     const clientIds = clients.map((i) => i._id);
     clients.forEach((user) => {
@@ -80,7 +87,7 @@ const getClientList = async ({
     });
     queryFilter = {
       clientIds: { $in: clientIds },
-      name: { $regex: searchString, $options: 'i' },
+      name: { $regex: getRegexForSearch(searchString), $options: 'i' },
     };
     const clientUsers = await ClientUser.find(queryFilter)
       .select('_id name clientId')
@@ -108,7 +115,7 @@ const getInsurerList = async ({ searchString }) => {
   try {
     const queryFilter = {
       isDeleted: false,
-      name: { $regex: searchString, $options: 'i' },
+      name: { $regex: getRegexForSearch(searchString), $options: 'i' },
     };
     const [insurers, users] = await Promise.all([
       Insurer.find(queryFilter).select('_id name').lean(),
@@ -164,7 +171,10 @@ const getDebtorList = async ({ moduleAccess, userId, searchString }) => {
         _id: { $in: debtorIds },
       };
     }
-    queryFilter.entityName = { $regex: searchString, $options: 'i' };
+    queryFilter.entityName = {
+      $regex: getRegexForSearch(searchString),
+      $options: 'i',
+    };
     const debtors = await Debtor.find(queryFilter)
       .select('_id entityName')
       .lean();
@@ -209,7 +219,10 @@ const getTaskList = async ({
         $or: [{ assigneeId: userId }, { createdById: userId }],
       };
     }
-    queryFilter.description = { $regex: searchString, $options: 'i' };
+    queryFilter.description = {
+      $regex: getRegexForSearch(searchString),
+      $options: 'i',
+    };
     const tasks = await Task.find(queryFilter).select('_id description').lean();
     tasks.forEach((task) => {
       task.title = task.description;
@@ -251,7 +264,10 @@ const getApplicationList = async ({
     } else {
       queryFilter.clientId = clientId;
     }
-    queryFilter.applicationId = { $regex: searchString, $options: 'i' };
+    queryFilter.applicationId = {
+      $regex: getRegexForSearch(searchString),
+      $options: 'i',
+    };
     const applications = await Application.find(queryFilter)
       .select('_id applicationId status applicationStage')
       .lean();
@@ -276,7 +292,7 @@ const getClientDebtorList = async ({ searchString, clientId }) => {
       isActive: true,
       clientId: mongoose.Types.ObjectId(clientId),
       creditLimit: { $exists: true, $ne: null },
-      entityName: { $regex: searchString, $options: 'i' },
+      entityName: { $regex: getRegexForSearch(searchString), $options: 'i' },
     };
     const debtors = await ClientDebtor.find(queryFilter)
       .select('_id entityName')

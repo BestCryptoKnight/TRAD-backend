@@ -18,7 +18,10 @@ const Logger = require('./../services/logger');
 const MailHelper = require('./../helper/mailer.helper');
 const RssHelper = require('./../helper/rss.helper');
 const StaticFile = require('./../static-files/moduleColumn');
-const { addAuditLog } = require('./../helper/audit-log.helper');
+const {
+  addAuditLog,
+  getRegexForSearch,
+} = require('./../helper/audit-log.helper');
 const { getUserList } = require('./../helper/user.helper');
 const {
   getClientDebtorDetails,
@@ -298,9 +301,24 @@ router.get('/user/:clientId', async function (req, res) {
     if (req.query.search) {
       queryFilter = Object.assign({}, queryFilter, {
         $or: [
-          { name: { $regex: req.query.search.trim(), $options: 'i' } },
-          { email: { $regex: req.query.search.trim(), $options: 'i' } },
-          { contactNumber: { $regex: req.query.search.trim(), $options: 'i' } },
+          {
+            name: {
+              $regex: getRegexForSearch(req.query.search),
+              $options: 'i',
+            },
+          },
+          {
+            email: {
+              $regex: getRegexForSearch(req.query.search),
+              $options: 'i',
+            },
+          },
+          {
+            contactNumber: {
+              $regex: getRegexForSearch(req.query.search),
+              $options: 'i',
+            },
+          },
         ],
       });
     }

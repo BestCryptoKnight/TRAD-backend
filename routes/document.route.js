@@ -25,7 +25,11 @@ const {
   createZipFile,
   downloadDocument,
 } = require('./../helper/static-file.helper');
-const { addAuditLog, getEntityName } = require('./../helper/audit-log.helper');
+const {
+  addAuditLog,
+  getEntityName,
+  getRegexForSearch,
+} = require('./../helper/audit-log.helper');
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
@@ -347,19 +351,19 @@ router.get('/:entityId', async function (req, res) {
           $or: [
             {
               'documentTypeId.documentTitle': {
-                $regex: `${req.query.search}`,
+                $regex: getRegexForSearch(req.query.search),
                 $options: 'i',
               },
             },
             {
               description: {
-                $regex: `${req.query.search}`,
+                $regex: getRegexForSearch(req.query.search),
                 $options: 'i',
               },
             },
             {
               originalFileName: {
-                $regex: `${req.query.search}`,
+                $regex: getRegexForSearch(req.query.search),
                 $options: 'i',
               },
             },

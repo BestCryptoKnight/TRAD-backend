@@ -15,7 +15,10 @@ const config = require('../config');
 const MailHelper = require('./../helper/mailer.helper');
 const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
-const { addAuditLog } = require('./../helper/audit-log.helper');
+const {
+  addAuditLog,
+  getRegexForSearch,
+} = require('./../helper/audit-log.helper');
 
 /**
  * Gets the List of Module Access
@@ -260,7 +263,10 @@ router.get('/', async function (req, res) {
       sortingOptions[req.query.sortBy] = req.query.sortOrder;
     }
     if (req.query.search)
-      queryFilter.name = { $regex: req.query.search, $options: 'i' };
+      queryFilter.name = {
+        $regex: getRegexForSearch(req.query.search),
+        $options: 'i',
+      };
     if (req.query.role) {
       queryFilter.role = req.query.role;
     }

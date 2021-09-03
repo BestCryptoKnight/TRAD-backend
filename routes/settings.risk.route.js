@@ -21,7 +21,10 @@ const {
   getEntityDetailsByNZBN,
 } = require('./../helper/abr.helper');
 const { fetchCreditReport } = require('./../helper/illion.helper');
-const { addAuditLog } = require('./../helper/audit-log.helper');
+const {
+  addAuditLog,
+  getRegexForSearch,
+} = require('./../helper/audit-log.helper');
 
 /**
  * Get Column Names
@@ -505,8 +508,12 @@ router.get('/document-type', async function (req, res) {
     if (req.query.sortBy && req.query.sortOrder) {
       sortingOptions[req.query.sortBy] = req.query.sortOrder;
     }
-    if (req.query.search)
-      queryFilter.name = { $regex: req.query.search, $options: 'i' };
+    if (req.query.search) {
+      queryFilter.name = {
+        $regex: getRegexForSearch(req.query.search),
+        $options: 'i',
+      };
+    }
     const option = {
       page: parseInt(req.query.page) || 1,
       limit: parseInt(req.query.limit) || 5,

@@ -13,7 +13,7 @@ const CreditReport = mongoose.model('credit-report');
  * Local Imports
  * */
 const Logger = require('./../services/logger');
-const { addAuditLog } = require('./audit-log.helper');
+const { addAuditLog, getRegexForSearch } = require('./audit-log.helper');
 const StaticData = require('./../static-files/staticData.json');
 const { formatString } = require('./overdue.helper');
 const { addNotification } = require('./notification.helper');
@@ -331,7 +331,10 @@ const getDebtorListWithDetails = async ({
       }
     }
     if (requestedQuery.search) {
-      queryFilter.entityName = { $regex: requestedQuery.search, $options: 'i' };
+      queryFilter.entityName = {
+        $regex: getRegexForSearch(requestedQuery.search),
+        $options: 'i',
+      };
     }
     const fields = debtorColumn.map((i) => {
       if (addressFields.includes(i)) {

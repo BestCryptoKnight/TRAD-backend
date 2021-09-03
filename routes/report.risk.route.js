@@ -5,10 +5,6 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const User = mongoose.model('user');
-const Task = mongoose.model('task');
-const Client = mongoose.model('client');
-const Debtor = mongoose.model('debtor');
-const Application = mongoose.model('application');
 
 /*
  * Local Imports

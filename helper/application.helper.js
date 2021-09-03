@@ -31,7 +31,7 @@ const {
   getEntityDetailsByABN,
   getEntityDetailsByNZBN,
 } = require('./abr.helper');
-const { addAuditLog } = require('./audit-log.helper');
+const { addAuditLog, getRegexForSearch } = require('./audit-log.helper');
 const { storeStakeholderDetails } = require('./stakeholder.helper');
 const { createTask } = require('./task.helper');
 const { addNotification } = require('./notification.helper');
@@ -100,7 +100,7 @@ const getApplicationList = async ({
     }
     if (requestedQuery.search) {
       queryFilter.applicationId = {
-        $regex: `${requestedQuery.search}`,
+        $regex: getRegexForSearch(requestedQuery.search),
         $options: 'i',
       };
     }

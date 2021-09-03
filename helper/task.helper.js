@@ -12,6 +12,7 @@ const Application = mongoose.model('application');
  * Local Imports
  * */
 const Logger = require('./../services/logger');
+const { getRegexForSearch } = require('./audit-log.helper');
 
 const createTask = async ({
   description,
@@ -141,7 +142,7 @@ const aggregationQuery = async ({
       : false;
     if (requestedQuery.search) {
       queryFilter.description = {
-        $regex: `${requestedQuery.search}`,
+        $regex: getRegexForSearch(requestedQuery.search),
         $options: 'i',
       };
     }

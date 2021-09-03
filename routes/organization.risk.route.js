@@ -3,7 +3,6 @@
  * */
 const express = require('express');
 const router = express.Router();
-const jwt = require('jsonwebtoken');
 let mongoose = require('mongoose');
 let Organization = mongoose.model('organization');
 const User = mongoose.model('user');
@@ -11,8 +10,6 @@ const User = mongoose.model('user');
 /*
  * Local Imports
  * */
-const config = require('../config');
-const MailHelper = require('./../helper/mailer.helper');
 const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/systemModules');
 

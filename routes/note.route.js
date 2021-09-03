@@ -11,7 +11,11 @@ const Application = mongoose.model('application');
  * Local Imports
  * */
 const Logger = require('./../services/logger');
-const { addAuditLog, getEntityName } = require('./../helper/audit-log.helper');
+const {
+  addAuditLog,
+  getEntityName,
+  getRegexForSearch,
+} = require('./../helper/audit-log.helper');
 const { addNote } = require('./../helper/note.helper');
 
 /**
@@ -172,7 +176,10 @@ router.get('/:entityId', async function (req, res) {
     }
 
     if (req.query.search) {
-      query.description = { $regex: `${req.query.search}`, $options: 'i' };
+      query.description = {
+        $regex: getRegexForSearch(req.query.search),
+        $options: 'i',
+      };
     }
     aggregationQuery.unshift({ $match: query });
     const notes = await Note.aggregate(aggregationQuery).allowDiskUse(true);
