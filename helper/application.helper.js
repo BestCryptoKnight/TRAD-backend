@@ -40,7 +40,7 @@ const { formatString } = require('./overdue.helper');
 const { generateDecisionLetter } = require('./pdf-generator.helper');
 const { sendMail } = require('./mailer.helper');
 const { addNote } = require('./note.helper');
-const { addEntitiesToAlertProfile } = require('./alert.helper');
+const { checkForEntityInProfile } = require('./alert.helper');
 
 //TODO add filter for expiry-date + credit-limit
 const getApplicationList = async ({
@@ -1135,6 +1135,14 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
         userId,
         status: 'APPROVED',
       });
+      //TODO uncomment to add in alert profile
+      /*if (application?.debtorId) {
+        checkForEntityInProfile({
+          action: 'add',
+          entityType: 'debtor',
+          entityId: application.debtorId,
+        });
+      }*/
     } else {
       //TODO create Task + send Notification
       update.status = 'REVIEW_APPLICATION';
@@ -1202,10 +1210,6 @@ const generateNewApplication = async ({
         userId: createdById,
         userType: createdByType,
       });
-      //TODO uncomment to add entity into alert profile
-      /*if (applicationData?.debtorId) {
-        addEntitiesToAlertProfile({ debtorId: applicationData.debtorId });
-      }*/
     }
     return application;
   } catch (e) {
@@ -1290,6 +1294,8 @@ const sendNotificationsToUser = async ({
   userType,
   userName = null,
   status,
+  notifyUser = true,
+  notifyClient = true,
 }) => {
   try {
     const client = await Client.findOne({ _id: application.clientId }).lean();
@@ -1301,7 +1307,7 @@ const sendNotificationsToUser = async ({
         userType: 'system',
         logDescription: `An application ${application.applicationId} is being approved`,
       });
-      if (application.clientId) {
+      if (application.clientId && notifyClient) {
         const clientNotification = await addNotification({
           userId: application.clientId,
           userType: 'client-user',
@@ -1320,7 +1326,7 @@ const sendNotificationsToUser = async ({
           });
         }
       }
-      if (client?.riskAnalystId) {
+      if (client?.riskAnalystId && notifyUser) {
         const userNotification = await addNotification({
           userId: client.riskAnalystId,
           userType: 'user',

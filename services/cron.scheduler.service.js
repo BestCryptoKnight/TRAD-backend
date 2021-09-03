@@ -100,10 +100,10 @@ const scheduler = async () => {
     );
 
     //TODO uncomment after to retrieve alert list
-    /* /!*
+    /*
     Retrieve Alert List
-     *!/
-    cron.schedule(
+     */
+    /*cron.schedule(
       config.illion.cronString,
       async () => {
         Logger.log.trace(
@@ -125,7 +125,10 @@ const scheduler = async () => {
         console.log(start);
         end = new Date(end.toString().split('GMT')[0] + ' UTC').toISOString();
         console.log(end);*!/
-        await retrieveAlertListFromIllion({ startDate: start, endDate: end });
+        await retrieveAlertListFromIllion({
+          startDate: '2021-07-29T18:30:00.000Z',
+          endDate: '2021-08-11T04:51:00.006Z',
+        });
       },
       {
         scheduled: true,

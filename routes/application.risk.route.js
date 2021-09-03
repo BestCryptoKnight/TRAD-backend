@@ -48,6 +48,7 @@ const { generateExcel } = require('../helper/excel.helper.js');
 const {
   listEntitySpecificAlerts,
   getAlertDetail,
+  checkForEntityInProfile,
 } = require('./../helper/alert.helper');
 const { checkForEndorsedLimit } = require('./../helper/policy.helper');
 const { getUserList } = require('./../helper/user.helper');
@@ -1216,6 +1217,16 @@ router.put('/:applicationId', async function (req, res) {
           { _id: application.clientDebtorId },
           update,
         );
+        //TODO uncomment to add in alert profile
+        /*if (!update.isEndorsedLimit) {
+          if (application?.debtorId) {
+            checkForEntityInProfile({
+              action: 'add',
+              entityType: 'debtor',
+              entityId: application.debtorId,
+            });
+          }
+        }*/
       } else if (
         req.body.status === 'DECLINED' ||
         req.body.status === 'CANCELLED' ||

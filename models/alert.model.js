@@ -19,6 +19,7 @@ const alertSchema = new Schema(
     alertType: { type: Schema.Types.String },
     alertCategory: { type: Schema.Types.String },
     alertPriority: { type: Schema.Types.String },
+    alertDate: { type: Schema.Types.Date },
     companyNumbers: { type: Schema.Types.Mixed },
     companyName: { type: Schema.Types.String },
     countryCode: { type: Schema.Types.String },

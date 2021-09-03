@@ -2670,7 +2670,9 @@
       "alertTypeId": "1",
       "alertCode": "CourtAction",
       "description": "Court Action",
-      "category": "Court Action Events Alerts"
+      "category": "Court Action Events Alerts",
+      "fieldName": "courtDetailsChange",
+      "alertFields": []
     },
     "3": {
       "alertTypeId": "3",
@@ -2682,7 +2684,9 @@
       "alertTypeId": "4",
       "alertCode": "Collections",
       "description": "Collections",
-      "category": "New Collections Records Alerts"
+      "category": "New Collections Records Alerts",
+      "fieldName": "collectionChange",
+      "alertFields": []
     },
     "5": {
       "alertTypeId": "5",
@@ -2790,19 +2794,25 @@
       "alertTypeId": "47",
       "alertCode": "ASICCompanyStatus",
       "description": "ASIC Company Status",
-      "category": "Change in Company Registered Status Alerts"
+      "category": "Change in Company Registered Status Alerts",
+      "fieldName": "statusChange",
+      "alertFields": []
     },
     "48": {
       "alertTypeId": "48",
       "alertCode": "NZCOCompanyStatus",
       "description": "NZCO Company Status",
-      "category": "Change in Company Registered Status Alerts"
+      "category": "Change in Company Registered Status Alerts",
+      "fieldName": "statusChange",
+      "alertFields": []
     },
     "49": {
       "alertTypeId": "49",
       "alertCode": "ABNStatus",
       "description": "ABN Status",
-      "category": "Change in Company/Business ABN Status Alerts"
+      "category": "Change in Company/Business ABN Status Alerts",
+      "fieldName": "abnStatusChange",
+      "alertFields": []
     },
     "121": {
       "alertTypeId": "121",
@@ -2820,37 +2830,49 @@
       "alertTypeId": "276",
       "alertCode": "FR_Downgrade_High",
       "description": "Failure Risk Score Downgrade to High",
-      "category": "Failure Risk Score Moves to a Higher Risk (Lower Score) Band Alerts"
+      "category": "Failure Risk Score Moves to a Higher Risk (Lower Score) Band Alerts",
+      "fieldName": "scoreChange",
+      "alertFields": []
     },
     "277": {
       "alertTypeId": "277",
       "alertCode": "FR_Downgrade_VeryHigh",
       "description": "Failure Risk Score Downgrade to VeryHigh",
-      "category": "Failure Risk Score Moves to a Higher Risk (Lower Score) Band Alerts"
+      "category": "Failure Risk Score Moves to a Higher Risk (Lower Score) Band Alerts",
+      "fieldName": "scoreChange",
+      "alertFields": []
     },
     "278": {
       "alertTypeId": "278",
       "alertCode": "FR_Downgrade_Severe",
       "description": "Failure Risk Score Downgrade to Severe",
-      "category": "Failure Risk Score Moves to a Higher Risk (Lower Score) Band Alerts"
+      "category": "Failure Risk Score Moves to a Higher Risk (Lower Score) Band Alerts",
+      "fieldName": "scoreChange",
+      "alertFields": []
     },
     "292": {
       "alertTypeId": "292",
       "alertCode": "LPR_Downgrade_High",
       "description": "Late Payment Risk Score Downgrade to High",
-      "category": "Late Payment Risk Score Moves to a Higher Risk (Lower Score) Band Alerts"
+      "category": "Late Payment Risk Score Moves to a Higher Risk (Lower Score) Band Alerts",
+      "fieldName": "scoreChange",
+      "alertFields": []
     },
     "293": {
       "alertTypeId": "293",
       "alertCode": "LPR_Downgrade_VeryHigh",
       "description": "Late Payment Risk Score Downgrade to VeryHigh",
-      "category": "Late Payment Risk Score Moves to a Higher Risk (Lower Score) Band Alerts"
+      "category": "Late Payment Risk Score Moves to a Higher Risk (Lower Score) Band Alerts",
+      "fieldName": "scoreChange",
+      "alertFields": []
     },
     "294": {
       "alertTypeId": "294",
       "alertCode": "LPR_Downgrade_Severe",
       "description": "Late Payment Risk Score Downgrade to Severe",
-      "category": "Late Payment Risk Score Moves to a Higher Risk (Lower Score) Band Alerts"
+      "category": "Late Payment Risk Score Moves to a Higher Risk (Lower Score) Band Alerts",
+      "fieldName": "scoreChange",
+      "alertFields": []
     }
   }
 }

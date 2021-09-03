@@ -21,6 +21,7 @@ const {
   createTaskOnAlert,
   updateEntitiesToAlertProfile,
 } = require('./debtor.helper');
+const StaticData = require('./../static-files/staticData.json');
 
 const retrieveAlertListFromIllion = async ({ startDate, endDate }) => {
   try {
@@ -46,8 +47,10 @@ const retrieveAlertListFromIllion = async ({ startDate, endDate }) => {
       illionAlertProfile: organization.illionAlertProfile,
       integration: organization.integration,
     });
+    const debtorABN = [];
+    const debtorACN = [];
     if (response && response.alerts.length !== 0) {
-      const debtorABN = [];
+      /*const debtorABN = [];
       const debtorACN = [];
       const monitoringArray = [];
       response.alerts.forEach((i) => {
@@ -59,17 +62,83 @@ const retrieveAlertListFromIllion = async ({ startDate, endDate }) => {
             ? debtorACN.push(i.entity.companyNumbers.acn)
             : debtorACN.push(i.entity.companyNumbers.ncn);
         }
-      });
-      const detailedResponse = await retrieveDetailedAlertList({
-        startDate,
-        endDate,
-        monitoringArray,
-        illionAlertProfile: organization.illionAlertProfile,
-        integration: organization.integration,
-      });
-      console.log('detailedResponse', detailedResponse);
+      });*/
+      const alertList = [];
+      let alertResponse = {};
+      for (let i = 0; i < response.alerts.length; i++) {
+        const detailedResponse = await retrieveDetailedAlertList({
+          startDate,
+          endDate,
+          monitoringArray: [
+            { duns: response.alerts[i].entity.companyNumbers.duns },
+          ],
+          illionAlertProfile: organization.illionAlertProfile,
+          integration: organization.integration,
+        });
+        if (
+          detailedResponse?.detailedAlerts &&
+          detailedResponse.detailedAlerts.length !== 0
+        ) {
+          for (let j = 0; j < detailedResponse.detailedAlerts.length; j++) {
+            detailedResponse.detailedAlerts[j] = JSON.parse(
+              JSON.stringify(detailedResponse.detailedAlerts[j]),
+            );
+            alertResponse = {};
+            alertResponse['companyNumbers'] =
+              detailedResponse.detailedAlerts[j]['companyNumbers'];
+            alertResponse['companyName'] =
+              detailedResponse.detailedAlerts[j]['companyName'];
+            alertResponse['countryCode'] =
+              detailedResponse.detailedAlerts[j]['countryCode'];
+            for (let k = 0; k < response.alerts[i].alerts.length; k++) {
+              const alertDetails =
+                StaticData.AlertList[response.alerts[i].alerts[k].alertId];
+              // console.log('alertDetails', alertDetails);
+              if (
+                alertDetails?.fieldName &&
+                detailedResponse.detailedAlerts[j][alertDetails.fieldName]
+                  .length !== 0
+              ) {
+                for (
+                  let l = 0;
+                  l <
+                  detailedResponse.detailedAlerts[j][alertDetails.fieldName]
+                    .length;
+                  l++
+                ) {
+                  detailedResponse.detailedAlerts[j][alertDetails.fieldName][l][
+                    'alertDetails'
+                  ] =
+                    detailedResponse.detailedAlerts[j][alertDetails.fieldName][
+                      l
+                    ]['alertDetails'];
+                  for (let key in detailedResponse.detailedAlerts[j][
+                    alertDetails.fieldName
+                  ][l]['alertDetails']) {
+                    alertResponse[key] =
+                      detailedResponse.detailedAlerts[j][
+                        alertDetails.fieldName
+                      ][l]['alertDetails'][key];
+                  }
+                  alertResponse[alertDetails.fieldName] =
+                    detailedResponse.detailedAlerts[j][alertDetails.fieldName][
+                      l
+                    ];
+                  alertList.push(alertResponse);
+                }
+              }
+            }
+          }
+        }
+      }
+      console.log('detailedResponse', alertList);
+      console.log('detailedResponse', alertList[0]);
+      console.log('detailedResponse', alertList[0].statusChange);
+
+      const mappedResponse = await mapEntityToAlert({ alertList });
+      // fs.writeFileSync('output1.json', JSON.stringify(alertList));
       //TODO send notification + create a task
-      await createTaskOnAlert({ debtorACN, debtorABN });
+      // await createTaskOnAlert({ debtorACN, debtorABN });
     }
   } catch (e) {
     Logger.log.error('Error occurred in retrieve alert list from illion');
@@ -293,6 +362,7 @@ const checkForEntityInProfile = async ({ entityType, entityId, action }) => {
     const response = await getMonitoredEntities();
     let lookupMethod;
     let lookupValue;
+    const entityList = [];
     if (entityType === 'debtor') {
       const debtor = await Debtor.findOne({ _id: entityId }).lean();
       if (
@@ -311,7 +381,74 @@ const checkForEntityInProfile = async ({ entityType, entityId, action }) => {
             : debtor.abn
             ? debtor.abn
             : debtor.acn;
-        if (action === 'remove') {
+        if (action === 'add') {
+          if (
+            debtor.entityType !== 'TRUST' &&
+            debtor.entityType !== 'PARTNERSHIP'
+          ) {
+            if (lookupValue) {
+              const foundEntity = response.monitoredEntities.find((i) => {
+                return (
+                  i.companyNumbers[lookupMethod.toLowerCase()] === lookupValue
+                );
+              });
+              if (!foundEntity) {
+                /*updateEntitiesToAlertProfile({
+                  entityList: [
+                    {
+                      lookupMethod: lookupMethod,
+                      lookupValue: lookupValue,
+                    },
+                  ],
+                  action: 'add',
+                });*/
+                entityList.push({
+                  lookupMethod: lookupMethod,
+                  lookupValue: lookupValue,
+                });
+              }
+            }
+          } else {
+            const stakeholders = await DebtorDirector.find({
+              debtorId: debtor._id,
+              isDeleted: false,
+              type: 'company',
+            }).lean();
+            for (let i = 0; i < stakeholders.length; i++) {
+              if (
+                stakeholders[i].country.code === 'AUS' ||
+                stakeholders[i].country.code === 'NZL'
+              ) {
+                lookupMethod =
+                  stakeholders[i].country.code === 'NZL'
+                    ? 'NCN'
+                    : stakeholders[i].abn
+                    ? 'ABN'
+                    : 'ACN';
+                lookupValue =
+                  stakeholders[i].country.code === 'NZL'
+                    ? stakeholders[i].acn
+                    : stakeholders[i].abn
+                    ? stakeholders[i].abn
+                    : stakeholders[i].acn;
+                if (lookupValue) {
+                  const foundEntity = response.monitoredEntities.find((i) => {
+                    return (
+                      i.companyNumbers[lookupMethod.toLowerCase()] ===
+                      lookupValue
+                    );
+                  });
+                  if (!foundEntity) {
+                    entityList.push({
+                      lookupMethod: lookupMethod,
+                      lookupValue: lookupValue,
+                    });
+                  }
+                }
+              }
+            }
+          }
+        } else {
           const creditLimit = await ClientDebtor.findOne({
             isActive: true,
             debtorId: debtor._id,
@@ -321,7 +458,7 @@ const checkForEntityInProfile = async ({ entityType, entityId, action }) => {
               debtor.entityType !== 'TRUST' &&
               debtor.entityType !== 'PARTNERSHIP'
             ) {
-              updateEntitiesToAlertProfile({
+              /*updateEntitiesToAlertProfile({
                 entityList: [
                   {
                     lookupMethod: lookupMethod,
@@ -329,6 +466,10 @@ const checkForEntityInProfile = async ({ entityType, entityId, action }) => {
                   },
                 ],
                 action,
+              });*/
+              entityList.push({
+                lookupMethod: lookupMethod,
+                lookupValue: lookupValue,
               });
             } else {
               const stakeholders = await DebtorDirector.find({
@@ -380,7 +521,7 @@ const checkForEntityInProfile = async ({ entityType, entityId, action }) => {
               lookupMethod,
             });
             if (!foundEntity) {
-              updateEntitiesToAlertProfile({
+              /*updateEntitiesToAlertProfile({
                 entityList: [
                   {
                     lookupMethod: lookupMethod,
@@ -388,6 +529,10 @@ const checkForEntityInProfile = async ({ entityType, entityId, action }) => {
                   },
                 ],
                 action,
+              });*/
+              entityList.push({
+                lookupMethod: lookupMethod,
+                lookupValue: lookupValue,
               });
             }
           }
@@ -397,7 +542,7 @@ const checkForEntityInProfile = async ({ entityType, entityId, action }) => {
             : { acn: stakeholder.acn };
           const anotherStakeholder = await DebtorDirector.findOne(query).lean();
           if (!anotherStakeholder) {
-            updateEntitiesToAlertProfile({
+            /* updateEntitiesToAlertProfile({
               entityList: [
                 {
                   lookupMethod: lookupMethod,
@@ -405,10 +550,18 @@ const checkForEntityInProfile = async ({ entityType, entityId, action }) => {
                 },
               ],
               action,
+            });*/
+            entityList.push({
+              lookupMethod: lookupMethod,
+              lookupValue: lookupValue,
             });
           }
         }
       }
+    }
+    if (entityList.length !== 0) {
+      console.log('entityList ::', entityList);
+      updateEntitiesToAlertProfile({ entityList, action });
     }
   } catch (e) {
     Logger.log.error('Error occurred in check entity in alert profile');
@@ -424,6 +577,40 @@ const filterEntity = ({ monitoredEntities, lookupMethod, lookupValue }) => {
     return foundEntity;
   } catch (e) {
     Logger.log.error('Error occurred in filter entity from list');
+    Logger.log.error(e);
+  }
+};
+
+const mapEntityToAlert = async ({ alertList }) => {
+  try {
+    let query = {};
+    const promises = [];
+    for (let i = 0; i < alertList.length; i++) {
+      query = {};
+      query[
+        alertList[i].companyNumbers.abn
+          ? 'abn'
+          : alertList[i].companyNumbers.acn
+          ? 'acn'
+          : 'abn'
+      ] = alertList[i].companyNumbers.abn
+        ? alertList[i].companyNumbers.abn
+        : alertList[i].companyNumbers.acn
+        ? alertList[i].companyNumbers.acn
+        : alertList[i].companyNumbers.ncn;
+      const [debtor, stakeholder] = await Promise.all([
+        Debtor.findOne(query).select('_id').lean(),
+        DebtorDirector.findOne(query).select('_id debtorId').lean(),
+      ]);
+      alertList[i].entityId = stakeholder ? stakeholder?._id : debtor?._id;
+      alertList[i].entityType = stakeholder ? 'debtor-director' : 'debtor';
+      alertList[i].debtorId = stakeholder ? stakeholder?.debtorId : null;
+      promises.push(Alert.create(alertList[i]));
+    }
+    const response = await Promise.all(promises);
+    return alertList;
+  } catch (e) {
+    Logger.log.error('Error occurred in map entity to alerts');
     Logger.log.error(e);
   }
 };

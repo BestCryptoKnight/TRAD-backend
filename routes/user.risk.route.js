@@ -468,8 +468,9 @@ router.put('/:userId', async function (req, res) {
     let updateObj = {};
     const user = await User.findById(req.params.userId).lean();
     if (req.body.name) updateObj.name = req.body.name;
-    if (req.body.maxCreditLimit)
-      updateObj.maxCreditLimit = req.body.maxCreditLimit;
+    updateObj.maxCreditLimit = req.body.maxCreditLimit
+      ? req.body.maxCreditLimit
+      : null;
     updateObj.contactNumber = req.body.contactNumber
       ? req.body.contactNumber
       : '';
