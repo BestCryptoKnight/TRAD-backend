@@ -9,6 +9,7 @@ const User = mongoose.model('user');
 const Document = mongoose.model('document');
 const ClientDebtor = mongoose.model('client-debtor');
 const Application = mongoose.model('application');
+const DocumentType = mongoose.model('document-type');
 
 /*
  * Local Imports
@@ -166,6 +167,35 @@ router.get('/download', async function (req, res) {
 });
 
 /**
+ * Get Document Type List
+ */
+router.get('/document-type-list', async function (req, res) {
+  if (!req.query.listFor) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const query = {
+      isDeleted: false,
+      documentFor: req.query.listFor.toLowerCase(),
+    };
+    const documentTypes = await DocumentType.find(query)
+      .select('_id documentTitle')
+      .lean();
+    res.status(200).send({ status: 'SUCCESS', data: documentTypes });
+  } catch (e) {
+    Logger.log.error('Error occurred in get document types ', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
  * Get Document list
  */
 router.get('/:entityId', async function (req, res) {
@@ -193,8 +223,7 @@ router.get('/:entityId', async function (req, res) {
     let sortingOptions = {};
     req.query.sortBy = req.query.sortBy || '_id';
     req.query.sortOrder = req.query.sortOrder || 'desc';
-    // req.query.limit = req.query.limit || 5;
-    // req.query.page = req.query.page || 1;
+
     sortingOptions[req.query.sortBy] = req.query.sortOrder === 'desc' ? -1 : 1;
 
     if (req.query.documentFor === 'application') {
@@ -208,6 +237,19 @@ router.get('/:entityId', async function (req, res) {
       const application = await Application.findOne({
         _id: req.params.entityId,
       });
+      const conditions = [
+        {
+          uploadByType: 'client-user',
+          uploadById: mongoose.Types.ObjectId(application.clientId),
+        },
+        { uploadByType: 'user', isPublic: true },
+      ];
+      if (req.user._id) {
+        conditions.push({
+          uploadByType: 'user',
+          uploadById: mongoose.Types.ObjectId(req.user._id),
+        });
+      }
       query = {
         $and: [
           { isDeleted: false },
@@ -215,17 +257,7 @@ router.get('/:entityId', async function (req, res) {
             entityRefId: mongoose.Types.ObjectId(req.params.entityId),
           },
           {
-            $or: [
-              {
-                uploadByType: 'client-user',
-                uploadById: mongoose.Types.ObjectId(application.clientId),
-              },
-              { uploadByType: 'user', isPublic: true },
-              {
-                uploadByType: 'user',
-                uploadById: mongoose.Types.ObjectId(req.user._id),
-              },
-            ],
+            $or: conditions,
           },
         ],
       };

@@ -1147,6 +1147,7 @@ router.put('/:applicationId', async function (req, res) {
       });
     }
     const applicationUpdate = {};
+    let logDescription = `An application ${application.applicationId} is updated by ${req.user.name}`;
 
     if (req.body.update === 'field') {
       if (req.body.expiryDate) {
@@ -1243,10 +1244,12 @@ router.put('/:applicationId', async function (req, res) {
         );
       }
 
-      if (req.body.comments) {
-        applicationUpdate.comments = req.body.description;
-      }
       if (req.body.status === 'APPROVED' || req.body.status === 'DECLINED') {
+        applicationUpdate.comments = req.body.comments || '';
+        logDescription = `An application ${
+          application.applicationId
+        } is ${req.body.status.toLowerCase()} by ${req.user.name}`;
+
         sendNotificationsToUser({
           userName: req.user.name,
           userId: req.user._id,
@@ -1274,7 +1277,7 @@ router.put('/:applicationId', async function (req, res) {
       actionType: 'edit',
       userType: 'user',
       userRefId: req.user._id,
-      logDescription: `An application ${application.applicationId} is updated by ${req.user.name}`,
+      logDescription: logDescription,
     });
     res.status(200).send({
       status: 'SUCCESS',

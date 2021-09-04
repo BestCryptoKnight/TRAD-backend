@@ -83,9 +83,21 @@ const getRegexForSearch = (search) => {
   }
 };
 
+const formatString = (text) => {
+  try {
+    return text.replace(/_/g, ' ').replace(/\w\S*/g, function (txt) {
+      return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in format string');
+    Logger.log.error(e.message || e);
+  }
+};
+
 module.exports = {
   addAuditLog,
   getAuditLogs,
   getEntityName,
   getRegexForSearch,
+  formatString,
 };

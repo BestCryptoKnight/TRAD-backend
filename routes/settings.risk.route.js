@@ -24,6 +24,8 @@ const { fetchCreditReport } = require('./../helper/illion.helper');
 const {
   addAuditLog,
   getRegexForSearch,
+  formatString,
+  getAuditLogs,
 } = require('./../helper/audit-log.helper');
 
 /**
@@ -494,6 +496,46 @@ router.get('/audit-logs', async function (req, res) {
 });
 
 /**
+ * Get Entity Specific Logs
+ */
+router.get('/audit-logs/:entityId', async function (req, res) {
+  if (
+    !req.params.entityId ||
+    !mongoose.Types.ObjectId.isValid(req.params.entityId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const application = await Application.findById(req.params.entityId).lean();
+    if (!application) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'NO_APPLICATION_FOUND',
+        message: 'No application found',
+      });
+    }
+    const response = await getAuditLogs({ entityId: application._id });
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: response,
+    });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in get application modules data ',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
  * Get Document Types
  */
 router.get('/document-type', async function (req, res) {
@@ -545,6 +587,7 @@ router.get('/document-type', async function (req, res) {
       documentTypes.docs.length !== 0
     ) {
       documentTypes.docs.forEach((document) => {
+        document.documentFor = formatString(document.documentFor);
         delete document.id;
       });
     }

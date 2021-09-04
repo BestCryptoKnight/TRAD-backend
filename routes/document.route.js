@@ -213,13 +213,13 @@ router.get('/:entityId', async function (req, res) {
     let sortingOptions = {};
     req.query.sortBy = req.query.sortBy || '_id';
     req.query.sortOrder = req.query.sortOrder || 'desc';
-    req.query.limit = req.query.limit || 5;
-    req.query.page = req.query.page || 1;
+
     sortingOptions[req.query.sortBy] = req.query.sortOrder === 'desc' ? -1 : 1;
 
     if (req.query.documentFor === 'application') {
       documentColumn = documentColumn || {};
       documentColumn.columns = [
+        '_id',
         'documentTypeId',
         'description',
         'uploadById',
@@ -228,6 +228,19 @@ router.get('/:entityId', async function (req, res) {
       const application = await Application.findOne({
         _id: req.params.entityId,
       });
+      const conditions = [
+        {
+          uploadByType: 'client-user',
+          uploadById: mongoose.Types.ObjectId(application.clientId),
+        },
+        { uploadByType: 'user', isPublic: true },
+      ];
+      if (req.user._id) {
+        conditions.push({
+          uploadByType: 'user',
+          uploadById: mongoose.Types.ObjectId(req.user._id),
+        });
+      }
       query = {
         $and: [
           { isDeleted: false },
@@ -235,17 +248,7 @@ router.get('/:entityId', async function (req, res) {
             entityRefId: mongoose.Types.ObjectId(req.params.entityId),
           },
           {
-            $or: [
-              {
-                uploadByType: 'client-user',
-                uploadById: mongoose.Types.ObjectId(application.clientId),
-              },
-              { uploadByType: 'user', isPublic: true },
-              {
-                uploadByType: 'user',
-                uploadById: mongoose.Types.ObjectId(req.user._id),
-              },
-            ],
+            $or: conditions,
           },
         ],
       };
@@ -386,21 +389,23 @@ router.get('/:entityId', async function (req, res) {
     });
     aggregationQuery.push({ $sort: sortingOptions });
 
-    aggregationQuery.push({
-      $facet: {
-        paginatedResult: [
-          {
-            $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
-          },
-          { $limit: parseInt(req.query.limit) },
-        ],
-        totalCount: [
-          {
-            $count: 'count',
-          },
-        ],
-      },
-    });
+    if (req.query.limit && req.query.page) {
+      aggregationQuery.push({
+        $facet: {
+          paginatedResult: [
+            {
+              $skip: (parseInt(req.query.page) - 1) * parseInt(req.query.limit),
+            },
+            { $limit: parseInt(req.query.limit) },
+          ],
+          totalCount: [
+            {
+              $count: 'count',
+            },
+          ],
+        },
+      });
+    }
 
     aggregationQuery.unshift({ $match: query });
 
@@ -408,6 +413,7 @@ router.get('/:entityId', async function (req, res) {
       true,
     );
     const headers = [];
+    let response = [];
     if (module) {
       for (let i = 0; i < module.manageColumns.length; i++) {
         if (documentColumn.columns.includes(module.manageColumns[i].name)) {
@@ -416,7 +422,10 @@ router.get('/:entityId', async function (req, res) {
       }
     }
     if (documents && documents.length !== 0) {
-      documents[0].paginatedResult.forEach((document) => {
+      response = documents[0]['paginatedResult']
+        ? documents[0]['paginatedResult']
+        : documents;
+      response.forEach((document) => {
         if (documentColumn.columns.includes('documentTypeId')) {
           document.documentTypeId = document.documentTypeId.documentTitle || '';
         }
@@ -425,6 +434,7 @@ router.get('/:entityId', async function (req, res) {
         }
       });
     }
+
     const total =
       documents[0]['totalCount'].length !== 0
         ? documents[0]['totalCount'][0]['count']
