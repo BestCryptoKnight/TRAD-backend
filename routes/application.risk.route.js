@@ -182,22 +182,17 @@ router.get('/entity-list', async function (req, res) {
  * Get Debtor List
  */
 router.get('/debtor-list', async function (req, res) {
-  if (!req.query.searchString) {
-    return res.status(400).send({
-      status: 'ERROR',
-      messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Require fields are missing',
-    });
-  }
   try {
     req.query.page = req.query.page || 1;
     req.query.limit = req.query.limit || 500;
-    const debtors = await Debtor.find({
-      entityName: {
+    const query = {};
+    if (req.query.searchString) {
+      query.entityName = {
         $regex: getRegexForSearch(req.query.searchString),
         $options: 'i',
-      },
-    })
+      };
+    }
+    const debtors = await Debtor.find(query)
       .sort({ entityName: 1 })
       .skip(
         req.query.page
