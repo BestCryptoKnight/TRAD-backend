@@ -28,6 +28,7 @@ const getDebtorList = async () => {
   try {
     const debtors = await Debtor.find({ isActive: true })
       .select('_id entityName abn acn registrationNumber')
+      .limit(500)
       .lean();
     debtors.forEach((debtor) => {
       debtor.name =

@@ -43,7 +43,11 @@ const {
   getApplicationDocumentList,
   getSpecificEntityDocumentList,
 } = require('./../helper/document.helper');
-const { getAuditLogs, addAuditLog } = require('./../helper/audit-log.helper');
+const {
+  getAuditLogs,
+  addAuditLog,
+  getRegexForSearch,
+} = require('./../helper/audit-log.helper');
 const { generateExcel } = require('../helper/excel.helper.js');
 const {
   listEntitySpecificAlerts,
@@ -167,6 +171,63 @@ router.get('/entity-list', async function (req, res) {
     });
   } catch (e) {
     Logger.log.error('Error occurred in get entity list', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Get Debtor List
+ */
+router.get('/debtor-list', async function (req, res) {
+  if (!req.query.searchString) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing',
+    });
+  }
+  try {
+    req.query.page = req.query.page || 1;
+    req.query.limit = req.query.limit || 500;
+    const debtors = await Debtor.find({
+      entityName: {
+        $regex: getRegexForSearch(req.query.searchString),
+        $options: 'i',
+      },
+    })
+      .sort({ entityName: 1 })
+      .skip(
+        req.query.page
+          ? (req.query.page - 1) * req.query.limit
+          : req.query.page,
+      )
+      .limit(req.query.limit / 1)
+      .select('_id entityName abn acn registrationNumber')
+      .lean();
+
+    debtors.forEach((debtor) => {
+      debtor.name =
+        debtor.entityName +
+        ' (' +
+        (debtor.abn
+          ? debtor.abn
+          : debtor.acn
+          ? debtor.acn
+          : debtor.registrationNumber) +
+        ')';
+      delete debtor.entityName;
+      delete debtor.abn;
+      delete debtor.acn;
+    });
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: debtors,
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in get debtor list', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
