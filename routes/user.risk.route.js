@@ -404,9 +404,11 @@ router.post('/', async function (req, res) {
         actionType: 'add',
         logDescription: `A new user ${user.name} is created by ${req.user.name}`,
       });
-      res
-        .status(200)
-        .send({ status: 'SUCCESS', message: 'User created successfully' });
+      res.status(200).send({
+        status: 'SUCCESS',
+        message: 'User created successfully',
+        userId: user._id,
+      });
       await MailHelper.sendMail(mailObj);
       Logger.log.info('Mail sent to new user successfully.');
     }
