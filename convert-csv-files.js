@@ -57,6 +57,7 @@ const activeClientCSV = fs.readFileSync(
   ),
 );
 
+/*Stores CSV file of Client in JSON - one time for the Client - Client Code */
 const storeCSVFileAsJson = async ({ csvData }) => {
   try {
     const jsonArray = await csv().fromString(csvData);
@@ -66,6 +67,7 @@ const storeCSVFileAsJson = async ({ csvData }) => {
   }
 };
 
+/*Application CSV file [t-req-request] to Application JSON */
 const convertApplicationListToJson = async ({ csvData }) => {
   const jsonArray = await csv().fromString(csvData);
   const processDone = {};
@@ -94,6 +96,7 @@ const convertApplicationListToJson = async ({ csvData }) => {
   );
 };
 
+/*Note CSV file [t-seq-note] to Note JSON */
 const noteCSVToJson = async ({ csvData }) => {
   const jsonArray = await csv().fromString(csvData);
   const processDone = {};
@@ -119,6 +122,7 @@ const noteCSVToJson = async ({ csvData }) => {
   fs.writeFileSync('notes.json', JSON.stringify(processDone, null, 3));
 };
 
+/*Common CSVs to JSON */
 const csvToJson = async ({ csvData, fileName }) => {
   const jsonArray = await csv().fromString(csvData);
   const processDone = {};
@@ -144,6 +148,7 @@ const csvToJson = async ({ csvData, fileName }) => {
   fs.writeFileSync(fileName, JSON.stringify(processDone, null, 3));
 };
 
+/*Note Application Question file [t-seq-note] to Application Question JSON */
 const questionCSVToJson = async ({ csvData, fileName }) => {
   const jsonArray = await csv().fromString(csvData);
   const processDone = {};
@@ -167,6 +172,7 @@ const questionCSVToJson = async ({ csvData, fileName }) => {
   fs.writeFileSync(fileName, JSON.stringify(processDone, null, 3));
 };
 
+/*Application CSV file [t-application-details & t-approved-application-details] to Application JSON */
 const applicationCsvToJson = async ({ csvData, fileName }) => {
   const jsonArray = await csv().fromString(csvData);
   const processDone = {};
@@ -187,24 +193,35 @@ const applicationCsvToJson = async ({ csvData, fileName }) => {
   fs.writeFileSync(fileName, JSON.stringify(processDone, null, 3));
 };
 
+/* Comment out below function call to disable creating JSON of the Client & Client Code*/
 storeCSVFileAsJson({ csvData: activeClientCSV.toString() });
-/*noteCSVToJson({ csvData: noteCSV.toString() });
+
+noteCSVToJson({ csvData: noteCSV.toString() });
+
 csvToJson({ csvData: addressCSV.toString(), fileName: 'address-list.json' });
+
 applicationCsvToJson({
   csvData: approvedApplicationCSV.toString(),
   fileName: 'application-approval-details.json',
 });
+
 applicationCsvToJson({
   csvData: applicationDetailsCSV.toString(),
   fileName: 'application-details.json',
 });
+
 csvToJson({ csvData: companyCSV.toString(), fileName: 'company-list.json' });
+
 csvToJson({
   csvData: individualCSV.toString(),
   fileName: 'individual-list.json',
 });
+
 questionCSVToJson({
   csvData: questionAnswerCSV.toString(),
   fileName: 'question-answer.json',
 });
-convertApplicationListToJson({ csvData: applicationCSV.toString() });*/
+
+convertApplicationListToJson({ csvData: applicationCSV.toString() });
+
+// TODO add Promise.all
