@@ -1,58 +1,53 @@
 const path = require('path');
 const fs = require('fs');
 const csv = require('csvtojson');
+const inputFilePath = [__dirname, '..', 'illion_dump_files', 'input_files', 'processed_csv_files_2020-21'];
+const outputFilePath = [__dirname, '..', 'illion_dump_files', 'output_files'];
 
 const noteCSV = fs.readFileSync(
   path.join(
-    __dirname,
-    '../../../Documents/TRAD/Illion Dump/processed_csv_files_2020-21/t_req_note.csv',
+      ...inputFilePath, 't_req_note.csv',
   ),
 );
 const addressCSV = fs.readFileSync(
-  path.join(
-    __dirname,
-    '../../../Documents/TRAD/Illion Dump/processed_csv_files_2020-21/t_req_address.csv',
-  ),
+  path.join(...inputFilePath, 't_req_address.csv'),
 );
 const companyCSV = fs.readFileSync(
-  path.join(
-    __dirname,
-    '../../../Documents/TRAD/Illion Dump/processed_csv_files_2020-21/t_req_company.csv',
+  path.join(...inputFilePath, 't_req_company.csv',
   ),
 );
 const individualCSV = fs.readFileSync(
   path.join(
-    __dirname,
-    '../../../Documents/TRAD/Illion Dump/processed_csv_files_2020-21/t_req_individual.csv',
+      ...inputFilePath, 't_req_individual.csv',
   ),
 );
 const applicationCSV = fs.readFileSync(
   path.join(
-    __dirname,
-    '../../../Documents/TRAD/Illion Dump/processed_csv_files_2020-21/t_req_request.csv',
+    ...inputFilePath,
+    't_req_request.csv',
   ),
 );
 const questionAnswerCSV = fs.readFileSync(
   path.join(
-    __dirname,
-    '../../../Documents/TRAD/Illion Dump/processed_csv_files_2020-21/t_req_question_answer.csv',
+    ...inputFilePath,
+    't_req_question_answer.csv',
   ),
 );
 const approvedApplicationCSV = fs.readFileSync(
   path.join(
-    __dirname,
-    '../../../Documents/TRAD/Illion Dump/processed_csv_files_2020-21/t_tcr_application_approval_details.csv',
+    ...inputFilePath,
+    't_tcr_application_approval_details.csv',
   ),
 );
 const applicationDetailsCSV = fs.readFileSync(
   path.join(
-    __dirname,
-    '../../../Documents/TRAD/Illion Dump/processed_csv_files_2020-21/t_tcr_application_details.csv',
+    ...inputFilePath,
+    't_tcr_application_details.csv',
   ),
 );
 const activeClientCSV = fs.readFileSync(
   path.join(
-    __dirname,
+    ...inputFilePath,
     '../../../Documents/TRAD/Illion Dump/Active-Client-List-28072021.csv',
   ),
 );
@@ -60,8 +55,10 @@ const activeClientCSV = fs.readFileSync(
 /*Stores CSV file of Client in JSON - one time for the Client - Client Code */
 const storeCSVFileAsJson = async ({ csvData }) => {
   try {
+    console.log('started converting for storeCSVFileAsJson');
     const jsonArray = await csv().fromString(csvData);
-    fs.writeFileSync('client.json', JSON.stringify(jsonArray, null, 3));
+    fs.writeFileSync(path.join(...outputFilePath, 'client.json'), JSON.stringify(jsonArray, null, 3));
+    console.log('ended converting for storeCSVFileAsJson');
   } catch (e) {
     console.log('Error occurred in store file', e);
   }
@@ -69,6 +66,7 @@ const storeCSVFileAsJson = async ({ csvData }) => {
 
 /*Application CSV file [t-req-request] to Application JSON */
 const convertApplicationListToJson = async ({ csvData }) => {
+  console.log('started converting for convertApplicationListToJson');
   const jsonArray = await csv().fromString(csvData);
   const processDone = {};
   for (let i = 0; i < jsonArray.length; i++) {
@@ -91,13 +89,15 @@ const convertApplicationListToJson = async ({ csvData }) => {
     }
   }
   fs.writeFileSync(
-    'application-list-filtered.json',
+      path.join(...outputFilePath,'application-list-filtered.json'),
     JSON.stringify(processDone, null, 3),
   );
+  console.log('ended converting for convertApplicationListToJson');
 };
 
 /*Note CSV file [t-seq-note] to Note JSON */
 const noteCSVToJson = async ({ csvData }) => {
+  console.log('started converting for noteCSVToJson');
   const jsonArray = await csv().fromString(csvData);
   const processDone = {};
   for (let i = 0; i < jsonArray.length; i++) {
@@ -119,11 +119,13 @@ const noteCSVToJson = async ({ csvData }) => {
       processDone[jsonArray[i]['id_request']] = filteredObject;
     }
   }
-  fs.writeFileSync('notes.json', JSON.stringify(processDone, null, 3));
+  fs.writeFileSync(path.join(...outputFilePath,'notes.json'), JSON.stringify(processDone, null, 3));
+  console.log('ended converting for noteCSVToJson');
 };
 
 /*Common CSVs to JSON */
 const csvToJson = async ({ csvData, fileName }) => {
+  console.log('started converting for csvToJson');
   const jsonArray = await csv().fromString(csvData);
   const processDone = {};
   for (let i = 0; i < jsonArray.length; i++) {
@@ -145,11 +147,13 @@ const csvToJson = async ({ csvData, fileName }) => {
       processDone[jsonArray[i]['id_request']] = filteredObject;
     }
   }
-  fs.writeFileSync(fileName, JSON.stringify(processDone, null, 3));
+  fs.writeFileSync(path.join(...outputFilePath, fileName), JSON.stringify(processDone, null, 3));
+  console.log('ended converting for csvToJson');
 };
 
 /*Note Application Question file [t-seq-note] to Application Question JSON */
 const questionCSVToJson = async ({ csvData, fileName }) => {
+  console.log('started converting for questionCSVToJson');
   const jsonArray = await csv().fromString(csvData);
   const processDone = {};
   for (let i = 0; i < jsonArray.length; i++) {
@@ -169,11 +173,13 @@ const questionCSVToJson = async ({ csvData, fileName }) => {
       processDone[jsonArray[i]['id_request']] = filteredObject;
     }
   }
-  fs.writeFileSync(fileName, JSON.stringify(processDone, null, 3));
+  fs.writeFileSync(path.join(...outputFilePath, fileName), JSON.stringify(processDone, null, 3));
+  console.log('ended converting for questionCSVToJson');
 };
 
 /*Application CSV file [t-application-details & t-approved-application-details] to Application JSON */
 const applicationCsvToJson = async ({ csvData, fileName }) => {
+  console.log('started converting for applicationCsvToJson');
   const jsonArray = await csv().fromString(csvData);
   const processDone = {};
   for (let i = 0; i < jsonArray.length; i++) {
@@ -187,10 +193,14 @@ const applicationCsvToJson = async ({ csvData, fileName }) => {
       filteredData.forEach((i) => {
         filteredObject[i.no_seq_request] = i;
       });
-      processDone[jsonArray[i]['id_request']] = filteredObject;
+      // processDone[jsonArray[i]['id_request']] = filteredObject;
+      processDone[jsonArray[i]['id_request']] = {
+        [Math.max(Object.keys(filteredObject))]: filteredObject[Math.max(Object.keys(filteredObject))]
+      };
     }
   }
-  fs.writeFileSync(fileName, JSON.stringify(processDone, null, 3));
+  fs.writeFileSync(path.join(...outputFilePath, fileName), JSON.stringify(processDone, null, 3));
+  console.log('ended converting for applicationCsvToJson');
 };
 
 /* Comment out below function call to disable creating JSON of the Client & Client Code*/
