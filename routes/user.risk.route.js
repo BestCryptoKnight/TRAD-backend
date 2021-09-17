@@ -19,6 +19,7 @@ const {
   addAuditLog,
   getRegexForSearch,
 } = require('./../helper/audit-log.helper');
+const { sendNotification } = require('../helper/socket.helper');
 
 /**
  * Gets the List of Module Access
@@ -145,7 +146,10 @@ router.get('/send-mail/:userId', async function (req, res) {
   try {
     const user = await User.findOne({ _id: req.params.userId });
     const signUpToken = jwt.sign(
-      JSON.stringify({ _id: user._id }),
+      JSON.stringify({
+        _id: user._id,
+        expiredTime: config.jwt.linkExpireTime * 60 * 60 * 1000 + Date.now(),
+      }),
       config.jwt.secret,
     );
     user.signUpToken = signUpToken;
@@ -377,8 +381,13 @@ router.post('/', async function (req, res) {
             : { serviceManagerId: user._id };
         await Client.updateMany({ _id: req.body.clientIds }, { $set: update });
       }
-      let signUpToken = jwt.sign(
-        JSON.stringify({ _id: user._id }),
+
+      //NOTE - token will expire in 12 hours
+      const signUpToken = jwt.sign(
+        JSON.stringify({
+          _id: user._id,
+          expiredTime: config.jwt.linkExpireTime * 60 * 60 * 1000 + Date.now(),
+        }),
         config.jwt.secret,
       );
       user.signUpToken = signUpToken;
@@ -474,6 +483,7 @@ router.put('/:userId', async function (req, res) {
   }
   try {
     let updateObj = {};
+    let sendSocketEvent = false;
     const user = await User.findById(req.params.userId).lean();
     if (req.body.name) updateObj.name = req.body.name;
     updateObj.maxCreditLimit = req.body.maxCreditLimit
@@ -483,7 +493,10 @@ router.put('/:userId', async function (req, res) {
       ? req.body.contactNumber
       : '';
     if (req.body.role) updateObj.role = req.body.role;
-    if (req.body.moduleAccess) updateObj.moduleAccess = req.body.moduleAccess;
+    if (req.body.moduleAccess) {
+      updateObj.moduleAccess = req.body.moduleAccess;
+      sendSocketEvent = true;
+    }
     let promises = [];
     if (updateObj.role !== user.role) {
       const query =
@@ -559,6 +572,16 @@ router.put('/:userId', async function (req, res) {
     });
     await Promise.all(promises);
     Logger.log.info('User Updated successfully.');
+    if (sendSocketEvent) {
+      sendNotification({
+        notificationObj: {
+          type: 'UPDATE_USER_PRIVILEGE',
+          data: req.body.moduleAccess,
+        },
+        type: 'user',
+        userId: req.params.userId,
+      });
+    }
     res
       .status(200)
       .send({ status: 'SUCCESS', message: 'User updated successfully.' });

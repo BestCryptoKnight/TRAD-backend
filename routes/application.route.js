@@ -28,10 +28,10 @@ const {
   getEntityDetailsByName,
 } = require('./../helper/abr.helper');
 const {
-  getDebtorList,
   getDebtorFullAddress,
   getStateName,
   getStreetTypeName,
+  getCurrentDebtorList,
 } = require('./../helper/debtor.helper');
 const StaticData = require('./../static-files/staticData.json');
 const {
@@ -125,7 +125,7 @@ router.get('/entity-list', async function (req, res) {
     if (req.accessTypes && req.accessTypes.indexOf('full-access') === -1) {
       hasFullAccess = false;
     }
-    const debtors = await getDebtorList();
+    const debtors = await getCurrentDebtorList({ showCompleteList: true });
     res.status(200).send({
       status: 'SUCCESS',
       data: {
@@ -540,8 +540,9 @@ router.get('/details/:applicationId', async function (req, res) {
         }
       }
       if (application.clientDebtorId) {
-        application.outstandingAmount =
+        response.outstandingAmount =
           application.clientDebtorId.outstandingAmount;
+        response.clientDebtorId = application.clientDebtorId._id;
       }
       response.creditLimit = application.creditLimit;
       response.isExtendedPaymentTerms = application.isExtendedPaymentTerms;

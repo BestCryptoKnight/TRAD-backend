@@ -24,29 +24,102 @@ const {
   removeEntitiesFromProfile,
 } = require('./illion.helper');
 
-const getDebtorList = async () => {
+/*
+Get only existing debtor list(Active Credit Limit)
+ */
+const getCurrentDebtorList = async ({
+  hasFullAccess = false,
+  userId,
+  isForRisk = false,
+  isForOverdue = false,
+  showCompleteList = false,
+  page = 1,
+  limit = 200,
+}) => {
   try {
-    const debtors = await Debtor.find({ isActive: true })
-      .select('_id entityName abn acn registrationNumber')
-      .limit(500)
-      .lean();
-    debtors.forEach((debtor) => {
-      debtor.name =
-        debtor.entityName +
-        ' (' +
-        (debtor.abn
-          ? debtor.abn
-          : debtor.acn
-          ? debtor.acn
-          : debtor.registrationNumber) +
-        ')';
-      delete debtor.entityName;
-      delete debtor.abn;
-      delete debtor.acn;
-    });
-    return debtors;
+    if (showCompleteList) {
+      const debtors = await Debtor.find({})
+        .select('_id entityName abn acn registrationNumber')
+        .limit(limit)
+        .skip(page ? (page - 1) * limit : page)
+        .lean();
+      debtors.forEach((debtor) => {
+        debtor.name =
+          debtor.entityName +
+          ' (' +
+          (debtor.abn
+            ? debtor.abn
+            : debtor.acn
+            ? debtor.acn
+            : debtor.registrationNumber) +
+          ')';
+        delete debtor.entityName;
+        delete debtor.abn;
+        delete debtor.acn;
+        delete debtor.registrationNumber;
+      });
+      return debtors;
+    } else {
+      let clientIds;
+      if (!isForRisk) {
+        clientIds = [userId];
+      } else {
+        const query = hasFullAccess
+          ? { isDeleted: false }
+          : {
+              isDeleted: false,
+              $or: [{ riskAnalystId: userId }, { serviceManagerId: userId }],
+            };
+        const clients = await Client.find(query).select('_id').lean();
+        clientIds = clients.map((i) => i._id);
+      }
+      const fields = isForOverdue ? 'entityName acn' : 'entityName';
+      const debtors = await ClientDebtor.find({ clientId: { $in: clientIds } })
+        .populate({ path: 'debtorId', select: fields })
+        .select('_id')
+        .limit(limit)
+        .skip(page ? (page - 1) * limit : page)
+        .lean();
+      const debtorIds = [];
+      const response = [];
+      if (isForOverdue) {
+        const debtorIds = [];
+        const response = [];
+        const acnResponse = [];
+        debtors.forEach((i) => {
+          if (i.debtorId && !debtorIds.includes(i.debtorId)) {
+            response.push({
+              _id: i.debtorId._id,
+              name: i.debtorId.entityName,
+              acn: i.debtorId.acn,
+            });
+            acnResponse.push({
+              _id: i.debtorId._id,
+              acn: i.debtorId.acn,
+            });
+            debtorIds.push(i.debtorId);
+          }
+        });
+        return { response, acnResponse };
+      } else {
+        debtors.forEach((i) => {
+          if (i.debtorId && !debtorIds.includes(i.debtorId)) {
+            response.push({
+              _id: i.debtorId._id,
+              name: i.debtorId.entityName,
+            });
+            debtorIds.push(i.debtorId);
+          }
+        });
+        return response;
+      }
+    }
   } catch (e) {
-    Logger.log.error('Error occurred in get debtor list ', e.message || e);
+    Logger.log.error(
+      'Error occurred in get current debtor list',
+      e.message || e,
+    );
+    return Promise.reject(e.message || e);
   }
 };
 
@@ -304,19 +377,21 @@ const getDebtorListWithDetails = async ({
     requestedQuery.sortBy = requestedQuery.sortBy || '_id';
     requestedQuery.sortOrder = requestedQuery.sortOrder || 'desc';
     if (!hasFullAccess && userId) {
-      const debtors = await Client.find({
+      const clients = await Client.find({
         isDeleted: false,
         $or: [{ riskAnalystId: userId }, { serviceManagerId: userId }],
       })
         .select({ _id: 1 })
         .lean();
-      const clientIds = debtors.map((i) => i._id);
+      const clientIds = clients.map((i) => i._id);
       const clientDebtor = await ClientDebtor.find({
         clientId: { $in: clientIds },
       })
-        .select('_id')
+        .select('debtorId')
         .lean();
-      const debtorIds = clientDebtor.map((i) => i._id);
+      const debtorIds = clientDebtor.map((i) =>
+        mongoose.Types.ObjectId(i.debtorId),
+      );
       queryFilter = {
         _id: { $in: debtorIds },
       };
@@ -744,7 +819,6 @@ const updateEntitiesToAlertProfile = async ({ entityList, action }) => {
 };
 
 module.exports = {
-  getDebtorList,
   createDebtor,
   getDebtorFullAddress,
   getStateName,
@@ -755,4 +829,5 @@ module.exports = {
   checkForReviewDebtor,
   createTaskOnAlert,
   updateEntitiesToAlertProfile,
+  getCurrentDebtorList,
 };

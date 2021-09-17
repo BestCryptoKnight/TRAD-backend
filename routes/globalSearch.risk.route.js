@@ -11,11 +11,11 @@ const authenticate = require('./../middlewares/authenticate').authMiddleWare;
 const Logger = require('./../services/logger');
 const {
   getUserList,
-  getClientList,
+  getClients,
   getInsurerList,
   getDebtorList,
   getTaskList,
-  getApplicationList,
+  getApplications,
 } = require('./../helper/globalSearch.helper');
 
 router.get('/', authenticate, async function (req, res) {
@@ -40,7 +40,7 @@ router.get('/', authenticate, async function (req, res) {
         searchString: req.query.searchString,
         userId: req.user._id,
       }),
-      getClientList({
+      getClients({
         moduleAccess: req.user.moduleAccess,
         searchString: req.query.searchString,
         userId: req.user._id,
@@ -60,7 +60,7 @@ router.get('/', authenticate, async function (req, res) {
         userId: req.user._id,
         isForRisk: true,
       }),
-      getApplicationList({
+      getApplications({
         moduleAccess: req.user.moduleAccess,
         searchString: req.query.searchString,
         userId: req.user._id,

@@ -117,6 +117,7 @@ router.put('/change-password', authenticate, async (req, res) => {
         });
       }
       user.password = newPassword;
+      user.jwtToken = [];
       await user.save();
       Logger.log.info('Password changed successfully');
       res.status(200).send({
@@ -432,6 +433,7 @@ router.post('/set-password', async (req, res) => {
       });
     } else {
       try {
+        console.log('decoded', decoded);
         let user = await User.findById(decoded._id);
         if (!user) {
           return res.status(400).send({
@@ -462,6 +464,14 @@ router.post('/set-password', async (req, res) => {
             status: 'ERROR',
             messageCode: 'UNAUTHORIZED',
             message: 'Invalid request, please repeat process from beginning',
+          });
+        } else if (decoded.expiredTime < Date.now()) {
+          Logger.log.info('Set password link expired. user id:' + decoded._id);
+          return res.status(401).send({
+            status: 'ERROR',
+            messageCode: 'LINK_EXPIRED',
+            message:
+              'The link to set password has expired, please contact admin for that',
           });
         } else {
           user.password = req.body.password;

@@ -11,9 +11,9 @@ const authenticate = require('./../middlewares/authenticate')
   .clientAuthMiddleWare;
 const Logger = require('./../services/logger');
 const {
-  getClientList,
+  getClients,
   getTaskList,
-  getApplicationList,
+  getApplications,
   getClientDebtorList,
 } = require('./../helper/globalSearch.helper');
 
@@ -27,7 +27,7 @@ router.get('/', authenticate, async function (req, res) {
   }
   try {
     const [clients, debtors, tasks, applications] = await Promise.all([
-      getClientList({
+      getClients({
         searchString: req.query.searchString,
         userId: req.user._id,
         isForRisk: false,
@@ -42,7 +42,7 @@ router.get('/', authenticate, async function (req, res) {
         userId: req.user.clientId,
         isForRisk: false,
       }),
-      getApplicationList({
+      getApplications({
         searchString: req.query.searchString,
         userId: req.user._id,
         isForRisk: false,

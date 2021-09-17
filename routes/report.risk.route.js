@@ -22,9 +22,10 @@ const {
   getReviewReport,
 } = require('./../helper/report.helper');
 const { getClientList } = require('./../helper/client.helper');
-const { getDebtorList, insurerList } = require('./../helper/task.helper');
+const { insurerList } = require('./../helper/task.helper');
 const { getUserList } = require('./../helper/user.helper');
 const { generateExcel } = require('./../helper/excel.helper');
+const { getCurrentDebtorList } = require('./../helper/debtor.helper');
 
 /**
  * Get Column Names
@@ -113,11 +114,17 @@ router.get('/entity-list', async function (req, res) {
         hasFullAccess: hasFullAccess,
         userId: req.user._id,
         sendCRMIds: true,
+        page: req.query.page,
+        limit: req.query.limit,
       }),
-      getDebtorList({
-        hasFullAccess: hasFullAccess,
+      getCurrentDebtorList({
         userId: req.user._id,
+        hasFullAccess: hasFullAccess,
         isForRisk: true,
+        limit: req.query.limit,
+        page: req.query.page,
+        showCompleteList: false,
+        isForOverdue: false,
       }),
       insurerList(),
     ]);

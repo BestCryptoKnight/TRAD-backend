@@ -37,8 +37,7 @@ const fetchCreditReport = ({ productCode, searchField, searchValue }) => {
         Logger.log.error('ILLION_CREDENTIALS_NOT_PRESENT');
         return reject({ message: 'ILLION_CREDENTIALS_NOT_PRESENT' });
       }
-      let xmlBody = `
-<x:Envelope xmlns:x="http://schemas.xmlsoap.org/soap/envelope/" xmlns:com="http://www.dnb.com.au/Schema/CommercialBureau">
+      let xmlBody = `<x:Envelope xmlns:x="http://schemas.xmlsoap.org/soap/envelope/" xmlns:com="http://www.dnb.com.au/Schema/CommercialBureau">
     <x:Header/>
     <x:Body>
         <com:Request>
@@ -74,7 +73,6 @@ const fetchCreditReport = ({ productCode, searchField, searchValue }) => {
       let jsonData = parser.toJson(data);
       jsonData = JSON.parse(jsonData);
       const processedReport = processIllionReport(jsonData);
-      // fs.writeFileSync('hxbca1.json', jsonData);
       return resolve(processedReport);
     } catch (e) {
       console.log('Error in getting entity details from lookup');
@@ -142,6 +140,75 @@ let processIllionReport = (report) => {
     }
   });
   return processedReport;
+};
+
+const fetchCreditReportInPDFFormat = ({
+  productCode,
+  searchField,
+  searchValue,
+  countryCode,
+}) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const organization = await Organization.findOne({
+        isDeleted: false,
+      })
+        .select({ 'integration.illion': 1 })
+        .lean();
+      if (
+        !organization ||
+        !organization.integration ||
+        !organization.integration.illion ||
+        !organization.integration.illion.userId ||
+        !organization.integration.illion.subscriberId ||
+        !organization.integration.illion.password
+      ) {
+        Logger.log.error('ILLION_CREDENTIALS_NOT_PRESENT');
+        return Promise.reject({ message: 'ILLION_CREDENTIALS_NOT_PRESENT' });
+      }
+
+      countryCode = countryCode === 'AUS' ? 'AU' : 'NZ';
+      const requestBody = JSON.stringify({
+        FinancialReportOptions: { FinancialYear: '9999' },
+        Request: {
+          RequestHeader: {
+            Version: '1.1',
+            Subscriber: {
+              SubscriberId: organization.integration.illion.subscriberId,
+              UserId: organization.integration.illion.userId,
+              Password: organization.integration.illion.password,
+            },
+            ProductCode: productCode,
+            Environment: config.illion.environment,
+            CustomerReference: { BillingReference: 'TEST', Contact: 'TEST' },
+          },
+          RequestDetails: {
+            CountryCode: countryCode,
+            LookupMethod: searchField,
+            LookupValue: searchValue,
+          },
+        },
+        ReportOption: { ReportFormat: '2' },
+      });
+      const options = {
+        method: 'post',
+        url:
+          'https://b2btest.dnb.com.au/illionProductB2B/Commercial/OrderCommercialBinaryReport',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        data: requestBody,
+      };
+      console.log(options);
+      Logger.log.info('Making a request to illion at', new Date());
+      const { data } = await axios(options);
+      return resolve(data);
+    } catch (e) {
+      console.log('Error in fetching pdf report from');
+      console.log(e);
+      return reject(e.message || e);
+    }
+  });
 };
 
 /*
@@ -523,4 +590,5 @@ module.exports = {
   addEntitiesToProfile,
   getMonitoredEntities,
   removeEntitiesFromProfile,
+  fetchCreditReportInPDFFormat,
 };

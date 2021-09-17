@@ -33,10 +33,10 @@ const {
 } = require('./../helper/abr.helper');
 const { getClientList } = require('./../helper/client.helper');
 const {
-  getDebtorList,
   getDebtorFullAddress,
   getStateName,
   getStreetTypeName,
+  getCurrentDebtorList,
 } = require('./../helper/debtor.helper');
 const StaticData = require('./../static-files/staticData.json');
 const {
@@ -140,8 +140,17 @@ router.get('/entity-list', async function (req, res) {
       hasFullAccess = false;
     }
     const [clients, debtors] = await Promise.all([
-      getClientList({ hasFullAccess: hasFullAccess, userId: req.user._id }),
-      getDebtorList(),
+      getClientList({
+        hasFullAccess: hasFullAccess,
+        userId: req.user._id,
+        page: req.query.page,
+        limit: req.query.limit,
+      }),
+      getCurrentDebtorList({
+        showCompleteList: true,
+        page: req.query.page,
+        limit: req.query.limit,
+      }),
     ]);
     const { riskAnalystList, serviceManagerList } = await getUserList();
     res.status(200).send({
@@ -254,6 +263,17 @@ router.get('/', async function (req, res) {
         .lean();
       clientIds = clients.map((i) => i._id);
     }
+    const clientModuleAccess = req.user.moduleAccess
+      .filter((userModule) => userModule.name === 'client')
+      .shift();
+    const hasOnlyReadAccessForClientModule =
+      clientModuleAccess.accessTypes.length === 0;
+
+    const debtorModuleAccess = req.user.moduleAccess
+      .filter((userModule) => userModule.name === 'debtor')
+      .shift();
+    const hasOnlyReadAccessForDebtorModule =
+      debtorModuleAccess.accessTypes.length === 0;
 
     const response = await getApplicationList({
       hasFullAccess: hasFullAccess,
@@ -263,8 +283,9 @@ router.get('/', async function (req, res) {
       clientIds: clientIds,
       moduleColumn: module.manageColumns,
       userId: req.user._id,
+      hasOnlyReadAccessForClientModule,
+      hasOnlyReadAccessForDebtorModule,
     });
-
     res.status(200).send({
       status: 'SUCCESS',
       data: response,
@@ -655,8 +676,9 @@ router.get('/details/:applicationId', async function (req, res) {
         }
       }
       if (application.clientDebtorId) {
-        application.outstandingAmount =
+        response.outstandingAmount =
           application.clientDebtorId.outstandingAmount;
+        response.clientDebtorId = application.clientDebtorId._id;
       }
       response.creditLimit = application.creditLimit;
       response.isExtendedPaymentTerms = application.isExtendedPaymentTerms;
@@ -931,7 +953,7 @@ router.get('/:entityId', async function (req, res) {
     });
   }
   try {
-    let queryFilter = {
+    const queryFilter = {
       isDeleted: false,
     };
     switch (req.query.listFor) {
@@ -952,14 +974,31 @@ router.get('/:entityId', async function (req, res) {
     const applicationColumn = req.user.manageColumns.find(
       (i) => i.moduleName === req.query.listFor,
     );
+
+    const clientModuleAccess = req.user.moduleAccess
+      .filter((userModule) => userModule.name === 'client')
+      .shift();
+    const hasOnlyReadAccessForClientModule =
+      clientModuleAccess.accessTypes.length === 0;
+
+    const debtorModuleAccess = req.user.moduleAccess
+      .filter((userModule) => userModule.name === 'debtor')
+      .shift();
+    const hasOnlyReadAccessForDebtorModule =
+      debtorModuleAccess.accessTypes.length === 0;
+
+    const hasFullAccess = req.accessTypes.indexOf('full-access') !== -1;
+
     const response = await getApplicationList({
-      hasFullAccess: false,
+      hasFullAccess: hasFullAccess,
       applicationColumn: applicationColumn.columns,
       isForRisk: true,
       requestedQuery: req.query,
       queryFilter: queryFilter,
       moduleColumn: module.manageColumns,
       userId: req.user._id,
+      hasOnlyReadAccessForClientModule,
+      hasOnlyReadAccessForDebtorModule,
     });
     res.status(200).send({
       status: 'SUCCESS',
@@ -1265,6 +1304,7 @@ router.put('/:applicationId', async function (req, res) {
           isEndorsedLimit: false,
           activeApplicationId: application._id,
           expiryDate: applicationUpdate.expiryDate,
+          isFromOldSystem: false,
         };
         update.isEndorsedLimit = await checkForEndorsedLimit({
           creditLimit: applicationUpdate.acceptedAmount,
@@ -1290,14 +1330,15 @@ router.put('/:applicationId', async function (req, res) {
         req.body.status === 'WITHDRAWN'
       ) {
         applicationUpdate.approvalOrDecliningDate = new Date();
-        await ClientDebtor.updateOne(
-          { _id: req.params.debtorId },
-          {
-            creditLimit: undefined,
-            activeApplicationId: undefined,
-            isActive: false,
-          },
-        );
+        const update = {
+          creditLimit: undefined,
+          activeApplicationId: undefined,
+          isActive: false,
+        };
+        if (req.body.status === 'DECLINED') {
+          update.isFromOldSystem = false;
+        }
+        await ClientDebtor.updateOne({ _id: req.params.debtorId }, update);
       }
 
       if (req.body.status === 'APPROVED' || req.body.status === 'DECLINED') {

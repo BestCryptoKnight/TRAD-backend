@@ -290,6 +290,9 @@ router.get('/user/:clientId', async function (req, res) {
       (i) => i.moduleName === 'client-user',
     );
     const fields = clientColumn.columns.map((i) => [i, 1]);
+    const hasOnlyReadAccess =
+      !req.accessTypes.includes('write') &&
+      !req.accessTypes.includes('full-access');
     let queryFilter = {
       isDeleted: false,
       clientId: mongoose.Types.ObjectId(req.params.clientId),
@@ -358,7 +361,19 @@ router.get('/user/:clientId', async function (req, res) {
     const headers = [];
     for (let i = 0; i < module.manageColumns.length; i++) {
       if (clientColumn.columns.includes(module.manageColumns[i].name)) {
-        headers.push(module.manageColumns[i]);
+        if (
+          (module.manageColumns[i].name === 'hasPortalAccess' ||
+            module.manageColumns[i].name === 'sendDecisionLetter') &&
+          hasOnlyReadAccess
+        ) {
+          headers.push({
+            name: module.manageColumns[i].name,
+            label: module.manageColumns[i].label,
+            type: 'string',
+          });
+        } else {
+          headers.push(module.manageColumns[i]);
+        }
       }
     }
     if (clientUsers.length !== 0) {
@@ -370,16 +385,24 @@ router.get('/user/:clientId', async function (req, res) {
           };
         }
         if (user.hasOwnProperty('hasPortalAccess')) {
-          user.hasPortalAccess = {
-            id: user._id,
-            value: user.hasPortalAccess,
-          };
+          user.hasPortalAccess = hasOnlyReadAccess
+            ? user.hasPortalAccess
+              ? 'Yes'
+              : 'No'
+            : {
+                id: user._id,
+                value: user.hasPortalAccess,
+              };
         }
         if (user.hasOwnProperty('sendDecisionLetter')) {
-          user.sendDecisionLetter = {
-            id: user._id,
-            value: user.sendDecisionLetter,
-          };
+          user.sendDecisionLetter = hasOnlyReadAccess
+            ? user.sendDecisionLetter
+              ? 'Yes'
+              : 'No'
+            : {
+                id: user._id,
+                value: user.sendDecisionLetter,
+              };
         }
         if (user.hasOwnProperty('isDecisionMaker')) {
           user.isDecisionMaker = user.isDecisionMaker ? 'Yes' : 'No';
@@ -609,11 +632,27 @@ router.get('/credit-limit/:clientId', async function (req, res) {
     const debtorColumn = req.user.manageColumns.find(
       (i) => i.moduleName === 'credit-limit',
     );
+
+    const applicationModuleAccess = req.user.moduleAccess
+      .filter((userModule) => userModule.name === 'application')
+      .shift();
+    const hasOnlyReadAccessForApplicationModule =
+      applicationModuleAccess.accessTypes.length === 0;
+
+    const debtorModuleAccess = req.user.moduleAccess
+      .filter((userModule) => userModule.name === 'debtor')
+      .shift();
+    const hasOnlyReadAccessForDebtorModule =
+      debtorModuleAccess.accessTypes.length === 0;
+
     const response = await getClientCreditLimit({
       requestedQuery: req.query,
       debtorColumn: debtorColumn.columns,
       clientId: req.params.clientId,
       moduleColumn: module.manageColumns,
+      hasOnlyReadAccessForApplicationModule,
+      hasOnlyReadAccessForDebtorModule,
+      isForRisk: true,
     });
     res.status(200).send({
       status: 'SUCCESS',
@@ -682,8 +721,8 @@ router.get('/download', async function (req, res) {
       res.setHeader('Content-Disposition', 'attachment; filename=' + fileName);
       res.send(csvResponse);
     } else {
-      res.status(200).send({
-        status: 'SUCCESS',
+      res.status(400).send({
+        status: 'ERROR',
         message: 'No data found for download file',
       });
     }
@@ -779,8 +818,8 @@ router.get('/download/:clientId', async function (req, res) {
       res.setHeader('Content-Disposition', 'attachment; filename=' + fileName);
       res.send(csvResponse);
     } else {
-      res.status(200).send({
-        status: 'SUCCESS',
+      res.status(400).send({
+        status: 'ERROR',
         message: 'No data found for download file',
       });
     }

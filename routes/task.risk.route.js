@@ -18,7 +18,6 @@ const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
 const {
   createTask,
-  getDebtorList,
   aggregationQuery,
   getApplicationList,
   insurerList,
@@ -28,6 +27,7 @@ const { getAccessBaseUserList } = require('./../helper/user.helper');
 const { addAuditLog, getEntityName } = require('./../helper/audit-log.helper');
 const { addNotification } = require('./../helper/notification.helper');
 const { sendNotification } = require('./../helper/socket.helper');
+const { getCurrentDebtorList } = require('./../helper/debtor.helper');
 
 /**
  * Get Column Names
@@ -127,7 +127,7 @@ router.get('/user-list', async function (req, res) {
     users.forEach((i) => (i.type = 'user'));
     clients.forEach((i) => (i.type = 'client-user'));
     users = users.concat(clients);
-    if (req.query.forFilter) {
+    if (req.query.isForFilter) {
       const allUsers = {
         _id: 'all_user',
         name: 'All User',
@@ -172,20 +172,28 @@ router.get('/entity-list', async function (req, res) {
         entityList = await getClientList({
           userId: req.user._id,
           hasFullAccess: hasFullAccess,
+          page: req.query.page,
+          limit: req.query.limit,
         });
         break;
       case 'debtor':
-        entityList = await getDebtorList({
+        entityList = await getCurrentDebtorList({
           userId: req.user._id,
           hasFullAccess: hasFullAccess,
           isForRisk: true,
+          limit: req.query.limit,
+          page: req.query.page,
+          showCompleteList: false,
+          isForOverdue: false,
         });
         break;
       case 'application':
         entityList = await getApplicationList({
-          userId: req.user.clientId,
+          userId: req.user._id,
           hasFullAccess: hasFullAccess,
           isForRisk: true,
+          page: req.query.page,
+          limit: req.query.limit,
         });
         break;
       case 'insurer':
@@ -331,25 +339,44 @@ router.get('/', async function (req, res) {
         name: 'isCompleted',
         label: 'Completed',
         type: 'boolean',
-        request: { method: 'PUT', url: 'task' },
+        request: { method: 'GET', url: 'task' },
       },
     ];
+    const requestObject = {
+      method: 'GET',
+      user: 'user',
+      client: 'client/details',
+      debtor: 'debtor/drawer',
+      application: 'application/drawer-details',
+      insurer: 'insurer/details',
+    };
     for (let i = 0; i < module.manageColumns.length; i++) {
       if (taskColumn.columns.includes(module.manageColumns[i].name)) {
         if (module.manageColumns[i].name === 'entityId') {
-          module.manageColumns[i].request = {
-            method: 'GET',
-            user: 'user',
-            client: 'client/details',
-            'client-user': 'client/user-details',
-            debtor: 'debtor/drawer',
-            application: 'application/drawer-details',
-            insurer: 'insurer/details',
-            claim: 'claim',
-            overdue: 'overdue',
-          };
+          const moduleAccess = ['client', 'debtor', 'application', 'insurer'];
+          let access;
+          for (let i = 0; i < moduleAccess.length; i++) {
+            access = req.user.moduleAccess.find((j) => {
+              return j.name === moduleAccess[i];
+            });
+            if (!access || access?.accessTypes?.length === 0) {
+              delete requestObject[moduleAccess[i]];
+            }
+          }
+          console.log(Object.keys(requestObject).length);
+          if (Object.keys(requestObject).length < 1) {
+            headers.push({
+              name: 'entityId',
+              label: 'Entity Name',
+              type: 'string',
+            });
+          } else {
+            module.manageColumns[i].request = requestObject;
+            headers.push(module.manageColumns[i]);
+          }
+        } else {
+          headers.push(module.manageColumns[i]);
         }
-        headers.push(module.manageColumns[i]);
       }
     }
     let response = [];
@@ -371,11 +398,13 @@ router.get('/', async function (req, res) {
         if (taskColumn.columns.includes('entityId')) {
           task.entityId =
             task.entityId && task.entityId.name && task.entityId._id
-              ? {
-                  _id: task.entityId._id[0],
-                  value: task.entityId.name[0],
-                  type: task.entityId.type,
-                }
+              ? requestObject[task.entityId.type]
+                ? {
+                    _id: task.entityId._id[0],
+                    value: task.entityId.name[0],
+                    type: task.entityId.type,
+                  }
+                : { value: task.entityId.name[0] }
               : '';
         }
         if (taskColumn.columns.includes('createdById')) {
@@ -384,6 +413,8 @@ router.get('/', async function (req, res) {
         }
       });
     }
+    console.log('headers', response);
+
     const total =
       tasks.length !== 0 &&
       tasks[0]['totalCount'] &&
@@ -403,6 +434,41 @@ router.get('/', async function (req, res) {
     });
   } catch (e) {
     Logger.log.error('Error occurred in get task list ', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Mark task as completed
+ */
+router.get('/:taskId', async function (req, res) {
+  if (
+    !req.params.taskId ||
+    !mongoose.Types.ObjectId.isValid(req.params.taskId) ||
+    req.query.hasOwnProperty('isCompleted')
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing',
+    });
+  }
+  try {
+    await Task.updateOne(
+      { _id: req.params.taskId },
+      {
+        isCompleted: req.query.isCompleted,
+        completedDate: req.body.isCompleted ? new Date() : undefined,
+      },
+    );
+    res
+      .status(200)
+      .send({ status: 'SUCCESS', message: 'Task updated successfully' });
+  } catch (e) {
+    Logger.log.error('Error occurred in update task', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

@@ -17,22 +17,32 @@ const getClientList = async ({
   hasFullAccess = false,
   userId,
   sendCRMIds = false,
+  isForRisk = true,
+  page = 1,
+  limit = 200,
+  clientId,
 }) => {
   try {
     let query = {
       isDeleted: false,
     };
-    if (!hasFullAccess) {
+    if (isForRisk && !hasFullAccess) {
       query = {
         isDeleted: false,
         $or: [{ riskAnalystId: userId }, { serviceManagerId: userId }],
       };
+    } else {
+      query.clientId = clientId;
     }
     let select = '_id name';
     if (sendCRMIds) {
       select += ' crmClientId';
     }
-    return await Client.find(query).select(select).lean();
+    return await Client.find(query)
+      .select(select)
+      .limit(limit)
+      .skip(page ? (page - 1) * limit : page)
+      .lean();
   } catch (e) {
     Logger.log.error('Error occurred in get client list', e.message || e);
   }

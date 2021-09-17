@@ -4,6 +4,8 @@
 const mongoose = require('mongoose');
 const Client = mongoose.model('client');
 const FormData = require('form-data');
+const fs = require('fs');
+const Path = require('path');
 
 /*
  * Local Imports
@@ -27,6 +29,7 @@ const getClaimsList = async ({
   moduleColumn,
   isForRisk = true,
   clientId,
+  hasOnlyReadAccessForClientModule,
 }) => {
   try {
     let clientCRMIds = [];
@@ -97,10 +100,12 @@ const getClaimsList = async ({
         if (key === 'accountid') {
           data[key] =
             response[clientId] && response[clientId]['name']
-              ? {
-                  _id: response[clientId]['_id'],
-                  value: response[clientId]['name'],
-                }
+              ? hasOnlyReadAccessForClientModule
+                ? response[clientId]['name']
+                : {
+                    _id: response[clientId]['_id'],
+                    value: response[clientId]['name'],
+                  }
               : '';
         } else if (
           key === 'claimsinforequested' ||
@@ -118,7 +123,18 @@ const getClaimsList = async ({
     const headers = [];
     for (let i = 0; i < moduleColumn.length; i++) {
       if (claimColumn.includes(moduleColumn[i].name)) {
-        headers.push(moduleColumn[i]);
+        if (
+          hasOnlyReadAccessForClientModule &&
+          moduleColumn[i].name === 'accountid'
+        ) {
+          headers.push({
+            name: moduleColumn[i].name,
+            label: moduleColumn[i].label,
+            type: 'string',
+          });
+        } else {
+          headers.push(moduleColumn[i]);
+        }
       }
     }
     return {
@@ -292,14 +308,25 @@ const uploadDocumentInRSS = async ({
   description,
 }) => {
   try {
+    const filePath = Path.join(__dirname, '../upload/documents', fileName);
+    fs.writeFileSync(filePath, fileBuffer);
+    const fileStream = fs.createReadStream(filePath);
+
     const formData = new FormData();
-    formData.append('file', fileBuffer, { filename: fileName });
+    formData.append('file', fileStream);
     formData.append('ParentId', parentId);
     formData.append('ParentObject', parentObject);
     if (description) {
       formData.append('description', description);
     }
     await uploadDocument({ formData });
+
+    fs.unlink(filePath, (err) => {
+      if (err) {
+        Logger.log.error('Error while deleting file', err.message || err);
+      }
+      Logger.log.trace('File deleted successfully');
+    });
   } catch (e) {
     Logger.log.error('Error occurred in upload document');
     Logger.log.error(e);
