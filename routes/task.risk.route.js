@@ -363,7 +363,6 @@ router.get('/', async function (req, res) {
               delete requestObject[moduleAccess[i]];
             }
           }
-          console.log(Object.keys(requestObject).length);
           if (Object.keys(requestObject).length < 1) {
             headers.push({
               name: 'entityId',
@@ -413,7 +412,6 @@ router.get('/', async function (req, res) {
         }
       });
     }
-    console.log('headers', response);
 
     const total =
       tasks.length !== 0 &&

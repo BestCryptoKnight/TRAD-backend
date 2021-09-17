@@ -59,7 +59,6 @@ const generateDecisionLetter = async ({
     buffer = await getBase64(
       `${config.server.backendServerUrl}mail-images/trad-logo.png`,
     );
-    // console.log('buffer 1', buffer);
     pdf.image(buffer, 30, 52, { fit: [250, 250] });
     pdf.fill('#EF7B10').font('Helvetica-Bold');
     pdf.text(
@@ -233,7 +232,6 @@ Please contact your Service Manager${
     buffer = await getBase64(
       `${config.server.backendServerUrl}mail-images/phone-icon.png`,
     );
-    // console.log('buffer 2', buffer);
     pdf.image(buffer, 233, 760, { fit: [18, 18] });
     pdf.text('(03) 9842 0986', 0, 762, {
       align: 'center',
@@ -242,7 +240,6 @@ Please contact your Service Manager${
     buffer = await getBase64(
       `${config.server.backendServerUrl}mail-images/message-icon.png`,
     );
-    // console.log('buffer 3', buffer);
     pdf.image(buffer, 178, 778, { fit: [17, 17] });
     pdf.text('creditlimits@tradecreditrisk.com.au', {
       align: 'center',
@@ -251,7 +248,6 @@ Please contact your Service Manager${
     buffer = await getBase64(
       `${config.server.backendServerUrl}mail-images/location-icon.png`,
     );
-    // console.log('buffer 4', buffer);
     pdf.image(buffer, 108, 798, { fit: [17, 17] });
     pdf.text('Suite 11, 857 Doncaster Road Doncaster East, Victoria 3109', {
       align: 'center',
@@ -286,7 +282,6 @@ Please contact your Service Manager${
     //       align: 'left',
     //     },
     //   ]);
-    // console.log('table::', table)
     // table.addBody(orderData.items);
     // pdf.font('Helvetica-Bold')
     //     .fontSize(15)
@@ -424,7 +419,6 @@ Please contact your Service Manager${
     //             align: 'left',
     //         },
     //     ]);
-    // console.log('table::', table)
     // table.addBody(orderData.items);
     // pdf.moveDown();
     // pdf.moveTo(pdf.page.margins.left + pdf.page.margins.right, pdf.y)

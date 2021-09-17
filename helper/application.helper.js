@@ -1490,7 +1490,6 @@ const sendDecisionLetter = async ({
       .select('email')
       .lean();
     mailObj.toAddress = clientUsers.map((i) => i.email);
-    console.log(mailObj, 'mailObj');
     await sendMail(mailObj);
   } catch (e) {
     Logger.log.error('Error occurred in mail decision letter');

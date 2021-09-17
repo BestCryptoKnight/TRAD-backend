@@ -548,7 +548,6 @@ const checkForExpiringLimit = async ({ startDate, endDate }) => {
       .populate('debtorId')
       .select('_id clientId debtorId')
       .lean();
-    console.log(creditLimits);
     const response = [];
     creditLimits.forEach((i) => {
       if (
@@ -582,7 +581,6 @@ const checkForExpiringLimit = async ({ startDate, endDate }) => {
         };
       },
     );
-    console.log(filteredData, 'filteredData');
     for (let i = 0; i < filteredData.length; i++) {
       const notification = await addNotification({
         userId: filteredData[i].riskAnalystId,

@@ -359,7 +359,6 @@ router.get('/details/:insurerId', async function (req, res) {
     const insurer = await Insurer.findOne({
       _id: req.params.insurerId,
     }).lean();
-    console.log(insurer);
     let response = [];
     module.manageColumns.forEach((i) => {
       if (
