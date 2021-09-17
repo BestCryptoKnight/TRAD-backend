@@ -63,6 +63,7 @@ const getClientsById = async ({ crmIds }) => {
       },
       params: {
         q: query,
+        limit: 100
       },
     };
     const { data } = await axios(options);
