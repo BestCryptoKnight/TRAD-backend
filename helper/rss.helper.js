@@ -869,6 +869,7 @@ const downloadDocument = async ({ documentId }) => {
     const options = {
       method: 'GET',
       url: url,
+      responseType: 'stream',
       headers: {
         Authorization: 'Bearer ' + organization.integration.rss.accessToken,
         'Content-Type': 'multipart/form-data',

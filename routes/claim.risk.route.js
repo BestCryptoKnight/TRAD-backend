@@ -191,7 +191,7 @@ router.get('/document/download/:entityId', async function (req, res) {
       'attachment; filename=' +
         headers?.['content-disposition']?.split('filename=')[1],
     );
-    res.send(data);
+    return data.pipe(res);
   } catch (e) {
     Logger.log.error(
       'Error occurred while getting specific entity claims ',
