@@ -811,10 +811,37 @@ const importApplications = async () => {
   }
 };
 
-const main = () => {
+const resetClientDebtorCode = async () => {
+  try {
+    let promiseArr = [];
+    promiseArr.push(Client.find({}).sort({_id: 1}));
+    promiseArr.push(Debtor.find({}).sort({_id: 1}));
+    promiseArr.push(Organization.findOne({isDeleted: false}));
+    let [clients, debtors, organization] = await Promise.all(promiseArr);
+    promiseArr = [];
+    let i;
+    for(i = 0; i < clients.length; i += 1) {
+      clients[i].clientCode = 'C' + (i + 1).toString().padStart(4, '0');
+      promiseArr.push(clients[i].save());
+    }
+    organization.entityCount.client = i;
+    for(i = 0; i < debtors.length; i += 1) {
+      debtors[i].debtorCode = 'D' + (i + 1).toString().padStart(4, '0');
+      promiseArr.push(debtors[i].save());
+    }
+    organization.entityCount.debtor = i;
+    promiseArr.push(organization.save());
+    await Promise.all(promiseArr);
+  } catch (e) {
+    console.log('Error in resetting Client and Debtor Code', e.message || e);
+  }
+}
+
+const main = async () => {
   console.log('Executing the DUMP Script at', new Date());
   // storeMerchantCode();
-  importApplications();
+  // await resetClientDebtorCode();
+  await importApplications();
   console.log('Successfully executed the DUMP Script at', new Date());
 
 }
