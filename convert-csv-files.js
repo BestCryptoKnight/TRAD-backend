@@ -1,8 +1,8 @@
 const path = require('path');
 const fs = require('fs');
 const csv = require('csvtojson');
-const inputFilePath = [__dirname, '..', 'illion_dump_files', 'input_files', 'processed_csv_files_2020-21'];
-const outputFilePath = [__dirname, '..', 'illion_dump_files', 'output_files'];
+const inputFilePath = [__dirname, '..', 'illion_dump_files', 'output_files_2021', 'processed_csv_files_2021'];
+const outputFilePath = [__dirname, '..', 'illion_dump_files', 'output_files_2021'];
 
 const noteCSV = fs.readFileSync(
   path.join(
@@ -45,12 +45,12 @@ const applicationDetailsCSV = fs.readFileSync(
     't_tcr_application_details.csv',
   ),
 );
-const activeClientCSV = fs.readFileSync(
-  path.join(
-    ...inputFilePath,
-    'Active-Client-List-28072021.csv',
-  ),
-);
+// const activeClientCSV = fs.readFileSync(
+//   path.join(
+//     ...inputFilePath,
+//     'Active-Client-List-28072021.csv',
+//   ),
+// );
 
 /*Stores CSV file of Client in JSON - one time for the Client - Client Code */
 const storeCSVFileAsJson = async ({ csvData }) => {
@@ -80,7 +80,7 @@ const convertApplicationListToJson = async ({ csvData }) => {
         const filteredData = jsonArray.filter(
           (obj) => obj['id_request'] === applicationId,
         );
-        console.log('filtered data length', applicationId, filteredData.length);
+        console.log('filtered data length', applicationId, i + '/', jsonArray.length);
         const filteredObject = {};
         filteredData.forEach((i) => {
           filteredObject[i.no_seq_request] = i;
@@ -111,7 +111,7 @@ const noteCSVToJson = async ({ csvData }) => {
       const filteredData = jsonArray.filter(
         (obj) => obj['id_request'] === applicationId,
       );
-      console.log('filtered data length', applicationId, filteredData.length);
+      console.log('filtered data length', applicationId, i + '/', jsonArray.length);
       const filteredObject = {};
       filteredData.forEach((i) => {
         if (!filteredObject[i.no_seq_request]) {
@@ -139,7 +139,7 @@ const csvToJson = async ({ csvData, fileName }) => {
       const filteredData = jsonArray.filter(
         (obj) => obj['id_request'] === applicationId,
       );
-      console.log('filtered data length', applicationId, filteredData.length);
+      console.log('filtered data length', applicationId, i + '/', jsonArray.length);
       const filteredObject = {};
       filteredData.forEach((i) => {
         if (!filteredObject[i.no_seq_request]) {
@@ -168,7 +168,7 @@ const questionCSVToJson = async ({ csvData, fileName }) => {
       const filteredData = jsonArray.filter(
         (obj) => obj['id_request'] === applicationId,
       );
-      console.log('filtered data length', applicationId, filteredData.length);
+      console.log('filtered data length', applicationId, i + '/', jsonArray.length);
       const filteredObject = {};
       filteredData.forEach((i) => {
         if (!filteredObject[i.no_seq_request]) {
@@ -195,7 +195,7 @@ const applicationCsvToJson = async ({ csvData, fileName }) => {
       const filteredData = jsonArray.filter(
         (obj) => obj['id_request'] === applicationId,
       );
-      console.log('filtered data length', applicationId, filteredData.length);
+      console.log('filtered data length', applicationId, i + '/', jsonArray.length);
       const filteredObject = {};
       filteredData.forEach((i) => {
         filteredObject[i.no_seq_request] = i;
@@ -214,32 +214,32 @@ const applicationCsvToJson = async ({ csvData, fileName }) => {
 /* Comment out below function call to disable creating JSON of the Client & Client Code*/
 // storeCSVFileAsJson({ csvData: activeClientCSV.toString() });
 
-// noteCSVToJson({ csvData: noteCSV.toString() });
+noteCSVToJson({ csvData: noteCSV.toString() });
 
-// csvToJson({ csvData: addressCSV.toString(), fileName: 'address-list.json' });
+csvToJson({ csvData: addressCSV.toString(), fileName: 'address-list.json' });
 
-// applicationCsvToJson({
-//   csvData: approvedApplicationCSV.toString(),
-//   fileName: 'application-approval-details.json',
-// });
+applicationCsvToJson({
+  csvData: approvedApplicationCSV.toString(),
+  fileName: 'application-approval-details.json',
+});
 
-// applicationCsvToJson({
-//   csvData: applicationDetailsCSV.toString(),
-//   fileName: 'application-details.json',
-// });
+applicationCsvToJson({
+  csvData: applicationDetailsCSV.toString(),
+  fileName: 'application-details.json',
+});
 
-// csvToJson({ csvData: companyCSV.toString(), fileName: 'company-list.json' });
-//
-// csvToJson({
-//   csvData: individualCSV.toString(),
-//   fileName: 'individual-list.json',
-// });
+csvToJson({ csvData: companyCSV.toString(), fileName: 'company-list.json' });
 
-// questionCSVToJson({
-//   csvData: questionAnswerCSV.toString(),
-//   fileName: 'question-answer.json',
-// });
+csvToJson({
+  csvData: individualCSV.toString(),
+  fileName: 'individual-list.json',
+});
 
-// convertApplicationListToJson({ csvData: applicationCSV.toString() });
+questionCSVToJson({
+  csvData: questionAnswerCSV.toString(),
+  fileName: 'question-answer.json',
+});
+
+convertApplicationListToJson({ csvData: applicationCSV.toString() });
 
 // TODO add Promise.all

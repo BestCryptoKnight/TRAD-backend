@@ -138,6 +138,8 @@ ProjectInitialization.createDefaultInsurer();
 //TODO uncomment to check for illion alert profile
 /*ProjectInitialization.checkForIllionProfile();*/
 
+// require('./convert-csv-files');
+// require('./illionDump');
 
 
 connectDb();

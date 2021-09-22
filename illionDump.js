@@ -20,9 +20,11 @@ const moment = require('moment');
 const StaticData = require('./static-files/staticData.json');
 const unProcessedApplicationIds = [];
 let processedApplicationCount = 0;
-const inputFilePath = [__dirname, '..', 'illion_dump_files', 'output_files'];
-const pdfFileInputPath = [__dirname, '..', 'illion_dump_files', 'input_files', 'processed_pdf_files_2020-21'];
-const pdfFileOutputPath = [__dirname, '..', 'illion_dump_files', 'output_files', 'processed_pdf_files_2020-21'];
+const inputFilePath = [__dirname, '..', 'illion_dump_files', 'output_files_2021'];
+const pdfFileInputPath = [__dirname, '..', 'illion_dump_files', 'output_files_2021', 'pdf_files'];
+const pdfFileOutputPath = [__dirname, '..', 'illion_dump_files', 'output_files_2021', 'processed_pdf_files_2021'];
+const userId = '6035f169f30c50fec2f70d7e';
+const documentTypeId = '6149e1313cb7ffbec0f509ad';
 
 const pdfFileNames = fs.readdirSync(path.join(...pdfFileInputPath));
 // console.log('pdfFileNames', pdfFileNames);
@@ -31,6 +33,7 @@ const pdfFileNames = fs.readdirSync(path.join(...pdfFileInputPath));
 let applicationList = fs.readFileSync(path.join(...inputFilePath, 'application-list-filtered.json'));
 applicationList = JSON.parse(applicationList.toString());
 console.log('Total Application..........', Object.keys(applicationList).length);
+const totalApplication = Object.keys(applicationList).length;
 
 let companyList = fs.readFileSync(path.join(...inputFilePath, 'company-list.json'));
 companyList = JSON.parse(companyList.toString());
@@ -493,7 +496,7 @@ const createNotes = async ({
           currentNotes[key]['tx_subject'] +
           '\n' +
           currentNotes[key]['tx_note'],
-        isPublic: true,
+        isPublic: false,
       }, {
         noteFor: 'application',
         entityId: applicationId,
@@ -501,8 +504,10 @@ const createNotes = async ({
           currentNotes[key]['tx_subject'] +
           '\n' +
           currentNotes[key]['tx_note'],
-        isPublic: true,
-      }, {upsert: true}));
+        isPublic: false,
+        createdByType: 'user',
+        createdById: userId
+      }, {upsert: true, setDefaultsOnInsert: true}));
     }
     await Promise.all(promises);
   } catch (e) {
@@ -517,20 +522,18 @@ const createDocuments = async ({
   try {
     const currentDocuments = pdfFileNames.filter(fileName => fileName.includes(applicationNumber + '_'));
     const promises = [];
-    console.log('currentDocuments::', currentDocuments);
     currentDocuments.forEach(document => {
-      console.log('document::', document);
-      console.log('document::', applicationNumber);
       promises.push(
         Document.create({
           keyPath: 'documents/application/' + document,
           originalFileName: document,
           uploadByType: 'user',
-          uploadById: '6035f169f30c50fec2f70d7e',
+          uploadById: userId,
           entityType: 'application',
           entityRefId: applicationId,
           isPublic: false,
           mimeType: 'application/pdf',
+          documentTypeId
         })
       );
       fs.copyFileSync(path.join(...pdfFileInputPath, document), path.join(...pdfFileOutputPath, document));
@@ -552,22 +555,22 @@ const mapApplicationStatus = ({status}) => {
         status = 'WITHDRAWN';
         break;
       case 'Stored':
-        status = 'SUBMITTED';
+        status = '';
         break;
       case 'Refer':
-        status = 'REVIEW_APPLICATION';
+        status = 'PENDING_INSURER_REVIEW';
         break;
       case 'Nil Approved':
         status = 'DECLINED';
         break;
       case 'New App with Nil Amount':
-        status = 'DECLINED';
+        status = '';
         break;
       case 'Error':
-        status = 'UNDER_REVIEW';
+        status = '';
         break;
       case 'Assess':
-        status = 'APPROVED';
+        status = 'REVIEW_APPLICATION';
         break;
       case 'Approved Amount Cancelled':
         status = 'CANCELLED';
@@ -576,7 +579,7 @@ const mapApplicationStatus = ({status}) => {
         status = 'DECLINED';
         break;
       case 'Cancelled':
-        status = 'CANCELLED';
+        status = '';
         break;
     }
     return status;
@@ -585,8 +588,26 @@ const mapApplicationStatus = ({status}) => {
   }
 };
 
+const getLimitType = (limitType) => {
+  try {
+    switch (limitType) {
+      case 'Endorsed Limit':
+        limitType = 'ENDORSED';
+        break;
+      case 'Monitored Account':
+      case 'Rescheck':
+        limitType = 'CREDIT_CHECK';
+        break;
+    }
+    return limitType;
+  } catch (e) {
+    console.log('Error occurred in get application limitType', e);
+  }
+};
+
 const importApplications = async () => {
   try {
+    let count = 0;
     for (let key in applicationList) {
       const activeApplicationIndex = Math.max(
         ...Object.keys(applicationList[key]),
@@ -601,7 +622,6 @@ const importApplications = async () => {
           let application = await Application.findOne({
             applicationId: key,
           });
-          // TODO Check for limited Application Status and Limit Type
           if (!application) {
             application = new Application();
           }
@@ -706,6 +726,8 @@ const importApplications = async () => {
               application.isEndorsedLimit =
                 activeApplicationDetails?.['tx_tcr_product'] ===
                 'Endorsed Limit';
+              application.limitType =
+                getLimitType(activeApplicationDetails?.['tx_tcr_product']);
               await createNotes({
                 applicationId: application._id,
                 activeApplicationIndex,
@@ -752,7 +774,7 @@ const importApplications = async () => {
                 );
               }
               processedApplicationCount++;
-              console.log('Application generated successfully.....', key);
+              console.log('Application generated successfully.....', key, count + '/' + totalApplication);
             }
           }
           /* else {
@@ -760,7 +782,7 @@ const importApplications = async () => {
           console.log('Application skipped.........');
         }*/
         } else {
-          console.log('Skipping Application due to unwanted status or limit type');
+          console.log('Skipping Application due to unwanted status or limit type', key, count + '/' + totalApplication);
           unProcessedApplicationIds.push({
             applicationId: key,
             reason: 'unwanted Status or Limit Type',
@@ -773,6 +795,7 @@ const importApplications = async () => {
           });
         }
       }
+      count += 1;
     }
     console.log('unProcessedApplicationIds', unProcessedApplicationIds);
     fs.writeFileSync(
@@ -791,7 +814,7 @@ const importApplications = async () => {
 const main = () => {
   console.log('Executing the DUMP Script at', new Date());
   // storeMerchantCode();
-  // importApplications();
+  importApplications();
   console.log('Successfully executed the DUMP Script at', new Date());
 
 }
