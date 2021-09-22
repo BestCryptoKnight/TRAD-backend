@@ -13,8 +13,16 @@ const DebtorDirector = mongoose.model('debtor-director');
  * Local Imports
  * */
 const Logger = require('./../services/logger');
-const { fetchCreditReport } = require('./../helper/illion.helper');
+const {
+  fetchCreditReport,
+  fetchCreditReportInPDFFormat,
+} = require('./../helper/illion.helper');
 const StaticFile = require('./../static-files/moduleColumn');
+const {
+  uploadFile,
+  downloadDocument,
+} = require('./../helper/static-file.helper');
+const { sendNotification } = require('./../helper/socket.helper');
 
 /**
  * Get Column Names
@@ -153,8 +161,11 @@ router.get('/list/:debtorId', async function (req, res) {
   }
 });
 
-router.get('/data/:debtorId', async function (req, res) {
-  if (!req.params.debtorId) {
+/**
+ * Download Credit Report
+ */
+router.get('/download/:reportId', async function (req, res) {
+  if (!req.params.reportId) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -162,26 +173,27 @@ router.get('/data/:debtorId', async function (req, res) {
     });
   }
   try {
-    const debtor = await Debtor.findOne({ _id: req.params.debtorId }).lean();
-    let entityIds = [req.params.debtorId];
-    const entityTypes = ['TRUST'];
-    if (debtor && entityTypes.includes(debtor.entityType)) {
-      let directors = await DebtorDirector.find({
-        debtorId: req.params.debtorId,
-      }).lean();
-      directors = directors.map((i) => i._id);
-      if (directors.length !== 0) {
-        entityIds.concat(directors);
-      }
+    const report = await CreditReport.findOne({
+      _id: req.params.reportId,
+    }).lean();
+    if (report?.keyPath && report?.originalFileName) {
+      const response = await downloadDocument({
+        filePath: report.keyPath,
+      });
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader(
+        'Content-Disposition',
+        'attachment; filename=' + report.originalFileName,
+      );
+      return response.pipe(res);
+    } else {
+      res.status(400).send({
+        status: 'ERROR',
+        message: 'No data found for download file',
+      });
     }
-    const queryFilter = {
-      isDeleted: false,
-      entityId: { $in: entityIds },
-    };
-    const response = await CreditReport.find(queryFilter).lean();
-    res.status(200).send({ status: 'SUCCESS', data: response });
   } catch (e) {
-    Logger.log.error('Error occurred in fetching Credit Reports', e);
+    Logger.log.error('Error occurred in download Credit Report', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -237,7 +249,6 @@ router.get('/:debtorId', async function (req, res) {
     option.select = reportColumn.columns.toString().replace(/,/g, ' ');
     option.sort = sortingOptions;
     option.lean = true;
-    console.log('queryFilter', queryFilter);
     let responseObj = await CreditReport.paginate(queryFilter, option);
     responseObj.headers = [];
     for (let i = 0; i < module.manageColumns.length; i++) {
@@ -351,11 +362,24 @@ router.put('/generate', async function (req, res) {
         }
       }
       if (searchField && searchValue) {
-        const reportData = await fetchCreditReport({
-          productCode: req.body.productCode,
-          searchField,
-          searchValue,
+        res.status(200).send({
+          status: 'SUCCESS',
+          message:
+            'Your download request is in progress, you will be get notification for the download result',
         });
+        const [reportData, pdfReport] = await Promise.all([
+          fetchCreditReport({
+            productCode: req.body.productCode,
+            searchField,
+            searchValue,
+          }),
+          fetchCreditReportInPDFFormat({
+            searchField,
+            searchValue,
+            countryCode: debtor.address.country.code,
+            productCode: req.body.productCode,
+          }),
+        ]);
         if (
           reportData &&
           reportData.Envelope.Body.Response &&
@@ -365,7 +389,7 @@ router.put('/generate', async function (req, res) {
           const date = new Date();
           let expiryDate = new Date(date.setMonth(date.getMonth() + 12));
           expiryDate = new Date(expiryDate.setDate(expiryDate.getDate() - 1));
-          await CreditReport.create({
+          const response = {
             entityId: entityId,
             productCode: req.body.productCode,
             creditReport: reportData.Envelope.Body.Response,
@@ -373,7 +397,23 @@ router.put('/generate', async function (req, res) {
             entityType: entityType,
             name: reportData.Envelope.Body.Response.Header.ProductName,
             expiryDate: expiryDate,
-          });
+          };
+          if (pdfReport?.Status?.Success) {
+            const buffer = Buffer.from(
+              pdfReport?.ReportsData?.[0]?.Base64EncodedData,
+              'base64',
+            );
+            const fileName = req.body.productCode + '-' + Date.now() + '.pdf';
+            const s3Response = await uploadFile({
+              file: buffer,
+              filePath: 'decision-letters/' + fileName,
+              fileType: 'application/pdf',
+              isPublicFile: false,
+            });
+            response.keyPath = s3Response.key || s3Response.Key;
+            response.originalFileName = fileName;
+          }
+          await CreditReport.create(response);
           //TODO update in client-debtor
           if (
             reportData.Envelope.Body.Response.DynamicDelinquencyScore &&
@@ -389,9 +429,19 @@ router.put('/generate', async function (req, res) {
               },
             );
           }
-          res.status(200).send({
+          /* res.status(200).send({
             status: 'SUCCESS',
             data: 'Report generated successfully',
+          });*/
+          sendNotification({
+            notificationObj: {
+              type: 'REPORT_NOTIFICATION',
+              fetchStatus: 'SUCCESS',
+              message: 'Report generated successfully',
+              debtorId: req.body.debtorId,
+            },
+            type: 'user',
+            userId: req.user._id,
           });
         } else {
           const message =
@@ -402,14 +452,24 @@ router.put('/generate', async function (req, res) {
                 ' - ' +
                 reportData.Envelope.Body.Response.Messages.Error.Desc
               : 'Unable to fetch report';
-          res.status(400).send({
+          /*res.status(400).send({
             status: 'ERROR',
             messageCode: 'UNABLE_TO_FETCH_REPORT',
             message: message,
+          });*/
+          sendNotification({
+            notificationObj: {
+              type: 'REPORT_NOTIFICATION',
+              fetchStatus: 'ERROR',
+              message: message,
+              debtorId: req.body.debtorId,
+            },
+            type: 'user',
+            userId: req.user._id,
           });
         }
       } else {
-        res.status(400).send({
+        return res.status(400).send({
           status: 'ERROR',
           messageCode: 'UNABLE_TO_FETCH_REPORT',
           data: 'Unable to fetch report',

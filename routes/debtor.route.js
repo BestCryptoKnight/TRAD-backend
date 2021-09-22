@@ -443,8 +443,8 @@ router.get('/download', async function (req, res) {
       res.setHeader('Content-Disposition', 'attachment; filename=' + fileName);
       res.send(csvResponse);
     } else {
-      res.status(200).send({
-        status: 'SUCCESS',
+      res.status(400).send({
+        status: 'ERROR',
         message: 'No data found for download file',
       });
     }

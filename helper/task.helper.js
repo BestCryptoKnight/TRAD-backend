@@ -45,50 +45,12 @@ const createTask = async ({
   }
 };
 
-const getDebtorList = async ({
-  hasFullAccess = false,
-  userId,
-  isForRisk = false,
-}) => {
-  try {
-    let clientIds;
-    if (!isForRisk) {
-      clientIds = [userId];
-    } else {
-      const query = hasFullAccess
-        ? { isDeleted: false }
-        : {
-            isDeleted: false,
-            $or: [{ riskAnalystId: userId }, { serviceManagerId: userId }],
-          };
-      const clients = await Client.find(query).select('_id').lean();
-      clientIds = clients.map((i) => i._id);
-    }
-    const debtors = await ClientDebtor.find({ clientId: { $in: clientIds } })
-      .populate({ path: 'debtorId', select: 'entityName' })
-      .select('_id')
-      .lean();
-    const debtorIds = [];
-    const response = [];
-    debtors.forEach((i) => {
-      if (i.debtorId && !debtorIds.includes(i.debtorId)) {
-        response.push({
-          _id: i.debtorId._id,
-          name: i.debtorId.entityName,
-        });
-        debtorIds.push(i.debtorId);
-      }
-    });
-    return response;
-  } catch (e) {
-    Logger.log.error('Error occurred in get debtor list ', e);
-  }
-};
-
 const getApplicationList = async ({
   hasFullAccess = false,
   isForRisk = false,
   userId,
+  page = 1,
+  limit = 200,
 }) => {
   try {
     let clientIds;
@@ -108,6 +70,8 @@ const getApplicationList = async ({
       clientId: { $in: clientIds },
     })
       .select('_id applicationId')
+      .limit(limit)
+      .skip(page ? (page - 1) * limit : page)
       .lean();
     return applications;
   } catch (e) {
@@ -544,7 +508,6 @@ const aggregationQuery = async ({
 
 module.exports = {
   createTask,
-  getDebtorList,
   aggregationQuery,
   getApplicationList,
   insurerList,

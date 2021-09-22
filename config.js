@@ -31,6 +31,7 @@ module.exports = {
   jwt: {
     secret: process.env.JWT_SECRET || 'SimpleJWT',
     expireTime: process.env.JWT_EXPIRE_TIME || '2', //in hrs
+    linkExpireTime: process.env.JWT_LINK_EXPIRE_TIME || '12', //in hrs
   },
   uploadLocations: uploadLocations,
   mailer: {

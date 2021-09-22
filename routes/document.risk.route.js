@@ -375,6 +375,7 @@ router.get('/:entityId', async function (req, res) {
         {
           $unwind: {
             path: '$documentTypeId',
+            preserveNullAndEmptyArrays: true,
           },
         },
       );
@@ -459,7 +460,8 @@ router.get('/:entityId', async function (req, res) {
         : documents;
       response.forEach((document) => {
         if (documentColumn.columns.includes('documentTypeId')) {
-          document.documentTypeId = document.documentTypeId.documentTitle || '';
+          document.documentTypeId =
+            document?.documentTypeId?.documentTitle || '';
         }
         if (documentColumn.columns.includes('uploadById')) {
           document.uploadById = document.uploadById[0] || '';

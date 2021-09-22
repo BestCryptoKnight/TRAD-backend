@@ -81,12 +81,16 @@ const getClientCreditLimit = async ({
   moduleColumn,
   clientId,
   isForRisk = true,
+  hasOnlyReadAccessForDebtorModule = false,
+  hasOnlyReadAccessForApplicationModule = false,
 }) => {
   try {
+    debtorColumn.push('isFromOldSystem');
     const clientDebtorDetails = [
       'creditLimit',
       'expiryDate',
       'activeApplicationId',
+      'isFromOldSystem',
       'createdAt',
       'updatedAt',
     ];
@@ -142,7 +146,6 @@ const getClientCreditLimit = async ({
       i = !clientDebtorDetails.includes(i) ? 'debtorId.' + i : i;
       return [i, 1];
     });
-    console.log(fields);
     fields.push(['debtorId._id', 1]);
     aggregationQuery.push({
       $project: fields.reduce((obj, [key, val]) => {
@@ -216,7 +219,12 @@ const getClientCreditLimit = async ({
     const headers = [];
     for (let i = 0; i < moduleColumn.length; i++) {
       if (debtorColumn.includes(moduleColumn[i].name)) {
-        if (!isForRisk && moduleColumn[i].name === 'entityName') {
+        if (
+          ((hasOnlyReadAccessForDebtorModule || !isForRisk) &&
+            moduleColumn[i].name === 'entityName') ||
+          (hasOnlyReadAccessForApplicationModule &&
+            moduleColumn[i].name === 'activeApplicationId')
+        ) {
           headers.push({
             name: moduleColumn[i].name,
             label: moduleColumn[i].label,
@@ -228,15 +236,19 @@ const getClientCreditLimit = async ({
       }
     }
     response.forEach((debtor) => {
-      // debtor._id = debtor.debtorId._id || debtor._id;
-      if (debtor.activeApplicationId?.applicationId) {
-        debtor.activeApplicationId = {
-          _id: debtor.activeApplicationId._id,
-          value: debtor.activeApplicationId.applicationId,
-        };
-      }
       if (debtor.activeApplicationId?.limitType) {
-        debtor.limitType = debtor.activeApplicationId.limitType;
+        debtor.limitType = formatString(debtor.activeApplicationId.limitType);
+      }
+      if (debtor.activeApplicationId?.expiryDate) {
+        debtor.expiryDate = debtor.activeApplicationId.expiryDate;
+      }
+      if (debtor.activeApplicationId?.applicationId) {
+        debtor.activeApplicationId = hasOnlyReadAccessForApplicationModule
+          ? debtor.activeApplicationId.applicationId
+          : {
+              _id: debtor.activeApplicationId._id,
+              value: debtor.activeApplicationId.applicationId,
+            };
       }
       if (debtor.debtorId) {
         delete debtor.debtorId._id;
@@ -248,7 +260,7 @@ const getClientCreditLimit = async ({
       if (debtor.entityType) {
         debtor.entityType = formatString(debtor.entityType);
       }
-      if (debtor.entityName && isForRisk) {
+      if (debtor.entityName && isForRisk && !hasOnlyReadAccessForDebtorModule) {
         debtor.entityName = {
           id: debtor._id,
           value: debtor.entityName,
@@ -279,12 +291,16 @@ const getDebtorCreditLimit = async ({
   requestedQuery,
   moduleColumn,
   debtorId,
+  hasOnlyReadAccessForClientModule = false,
+  hasOnlyReadAccessForApplicationModule = false,
 }) => {
   try {
+    debtorColumn.push('isFromOldSystem');
     const clientDebtorDetails = [
       'creditLimit',
       'expiryDate',
       'activeApplicationId',
+      'isFromOldSystem',
       'createdAt',
       'updatedAt',
     ];
@@ -408,18 +424,36 @@ const getDebtorCreditLimit = async ({
     const headers = [];
     for (let i = 0; i < moduleColumn.length; i++) {
       if (debtorColumn.includes(moduleColumn[i].name)) {
-        headers.push(moduleColumn[i]);
+        if (
+          (hasOnlyReadAccessForClientModule &&
+            moduleColumn[i].name === 'name') ||
+          (hasOnlyReadAccessForApplicationModule &&
+            moduleColumn[i].name === 'activeApplicationId')
+        ) {
+          headers.push({
+            name: moduleColumn[i].name,
+            label: moduleColumn[i].label,
+            type: 'string',
+          });
+        } else {
+          headers.push(moduleColumn[i]);
+        }
       }
     }
     response.forEach((debtor) => {
-      if (debtor.activeApplicationId?.applicationId) {
-        debtor.activeApplicationId = {
-          _id: debtor.activeApplicationId._id,
-          value: debtor.activeApplicationId.applicationId,
-        };
-      }
       if (debtor.activeApplicationId?.limitType) {
-        debtor.limitType = debtor.activeApplicationId.limitType;
+        debtor.limitType = formatString(debtor.activeApplicationId.limitType);
+      }
+      if (debtor.activeApplicationId?.expiryDate) {
+        debtor.expiryDate = debtor.activeApplicationId.expiryDate;
+      }
+      if (debtor.activeApplicationId?.applicationId) {
+        debtor.activeApplicationId = hasOnlyReadAccessForApplicationModule
+          ? debtor.activeApplicationId.applicationId
+          : {
+              _id: debtor.activeApplicationId._id,
+              value: debtor.activeApplicationId.applicationId,
+            };
       }
       if (debtor.clientId && debtor.clientId.contactNumber) {
         debtor.contactNumber = debtor.clientId.contactNumber;
@@ -431,10 +465,12 @@ const getDebtorCreditLimit = async ({
         debtor.acn = debtor.clientId.acn;
       }
       if (debtor.clientId.name) {
-        debtor.name = {
-          id: debtor.clientId._id,
-          value: debtor.clientId.name,
-        };
+        debtor.name = hasOnlyReadAccessForClientModule
+          ? debtor.clientId.name
+          : {
+              id: debtor.clientId._id,
+              value: debtor.clientId.name,
+            };
       }
       delete debtor.clientId;
     });
@@ -512,7 +548,6 @@ const checkForExpiringLimit = async ({ startDate, endDate }) => {
       .populate('debtorId')
       .select('_id clientId debtorId')
       .lean();
-    console.log(creditLimits);
     const response = [];
     creditLimits.forEach((i) => {
       if (
@@ -546,7 +581,6 @@ const checkForExpiringLimit = async ({ startDate, endDate }) => {
         };
       },
     );
-    console.log(filteredData, 'filteredData');
     for (let i = 0; i < filteredData.length; i++) {
       const notification = await addNotification({
         userId: filteredData[i].riskAnalystId,

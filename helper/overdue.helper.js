@@ -451,62 +451,6 @@ const getOverdueList = async ({
   }
 };
 
-/*
-Get only existing debtor list
- */
-const getDebtorList = async ({
-  hasFullAccess = false,
-  userId,
-  isForRisk = false,
-}) => {
-  try {
-    let clientIds;
-    if (!isForRisk) {
-      clientIds = [userId];
-    } else {
-      const query = hasFullAccess
-        ? { isDeleted: false }
-        : {
-            isDeleted: false,
-            $or: [{ riskAnalystId: userId }, { serviceManagerId: userId }],
-          };
-      const clients = await Client.find(query).select('_id').lean();
-      clientIds = clients.map((i) => i._id);
-    }
-    const query = {
-      isActive: true,
-      creditLimit: { $exists: true, $ne: null },
-    };
-    if (clientIds.length !== 0) {
-      query.clientId = { $in: clientIds };
-    }
-    const debtors = await ClientDebtor.find(query)
-      .populate({ path: 'debtorId', select: 'entityName acn' })
-      .select('_id')
-      .lean();
-    const debtorIds = [];
-    const response = [];
-    const acnResponse = [];
-    debtors.forEach((i) => {
-      if (i.debtorId && !debtorIds.includes(i.debtorId)) {
-        response.push({
-          _id: i.debtorId._id,
-          name: i.debtorId.entityName,
-          acn: i.debtorId.acn,
-        });
-        acnResponse.push({
-          _id: i.debtorId._id,
-          acn: i.debtorId.acn,
-        });
-        debtorIds.push(i.debtorId);
-      }
-    });
-    return { response, acnResponse };
-  } catch (e) {
-    Logger.log.error('Error occurred in get debtor list ', e);
-  }
-};
-
 const getMonthString = (month) => {
   try {
     month = parseInt(month);
@@ -751,7 +695,6 @@ module.exports = {
   getLastOverdueList,
   getDrawerDetails,
   getOverdueList,
-  getDebtorList,
   getMonthString,
   formatString,
   updateList,

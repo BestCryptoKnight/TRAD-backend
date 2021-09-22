@@ -114,6 +114,8 @@ router.get('/entity-list', async function (req, res) {
       hasFullAccess: hasFullAccess,
       userId: req.user._id,
       sendCRMIds: true,
+      page: req.query.page,
+      limit: req.query.limit,
     });
     res.status(200).send({
       status: 'SUCCESS',
@@ -141,12 +143,19 @@ router.get('/', async function (req, res) {
     if (req.accessTypes && req.accessTypes.indexOf('full-access') === -1) {
       hasFullAccess = false;
     }
+    const clientModuleAccess = req.user.moduleAccess
+      .filter((userModule) => userModule.name === 'client')
+      .shift();
+    const hasOnlyReadAccessForClientModule =
+      clientModuleAccess.accessTypes.length === 0;
+
     const response = await getClaimsList({
       claimColumn: claimColumn.columns,
       requestedQuery: req.query,
       userId: req.user._id,
       hasFullAccess,
       moduleColumn: module.manageColumns,
+      hasOnlyReadAccessForClientModule,
     });
     res.status(200).send({
       status: 'SUCCESS',

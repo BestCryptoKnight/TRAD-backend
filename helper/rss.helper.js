@@ -63,7 +63,7 @@ const getClientsById = async ({ crmIds }) => {
       },
       params: {
         q: query,
-        limit: 100
+        limit: 100,
       },
     };
     const { data } = await axios(options);
@@ -575,7 +575,6 @@ const fetchInsurerDetails = async ({
         },
       });
     }
-    console.log(insurer);
     if (insurer) {
       //TODO sync insurer + client policies
       const policies = await Policy.find({ clientId: clientId }).lean();
@@ -876,7 +875,6 @@ const downloadDocument = async ({ documentId }) => {
       },
     };
     const { data, headers } = await axios(options);
-    console.log(headers);
     return { data, headers };
   } catch (e) {
     Logger.log.error('Error occurred in download document');

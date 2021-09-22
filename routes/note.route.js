@@ -190,6 +190,16 @@ router.get('/:entityId', async function (req, res) {
         type: 'string',
       },
       {
+        name: 'isPublic',
+        label: 'Is Public',
+        type: 'booleanString',
+      },
+      {
+        name: 'createdById',
+        label: 'CreatedBy',
+        type: 'string',
+      },
+      {
         name: 'createdAt',
         label: 'Created Date',
         type: 'date',
@@ -198,16 +208,6 @@ router.get('/:entityId', async function (req, res) {
         name: 'updatedAt',
         label: 'Modified Date',
         type: 'date',
-      },
-      {
-        name: 'isPublic',
-        label: 'Public',
-        type: 'booleanString',
-      },
-      {
-        name: 'createdById',
-        label: 'CreatedBy',
-        type: 'string',
       },
     ];
     let response = [];

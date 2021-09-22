@@ -55,6 +55,7 @@ const getClientList = async ({
   searchString,
   isForRisk,
   clientId,
+  isForGlobalSearch = true,
 }) => {
   try {
     let queryFilter = {
@@ -77,31 +78,34 @@ const getClientList = async ({
       $regex: getRegexForSearch(searchString),
       $options: 'i',
     };
-    let clients = await Client.find(queryFilter).select('_id name').lean();
-    const clientIds = clients.map((i) => i._id);
-    clients.forEach((user) => {
-      user.title = user.name;
-      user.module = 'client';
-      user.hasSubModule = false;
-      delete user.name;
-    });
-    queryFilter = {
-      clientIds: { $in: clientIds },
-      name: { $regex: getRegexForSearch(searchString), $options: 'i' },
-    };
-    const clientUsers = await ClientUser.find(queryFilter)
-      .select('_id name clientId')
-      .lean();
-    clientUsers.forEach((user) => {
-      delete user._id;
-      user._id = user.clientId;
-      user.title = user.name;
-      user.module = 'client';
-      user.hasSubModule = true;
-      user.subModule = 'contacts';
-      delete user.name;
-    });
-    clients = clients.concat(clientUsers);
+    const fields = isForGlobalSearch ? '_id name' : '_id name crmClientId';
+    let clients = await Client.find(queryFilter).select(fields).lean();
+    if (isForGlobalSearch) {
+      const clientIds = clients.map((i) => i._id);
+      clients.forEach((user) => {
+        user.title = user.name;
+        user.module = 'client';
+        user.hasSubModule = false;
+        delete user.name;
+      });
+      queryFilter = {
+        clientIds: { $in: clientIds },
+        name: { $regex: getRegexForSearch(searchString), $options: 'i' },
+      };
+      const clientUsers = await ClientUser.find(queryFilter)
+        .select('_id name clientId')
+        .lean();
+      clientUsers.forEach((user) => {
+        delete user._id;
+        user._id = user.clientId;
+        user.title = user.name;
+        user.module = 'client';
+        user.hasSubModule = true;
+        user.subModule = 'contacts';
+        delete user.name;
+      });
+      clients = clients.concat(clientUsers);
+    }
     return clients;
   } catch (e) {
     Logger.log.error(
@@ -146,7 +150,12 @@ const getInsurerList = async ({ searchString }) => {
   }
 };
 
-const getDebtorList = async ({ moduleAccess, userId, searchString }) => {
+const getDebtorList = async ({
+  moduleAccess,
+  userId,
+  searchString,
+  isForGlobalSearch = true,
+}) => {
   try {
     const access = moduleAccess.find((i) => {
       return i.name === 'debtor';
@@ -175,15 +184,34 @@ const getDebtorList = async ({ moduleAccess, userId, searchString }) => {
       $regex: getRegexForSearch(searchString),
       $options: 'i',
     };
-    const debtors = await Debtor.find(queryFilter)
-      .select('_id entityName')
-      .lean();
-    debtors.forEach((debtor) => {
-      debtor.title = debtor.entityName;
-      debtor.module = 'debtor';
-      debtor.hasSubModule = false;
-      delete debtor.entityName;
-    });
+    const fields = isForGlobalSearch
+      ? '_id entityName'
+      : '_id entityName abn acn registrationNumber';
+    const debtors = await Debtor.find(queryFilter).select(fields).lean();
+    if (isForGlobalSearch) {
+      debtors.forEach((debtor) => {
+        debtor.title = debtor.entityName;
+        debtor.module = 'debtor';
+        debtor.hasSubModule = false;
+        delete debtor.entityName;
+      });
+    } else {
+      debtors.forEach((debtor) => {
+        debtor.name =
+          debtor.entityName +
+          ' (' +
+          (debtor.abn
+            ? debtor.abn
+            : debtor.acn
+            ? debtor.acn
+            : debtor.registrationNumber) +
+          ')';
+        delete debtor.entityName;
+        delete debtor.abn;
+        delete debtor.acn;
+        delete debtor.registrationNumber;
+      });
+    }
     return debtors;
   } catch (e) {
     Logger.log.error(
@@ -244,6 +272,7 @@ const getApplicationList = async ({
   searchString,
   isForRisk,
   clientId,
+  isForGlobalSearch = true,
 }) => {
   try {
     const queryFilter = {};
@@ -268,15 +297,20 @@ const getApplicationList = async ({
       $regex: getRegexForSearch(searchString),
       $options: 'i',
     };
+    const fields = isForGlobalSearch
+      ? '_id applicationId status applicationStage'
+      : '_id applicationId';
     const applications = await Application.find(queryFilter)
-      .select('_id applicationId status applicationStage')
+      .select(fields)
       .lean();
-    applications.forEach((application) => {
-      application.title = application.applicationId;
-      application.module = 'application';
-      application.hasSubModule = false;
-      delete application.applicationId;
-    });
+    if (isForGlobalSearch) {
+      applications.forEach((application) => {
+        application.title = application.applicationId;
+        application.module = 'application';
+        application.hasSubModule = false;
+        delete application.applicationId;
+      });
+    }
     return applications;
   } catch (e) {
     Logger.log.error(
@@ -314,10 +348,10 @@ const getClientDebtorList = async ({ searchString, clientId }) => {
 
 module.exports = {
   getUserList,
-  getClientList,
+  getClients: getClientList,
   getInsurerList,
   getDebtorList,
   getTaskList,
-  getApplicationList,
+  getApplications: getApplicationList,
   getClientDebtorList,
 };

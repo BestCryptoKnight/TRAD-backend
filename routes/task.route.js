@@ -17,7 +17,6 @@ const Application = mongoose.model('application');
 const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
 const {
-  getDebtorList,
   aggregationQuery,
   getApplicationList,
 } = require('./../helper/task.helper');
@@ -25,6 +24,7 @@ const { getUserClientList } = require('./../helper/client.helper');
 const { addAuditLog, getEntityName } = require('./../helper/audit-log.helper');
 const { sendNotification } = require('./../helper/socket.helper');
 const { addNotification } = require('./../helper/notification.helper');
+const { getCurrentDebtorList } = require('./../helper/debtor.helper');
 
 /**
  * Get Column Names
@@ -139,9 +139,14 @@ router.get('/entity-list', async function (req, res) {
         });
         break;
       case 'debtor':
-        entityList = await getDebtorList({
+        entityList = await getCurrentDebtorList({
           userId: req.user.clientId,
+          hasFullAccess: false,
           isForRisk: false,
+          limit: req.query.limit,
+          page: req.query.page,
+          showCompleteList: false,
+          isForOverdue: false,
         });
         break;
       case 'application':
@@ -149,6 +154,8 @@ router.get('/entity-list', async function (req, res) {
           userId: req.user.clientId,
           hasFullAccess: false,
           isForRisk: false,
+          page: req.query.page,
+          limit: req.query.limit,
         });
         break;
       default:
@@ -441,8 +448,10 @@ router.put('/:taskId', async function (req, res) {
     if (req.body.entityId) updateObj.entityId = req.body.entityId;
     if (req.body.assigneeId) updateObj.assigneeId = req.body.assigneeId;
     if (req.body.dueDate) updateObj.dueDate = req.body.dueDate;
-    if (req.body.hasOwnProperty('isCompleted'))
+    if (req.body.hasOwnProperty('isCompleted')) {
       updateObj.isCompleted = req.body.isCompleted;
+      updateObj.completedDate = req.body.isCompleted ? new Date() : undefined;
+    }
     await Task.updateOne({ _id: req.params.taskId }, updateObj);
     const task = await Task.findById(req.params.taskId).lean();
     let entityName;

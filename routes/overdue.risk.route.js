@@ -15,13 +15,13 @@ const {
   getDrawerDetails,
   getLastOverdueList,
   getOverdueList,
-  getDebtorList,
   getMonthString,
   formatString,
   updateList,
 } = require('./../helper/overdue.helper');
 const { insurerList } = require('./../helper/task.helper');
 const { getClientList } = require('./../helper/client.helper');
+const { getCurrentDebtorList } = require('./../helper/debtor.helper');
 
 /**
  * Get Entity List
@@ -35,11 +35,17 @@ router.get('/entity-list', async function (req, res) {
     const clients = await getClientList({
       hasFullAccess,
       userId: req.user._id,
+      page: req.query.page,
+      limit: req.query.limit,
     });
-    const { response, acnResponse } = await getDebtorList({
+    const { response, acnResponse } = await getCurrentDebtorList({
       userId: req.user._id,
       hasFullAccess,
       isForRisk: true,
+      limit: req.query.limit,
+      page: req.query.page,
+      showCompleteList: false,
+      isForOverdue: true,
     });
     const insurer = await insurerList();
     const overdueTypes = [
@@ -98,7 +104,6 @@ router.get('/list', async function (req, res) {
       year: req.query.year.toString(),
       clientId: req.query.clientId,
     };
-    console.log('query', query);
     const overdue = await Overdue.find(query)
       .populate({
         path: 'debtorId insurerId',

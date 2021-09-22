@@ -53,6 +53,8 @@ const getApplicationList = async ({
   moduleColumn,
   userId,
   isForDownload = false,
+  hasOnlyReadAccessForClientModule = false,
+  hasOnlyReadAccessForDebtorModule = false,
 }) => {
   try {
     let query = [];
@@ -84,10 +86,14 @@ const getApplicationList = async ({
         })
           .select('_id')
           .lean();
-        queryCondition = {
-          status: { $ne: 'DRAFT' },
-          clientId: { $in: clients.map((i) => mongoose.Types.ObjectId(i._id)) },
-        };
+        if (clients.length !== 0) {
+          queryCondition = {
+            status: { $ne: 'DRAFT' },
+            clientId: {
+              $in: clients.map((i) => mongoose.Types.ObjectId(i._id)),
+            },
+          };
+        }
       }
       queryFilter = Object.assign({}, queryFilter, {
         $or: [
@@ -271,24 +277,6 @@ const getApplicationList = async ({
       }
     }
 
-    /*if (applicationColumn.includes('outstandingAmount')) {
-      query.push(
-        {
-          $lookup: {
-            from: 'client-debtors',
-            localField: 'clientDebtorId',
-            foreignField: '_id',
-            as: 'clientDebtorId',
-          },
-        },
-        {
-          $unwind: {
-            path: '$clientDebtorId',
-          },
-        },
-      );
-    }*/
-
     if (requestedQuery.minCreditLimit || requestedQuery.maxCreditLimit) {
       let limitQuery = {};
       if (requestedQuery.minCreditLimit) {
@@ -435,24 +423,26 @@ const getApplicationList = async ({
           application.status = formatString(application.status);
         }
         if (applicationColumn.includes('clientId')) {
-          application.clientId = {
-            id: application.clientId._id,
-            value: application.clientId.name,
-          };
+          application.clientId = hasOnlyReadAccessForClientModule
+            ? application.clientId.name
+            : {
+                id: application.clientId._id,
+                value: application.clientId.name,
+              };
         }
         if (applicationColumn.includes('debtorId')) {
-          application.debtorId = {
-            id: application.debtorId._id,
-            value: application.debtorId.entityName,
-          };
-        }
-        /*if (applicationColumn.includes('outstandingAmount')) {
-          application.outstandingAmount =
-            application.clientDebtorId.outstandingAmount;
-        }*/
-        if (!applicationColumn.includes('debtorId')) {
+          application.debtorId = hasOnlyReadAccessForDebtorModule
+            ? application.debtorId.entityName
+            : {
+                id: application.debtorId._id,
+                value: application.debtorId.entityName,
+              };
+        } else {
           delete application.debtorId;
         }
+        /* if (!applicationColumn.includes('debtorId')) {
+          delete application.debtorId;
+        }*/
         if (applicationColumn.includes('createdById')) {
           application.createdById =
             application.createdById && application.createdById[0]
@@ -475,7 +465,20 @@ const getApplicationList = async ({
     const headers = [];
     for (let i = 0; i < moduleColumn.length; i++) {
       if (applicationColumn.includes(moduleColumn[i].name)) {
-        headers.push(moduleColumn[i]);
+        if (
+          (moduleColumn[i].name === 'clientId' &&
+            hasOnlyReadAccessForClientModule) ||
+          (moduleColumn[i].name === 'debtorId' &&
+            hasOnlyReadAccessForDebtorModule)
+        ) {
+          headers.push({
+            name: moduleColumn[i].name,
+            label: moduleColumn[i].label,
+            type: 'string',
+          });
+        } else {
+          headers.push(moduleColumn[i]);
+        }
       }
     }
     const applicationResponse = {
@@ -1487,7 +1490,6 @@ const sendDecisionLetter = async ({
       .select('email')
       .lean();
     mailObj.toAddress = clientUsers.map((i) => i.email);
-    console.log(mailObj, 'mailObj');
     await sendMail(mailObj);
   } catch (e) {
     Logger.log.error('Error occurred in mail decision letter');

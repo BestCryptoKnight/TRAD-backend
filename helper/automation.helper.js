@@ -12,12 +12,16 @@ const ClientDebtor = mongoose.model('client-debtor');
  * Local Imports
  * */
 const Logger = require('./../services/logger');
-const { fetchCreditReport } = require('./illion.helper');
+const {
+  fetchCreditReport,
+  fetchCreditReportInPDFFormat,
+} = require('./illion.helper');
 const {
   getEntityDetailsByABN,
   resolveEntityType,
   getEntityDetailsByNZBN,
 } = require('./abr.helper');
+const { uploadFile } = require('./../helper/static-file.helper');
 const qbe = require('./../static-files/matrixes/qbe.json');
 const bond = require('./../static-files/matrixes/bond.json');
 const atradius = require('./../static-files/matrixes/atradius.json');
@@ -284,6 +288,9 @@ const getReportData = async ({
               reportData: reportData.Envelope.Body.Response,
               entityType: reportEntityType,
               clientDebtorId: clientDebtorId,
+              countryCode: debtor.address.country.code,
+              searchField: lookupMethod,
+              searchValue: lookupNumber,
             });
             reportData = reportData.Envelope.Body.Response;
             if (
@@ -1257,6 +1264,9 @@ const storeReportData = async ({
   reportData,
   entityType,
   clientDebtorId,
+  countryCode,
+  searchField,
+  searchValue,
 }) => {
   try {
     const date = new Date();
@@ -1275,9 +1285,56 @@ const storeReportData = async ({
       { _id: clientDebtorId },
       { currentReportId: reportData._id },
     );
+    storePDFCreditReport({
+      searchField,
+      searchValue,
+      reportId: response._id,
+      countryCode,
+      productCode,
+    });
     // console.log('response ', response);
   } catch (e) {
     Logger.log.error('Error occurred in store report data ', e);
+  }
+};
+
+const storePDFCreditReport = async ({
+  searchField,
+  searchValue,
+  reportId,
+  countryCode,
+  productCode,
+}) => {
+  try {
+    const reportResponse = await fetchCreditReportInPDFFormat({
+      countryCode,
+      productCode,
+      searchField,
+      searchValue,
+    });
+    if (reportResponse && reportResponse?.ReportsData?.[0]?.Base64EncodedData) {
+      const buffer = Buffer.from(
+        reportResponse.ReportsData[0].Base64EncodedData,
+        'base64',
+      );
+      const fileName = productCode + '-' + Date.now() + '.pdf';
+      const s3Response = await uploadFile({
+        file: buffer,
+        filePath: 'decision-letters/' + fileName,
+        fileType: 'application/pdf',
+        isPublicFile: false,
+      });
+      await CreditReport.updateOne(
+        { _id: reportId },
+        {
+          keyPath: s3Response.key || s3Response.Key,
+          originalFileName: fileName,
+        },
+      );
+    }
+    return reportResponse;
+  } catch (e) {
+    Logger.log.error('Error occurred in store pdf report data ', e);
   }
 };
 
@@ -1290,4 +1347,5 @@ module.exports = {
   insurerCoface,
   insurerEuler,
   insurerTrad,
+  storePDFCreditReport,
 };
