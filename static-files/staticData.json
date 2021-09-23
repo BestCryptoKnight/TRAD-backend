@@ -2672,13 +2672,38 @@
       "description": "Court Action",
       "category": "Court Action Events Alerts",
       "fieldName": "courtDetailsChange",
-      "alertFields": []
+      "alertFields": [
+        "plaintiffName",
+        "fileNum",
+        "causeOfAction",
+        "defendantReference",
+        "defendant",
+        "defendantAddress",
+        "amt",
+        "currency",
+        "comments",
+        "dateLodged",
+        "changeDate"
+      ]
     },
     "3": {
       "alertTypeId": "3",
       "alertCode": "CommercialDefaults",
       "description": "Commercail Defaults",
-      "category": "New Default Records Alerts"
+      "category": "New Default Records Alerts",
+      "fieldName": "commercialDefaultChange",
+      "alertFields": [
+        "creditorName",
+        "accountType",
+        "reasonToReport",
+        "defaultDate",
+        "status",
+        "lastStatusDate",
+        "lastStatusDate",
+        "defaultingEntity",
+        "startAmt",
+        "amtOwing"
+      ]
     },
     "4": {
       "alertTypeId": "4",
@@ -2686,109 +2711,322 @@
       "description": "Collections",
       "category": "New Collections Records Alerts",
       "fieldName": "collectionChange",
-      "alertFields": []
+      "alertFields": [
+        "startDate",
+        "creditor",
+        "debtor",
+        "startAmt",
+        "amtOwing",
+        "comments",
+        "status",
+        "changeDate"
+      ]
     },
     "5": {
       "alertTypeId": "5",
       "alertCode": "304",
       "description": "Notification Of Change To Officeholders Of Australian Company",
-      "category": "ASIC Director Changes Alerts"
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
     },
     "6": {
       "alertTypeId": "6",
       "alertCode": "304A",
       "description": "Notification Of Change To Officeholders Of Australian Company",
-      "category": "ASIC Director Changes Alerts"
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
     },
     "7": {
       "alertTypeId": "7",
       "alertCode": "304B",
       "description": "Notification Of Change To Officeholders Of Registered Body",
-      "category": "ASIC Director Changes Alerts"
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
     },
     "8": {
       "alertTypeId": "8",
       "alertCode": "304C",
       "description": "Notification Of Change Of Name Or Address Of Officeholder",
-      "category": "ASIC Director Changes Alerts"
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
     },
     "9": {
       "alertTypeId": "9",
       "alertCode": "304D",
       "description": "Notification Of Change Of Name Or Address Of Officeholder",
-      "category": "ASIC Director Changes Alerts"
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
     },
     "10": {
       "alertTypeId": "10",
       "alertCode": "304E",
       "description": "Notification Of Change To Alternate Director Of Australian Company",
-      "category": "ASIC Director Changes Alerts"
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
     },
     "11": {
       "alertTypeId": "11",
       "alertCode": "304F",
       "description": "Notification Of Change Of Name Or Address Date Of Alternate Director",
-      "category": "ASIC Director Changes Alerts"
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
     },
     "12": {
       "alertTypeId": "12",
       "alertCode": "370",
       "description": "Notification By Officeholder Of Resignation Or Retirement",
-      "category": "ASIC Director Changes Alerts"
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
     },
     "13": {
       "alertTypeId": "13",
       "alertCode": "484A",
       "description": "Change Of Officeholder/Member Name Or Address",
-      "category": "ASIC Director Changes Alerts"
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
     },
     "14": {
       "alertTypeId": "14",
       "alertCode": "484A1",
       "description": "Change Officeholder Name Or Address",
-      "category": "ASIC Director Changes Alerts"
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
     },
     "15": {
       "alertTypeId": "15",
       "alertCode": "484E",
       "description": "Appointment Or Cessation Of A Company Officeholder",
-      "category": "ASIC Director Changes Alerts"
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
     },
     "16": {
       "alertTypeId": "16",
       "alertCode": "484V",
       "description": "Appoint / Cease Alternate Director",
-      "category": "ASIC Director Changes Alerts"
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
     },
     "17": {
       "alertTypeId": "17",
       "alertCode": "484W",
       "description": "Notice Of Change Of Name/Address Or Date Of Alternate Dir",
-      "category": "ASIC Director Changes Alerts"
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
     },
     "18": {
       "alertTypeId": "18",
       "alertCode": "490",
       "description": "Notification Of Change To Directors Of A Registered Body",
-      "category": "ASIC Director Changes Alerts"
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
     },
     "19": {
       "alertTypeId": "19",
       "alertCode": "490A",
       "description": "Appoint/Cease Directors - Registered Body",
-      "category": "ASIC Director Changes Alerts"
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
     },
     "20": {
       "alertTypeId": "20",
       "alertCode": "490B",
       "description": "Change Name Or Address Of Officeholder - Registered Body",
-      "category": "ASIC Director Changes Alerts"
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
     },
     "21": {
       "alertTypeId": "21",
       "alertCode": "490C",
       "description": "Change Name Or Address Of Officeholders - Registered Body",
-      "category": "ASIC Director Changes Alerts"
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
     },
     "47": {
       "alertTypeId": "47",
@@ -2796,7 +3034,14 @@
       "description": "ASIC Company Status",
       "category": "Change in Company Registered Status Alerts",
       "fieldName": "statusChange",
-      "alertFields": []
+      "alertFields": [
+        "previousStatus",
+        "previousStatusDescription",
+        "status",
+        "statusDescription",
+        "entityType",
+        "changeDate"
+      ]
     },
     "48": {
       "alertTypeId": "48",
@@ -2804,7 +3049,14 @@
       "description": "NZCO Company Status",
       "category": "Change in Company Registered Status Alerts",
       "fieldName": "statusChange",
-      "alertFields": []
+      "alertFields": [
+        "previousStatus",
+        "previousStatusDescription",
+        "status",
+        "statusDescription",
+        "entityType",
+        "changeDate"
+      ]
     },
     "49": {
       "alertTypeId": "49",
@@ -2812,19 +3064,51 @@
       "description": "ABN Status",
       "category": "Change in Company/Business ABN Status Alerts",
       "fieldName": "abnStatusChange",
-      "alertFields": []
+      "alertFields": [
+        "previousStatus",
+        "previousStatusDescription",
+        "status",
+        "statusDescription",
+        "abnStatusFromDate",
+        "entityType",
+        "changeDate"
+      ]
     },
     "121": {
       "alertTypeId": "121",
       "alertCode": "578",
       "description": "Deregistration Request (Liquidator Not Acting Or Affairs Wound Up)",
-      "category": "Deregistration Alerts"
+      "category": "Deregistration Alerts",
+      "fieldName": "deRegistrationChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
     },
     "122": {
       "alertTypeId": "122",
       "alertCode": "6010",
       "description": "Application For Voluntary Deregistration Of A Company",
-      "category": "Deregistration Alerts"
+      "category": "Deregistration Alerts",
+      "fieldName": "deRegistrationChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
     },
     "276": {
       "alertTypeId": "276",
@@ -2832,7 +3116,19 @@
       "description": "Failure Risk Score Downgrade to High",
       "category": "Failure Risk Score Moves to a Higher Risk (Lower Score) Band Alerts",
       "fieldName": "scoreChange",
-      "alertFields": []
+      "alertFields": [
+        "type",
+        "score",
+        "previousScore",
+        "percentile",
+        "previousPercentile",
+        "scoreBand",
+        "previousScoreBand",
+        "changeDate",
+        "probability",
+        "previousProbability",
+        "sequence"
+      ]
     },
     "277": {
       "alertTypeId": "277",
@@ -2840,7 +3136,19 @@
       "description": "Failure Risk Score Downgrade to VeryHigh",
       "category": "Failure Risk Score Moves to a Higher Risk (Lower Score) Band Alerts",
       "fieldName": "scoreChange",
-      "alertFields": []
+      "alertFields": [
+        "type",
+        "score",
+        "previousScore",
+        "percentile",
+        "previousPercentile",
+        "scoreBand",
+        "previousScoreBand",
+        "changeDate",
+        "probability",
+        "previousProbability",
+        "sequence"
+      ]
     },
     "278": {
       "alertTypeId": "278",
@@ -2848,7 +3156,19 @@
       "description": "Failure Risk Score Downgrade to Severe",
       "category": "Failure Risk Score Moves to a Higher Risk (Lower Score) Band Alerts",
       "fieldName": "scoreChange",
-      "alertFields": []
+      "alertFields": [
+        "type",
+        "score",
+        "previousScore",
+        "percentile",
+        "previousPercentile",
+        "scoreBand",
+        "previousScoreBand",
+        "changeDate",
+        "probability",
+        "previousProbability",
+        "sequence"
+      ]
     },
     "292": {
       "alertTypeId": "292",
@@ -2856,7 +3176,19 @@
       "description": "Late Payment Risk Score Downgrade to High",
       "category": "Late Payment Risk Score Moves to a Higher Risk (Lower Score) Band Alerts",
       "fieldName": "scoreChange",
-      "alertFields": []
+      "alertFields": [
+        "type",
+        "score",
+        "previousScore",
+        "percentile",
+        "previousPercentile",
+        "scoreBand",
+        "previousScoreBand",
+        "changeDate",
+        "probability",
+        "previousProbability",
+        "sequence"
+      ]
     },
     "293": {
       "alertTypeId": "293",
@@ -2864,7 +3196,19 @@
       "description": "Late Payment Risk Score Downgrade to VeryHigh",
       "category": "Late Payment Risk Score Moves to a Higher Risk (Lower Score) Band Alerts",
       "fieldName": "scoreChange",
-      "alertFields": []
+      "alertFields": [
+        "type",
+        "score",
+        "previousScore",
+        "percentile",
+        "previousPercentile",
+        "scoreBand",
+        "previousScoreBand",
+        "changeDate",
+        "probability",
+        "previousProbability",
+        "sequence"
+      ]
     },
     "294": {
       "alertTypeId": "294",
@@ -2872,7 +3216,19 @@
       "description": "Late Payment Risk Score Downgrade to Severe",
       "category": "Late Payment Risk Score Moves to a Higher Risk (Lower Score) Band Alerts",
       "fieldName": "scoreChange",
-      "alertFields": []
+      "alertFields": [
+        "type",
+        "score",
+        "previousScore",
+        "percentile",
+        "previousPercentile",
+        "scoreBand",
+        "previousScoreBand",
+        "changeDate",
+        "probability",
+        "previousProbability",
+        "sequence"
+      ]
     }
   }
 }

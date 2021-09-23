@@ -337,26 +337,26 @@ router.put('/sync-from-crm/:insurerId', async function (req, res) {
     });
   }
   try {
-    const [policies, insurer] = await Promise.all([
+    const [clients, insurer] = await Promise.all([
       Client.find({ _id: { $in: req.body.clientIds } })
         .select('_id name crmClientId')
         .lean(),
       Insurer.findOne({ _id: req.params.insurerId }).lean(),
     ]);
-    if (!policies || policies.length === 0) {
+    if (!clients || clients.length === 0) {
       return res.status(400).send({
         status: 'ERROR',
-        messageCode: 'POLICY_NOT_FOUND',
-        message: 'Policies not found',
+        messageCode: 'CLIENT_NOT_FOUND',
+        message: 'Client(s) not found',
       });
     }
     let policiesFromCrm;
     let promiseArr = [];
     let newPolicies = [];
-    for (let i = 0; i < policies.length; i++) {
+    for (let i = 0; i < clients.length; i++) {
       policiesFromCrm = await getClientPolicies({
-        clientId: policies[i]._id,
-        crmClientId: policies[i].crmClientId,
+        clientId: clients[i]._id,
+        crmClientId: clients[i].crmClientId,
         insurerId: req.params.insurerId,
         page: 1,
         limit: 50,
@@ -366,7 +366,7 @@ router.put('/sync-from-crm/:insurerId', async function (req, res) {
           Policy.updateOne(
             { crmPolicyId: policiesFromCrm[j].crmPolicyId, isDeleted: false },
             policiesFromCrm[j],
-            { upsert: true },
+            { upsert: true, setDefaultsOnInsert: true },
           ),
         );
         const policy = await Policy.findOne({
@@ -381,7 +381,7 @@ router.put('/sync-from-crm/:insurerId', async function (req, res) {
               userType: 'user',
               userRefId: req.user._id,
               actionType: 'sync',
-              logDescription: `Insurer ${insurer.name} and client ${policies[i].name} policy no. ${policiesFromCrm[j].policyNumber} synced by ${req.user.name}`,
+              logDescription: `Insurer ${insurer.name} and client ${clients[i].name} policy no. ${policiesFromCrm[j].policyNumber} synced by ${req.user.name}`,
             }),
           );
         } else {
@@ -460,7 +460,7 @@ router.put('/client/sync-from-crm/:clientId', async function (req, res) {
           Policy.updateOne(
             { crmPolicyId: policiesFromCrm[j].crmPolicyId, isDeleted: false },
             policiesFromCrm[j],
-            { upsert: true },
+            { upsert: true, setDefaultsOnInsert: true },
           ),
         );
         const policy = await Policy.findOne({

@@ -781,7 +781,7 @@
         },
         {
           "name": "applicationId",
-          "label": "Application ID",
+          "label": "Application Number",
           "type": "redirectLink"
         },
         {

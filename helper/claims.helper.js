@@ -260,7 +260,6 @@ const listDocuments = async ({ crmId, requestedQuery }) => {
       page: requestedQuery.page,
       limit: requestedQuery.limit,
     });
-    console.log('Response..........', documents);
     documents.forEach((i) => {
       delete i.parentid;
     });
@@ -277,7 +276,7 @@ const listDocuments = async ({ crmId, requestedQuery }) => {
       },
       {
         name: 'size',
-        label: 'File Size',
+        label: 'File Size(KB)',
         type: 'string',
       },
       {

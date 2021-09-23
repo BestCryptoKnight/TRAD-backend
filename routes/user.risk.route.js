@@ -621,16 +621,30 @@ router.delete('/:userId', async function (req, res) {
     const user = await User.findOne({ _id: req.params.userId })
       .select('name')
       .lean();
-    await addAuditLog({
-      entityType: 'user',
-      entityRefId: req.params.userId,
-      userType: 'user',
-      userRefId: req.user._id,
-      actionType: 'delete',
-      logDescription: `User ${
-        user && user.name ? user.name : ''
-      } is deleted by ${req.user.name}`,
-    });
+    await Promise.all([
+      addAuditLog({
+        entityType: 'user',
+        entityRefId: req.params.userId,
+        userType: 'user',
+        userRefId: req.user._id,
+        actionType: 'delete',
+        logDescription: `User ${
+          user && user.name ? user.name : ''
+        } is deleted by ${req.user.name}`,
+      }),
+      Client.updateMany(
+        { riskAnalystId: req.params.userId },
+        {
+          riskAnalystId: null,
+        },
+        { multi: true },
+      ),
+      Client.updateMany(
+        { serviceManagerId: req.params.userId },
+        { serviceManagerId: null },
+        { multi: true },
+      ),
+    ]);
     res
       .status(200)
       .send({ status: 'SUCCESS', message: 'User deleted successfully' });

@@ -1064,6 +1064,7 @@ const checkGuidelines = async ({
         entityData.entityStatus &&
         application.debtorId.entityType
       ) {
+        response = {};
         response = await checkForEntityRegistration({
           entityType: entityData.entityType,
           entityStatus: entityData.entityStatus,
@@ -1078,6 +1079,7 @@ const checkGuidelines = async ({
       }
     }
     if (guidelines.noNilCreditLimitIssued) {
+      response = {};
       response = await checkForNilCreditLimitIssues({
         debtorId: application.debtorId._id,
       });
@@ -1086,6 +1088,7 @@ const checkGuidelines = async ({
       }
     }
     if (guidelines.checkForGSTRegistration) {
+      response = {};
       if (entityData && entityData.goodsAndServicesTax) {
         response = await checkForGSTRegistration({
           goodsAndServicesTax: entityData.goodsAndServicesTax,
@@ -1099,6 +1102,7 @@ const checkGuidelines = async ({
       }
     }
     if (guidelines.entityIncorporated) {
+      response = {};
       if (entityData && entityData.entityStatus) {
         response = await checkForEntityIncorporated({
           entityStatus: entityData.entityStatus,
@@ -1175,6 +1179,7 @@ const checkGuidelines = async ({
       guidelines.soleTraderRegisteredForGST &&
       application.debtorId.entityType === 'SOLE_TRADER'
     ) {
+      response = {};
       if (entityData && entityData.goodsAndServicesTax) {
         response = await checkForGSTRegistration({
           goodsAndServicesTax: entityData.goodsAndServicesTax,
@@ -1183,7 +1188,7 @@ const checkGuidelines = async ({
       } else {
         response.isBlocker = true;
       }
-      if (response.isBlocker || !reportData) {
+      if (response.isBlocker) {
         blockers.push('Sole Trader is not registered for GST');
       }
     }
@@ -1191,6 +1196,7 @@ const checkGuidelines = async ({
       guidelines.soleTraderNotRegistered &&
       application.debtorId.entityType === 'SOLE_TRADER'
     ) {
+      //TODO need to check
       //RMP only
       if (response.isBlocker) {
         blockers.push(guidelines.soleTraderNotRegistered.conditionString);
@@ -1223,6 +1229,7 @@ const checkPriceRangeGuidelines = async ({
       }
     }
     if (guidelines.delinquencyScore) {
+      response = {};
       if (reportData && reportData.DynamicDelinquencyScore) {
         response = await checkForRiskScore({
           dynamicDelinquencyScore: reportData.DynamicDelinquencyScore,

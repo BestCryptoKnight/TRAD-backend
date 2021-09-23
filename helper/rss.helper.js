@@ -113,9 +113,12 @@ const getInsurers = async ({ searchKeyword }) => {
   try {
     const url = 'https://apiv4.reallysimplesystems.com/accounts';
     const query = {
-      name: {
-        $con: searchKeyword,
-      },
+      name:
+        typeof searchKeyword === 'string'
+          ? {
+              $con: searchKeyword,
+            }
+          : searchKeyword,
       type: 'Underwriter',
     };
     const organization = await Organization.findOne({
@@ -560,6 +563,7 @@ const fetchInsurerDetails = async ({
   auditLog = {},
 }) => {
   try {
+    let searchQuery = underwriterName;
     let insurer = await Insurer.findOne({
       name: { $regex: underwriterName, $options: 'i' },
     });
@@ -569,6 +573,7 @@ const fetchInsurerDetails = async ({
       const regex = words.map(function (e) {
         return new RegExp(e, 'i');
       });
+      searchQuery = { $in: words };
       insurer = await Insurer.findOne({
         name: {
           $in: regex,
@@ -629,7 +634,7 @@ const fetchInsurerDetails = async ({
       }
       return insurer;
     } else {
-      const data = await getInsurers({ searchKeyword: underwriterName });
+      const data = await getInsurers({ searchKeyword: searchQuery });
       let promiseArr = [];
       if (data && data.length !== 0) {
         const insurerData = {
@@ -687,17 +692,26 @@ const fetchInsurerDetails = async ({
         page: 1,
       });
       clientPolicies.forEach((policy) => {
-        const clientPolicy = new Policy(policy);
-        promiseArr.push(clientPolicy.save());
-        //TODO change message (policy number)
+        promiseArr.push(
+          Policy.updateOne(
+            { clientId: policy.clientId, crmPolicyId: policy.crmPolicyId },
+            policy,
+            { upsert: true, setDefaultsOnInsert: true },
+          ),
+        );
+      });
+      const policies = await Policy.find({ clientId: clientId })
+        .select('_id policyNumber')
+        .lean();
+      policies.forEach((policy) => {
         promiseArr.push(
           addAuditLog({
             entityType: 'policy',
-            entityRefId: clientPolicy._id,
+            entityRefId: policy._id,
             userType: auditLog.userType,
             userRefId: auditLog.userRefId,
             actionType: 'add',
-            logDescription: `Client policy ${clientPolicy.product} added successfully.`,
+            logDescription: `Client policy ${policy.policyNumber} added successfully.`,
           }),
         );
       });

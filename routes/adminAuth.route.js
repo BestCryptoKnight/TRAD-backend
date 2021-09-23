@@ -322,7 +322,7 @@ router.post('/verify-otp', async (req, res) => {
       return res.status(400).send({
         status: 'ERROR',
         messageCode: 'OTP_EXPIRED',
-        message: 'otp expired',
+        message: 'OTP expired',
       });
     } else if (
       !user.verificationOtp ||

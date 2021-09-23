@@ -1042,7 +1042,7 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
           },
         }).exec();
         console.log('count', count);
-        if (count > noOfRESCheckCount) {
+        if (count > parseInt(noOfRESCheckCount)) {
           continueWithAutomation = false;
           blockers.push('Client has used all RES checks');
         }

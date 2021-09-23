@@ -126,8 +126,8 @@ const scheduler = async () => {
         end = new Date(end.toString().split('GMT')[0] + ' UTC').toISOString();
         console.log(end);*!/
         await retrieveAlertListFromIllion({
-          startDate: '2021-07-29T18:30:00.000Z',
-          endDate: '2021-08-11T04:51:00.006Z',
+          startDate: start,
+          endDate: end,
         });
       },
       {

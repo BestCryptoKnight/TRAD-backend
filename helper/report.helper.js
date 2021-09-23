@@ -595,7 +595,8 @@ const getLimitListReport = async ({
           : '';
       }*/
       if (limit?.activeApplicationId?.[0]?.limitType) {
-        limit.limitType = limit.activeApplicationId[0]?.limitType || '';
+        limit.limitType =
+          formatString(limit.activeApplicationId[0].limitType) || '';
       }
       if (limit?.activeApplicationId?.[0]?.comments) {
         limit.comments = limit.activeApplicationId[0]?.comments || '';
@@ -1183,8 +1184,9 @@ const getReviewReport = async ({
           ? limit.currentReportId[0].expiryDate
           : '';
       }
-      if (limit?.activeApplicationId[0]?.limitType) {
-        limit.limitType = limit.activeApplicationId[0]?.limitType || '';
+      if (limit?.activeApplicationId?.[0]?.limitType) {
+        limit.limitType =
+          formatString(limit.activeApplicationId[0].limitType) || '';
       }
       if (limit?.activeApplicationId[0]?.comments) {
         limit.comments = limit.activeApplicationId[0]?.comments || '';
@@ -1743,7 +1745,8 @@ const getUsagePerClientReport = async ({
         limit.expiryDate = limit?.activeApplicationId[0]?.expiryDate || '';
       }
       if (limit?.activeApplicationId?.[0]?.limitType) {
-        limit.limitType = limit?.activeApplicationId[0]?.limitType || '';
+        limit.limitType =
+          formatString(limit.activeApplicationId[0].limitType) || '';
       }
       if (limit?.activeApplicationId?.[0]?.clientReference) {
         limit.clientReference =
