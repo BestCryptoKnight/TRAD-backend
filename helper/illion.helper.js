@@ -18,9 +18,6 @@ Fetch Credit Report
 const fetchCreditReport = ({ productCode, searchField, searchValue }) => {
   return new Promise(async (resolve, reject) => {
     try {
-      // productCode = 'HXBCA';
-      // searchField = 'ABN';
-      // searchValue = '51069691676';
       const organization = await Organization.findOne({
         isDeleted: false,
       })

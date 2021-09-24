@@ -446,7 +446,7 @@ router.get('/:taskId', async function (req, res) {
   if (
     !req.params.taskId ||
     !mongoose.Types.ObjectId.isValid(req.params.taskId) ||
-    req.query.hasOwnProperty('isCompleted')
+    !req.query.hasOwnProperty('isCompleted')
   ) {
     return res.status(400).send({
       status: 'ERROR',

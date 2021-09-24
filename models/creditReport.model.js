@@ -19,7 +19,6 @@ const creditReportSchema = new Schema(
     name: { type: Schema.Types.String },
     productCode: { type: Schema.Types.String },
     creditReport: { type: Schema.Types.Mixed },
-    base64EncodedData: { type: Schema.Types.Mixed },
     keyPath: { type: Schema.Types.String },
     originalFileName: { type: Schema.Types.String },
     isExpired: { type: Schema.Types.Boolean, default: false },

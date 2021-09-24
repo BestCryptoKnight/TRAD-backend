@@ -173,22 +173,27 @@ const getEntityDetailsByNZBN = async ({ searchString }) => {
       parseInt(e.response.data.status) === 503 &&
       e.response.data.errorDescription
     ) {
-      return {
+      return Promise.reject({
         status: 'ERROR',
         messageCode: 'SERVICE_UNAVAILABLE',
         message: 'NZ lookup error: ' + e.response.data.errorDescription,
-      };
+      });
     } else if (
       e.response &&
       e.response.data &&
       parseInt(e.response.data.status) === 500 &&
       e.response.data.errorDescription
     ) {
-      return {
+      return Promise.reject({
         status: 'ERROR',
         messageCode: 'UPSTREAM_SERVICE_ERROR',
         message: 'NZ lookup error: ' + e.response.data.errorDescription,
-      };
+      });
+    } else {
+      return Promise.reject({
+        status: 'ERROR',
+        message: e.message || e,
+      });
     }
   }
 };

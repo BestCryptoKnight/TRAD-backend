@@ -99,7 +99,8 @@ const getCurrentDebtorList = async ({
             debtorIds.push(i.debtorId);
           }
         });
-        return { response, acnResponse };
+        // return { response, acnResponse };
+        return response;
       } else {
         debtors.forEach((i) => {
           if (i.debtorId && !debtorIds.includes(i.debtorId)) {
