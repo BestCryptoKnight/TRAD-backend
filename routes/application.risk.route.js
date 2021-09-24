@@ -5,7 +5,6 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const User = mongoose.model('user');
-const Client = mongoose.model('client');
 const Debtor = mongoose.model('debtor');
 const DebtorDirector = mongoose.model('debtor-director');
 const Application = mongoose.model('application');
@@ -248,20 +247,9 @@ router.get('/', async function (req, res) {
     const applicationColumn = req.user.manageColumns.find(
       (i) => i.moduleName === 'application',
     );
-    let clientIds;
     let hasFullAccess = true;
     if (req.accessTypes && req.accessTypes.indexOf('full-access') === -1) {
       hasFullAccess = false;
-      const clients = await Client.find({
-        isDeleted: false,
-        $or: [
-          { riskAnalystId: req.user._id },
-          { serviceManagerId: req.user._id },
-        ],
-      })
-        .select({ _id: 1 })
-        .lean();
-      clientIds = clients.map((i) => i._id);
     }
     const clientModuleAccess = req.user.moduleAccess
       .filter((userModule) => userModule.name === 'client')
@@ -280,7 +268,6 @@ router.get('/', async function (req, res) {
       applicationColumn: applicationColumn.columns,
       isForRisk: true,
       requestedQuery: req.query,
-      clientIds: clientIds,
       moduleColumn: module.manageColumns,
       userId: req.user._id,
       hasOnlyReadAccessForClientModule,
@@ -326,27 +313,15 @@ router.get('/download', async function (req, res) {
       'createdAt',
       'updatedAt',
     ];
-    let clientIds;
     let hasFullAccess = true;
     if (req.accessTypes && req.accessTypes.indexOf('full-access') === -1) {
       hasFullAccess = false;
-      const clients = await Client.find({
-        isDeleted: false,
-        $or: [
-          { riskAnalystId: req.user._id },
-          { serviceManagerId: req.user._id },
-        ],
-      })
-        .select({ _id: 1 })
-        .lean();
-      clientIds = clients.map((i) => i._id);
     }
     const response = await getApplicationList({
       hasFullAccess: hasFullAccess,
       applicationColumn: applicationColumn,
       isForRisk: true,
       requestedQuery: req.query,
-      clientIds: clientIds,
       moduleColumn: module.manageColumns,
       userId: req.user._id,
       isForDownload: true,
@@ -354,7 +329,15 @@ router.get('/download', async function (req, res) {
     });
     const finalArray = [];
     let data = {};
-    if (response && response.docs.length !== 0) {
+    if (response && response?.docs.length > 500) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'DOWNLOAD_LIMIT_EXCEED',
+        message:
+          'User cannot download more than 500 applications at a time. Please apply filter to narrow down the list',
+      });
+    }
+    if (response?.docs.length !== 0) {
       response.docs.forEach((i) => {
         data = {};
         applicationColumn.map((key) => {

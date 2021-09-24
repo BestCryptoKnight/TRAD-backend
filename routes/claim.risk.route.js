@@ -189,7 +189,9 @@ router.get('/document/download/:entityId', async function (req, res) {
     res.setHeader(
       'Content-Disposition',
       'attachment; filename=' +
-        headers?.['content-disposition']?.split('filename=')[1],
+        headers?.['content-disposition']
+          ?.split('filename=')[1]
+          .replace(/['"]+/g, ''),
     );
     return data.pipe(res);
   } catch (e) {

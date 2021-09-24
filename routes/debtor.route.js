@@ -476,8 +476,8 @@ router.get(
           })
           .end(bufferData);
       } else {
-        res.status(200).send({
-          status: 'SUCCESS',
+        res.status(400).send({
+          status: 'ERROR',
           message: 'No decision letter found',
         });
       }

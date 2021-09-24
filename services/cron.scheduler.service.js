@@ -46,7 +46,7 @@ const scheduler = async () => {
           const notification = await addNotification({
             userId: tasks[i].assigneeId,
             userType: tasks[i].assigneeType,
-            description: `${tasks[i].description} is due today`,
+            description: `${tasks[i]?.description} is due today`,
           });
           if (notification) {
             sendNotification({
@@ -103,7 +103,7 @@ const scheduler = async () => {
     /*
     Retrieve Alert List
      */
-    /*cron.schedule(
+    cron.schedule(
       config.illion.cronString,
       async () => {
         Logger.log.trace(
@@ -119,12 +119,12 @@ const scheduler = async () => {
         // start = start.setDate(start.getDate() - 1)
         console.log('end', end);
         // end.setHours(23, 59, 59, 999);
-        /!*start = new Date(
+        /*start = new Date(
           start.toString().split('GMT')[0] + ' UTC',
         ).toISOString();
         console.log(start);
         end = new Date(end.toString().split('GMT')[0] + ' UTC').toISOString();
-        console.log(end);*!/
+        console.log(end);*/
         await retrieveAlertListFromIllion({
           startDate: start,
           endDate: end,
@@ -134,7 +134,7 @@ const scheduler = async () => {
         scheduled: true,
         timezone: 'Australia/Sydney',
       },
-    );*/
+    );
   } catch (e) {
     Logger.log.error('Error occurred in retrieve alert list', e.message || e);
   }

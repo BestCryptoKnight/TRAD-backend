@@ -49,7 +49,6 @@ const getApplicationList = async ({
   isForRisk = true,
   hasFullAccess = false,
   queryFilter = {},
-  clientIds = [],
   moduleColumn,
   userId,
   isForDownload = false,
@@ -80,30 +79,40 @@ const getApplicationList = async ({
       }
     } else if (userId) {
       let queryCondition = { status: { $ne: 'DRAFT' } };
-      if (!hasFullAccess) {
-        const clients = await Client.find({
-          $or: [{ riskAnalystId: userId }, { serviceManagerId: userId }],
-        })
-          .select('_id')
-          .lean();
-        if (clients.length !== 0) {
-          queryCondition = {
-            status: { $ne: 'DRAFT' },
-            clientId: {
-              $in: clients.map((i) => mongoose.Types.ObjectId(i._id)),
+      const clients = await Client.find({
+        $or: [{ riskAnalystId: userId }, { serviceManagerId: userId }],
+      })
+        .select('_id')
+        .lean();
+      if (!hasFullAccess && clients.length !== 0) {
+        queryCondition = {
+          // status: { $ne: 'DRAFT' },
+          clientId: {
+            $in: clients.map((i) => mongoose.Types.ObjectId(i._id)),
+          },
+        };
+
+        queryFilter = Object.assign({}, queryFilter, {
+          $or: [
+            queryCondition,
+            { createdById: mongoose.Types.ObjectId(userId), status: 'DRAFT' },
+          ],
+        });
+      } else {
+        queryFilter = Object.assign({}, queryFilter, {
+          $or: [
+            queryCondition,
+            {
+              clientId: {
+                $in: clients.map((i) => mongoose.Types.ObjectId(i._id)),
+              },
             },
-          };
-        }
+            { createdById: mongoose.Types.ObjectId(userId), status: 'DRAFT' },
+          ],
+        });
       }
-      queryFilter = Object.assign({}, queryFilter, {
-        $or: [
-          queryCondition,
-          { createdById: mongoose.Types.ObjectId(userId), status: 'DRAFT' },
-        ],
-      });
-    } else if (!hasFullAccess && isForRisk && clientIds.length !== 0) {
-      queryFilter.clientId = { $in: clientIds };
     }
+
     if (requestedQuery.search) {
       queryFilter.applicationId = {
         $regex: getRegexForSearch(requestedQuery.search),

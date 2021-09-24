@@ -304,9 +304,6 @@ router.get('/alert/:alertId', async function (req, res) {
   }
   try {
     const response = await getAlertDetail({ alertId: req.params.alertId });
-    if (response && response.status && response.status === 'ERROR') {
-      return res.status(400).send(response);
-    }
     res.status(200).send({
       status: 'SUCCESS',
       data: response,
@@ -788,8 +785,8 @@ router.get(
           })
           .end(bufferData);
       } else {
-        res.status(200).send({
-          status: 'SUCCESS',
+        res.status(400).send({
+          status: 'ERROR',
           message: 'No decision letter found',
         });
       }

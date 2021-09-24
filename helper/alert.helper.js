@@ -17,11 +17,11 @@ const {
   retrieveDetailedAlertList,
   getMonitoredEntities,
 } = require('./illion.helper');
-const {
-  createTaskOnAlert,
-  updateEntitiesToAlertProfile,
-} = require('./debtor.helper');
+const { updateEntitiesToAlertProfile } = require('./debtor.helper');
 const StaticData = require('./../static-files/staticData.json');
+const { addNotification } = require('./notification.helper');
+const { sendNotification } = require('./socket.helper');
+const { createTask } = require('./task.helper');
 
 const retrieveAlertListFromIllion = async ({ startDate, endDate }) => {
   try {
@@ -41,32 +41,19 @@ const retrieveAlertListFromIllion = async ({ startDate, endDate }) => {
       Logger.log.error('ILLION_CREDENTIALS_NOT_PRESENT');
       return { status: 'ERROR', message: 'Illion credentials are not present' };
     }
-    const response = await retrieveAlertList({
+    let response = await retrieveAlertList({
       startDate,
       endDate,
       illionAlertProfile: organization.illionAlertProfile,
       integration: organization.integration,
     });
-    const debtorABN = [];
-    const debtorACN = [];
     if (response && response.alerts.length !== 0) {
-      /*const debtorABN = [];
-      const debtorACN = [];
-      const monitoringArray = [];
-      response.alerts.forEach((i) => {
-        if (i.entity.companyNumbers && i.entity.companyNumbers.duns) {
-          monitoringArray.push({ duns: i.entity.companyNumbers.duns });
-          i.entity.companyNumbers.abn
-            ? debtorABN.push(i.entity.companyNumbers.abn)
-            : i.entity.companyNumbers.acn
-            ? debtorACN.push(i.entity.companyNumbers.acn)
-            : debtorACN.push(i.entity.companyNumbers.ncn);
-        }
-      });*/
       const alertList = [];
+      let companyDetails = {};
+      let usedFields = {};
       let alertResponse = {};
       for (let i = 0; i < response.alerts.length; i++) {
-        const detailedResponse = await retrieveDetailedAlertList({
+        let detailedResponse = await retrieveDetailedAlertList({
           startDate,
           endDate,
           monitoringArray: [
@@ -75,6 +62,7 @@ const retrieveAlertListFromIllion = async ({ startDate, endDate }) => {
           illionAlertProfile: organization.illionAlertProfile,
           integration: organization.integration,
         });
+        console.log('detailedResponse', detailedResponse);
         if (
           detailedResponse?.detailedAlerts &&
           detailedResponse.detailedAlerts.length !== 0
@@ -83,22 +71,24 @@ const retrieveAlertListFromIllion = async ({ startDate, endDate }) => {
             detailedResponse.detailedAlerts[j] = JSON.parse(
               JSON.stringify(detailedResponse.detailedAlerts[j]),
             );
-            alertResponse = {};
-            alertResponse['companyNumbers'] =
-              detailedResponse.detailedAlerts[j]['companyNumbers'];
-            alertResponse['companyName'] =
-              detailedResponse.detailedAlerts[j]['companyName'];
-            alertResponse['countryCode'] =
-              detailedResponse.detailedAlerts[j]['countryCode'];
+            usedFields = {};
             for (let k = 0; k < response.alerts[i].alerts.length; k++) {
+              companyDetails = {};
+              companyDetails['companyNumbers'] =
+                detailedResponse.detailedAlerts[j]['companyNumbers'];
+              companyDetails['companyName'] =
+                detailedResponse.detailedAlerts[j]['companyName'];
+              companyDetails['countryCode'] =
+                detailedResponse.detailedAlerts[j]['countryCode'];
               const alertDetails =
                 StaticData.AlertList[response.alerts[i].alerts[k].alertId];
-              // console.log('alertDetails', alertDetails);
               if (
                 alertDetails?.fieldName &&
                 detailedResponse.detailedAlerts[j][alertDetails.fieldName]
-                  .length !== 0
+                  .length !== 0 &&
+                !usedFields[alertDetails.fieldName]
               ) {
+                usedFields[alertDetails?.fieldName] = true;
                 for (
                   let l = 0;
                   l <
@@ -106,12 +96,8 @@ const retrieveAlertListFromIllion = async ({ startDate, endDate }) => {
                     .length;
                   l++
                 ) {
-                  detailedResponse.detailedAlerts[j][alertDetails.fieldName][l][
-                    'alertDetails'
-                  ] =
-                    detailedResponse.detailedAlerts[j][alertDetails.fieldName][
-                      l
-                    ]['alertDetails'];
+                  alertResponse = {};
+
                   for (let key in detailedResponse.detailedAlerts[j][
                     alertDetails.fieldName
                   ][l]['alertDetails']) {
@@ -124,6 +110,13 @@ const retrieveAlertListFromIllion = async ({ startDate, endDate }) => {
                     detailedResponse.detailedAlerts[j][alertDetails.fieldName][
                       l
                     ];
+
+                  alertResponse = Object.assign(
+                    {},
+                    companyDetails,
+                    alertResponse,
+                  );
+
                   alertList.push(alertResponse);
                 }
               }
@@ -131,14 +124,8 @@ const retrieveAlertListFromIllion = async ({ startDate, endDate }) => {
           }
         }
       }
-      console.log('detailedResponse', alertList);
-      console.log('detailedResponse', alertList[0]);
-      console.log('detailedResponse', alertList[0].statusChange);
-
       const mappedResponse = await mapEntityToAlert({ alertList });
-      // fs.writeFileSync('output1.json', JSON.stringify(alertList));
-      //TODO send notification + create a task
-      // await createTaskOnAlert({ debtorACN, debtorABN });
+      await createTaskOnAlert({ alertList: mappedResponse });
     }
   } catch (e) {
     Logger.log.error('Error occurred in retrieve alert list from illion');
@@ -230,28 +217,43 @@ const getAlertDetail = async ({ alertId }) => {
   try {
     const alert = await Alert.findOne({ _id: alertId }).lean();
     if (!alert) {
-      return {
+      return Promise.reject({
         status: 'ERROR',
         messageCode: 'NO_ALERT_FOUND',
         message: 'No alert found',
-      };
+      });
     }
+    const alertDetails = StaticData.AlertList[alert.alertId];
     const response = {
-      priority: alert.alertPriority,
-      name: alert.companyName,
+      priority: alert?.alertPriority,
+      name: alert?.companyName,
       generalDetails: [
-        { label: 'Name', value: alert.companyName, type: 'string' },
-        { label: 'Alert Date', value: alert.createdAt, type: 'date' },
-        { label: 'Alert Trigger', value: alert.alertType, type: 'string' },
+        { label: 'Name', value: alert?.companyName, type: 'string' },
+        { label: 'Alert Date', value: alert?.createdAt, type: 'date' },
+        { label: 'Alert Trigger', value: alert?.alertType, type: 'string' },
         { label: 'Source', value: 'Illion Monitoring Alert', type: 'string' },
         {
           label: 'Account No',
-          value: alert.companyNumbers.duns,
+          value: alert?.companyNumbers.duns,
           type: 'string',
         },
       ],
       alertDetails: [],
     };
+    if (alertDetails?.fieldName && alert[alertDetails.fieldName]) {
+      for (let key of alertDetails.alertFields) {
+        response.alertDetails.push({
+          label:
+            key.charAt(0).toUpperCase() +
+            key
+              .substr(1)
+              .replace(/([A-Z])/g, ' $1')
+              .trim(),
+          value: alert[alertDetails.fieldName][key],
+          type: StaticData.AlertFieldTypes[key] || 'string',
+        });
+      }
+    }
     if (alert.companyNumbers.ncn) {
       response.generalDetails.push({
         label: 'NCN',
@@ -586,9 +588,10 @@ const mapEntityToAlert = async ({ alertList }) => {
     let query = {};
     const promises = [];
     for (let i = 0; i < alertList.length; i++) {
+      console.log(alertList[i]);
       query = {};
       query[
-        alertList[i].companyNumbers.abn
+        alertList[i].companyNumbers?.abn
           ? 'abn'
           : alertList[i].companyNumbers.acn
           ? 'acn'
@@ -608,9 +611,110 @@ const mapEntityToAlert = async ({ alertList }) => {
       promises.push(Alert.create(alertList[i]));
     }
     const response = await Promise.all(promises);
-    return alertList;
+    console.log(JSON.stringify(response, null, 3));
+    return response;
   } catch (e) {
     Logger.log.error('Error occurred in map entity to alerts');
+    Logger.log.error(e);
+  }
+};
+
+const createTaskOnAlert = async ({ alertList }) => {
+  try {
+    let debtor;
+    let clientDebtors;
+    const response = [];
+    for (let index = 0; index < alertList.length; index++) {
+      if (alertList[index].entityType === 'debtor') {
+        debtor = await Debtor.findOne({
+          _id: alertList[index].entityId,
+        }).lean();
+      } else {
+        const stakeholder = await DebtorDirector.findOne({
+          _id: alertList[index].entityId,
+        })
+          .populate('debtorId')
+          .lean();
+        debtor = stakeholder?.debtorId;
+      }
+      clientDebtors = await ClientDebtor.find({ debtorId: debtor?._id })
+        .populate({
+          path: 'clientId',
+          populate: { path: 'riskAnalystId' },
+        })
+        .populate('debtorId')
+        .lean();
+      clientDebtors?.forEach((i) => {
+        if (
+          i?.clientId?.riskAnalystId?._id &&
+          i?.debtorId?._id &&
+          i?.debtorId?.entityName
+        ) {
+          response.push({
+            id:
+              i.debtorId._id +
+              i.clientId.riskAnalystId._id +
+              +alertList[index]._id,
+            debtorId: i.debtorId._id,
+            debtorName: i.debtorId.entityName,
+            riskAnalystId: i.clientId.riskAnalystId._id,
+            alertPriority: alertList[index].alertPriority,
+            alertCategory: alertList[index].alertCategory,
+            alertId: alertList[index]._id,
+            alertTypeId: alertList[index].alertId,
+          });
+        }
+      });
+    }
+
+    const filteredData = Array.from(new Set(response.map((s) => s.id))).map(
+      (id) => {
+        return {
+          id: id,
+          debtorId: response.find((i) => i.id === id).debtorId,
+          debtorName: response.find((i) => i.id === id).debtorName,
+          riskAnalystId: response.find((i) => i.id === id).riskAnalystId,
+          alertPriority: response.find((i) => i.id === id).alertPriority,
+          alertCategory: response.find((i) => i.id === id).alertCategory,
+          alertTypeId: response.find((i) => i.id === id).alertTypeId,
+          alertId: response.find((i) => i.id === id).alertId,
+        };
+      },
+    );
+    console.log(filteredData, 'filteredData');
+    const date = new Date();
+    for (let i = 0; i < filteredData.length; i++) {
+      const data = {
+        description: `${filteredData[i].alertPriority} alert on ${filteredData[i].debtorName}`,
+        // createdByType: 'user',
+        // createdById: filteredData[i].riskAnalystId,
+        assigneeType: 'user',
+        assigneeId: filteredData[i].riskAnalystId,
+        dueDate: new Date(date.setDate(date.getDate() + 7)),
+        entityType: 'debtor',
+        entityId: filteredData[i].debtorId,
+      };
+      await createTask(data);
+      const notification = await addNotification({
+        userId: filteredData[i].riskAnalystId,
+        userType: 'user',
+        description: data.description,
+        entityId: filteredData[i]?.alertId,
+        entityType: 'alert',
+      });
+      if (notification) {
+        sendNotification({
+          notificationObj: {
+            type: 'ALERT',
+            data: notification,
+          },
+          type: notification.userType,
+          userId: notification.userId,
+        });
+      }
+    }
+  } catch (e) {
+    Logger.log.error('Error occurred in create task on alert');
     Logger.log.error(e);
   }
 };

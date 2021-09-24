@@ -23,7 +23,7 @@ module.exports = ({ name, setPasswordLink }) => {
 
                 <tr>
                     <td align="center" valign="center" height="85" style="background-color: #F4F6F8;">
-                        <img height="40" src="${config.server.backendServerUrl}mail-images/tcr-logo.png"/>
+                        <img height="40" src="${config.staticServing.bucketURL}static-files/mail-images/tcr-logo.png"/>
                     </td>
                 </tr>
 
@@ -84,7 +84,7 @@ module.exports = ({ name, setPasswordLink }) => {
                                     <table>
                                         <tr>
                                             <td align="center">
-                                                <img height="30" src="${config.server.backendServerUrl}mail-images/call.png"/>
+                                                <img height="30" src="${config.staticServing.bucketURL}static-files/mail-images/call.png"/>
                                             </td>
                                         </tr>
                                         <tr style="font-size: 13px; color: #003A78">
@@ -101,7 +101,7 @@ module.exports = ({ name, setPasswordLink }) => {
                                     <table>
                                         <tr>
                                             <td align="center">
-                                                <img height="30" src="${config.server.backendServerUrl}mail-images/mail.png"/>
+                                                <img height="30" src="${config.staticServing.bucketURL}static-files/mail-images/mail.png"/>
                                             </td>
                                         </tr>
                                         <tr style="font-size: 13px; color: #003A78">
@@ -118,7 +118,7 @@ module.exports = ({ name, setPasswordLink }) => {
                                     <table>
                                         <tr>
                                             <td align="center">
-                                                <img height="30" src="${config.server.backendServerUrl}mail-images/location.png"/>
+                                                <img height="30" src="${config.staticServing.bucketURL}static-files/mail-images/location.png"/>
                                             </td>
                                         </tr>
                                         <tr style="font-size: 13px; color: #003A78">
@@ -135,7 +135,7 @@ module.exports = ({ name, setPasswordLink }) => {
 
                 <tr>
                     <td align="center" style="padding: 30px 0 5px 0">
-                        <img height="40" src="${config.server.backendServerUrl}mail-images/trad-icon.png"/>
+                        <img height="40" src="${config.staticServing.bucketURL}static-files/mail-images/trad-icon.png"/>
                     </td>
                 </tr>
 
@@ -153,19 +153,19 @@ module.exports = ({ name, setPasswordLink }) => {
                                 <td>
                                     <a style="text-decoration: none">
                                         <img height="30" style="cursor:pointer;"
-                                             src="${config.server.backendServerUrl}mail-images/facebook.png"/>
+                                             src="${config.staticServing.bucketURL}static-files/mail-images/facebook.png"/>
                                     </a>
                                 </td>
                                 <td>
                                     <a style="text-decoration: none">
                                         <img height="30" style="cursor:pointer;"
-                                             src="${config.server.backendServerUrl}mail-images/linkedin.png"/>
+                                             src="${config.staticServing.bucketURL}static-files/mail-images/linkedin.png"/>
                                     </a>
                                 </td>
                                 <td>
                                     <a style="text-decoration: none">
                                         <img height="30" style="cursor:pointer;"
-                                             src="${config.server.backendServerUrl}mail-images/twitter.png"/>
+                                             src="${config.staticServing.bucketURL}static-files/mail-images/twitter.png"/>
                                     </a>
                                 </td>
                             </tr>
