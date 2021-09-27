@@ -155,6 +155,7 @@ const getDebtorList = async ({
   userId,
   searchString,
   isForGlobalSearch = true,
+  requestFrom,
 }) => {
   try {
     const access = moduleAccess.find((i) => {
@@ -186,6 +187,8 @@ const getDebtorList = async ({
     };
     const fields = isForGlobalSearch
       ? '_id entityName'
+      : requestFrom && requestFrom === 'overdue'
+      ? '_id entityName acn'
       : '_id entityName abn acn registrationNumber';
     const debtors = await Debtor.find(queryFilter).select(fields).lean();
     if (isForGlobalSearch) {
@@ -196,21 +199,28 @@ const getDebtorList = async ({
         delete debtor.entityName;
       });
     } else {
-      debtors.forEach((debtor) => {
-        debtor.name =
-          debtor.entityName +
-          ' (' +
-          (debtor.abn
-            ? debtor.abn
-            : debtor.acn
-            ? debtor.acn
-            : debtor.registrationNumber) +
-          ')';
-        delete debtor.entityName;
-        delete debtor.abn;
-        delete debtor.acn;
-        delete debtor.registrationNumber;
-      });
+      if (requestFrom && requestFrom === 'overdue') {
+        debtors.forEach((debtor) => {
+          debtor.name = debtor.entityName;
+          delete debtor.entityName;
+        });
+      } else {
+        debtors.forEach((debtor) => {
+          debtor.name =
+            debtor.entityName +
+            ' (' +
+            (debtor.abn
+              ? debtor.abn
+              : debtor.acn
+              ? debtor.acn
+              : debtor.registrationNumber) +
+            ')';
+          delete debtor.entityName;
+          delete debtor.abn;
+          delete debtor.acn;
+          delete debtor.registrationNumber;
+        });
+      }
     }
     return debtors;
   } catch (e) {

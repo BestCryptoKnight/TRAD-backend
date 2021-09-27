@@ -38,7 +38,7 @@ router.get('/entity-list', async function (req, res) {
       page: req.query.page,
       limit: req.query.limit,
     });
-    const { response, acnResponse } = await getCurrentDebtorList({
+    const response = await getCurrentDebtorList({
       userId: req.user._id,
       hasFullAccess,
       isForRisk: true,
@@ -65,7 +65,6 @@ router.get('/entity-list', async function (req, res) {
         debtorId: response,
         overdueType: overdueTypes,
         insurerId: insurer,
-        acnResponse: acnResponse,
       },
     });
   } catch (e) {

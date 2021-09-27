@@ -84,7 +84,8 @@ const getCurrentDebtorList = async ({
       if (isForOverdue) {
         const debtorIds = [];
         const response = [];
-        const acnResponse = [];
+        //TODO remove
+        // const acnResponse = [];
         debtors.forEach((i) => {
           if (i.debtorId && !debtorIds.includes(i.debtorId)) {
             response.push({
@@ -92,13 +93,15 @@ const getCurrentDebtorList = async ({
               name: i.debtorId.entityName,
               acn: i.debtorId.acn,
             });
-            acnResponse.push({
+            //TODO remove
+            /*acnResponse.push({
               _id: i.debtorId._id,
               acn: i.debtorId.acn,
-            });
+            });*/
             debtorIds.push(i.debtorId);
           }
         });
+        //TODO remove
         // return { response, acnResponse };
         return response;
       } else {

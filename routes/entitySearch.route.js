@@ -45,6 +45,7 @@ router.get('/', async function (req, res) {
             searchString: req.query.searchString,
             userId: req.user._id,
             isForGlobalSearch: false,
+            requestFrom: req.query.requestFrom,
           });
           break;
         case 'applications':
