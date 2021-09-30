@@ -53,11 +53,9 @@ const removeUserToken = async () => {
     const promises = [];
     for (let i = 0; i < users.length; i++) {
       if (users[i].jwtToken.length !== 0) {
-        console.log('user[i].jwtToken ', users[i].jwtToken.length);
         users[i].jwtToken = users[i].jwtToken.filter((i) => {
           return expireTime < i.lastAPICallTime;
         });
-        console.log('user[i].jwtToken ', users[i].jwtToken);
         promises.push(
           User.updateOne(
             { _id: users[i]._id },

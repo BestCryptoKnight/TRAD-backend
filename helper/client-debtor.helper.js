@@ -3,6 +3,7 @@
  * */
 const mongoose = require('mongoose');
 const ClientDebtor = mongoose.model('client-debtor');
+const Client = mongoose.model('client');
 
 /*
  * Local Imports
@@ -97,7 +98,12 @@ const getClientCreditLimit = async ({
     const queryFilter = {
       isActive: true,
       clientId: mongoose.Types.ObjectId(clientId),
-      creditLimit: { $exists: true, $ne: null },
+      // creditLimit: { $exists: true, $ne: null },
+      $and: [
+        { creditLimit: { $exists: true } },
+        { creditLimit: { $ne: null } },
+        { creditLimit: { $ne: 0 } },
+      ],
     };
     const aggregationQuery = [
       {
@@ -293,6 +299,8 @@ const getDebtorCreditLimit = async ({
   debtorId,
   hasOnlyReadAccessForClientModule = false,
   hasOnlyReadAccessForApplicationModule = false,
+  hasFullAccessForClientModule,
+  userId,
 }) => {
   try {
     debtorColumn.push('isFromOldSystem');
@@ -307,8 +315,23 @@ const getDebtorCreditLimit = async ({
     const queryFilter = {
       isActive: true,
       debtorId: mongoose.Types.ObjectId(debtorId),
-      creditLimit: { $exists: true, $ne: null },
+      // creditLimit: { $exists: true, $ne: null },
+      $and: [
+        { creditLimit: { $exists: true } },
+        { creditLimit: { $ne: null } },
+        { creditLimit: { $ne: 0 } },
+      ],
     };
+    if (!hasFullAccessForClientModule && userId) {
+      const clients = await Client.find({
+        $or: [{ riskAnalystId: userId }, { serviceManagerId: userId }],
+      })
+        .select('_id')
+        .lean();
+      if (clients?.length !== 0) {
+        queryFilter.clientId = { $in: clients.map((i) => i._id) };
+      }
+    }
     const aggregationQuery = [
       {
         $lookup: {
@@ -625,13 +648,14 @@ const downloadDecisionLetter = async ({ creditLimitId }) => {
       })
       .populate('activeApplicationId')
       .lean();
+    console.log(clientDebtor);
     let bufferData;
-    if (clientDebtor?.isFromOldSystem) {
-    } else {
+    if (!clientDebtor?.isFromOldSystem) {
+      /* } else {*/
       const response = {
         status:
           parseInt(clientDebtor.creditLimit) >
-          parseInt(clientDebtor.activeApplicationId.creditLimit)
+          parseInt(clientDebtor?.activeApplicationId?.creditLimit)
             ? 'PARTIALLY_APPROVED'
             : 'APPROVED',
         clientName:
@@ -649,15 +673,15 @@ const downloadDecisionLetter = async ({ creditLimitId }) => {
             ? clientDebtor.clientId.serviceManagerId.contactNumber
             : '',
         requestedAmount: parseInt(
-          clientDebtor.activeApplicationId.creditLimit,
+          clientDebtor?.activeApplicationId?.creditLimit,
         ).toFixed(2),
-        approvedAmount: clientDebtor.creditLimit.toFixed(2),
-        approvalStatus: clientDebtor.activeApplicationId.comments,
+        approvedAmount: clientDebtor?.creditLimit?.toFixed(2),
+        approvalStatus: clientDebtor?.activeApplicationId?.comments,
       };
       bufferData = await generateDecisionLetter(response);
     }
     return {
-      applicationNumber: clientDebtor.activeApplicationId.applicationId,
+      applicationNumber: clientDebtor?.activeApplicationId?.applicationId,
       bufferData,
     };
   } catch (e) {

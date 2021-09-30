@@ -196,7 +196,6 @@ const fetchCreditReportInPDFFormat = ({
         },
         data: requestBody,
       };
-      console.log(options);
       Logger.log.info('Making a request to illion at', new Date());
       const { data } = await axios(options);
       return resolve(data);
@@ -213,8 +212,7 @@ Create Profile for Alert
  */
 const createProfile = async ({ illionAlert, alertIds, profileName }) => {
   try {
-    const url =
-      'https://b2b.clt.illion.com.au/CommercialMonitoring/api/Profile/CreateProfile';
+    const url = `${config.illion.alertAPIUrl}api/Profile/CreateProfile`;
     const requestBody = {
       requestHeader: {
         subscriber: {
@@ -251,8 +249,7 @@ const updateProfile = async ({ requestedData }) => {
     })
       .select({ 'integration.illionAlert': 1 })
       .lean();
-    const url =
-      'https://b2b.clt.illion.com.au/CommercialMonitoring/api/Profile/UpdateProfile';
+    const url = `${config.illion.alertAPIUrl}api/Profile/UpdateProfile`;
     const requestBody = {
       requestHeader: {
         subscriber: {
@@ -291,8 +288,7 @@ const subscribeProfile = async ({ requestedData }) => {
     })
       .select({ 'integration.illionAlert': 1, illionAlertProfile: 1 })
       .lean();
-    const url =
-      'https://b2b.clt.illion.com.au/CommercialMonitoring/api/Profile/SubscribeProfile';
+    const url = `${config.illion.alertAPIUrl}api/Profile/SubscribeProfile`;
     const requestBody = {
       requestHeader: {
         subscriber: {
@@ -334,8 +330,7 @@ const unSubscribeProfile = async () => {
     })
       .select({ 'integration.illionAlert': 1, illionAlertProfile: 1 })
       .lean();
-    const url =
-      'https://b2b.clt.illion.com.au/CommercialMonitoring/api/Profile/UnsubscribeProfile';
+    const url = `${config.illion.alertAPIUrl}api/Profile/UnsubscribeProfile`;
     const requestBody = {
       requestHeader: {
         subscriber: {
@@ -372,8 +367,7 @@ const getProfiles = async () => {
     })
       .select({ 'integration.illionAlert': 1 })
       .lean();
-    const url =
-      'https://b2b.clt.illion.com.au/CommercialMonitoring/api/Profile/ProfileDetails';
+    const url = `${config.illion.alertAPIUrl}api/Profile/ProfileDetails`;
     const requestBody = {
       requestHeader: {
         subscriber: {
@@ -401,9 +395,8 @@ Add Entities to Alert Profile
  */
 const addEntitiesToProfile = async ({ entities, integration }) => {
   try {
-    const url =
-      'https://b2b.clt.illion.com.au/CommercialMonitoring/api/Entities/AddEntities';
-    const requestBody = {
+    const url = `${config.illion.alertAPIUrl}api/Entities/AddEntities`;
+    const requestBody = JSON.stringify({
       requestHeader: {
         subscriber: {
           subscriberId: integration.illionAlert.subscriberId,
@@ -416,10 +409,13 @@ const addEntitiesToProfile = async ({ entities, integration }) => {
         contact: 'TRAD@2021',
       },
       entities: entities,
-    };
+    });
     const options = {
       method: 'POST',
       url: url,
+      headers: {
+        'Content-Type': 'application/json',
+      },
       data: requestBody,
     };
     const { data } = await axios(options);
@@ -440,8 +436,7 @@ const getMonitoredEntities = async () => {
     })
       .select({ 'integration.illionAlert': 1, illionAlertProfile: 1 })
       .lean();
-    const url =
-      'https://b2b.clt.illion.com.au/CommercialMonitoring/api/Entities/GetMonitoredEntities';
+    const url = `${config.illion.alertAPIUrl}api/Entities/GetMonitoredEntities`;
     const requestBody = {
       requestHeader: {
         subscriber: {
@@ -470,9 +465,8 @@ Remove Entity from Profile
  */
 const removeEntitiesFromProfile = async ({ entities, integration }) => {
   try {
-    const url =
-      'https://b2b.clt.illion.com.au/CommercialMonitoring/api/Entities/RemoveEntityFromProfile';
-    const requestBody = {
+    const url = `${config.illion.alertAPIUrl}api/Entities/RemoveEntityFromProfile`;
+    const requestBody = JSON.stringify({
       requestHeader: {
         subscriber: {
           subscriberId: integration.illionAlert.subscriberId,
@@ -485,10 +479,13 @@ const removeEntitiesFromProfile = async ({ entities, integration }) => {
         contact: 'TRAD@2021',
       },
       entities: entities,
-    };
+    });
     const options = {
       method: 'DELETE',
       url: url,
+      headers: {
+        'Content-Type': 'application/json',
+      },
       data: requestBody,
     };
     const { data } = await axios(options);
@@ -509,8 +506,7 @@ const retrieveAlertList = async ({
   illionAlertProfile,
 }) => {
   try {
-    const url =
-      'https://b2b.clt.illion.com.au/CommercialMonitoring/api/Profile/AlertList';
+    const url = `${config.illion.alertAPIUrl}api/Profile/AlertList`;
     const requestBody = {
       requestHeader: {
         subscriber: {
@@ -547,8 +543,7 @@ const retrieveDetailedAlertList = async ({
   illionAlertProfile,
 }) => {
   try {
-    const url =
-      'https://b2b.clt.illion.com.au/CommercialMonitoring/api/Profile/DetailedAlertList';
+    const url = `${config.illion.alertAPIUrl}api/Profile/DetailedAlertList`;
     const requestBody = {
       requestHeader: {
         subscriber: {

@@ -32,7 +32,10 @@ const {
 } = require('./../helper/client-debtor.helper');
 const { generateNewApplication } = require('./../helper/application.helper');
 const { getClientListWithDetails } = require('./../helper/client.helper');
-const { checkForEntityInProfile } = require('./../helper/alert.helper');
+const {
+  checkForEntityInProfile,
+  checkForActiveCreditLimit,
+} = require('./../helper/alert.helper');
 
 /**
  * Search Client from RSS
@@ -1288,18 +1291,22 @@ router.put('/credit-limit/:creditLimitId', async function (req, res) {
         { _id: req.params.creditLimitId },
         {
           creditLimit: undefined,
-          activeApplicationId: undefined,
           isActive: false,
         },
       );
-      //TODO uncomment to remove entity from alert profile
-      /*if (clientDebtor?.debtorId) {
-        checkForEntityInProfile({
-          entityId: clientDebtor.debtorId,
-          action: 'remove',
-          entityType: 'debtor',
-        });
-      }*/
+      const hasActiveCreditLimit = await checkForActiveCreditLimit({
+        debtorId: clientDebtor?.debtorId,
+      });
+      if (!hasActiveCreditLimit) {
+        //TODO uncomment to remove entity from alert profile
+        if (clientDebtor?.debtorId) {
+          checkForEntityInProfile({
+            entityId: clientDebtor.debtorId,
+            action: 'remove',
+            entityType: 'debtor',
+          });
+        }
+      }
     }
     res.status(200).send({
       status: 'SUCCESS',

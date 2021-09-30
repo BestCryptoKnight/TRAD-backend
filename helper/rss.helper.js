@@ -564,11 +564,14 @@ const fetchInsurerDetails = async ({
 }) => {
   try {
     let searchQuery = underwriterName;
-    let insurer = await Insurer.findOne({
-      name: { $regex: underwriterName, $options: 'i' },
-    });
+    let [insurer, data] = await Promise.all([
+      Insurer.findOne({
+        name: { $regex: underwriterName, $options: 'i' },
+      }),
+      getInsurers({ searchKeyword: searchQuery }),
+    ]);
     //TODO remove after changes are done from RSS
-    if (!insurer) {
+    if (!insurer && !data) {
       const words = underwriterName.split(' ');
       const regex = words.map(function (e) {
         return new RegExp(e, 'i');
@@ -634,7 +637,9 @@ const fetchInsurerDetails = async ({
       }
       return insurer;
     } else {
-      const data = await getInsurers({ searchKeyword: searchQuery });
+      if (!data) {
+        data = await getInsurers({ searchKeyword: searchQuery });
+      }
       let promiseArr = [];
       if (data && data.length !== 0) {
         const insurerData = {

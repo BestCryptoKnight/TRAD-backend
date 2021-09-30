@@ -235,7 +235,7 @@ router.get('/:debtorId', async function (req, res) {
     if (req.query.startDate && req.query.endDate) {
       queryFilter.createdAt = {
         $gte: req.query.startDate,
-        $lt: req.query.endDate,
+        $lte: req.query.endDate,
       };
     }
     let sortingOptions = {};

@@ -113,19 +113,13 @@ router.put('/profile', async function (req, res) {
  * Remove profile-picture of Client.
  */
 router.delete('/profile-picture', async (req, res) => {
-  if (!req.query.oldImageName) {
-    Logger.log.error(
-      'In delete profile picture call, old image name not present for the user:',
-      req.user._id,
-    );
-    return res.status(400).send({
-      status: 'ERROR',
-      messageCode: 'IMAGE_NOT_FOUND',
-      message: 'Image name not found, unable to remove old profile picture',
-    });
-  }
   try {
-    await StaticFileHelper.deleteFile({ filePath: req.query.oldImageName });
+    const clientUser = await ClientUser.findById(req.user._id).lean();
+    if (clientUser && clientUser?.profileKeyPath) {
+      await StaticFileHelper.deleteFile({
+        filePath: clientUser.profileKeyPath,
+      });
+    }
     await ClientUser.updateOne({ _id: req.user._id }, { profileKeyPath: null });
     res.status(200).send({
       status: 'SUCCESS',

@@ -40,6 +40,7 @@ const {
   listEntitySpecificAlerts,
   getAlertDetail,
   checkForEntityInProfile,
+  checkForActiveCreditLimit,
 } = require('./../helper/alert.helper');
 
 /**
@@ -742,6 +743,9 @@ router.get('/credit-limit/:debtorId', async function (req, res) {
     const hasOnlyReadAccessForClientModule =
       clientModuleAccess.accessTypes.length === 0;
 
+    const hasFullAccessForClientModule =
+      clientModuleAccess.accessTypes.indexOf('full-access') !== -1;
+
     const response = await getDebtorCreditLimit({
       requestedQuery: req.query,
       debtorColumn: debtorColumn.columns,
@@ -749,6 +753,8 @@ router.get('/credit-limit/:debtorId', async function (req, res) {
       debtorId: req.params.debtorId,
       hasOnlyReadAccessForApplicationModule,
       hasOnlyReadAccessForClientModule,
+      hasFullAccessForClientModule,
+      userId: req.user._id,
     });
     res.status(200).send({
       status: 'SUCCESS',
@@ -1068,21 +1074,28 @@ router.post('/stakeholder/:debtorId', async function (req, res) {
       debtorId: req.params.debtorId,
     });
     await DebtorDirector.updateOne(query, update, { upsert: true });
-    query.isDeleted = false;
-    query.debtorId = req.params.debtorId;
-    const stakeholder = await DebtorDirector.findOne(query).lean();
-    //TODO uncomment to add entity into alert profile
-    /*if (
-      (stakeholder?.country?.code === 'AUS' ||
-        stakeholder?.country?.code === 'NZL') &&
-      stakeholder?.type === 'company'
-    ) {
-      checkForEntityInProfile({
-        action: 'add',
-        entityId: stakeholder._id,
-        entityType: 'stakeholder',
+    if (req.body.type === 'company') {
+      const hasActiveCreditLimit = await checkForActiveCreditLimit({
+        debtorId: req.params.debtorId,
       });
-    }*/
+      if (hasActiveCreditLimit) {
+        query.isDeleted = false;
+        query.debtorId = req.params.debtorId;
+        const stakeholder = await DebtorDirector.findOne(query).lean();
+        //TODO uncomment to add entity into alert profile
+        if (
+          (stakeholder?.country?.code === 'AUS' ||
+            stakeholder?.country?.code === 'NZL') &&
+          stakeholder?.type === 'company'
+        ) {
+          checkForEntityInProfile({
+            action: 'add',
+            entityId: stakeholder._id,
+            entityType: 'stakeholder',
+          });
+        }
+      }
+    }
     res.status(200).send({
       status: 'SUCCESS',
       message: 'Stakeholder added successfully',
@@ -1134,10 +1147,23 @@ router.put('/credit-limit/:debtorId', async function (req, res) {
         { _id: req.params.debtorId },
         {
           creditLimit: undefined,
-          activeApplicationId: undefined,
           isActive: false,
         },
       );
+      const hasActiveCreditLimit = await checkForActiveCreditLimit({
+        debtorId: clientDebtor?.debtorId,
+      });
+      if (!hasActiveCreditLimit) {
+        //TODO uncomment to remove entity from alert profile
+        if (clientDebtor?.debtorId) {
+          checkForEntityInProfile({
+            entityId: clientDebtor.debtorId,
+            action: 'remove',
+            entityType: 'debtor',
+          });
+        }
+      }
+      //TODO remove
       //TODO uncomment to surrender active application
       /*await Application.updateOne(
         { clientDebtorId: clientDebtor._id, status: 'APPROVED' },
@@ -1205,6 +1231,12 @@ router.put('/stakeholder/:debtorId/:stakeholderId', async function (req, res) {
     });
   }
   try {
+    let stakeholder;
+    if (req.body.type === 'company') {
+      stakeholder = await DebtorDirector.findOne({
+        _id: req.params.stakeholderId,
+      }).lean();
+    }
     const { update, unsetFields } = await storeStakeholderDetails({
       stakeholder: req.body,
       debtorId: req.params.debtorId,
@@ -1217,6 +1249,60 @@ router.put('/stakeholder/:debtorId/:stakeholderId', async function (req, res) {
       status: 'SUCCESS',
       message: 'Stakeholder updated successfully',
     });
+    if (req.body.type === 'company') {
+      const hasActiveCreditLimit = await checkForActiveCreditLimit({
+        debtorId: req.params.debtorId,
+      });
+      if (hasActiveCreditLimit) {
+        const updatedStakeholder = await DebtorDirector.findOne({
+          _id: req.params.stakeholderId,
+        }).lean();
+        if (
+          (stakeholder.country.code === 'AUS' ||
+            stakeholder.country.code === 'NZL') &&
+          (updatedStakeholder?.country.code === 'AUS' ||
+            updatedStakeholder?.country.code === 'NZL')
+        ) {
+          if (
+            updatedStakeholder?.abn !== stakeholder?.abn &&
+            updatedStakeholder?.acn !== stakeholder?.acn
+          ) {
+            await Promise.all([
+              checkForEntityInProfile({
+                action: 'remove',
+                entityId: stakeholder._id,
+                entityType: 'stakeholder',
+                entityData: stakeholder,
+              }),
+              checkForEntityInProfile({
+                action: 'add',
+                entityId: updatedStakeholder?._id,
+                entityType: 'stakeholder',
+              }),
+            ]);
+          }
+        } else if (
+          updatedStakeholder?.country.code === 'AUS' ||
+          updatedStakeholder?.country.code === 'NZL'
+        ) {
+          checkForEntityInProfile({
+            action: 'add',
+            entityId: updatedStakeholder?._id,
+            entityType: 'stakeholder',
+          });
+        } else if (
+          stakeholder.country.code === 'AUS' ||
+          stakeholder.country.code === 'NZL'
+        ) {
+          checkForEntityInProfile({
+            action: 'remove',
+            entityId: stakeholder._id,
+            entityType: 'stakeholder',
+            entityData: stakeholder,
+          });
+        }
+      }
+    }
   } catch (e) {
     Logger.log.error('Error occurred in add stakeholder ', e.message || e);
     res.status(500).send({
@@ -1452,20 +1538,21 @@ router.delete('/stakeholder/:stakeholderId', async function (req, res) {
       { isDeleted: true },
     );
     //TODO uncomment to remove entity from alert profile
-    /*const stakeholder = await DebtorDirector.findOne({
+    const stakeholder = await DebtorDirector.findOne({
       _id: req.params.stakeholderId,
     }).lean();
     if (
-      (stakeholder?.country?.code === 'AUS' ||
-        stakeholder?.country?.code === 'NZL') &&
-      stakeholder?.type === 'company'
+      stakeholder?.type === 'company' &&
+      (stakeholder?.country.code === 'AUS' ||
+        stakeholder?.country.code === 'NZL')
     ) {
       checkForEntityInProfile({
         action: 'remove',
         entityId: stakeholder._id,
         entityType: 'stakeholder',
+        entityData: stakeholder,
       });
-    }*/
+    }
     res.status(200).send({
       status: 'SUCCESS',
       message: 'Stakeholder deleted successfully',

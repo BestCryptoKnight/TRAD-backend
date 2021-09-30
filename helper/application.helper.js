@@ -56,7 +56,8 @@ const getApplicationList = async ({
   hasOnlyReadAccessForDebtorModule = false,
 }) => {
   try {
-    let query = [];
+    const query = [];
+    const aggregationQuery = [];
     const filterArray = [];
     let sortingOptions = {};
     requestedQuery.sortBy = requestedQuery.sortBy || '_id';
@@ -302,7 +303,7 @@ const getApplicationList = async ({
       }
       if (requestedQuery.maxCreditLimit) {
         limitQuery = Object.assign({}, limitQuery, {
-          $lt: parseInt(requestedQuery.maxCreditLimit),
+          $lte: parseInt(requestedQuery.maxCreditLimit),
         });
         if (isForDownload) {
           filterArray.push({
@@ -383,11 +384,11 @@ const getApplicationList = async ({
       }
       sortingOptions[requestedQuery.sortBy] =
         requestedQuery.sortOrder === 'desc' ? -1 : 1;
-      query.push({ $sort: sortingOptions });
+      aggregationQuery.push({ $sort: sortingOptions });
     }
 
     if (requestedQuery.page && requestedQuery.limit) {
-      query.push({
+      aggregationQuery.push({
         $facet: {
           paginatedResult: [
             {
@@ -396,6 +397,7 @@ const getApplicationList = async ({
                 parseInt(requestedQuery.limit),
             },
             { $limit: parseInt(requestedQuery.limit) },
+            ...query,
           ],
           totalCount: [
             {
@@ -405,9 +407,11 @@ const getApplicationList = async ({
         },
       });
     }
-    query.unshift({ $match: queryFilter });
+    aggregationQuery.unshift({ $match: queryFilter });
 
-    const applications = await Application.aggregate(query).allowDiskUse(true);
+    const applications = await Application.aggregate(
+      aggregationQuery,
+    ).allowDiskUse(true);
 
     const response =
       applications && applications[0] && applications[0]['paginatedResult']
@@ -1281,11 +1285,7 @@ const applicationDrawerDetails = async ({
           : application[i.name]
           ? application[i.name]
           : '';
-      if (
-        i.name === 'status' ||
-        i.name === 'entityType' ||
-        i.name === 'limitType'
-      ) {
+      if (i.name === 'status' || i.name === 'entityType') {
         value = formatString(value);
       }
       response.push({
@@ -1357,6 +1357,13 @@ const sendNotificationsToUser = async ({
           });
         }
       }
+      if (application?.debtorId) {
+        checkForEntityInProfile({
+          action: 'add',
+          entityType: 'debtor',
+          entityId: application.debtorId,
+        });
+      }
     } else if (status === 'REVIEW_APPLICATION' && client?.riskAnalystId) {
       const date = new Date();
       const data = {
@@ -1421,6 +1428,13 @@ const sendNotificationsToUser = async ({
             userId: application.clientId,
           });
         }
+      }
+      if (application?.debtorId) {
+        checkForEntityInProfile({
+          action: 'add',
+          entityType: 'debtor',
+          entityId: application.debtorId,
+        });
       }
     }
   } catch (e) {

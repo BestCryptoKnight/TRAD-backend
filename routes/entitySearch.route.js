@@ -26,7 +26,7 @@ router.get('/', async function (req, res) {
     });
   }
   try {
-    req.query.isForRisk = req.query.isForRisk || true;
+    req.query.isForRisk = req.query.isForRisk || false;
     let response = [];
     if (req.query.searchString) {
       switch (req.query.entityType) {
@@ -41,11 +41,14 @@ router.get('/', async function (req, res) {
           break;
         case 'debtors':
           response = await getDebtorList({
-            moduleAccess: req.user.moduleAccess,
+            moduleAccess: req.user?.moduleAccess,
             searchString: req.query.searchString,
             userId: req.user._id,
             isForGlobalSearch: false,
-            requestFrom: req.query.requestFrom,
+            requestFrom: req.query?.requestFrom,
+            isForRisk: req.query.isForRisk,
+            isForFilter: req.query.isForFilter,
+            clientId: req.user?.clientId,
           });
           break;
         case 'applications':
@@ -75,7 +78,10 @@ router.get('/', async function (req, res) {
           break;
         case 'debtors':
           const options = {};
-          if (req.query?.requestFrom === 'application') {
+          if (
+            req.query?.requestFrom === 'application' &&
+            !req.query.isForFilter
+          ) {
             options.showCompleteList = true;
           } else {
             if (req.query?.requestFrom === 'overdue') {

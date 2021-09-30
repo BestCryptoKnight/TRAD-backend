@@ -121,11 +121,11 @@ router.get('/column-name', async function (req, res) {
  * */
 router.get('/entity-list', async function (req, res) {
   try {
-    let hasFullAccess = true;
-    if (req.accessTypes && req.accessTypes.indexOf('full-access') === -1) {
-      hasFullAccess = false;
-    }
-    const debtors = await getCurrentDebtorList({ showCompleteList: true });
+    const debtors = await getCurrentDebtorList({
+      showCompleteList: req.query?.isForFilter || true,
+      isForRisk: false,
+      userId: req.user.clientId,
+    });
     res.status(200).send({
       status: 'SUCCESS',
       data: {

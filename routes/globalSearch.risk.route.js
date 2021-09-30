@@ -53,6 +53,7 @@ router.get('/', authenticate, async function (req, res) {
         moduleAccess: req.user.moduleAccess,
         searchString: req.query.searchString,
         userId: req.user._id,
+        isForRisk: true,
       }),
       getTaskList({
         moduleAccess: req.user.moduleAccess,

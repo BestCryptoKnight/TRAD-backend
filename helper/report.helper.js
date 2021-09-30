@@ -15,6 +15,9 @@ const Logger = require('./../services/logger');
 const { formatString } = require('./overdue.helper');
 const { getClaimsDetails } = require('./rss.helper');
 
+/*
+Get Client List Report
+ */
 const getClientListReport = async ({
   hasFullAccess = false,
   userId,
@@ -26,6 +29,7 @@ const getClientListReport = async ({
       isDeleted: false,
     };
     const query = [];
+    const aggregationQuery = [];
     if (!hasFullAccess) {
       queryFilter = Object.assign({}, queryFilter, {
         $or: [
@@ -45,8 +49,8 @@ const getClientListReport = async ({
       });
     }
     if (
-      reportColumn.includes('riskAnalystId') ||
-      requestedQuery.riskAnalystId
+      reportColumn.includes('riskAnalystId')
+      // || requestedQuery.riskAnalystId
     ) {
       query.push({
         $lookup: {
@@ -58,7 +62,15 @@ const getClientListReport = async ({
       });
     }
     if (requestedQuery.riskAnalystId) {
-      query.push({
+      aggregationQuery.push({
+        $lookup: {
+          from: 'users',
+          localField: 'riskAnalystId',
+          foreignField: '_id',
+          as: 'riskAnalystId',
+        },
+      });
+      aggregationQuery.push({
         $match: {
           'riskAnalystId._id': mongoose.Types.ObjectId(
             requestedQuery.riskAnalystId,
@@ -67,8 +79,8 @@ const getClientListReport = async ({
       });
     }
     if (
-      reportColumn.includes('serviceManagerId') ||
-      requestedQuery.serviceManagerId
+      reportColumn.includes('serviceManagerId')
+      // ||  requestedQuery.serviceManagerId
     ) {
       query.push({
         $lookup: {
@@ -80,7 +92,15 @@ const getClientListReport = async ({
       });
     }
     if (requestedQuery.serviceManagerId) {
-      query.push({
+      aggregationQuery.push({
+        $lookup: {
+          from: 'users',
+          localField: 'serviceManagerId',
+          foreignField: '_id',
+          as: 'serviceManagerId',
+        },
+      });
+      aggregationQuery.push({
         $match: {
           'serviceManagerId._id': mongoose.Types.ObjectId(
             requestedQuery.serviceManagerId,
@@ -97,7 +117,7 @@ const getClientListReport = async ({
       }
       if (requestedQuery.inceptionEndDate) {
         dateQuery = Object.assign({}, dateQuery, {
-          $lt: new Date(requestedQuery.inceptionEndDate),
+          $lte: new Date() || new Date(requestedQuery.inceptionEndDate),
         });
       }
       queryFilter.inceptionDate = dateQuery;
@@ -111,7 +131,7 @@ const getClientListReport = async ({
       }
       if (requestedQuery.expiryEndDate) {
         dateQuery = Object.assign({}, dateQuery, {
-          $lt: new Date(requestedQuery.expiryEndDate),
+          $lte: new Date(requestedQuery.expiryEndDate),
         });
       }
       queryFilter.expiryDate = dateQuery;
@@ -133,7 +153,7 @@ const getClientListReport = async ({
       }, {}),
     });
     if (requestedQuery.page && requestedQuery.limit) {
-      query.push({
+      aggregationQuery.push({
         $facet: {
           paginatedResult: [
             {
@@ -142,6 +162,7 @@ const getClientListReport = async ({
                 parseInt(requestedQuery.limit),
             },
             { $limit: parseInt(requestedQuery.limit) },
+            ...query,
           ],
           totalCount: [
             {
@@ -151,8 +172,9 @@ const getClientListReport = async ({
         },
       });
     }
-    query.unshift({ $match: queryFilter });
-    const clients = await Client.aggregate(query).allowDiskUse(true);
+    aggregationQuery.unshift({ $match: queryFilter });
+
+    const clients = await Client.aggregate(aggregationQuery).allowDiskUse(true);
     const response =
       clients && clients[0] && clients[0]['paginatedResult']
         ? clients[0]['paginatedResult']
@@ -327,10 +349,17 @@ const getLimitListReport = async ({
   try {
     const queryFilter = {
       isActive: true,
-      creditLimit: { $exists: true, $ne: null },
+      $and: [
+        { creditLimit: { $exists: true } },
+        { creditLimit: { $ne: null } },
+        { creditLimit: { $ne: 0 } },
+      ],
+      // creditLimit: { $exists: true, $ne: null },
     };
     const query = [];
+    let aggregationQuery = [];
     const filterArray = [];
+
     if (requestedQuery.clientIds) {
       let clientIds = requestedQuery.clientIds.split(',');
       if (isForDownload) {
@@ -374,7 +403,7 @@ const getLimitListReport = async ({
       }
       if (requestedQuery.endDate) {
         dateQuery = Object.assign({}, dateQuery, {
-          $lt: new Date(requestedQuery.endDate),
+          $lte: new Date(requestedQuery.endDate),
         });
         if (isForDownload) {
           filterArray.push({
@@ -386,6 +415,7 @@ const getLimitListReport = async ({
       }
       queryFilter.expiryDate = dateQuery;
     }
+
     if (
       reportColumn.includes('clientId') ||
       reportColumn.includes('insurerId')
@@ -476,7 +506,7 @@ const getLimitListReport = async ({
       }, {}),
     });
     if (requestedQuery.page && requestedQuery.limit) {
-      query.push({
+      aggregationQuery.push({
         $facet: {
           paginatedResult: [
             {
@@ -485,6 +515,7 @@ const getLimitListReport = async ({
                 parseInt(requestedQuery.limit),
             },
             { $limit: parseInt(requestedQuery.limit) },
+            ...query,
           ],
           totalCount: [
             {
@@ -493,11 +524,14 @@ const getLimitListReport = async ({
           ],
         },
       });
+    } else if (query.length !== 0) {
+      aggregationQuery = aggregationQuery.concat(query);
     }
-    query.unshift({ $match: queryFilter });
-    const clientDebtors = await ClientDebtor.aggregate(query).allowDiskUse(
-      true,
-    );
+    aggregationQuery.unshift({ $match: queryFilter });
+
+    const clientDebtors = await ClientDebtor.aggregate(
+      aggregationQuery,
+    ).allowDiskUse(true);
     const response =
       clientDebtors && clientDebtors[0] && clientDebtors[0]['paginatedResult']
         ? clientDebtors[0]['paginatedResult']
@@ -610,7 +644,7 @@ const getLimitListReport = async ({
     return { response, total, filterArray };
   } catch (e) {
     Logger.log.error('Error occurred in get limit list report');
-    Logger.log.error(e.message || e);
+    Logger.log.error(e);
   }
 };
 
@@ -636,6 +670,7 @@ const getPendingApplicationReport = async ({
       },
     };
     const query = [];
+    let aggregationQuery = [];
     const filterArray = [];
     if (requestedQuery.clientIds) {
       let clientIds = requestedQuery.clientIds.split(',');
@@ -693,7 +728,7 @@ const getPendingApplicationReport = async ({
       }
       if (requestedQuery.endDate) {
         dateQuery = Object.assign({}, dateQuery, {
-          $lt: new Date(requestedQuery.endDate),
+          $lte: new Date(requestedQuery.endDate),
         });
         if (isForDownload) {
           filterArray.push({
@@ -760,7 +795,7 @@ const getPendingApplicationReport = async ({
       }, {}),
     });
     if (requestedQuery.page && requestedQuery.limit) {
-      query.push({
+      aggregationQuery.push({
         $facet: {
           paginatedResult: [
             {
@@ -769,6 +804,7 @@ const getPendingApplicationReport = async ({
                 parseInt(requestedQuery.limit),
             },
             { $limit: parseInt(requestedQuery.limit) },
+            ...query,
           ],
           totalCount: [
             {
@@ -777,9 +813,14 @@ const getPendingApplicationReport = async ({
           ],
         },
       });
+    } else if (query.length !== 0) {
+      aggregationQuery = aggregationQuery.concat(query);
     }
-    query.unshift({ $match: queryFilter });
-    const applications = await Application.aggregate(query).allowDiskUse(true);
+    aggregationQuery.unshift({ $match: queryFilter });
+
+    const applications = await Application.aggregate(
+      aggregationQuery,
+    ).allowDiskUse(true);
     const response =
       applications && applications[0] && applications[0]['paginatedResult']
         ? applications[0]['paginatedResult']
@@ -853,7 +894,12 @@ const getReviewReport = async ({
   try {
     const queryFilter = {
       isActive: true,
-      creditLimit: { $exists: true, $ne: null },
+      $and: [
+        { creditLimit: { $exists: true } },
+        { creditLimit: { $ne: null } },
+        { creditLimit: { $ne: 0 } },
+      ],
+      // creditLimit: { $exists: true, $ne: null },
     };
     let dateQuery = {};
     if (requestedQuery.date) {
@@ -875,7 +921,7 @@ const getReviewReport = async ({
       }
       if (requestedQuery.endDate) {
         dateQuery = Object.assign({}, dateQuery, {
-          $lt: new Date(requestedQuery.endDate),
+          $lte: new Date(requestedQuery.endDate),
         });
       }
       dateQuery = {
@@ -916,11 +962,12 @@ const getReviewReport = async ({
       }
       if (requestedQuery.limitEndDate) {
         dateFilter = Object.assign({}, dateQuery, {
-          $lt: new Date(requestedQuery.limitEndDate),
+          $lte: new Date(requestedQuery.limitEndDate),
         });
       }
       queryFilter.expiryDate = dateFilter;
     }
+
     const query = [
       {
         $lookup: {
@@ -950,7 +997,7 @@ const getReviewReport = async ({
       }
       if (requestedQuery.reportEndDate) {
         dateFilter = Object.assign({}, dateQuery, {
-          $lt: new Date(requestedQuery.reportEndDate),
+          $lte: new Date(requestedQuery.reportEndDate),
         });
       }
       query.push({
@@ -1807,7 +1854,7 @@ const getLimitHistoryReport = async ({
       }
       if (requestedQuery.endDate) {
         dateQuery = Object.assign({}, dateQuery, {
-          $lt: new Date(requestedQuery.endDate),
+          $lte: new Date(requestedQuery.endDate),
         });
       }
       queryFilter.expiryDate = dateQuery;

@@ -75,5 +75,6 @@ module.exports = {
     environment: process.env.ILLION_ENVIRONMENT,
     apiUrl: process.env.ILLION_API_URL,
     cronString: '0 1 * * *',
+    alertAPIUrl: process.env.ILLION_ALERT_API_URL,
   },
 };

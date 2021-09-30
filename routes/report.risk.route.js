@@ -357,6 +357,14 @@ router.get('/download', async function (req, res) {
           message: 'Please pass correct fields',
         });
     }
+    if (response && response?.response.length > 500) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'DOWNLOAD_LIMIT_EXCEED',
+        message:
+          'User cannot download more than 500 records at a time. Please apply filter to narrow down the list',
+      });
+    }
     const headers = [];
     for (let i = 0; i < module.manageColumns.length; i++) {
       if (reportColumn.includes(module.manageColumns[i].name)) {

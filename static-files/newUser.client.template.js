@@ -12,16 +12,6 @@ module.exports = ({
   riskAnalystEmail,
   serviceManagerEmail,
 }) => {
-  console.log(
-    name,
-    setPasswordLink,
-    riskAnalystName,
-    serviceManagerName,
-    riskAnalystNumber,
-    serviceManagerNumber,
-    riskAnalystEmail,
-    serviceManagerEmail,
-  );
   let mailTemplate = `<html>
 <head>
     <meta charset='utf-8'/>

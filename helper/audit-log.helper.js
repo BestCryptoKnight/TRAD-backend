@@ -142,7 +142,7 @@ const getAuditLogList = async ({
       }
       if (requestedQuery.endDate) {
         dateQuery = Object.assign({}, dateQuery, {
-          $lt: new Date(requestedQuery.endDate),
+          $lte: new Date(requestedQuery.endDate),
         });
       }
       queryFilter.createdAt = dateQuery;

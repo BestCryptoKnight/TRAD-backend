@@ -51,7 +51,6 @@ const { generateExcel } = require('../helper/excel.helper.js');
 const {
   listEntitySpecificAlerts,
   getAlertDetail,
-  checkForEntityInProfile,
 } = require('./../helper/alert.helper');
 const { checkForEndorsedLimit } = require('./../helper/policy.helper');
 const { getUserList } = require('./../helper/user.helper');
@@ -146,9 +145,12 @@ router.get('/entity-list', async function (req, res) {
         limit: req.query.limit,
       }),
       getCurrentDebtorList({
-        showCompleteList: true,
+        showCompleteList: req.query?.isForFilter || true,
         page: req.query.page,
         limit: req.query.limit,
+        isForRisk: true,
+        userId: req.user._id,
+        hasFullAccess,
       }),
     ]);
     const { riskAnalystList, serviceManagerList } = await getUserList();
@@ -406,6 +408,15 @@ router.get('/drawer-details/:applicationId', async function (req, res) {
       });
     }
     module = JSON.parse(JSON.stringify(module));
+    if (req.accessTypes && req.accessTypes.indexOf('full-access') === -1) {
+      const clients = await getClientList({
+        hasFullAccess: false,
+        userId: req.user._id,
+      });
+      req.query.isEditableDrawer = clients
+        ?.map((i) => i._id.toString())
+        ?.includes(application?.clientId?._id?.toString());
+    }
     const response = await applicationDrawerDetails({
       application,
       manageColumns: module.manageColumns,
@@ -1297,31 +1308,43 @@ router.put('/:applicationId', async function (req, res) {
           { _id: application.clientDebtorId },
           update,
         );
-        //TODO uncomment to add in alert profile
-        /*if (!update.isEndorsedLimit) {
-          if (application?.debtorId) {
-            checkForEntityInProfile({
-              action: 'add',
-              entityType: 'debtor',
-              entityId: application.debtorId,
-            });
-          }
-        }*/
       } else if (
         req.body.status === 'DECLINED' ||
         req.body.status === 'CANCELLED' ||
         req.body.status === 'WITHDRAWN'
       ) {
         applicationUpdate.approvalOrDecliningDate = new Date();
-        const update = {
-          creditLimit: undefined,
-          activeApplicationId: undefined,
-          isActive: false,
-        };
-        if (req.body.status === 'DECLINED') {
-          update.isFromOldSystem = false;
+        const debtorCreditLimit = await ClientDebtor.findOne({
+          _id: application?.clientDebtorId,
+        }).lean();
+        if (
+          !debtorCreditLimit?.creditLimit ||
+          debtorCreditLimit?.creditLimit === 0
+        ) {
+          const update = {
+            // creditLimit: undefined,
+            activeApplicationId: undefined,
+            // isActive: false,
+          };
+          if (req.body.status === 'DECLINED') {
+            update.isFromOldSystem = false;
+            update.creditLimit = 0;
+            applicationUpdate.acceptedAmount = 0;
+          } else {
+            update.creditLimit = undefined;
+            update.isActive = false;
+          }
+          await ClientDebtor.updateOne(
+            { _id: application.clientDebtorId },
+            update,
+          );
+        } else if (req.body.status === 'DECLINED') {
+          applicationUpdate.acceptedAmount = 0;
+          await ClientDebtor.updateOne(
+            { _id: application.clientDebtorId },
+            { isFromOldSystem: false },
+          );
         }
-        await ClientDebtor.updateOne({ _id: req.params.debtorId }, update);
       }
 
       if (req.body.status === 'APPROVED' || req.body.status === 'DECLINED') {

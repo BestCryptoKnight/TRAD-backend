@@ -100,7 +100,9 @@ const aggregationQuery = async ({
     let queryFilter = {
       isDeleted: false,
     };
-    let query = [];
+    const query = [];
+    const aggregationQuery = [];
+
     const listCreatedBy = requestedQuery.listCreatedBy
       ? requestedQuery.listCreatedBy
       : false;
@@ -141,16 +143,6 @@ const aggregationQuery = async ({
     if (requestedQuery.isCompleted) {
       queryFilter.isCompleted = requestedQuery.isCompleted === 'true';
     }
-    /*if (requestedQuery.startDate) {
-      queryFilter.dueDate = {
-        $gte: new Date(requestedQuery.startDate),
-      };
-    }
-    if (requestedQuery.endDate) {
-      queryFilter.dueDate = {
-        $lt: new Date(requestedQuery.endDate),
-      };
-    }*/
 
     if (requestedQuery.startDate || requestedQuery.endDate) {
       let dateQuery = {};
@@ -167,6 +159,79 @@ const aggregationQuery = async ({
       queryFilter.dueDate = dateQuery;
     }
     let sortingOptions = {};
+
+    if (taskColumn.includes('assigneeId') || requestedQuery.assigneeId) {
+      aggregationQuery.push(
+        {
+          $addFields: {
+            clientUserId: {
+              $cond: [
+                { $eq: ['$assigneeType', 'client-user'] },
+                '$assigneeId',
+                null,
+              ],
+            },
+            userId: {
+              $cond: [{ $eq: ['$assigneeType', 'user'] }, '$assigneeId', null],
+            },
+          },
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'userId',
+            foreignField: '_id',
+            as: 'userId',
+          },
+        },
+        {
+          $lookup: {
+            from: 'clients',
+            localField: 'clientUserId',
+            foreignField: '_id',
+            as: 'clientUserId',
+          },
+        },
+        {
+          $addFields: {
+            assigneeId: {
+              $cond: [
+                { $eq: ['$assigneeType', 'client-user'] },
+                {
+                  name: '$clientUserId.name',
+                  _id: '$clientUserId._id',
+                },
+                {
+                  name: '$userId.name',
+                  _id: '$userId._id',
+                },
+              ],
+            },
+          },
+        },
+      );
+    }
+
+    if (requestedQuery.assigneeId && requestedQuery.assigneeId !== 'all_user') {
+      aggregationQuery.push({
+        $match: {
+          'assigneeId._id': mongoose.Types.ObjectId(requestedQuery.assigneeId),
+        },
+      });
+    } else if (isForRisk && !requestedQuery.requestedEntityId) {
+      if (requestedQuery.assigneeId !== 'all_user') {
+        aggregationQuery.push({
+          $match: {
+            $or: [
+              { assigneeId: mongoose.Types.ObjectId(userId) },
+              {
+                'assigneeId._id': mongoose.Types.ObjectId(userId),
+              },
+            ],
+          },
+        });
+      }
+    }
 
     if (taskColumn.includes('entityId')) {
       query.push(
@@ -225,13 +290,13 @@ const aggregationQuery = async ({
           },
         },
         /* {
-          $lookup: {
-            from: 'client-debtors',
-            localField: 'debtorId',
-            foreignField: '_id',
-            as: 'debtorId',
-          },
-        },*/
+            $lookup: {
+              from: 'client-debtors',
+              localField: 'debtorId',
+              foreignField: '_id',
+              as: 'debtorId',
+            },
+          },*/
         {
           $lookup: {
             from: 'debtors',
@@ -324,79 +389,6 @@ const aggregationQuery = async ({
       );
     }
 
-    if (taskColumn.includes('assigneeId') || requestedQuery.assigneeId) {
-      query.push(
-        {
-          $addFields: {
-            clientUserId: {
-              $cond: [
-                { $eq: ['$assigneeType', 'client-user'] },
-                '$assigneeId',
-                null,
-              ],
-            },
-            userId: {
-              $cond: [{ $eq: ['$assigneeType', 'user'] }, '$assigneeId', null],
-            },
-          },
-        },
-        {
-          $lookup: {
-            from: 'users',
-            localField: 'userId',
-            foreignField: '_id',
-            as: 'userId',
-          },
-        },
-        {
-          $lookup: {
-            from: 'clients',
-            localField: 'clientUserId',
-            foreignField: '_id',
-            as: 'clientUserId',
-          },
-        },
-        {
-          $addFields: {
-            assigneeId: {
-              $cond: [
-                { $eq: ['$assigneeType', 'client-user'] },
-                {
-                  name: '$clientUserId.name',
-                  _id: '$clientUserId._id',
-                },
-                {
-                  name: '$userId.name',
-                  _id: '$userId._id',
-                },
-              ],
-            },
-          },
-        },
-      );
-    }
-
-    if (requestedQuery.assigneeId && requestedQuery.assigneeId !== 'all_user') {
-      query.push({
-        $match: {
-          'assigneeId._id': mongoose.Types.ObjectId(requestedQuery.assigneeId),
-        },
-      });
-    } else if (isForRisk && !requestedQuery.requestedEntityId) {
-      if (requestedQuery.assigneeId !== 'all_user') {
-        query.push({
-          $match: {
-            $or: [
-              { assigneeId: mongoose.Types.ObjectId(userId) },
-              {
-                'assigneeId._id': mongoose.Types.ObjectId(userId),
-              },
-            ],
-          },
-        });
-      }
-    }
-
     if (taskColumn.includes('createdById') || requestedQuery.createdById) {
       query.push(
         {
@@ -458,9 +450,11 @@ const aggregationQuery = async ({
     if (requestedQuery.sortBy && requestedQuery.sortOrder) {
       sortingOptions[requestedQuery.sortBy] =
         requestedQuery.sortOrder === 'desc' ? -1 : 1;
-      query.push({ $sort: sortingOptions });
+      aggregationQuery.push({ $sort: sortingOptions });
     } else {
-      query.push({ $sort: { isCompleted: 1, dueDate: 1, completedDate: -1 } });
+      aggregationQuery.push({
+        $sort: { isCompleted: 1, dueDate: 1, completedDate: -1 },
+      });
     }
 
     const fields = taskColumn.map((i) => [i, 1]);
@@ -472,7 +466,7 @@ const aggregationQuery = async ({
     });
 
     if (requestedQuery.page && requestedQuery.limit) {
-      query.push({
+      aggregationQuery.push({
         $facet: {
           paginatedResult: [
             {
@@ -481,6 +475,7 @@ const aggregationQuery = async ({
                 parseInt(requestedQuery.limit),
             },
             { $limit: parseInt(requestedQuery.limit) },
+            ...query,
           ],
           totalCount: [
             {
@@ -490,14 +485,9 @@ const aggregationQuery = async ({
         },
       });
     }
-    /*query.push({
-      $skip:
-        (parseInt(requestedQuery.page) - 1) * parseInt(requestedQuery.limit),
-    });
-    query.push({ $limit: parseInt(requestedQuery.limit) });*/
-    query.unshift({ $match: queryFilter });
+    aggregationQuery.unshift({ $match: queryFilter });
 
-    return query;
+    return aggregationQuery;
   } catch (e) {
     Logger.log.error(
       'Error occurred in task aggregation query ',

@@ -156,27 +156,44 @@ const getDebtorList = async ({
   searchString,
   isForGlobalSearch = true,
   requestFrom,
+  isForRisk = true,
+  isForFilter = true,
+  clientId,
 }) => {
   try {
-    const access = moduleAccess.find((i) => {
-      return i.name === 'debtor';
-    });
     let queryFilter = {};
-    if (access && access.accessTypes.indexOf('full-access') === -1) {
-      const clients = await Client.find({
-        isDeleted: false,
-        $or: [{ riskAnalystId: userId }, { serviceManagerId: userId }],
-      })
-        .select({ _id: 1 })
-        .lean();
-      const clientIds = clients.map((i) => i._id);
+    if (moduleAccess && isForRisk && isForFilter) {
+      const access = moduleAccess?.find((i) => {
+        return i.name === 'debtor';
+      });
+      if (access && access.accessTypes.indexOf('full-access') === -1) {
+        const clients = await Client.find({
+          isDeleted: false,
+          $or: [{ riskAnalystId: userId }, { serviceManagerId: userId }],
+        })
+          .select({ _id: 1 })
+          .lean();
+        const clientIds = clients.map((i) => i._id);
+        const clientDebtor = await ClientDebtor.find({
+          clientId: { $in: clientIds },
+          isActive: true,
+        })
+          .select('_id debtorId')
+          .lean();
+        console.log('clientDebtor', clientDebtor.length);
+        const debtorIds = clientDebtor.map((i) => i.debtorId);
+        queryFilter = {
+          _id: { $in: debtorIds },
+        };
+      }
+    } else if (!isForRisk && isForFilter) {
       const clientDebtor = await ClientDebtor.find({
-        clientId: { $in: clientIds },
+        clientId: clientId,
         isActive: true,
       })
-        .select('_id')
+        .select('debtorId')
         .lean();
-      const debtorIds = clientDebtor.map((i) => i._id);
+      const debtorIds = clientDebtor.map((i) => i.debtorId);
       queryFilter = {
         _id: { $in: debtorIds },
       };
@@ -185,6 +202,7 @@ const getDebtorList = async ({
       $regex: getRegexForSearch(searchString),
       $options: 'i',
     };
+    console.log('queryFilter', queryFilter);
     const fields = isForGlobalSearch
       ? '_id entityName'
       : requestFrom && requestFrom === 'overdue'
