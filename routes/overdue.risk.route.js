@@ -148,7 +148,7 @@ router.get('/list', async function (req, res) {
       query.overdueAction = { $ne: 'MARK_AS_PAID' };
       let { overdue, lastMonth, lastYear } = await getLastOverdueList({
         query,
-        date: req.query.date,
+        date: new Date(query?.year, query?.month, 1, 0, 0, 0),
       });
       const response = {
         docs: overdue,
@@ -157,8 +157,8 @@ router.get('/list', async function (req, res) {
       if (overdue && overdue.length !== 0) {
         overdue.forEach((i) => {
           i.isExistingData = true;
-          i.month = month;
-          i.year = year;
+          i.month = req.query.month;
+          i.year = req.query.year;
           if (i.debtorId && i.debtorId.entityName) {
             i.debtorId = {
               label: i.debtorId.entityName,
@@ -188,10 +188,7 @@ router.get('/list', async function (req, res) {
       });
     }
   } catch (e) {
-    Logger.log.error(
-      'Error occurred in get selected month and year list',
-      e.message || e,
-    );
+    Logger.log.error('Error occurred in get selected month and year list', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

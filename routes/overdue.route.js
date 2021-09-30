@@ -140,7 +140,7 @@ router.get('/list', async function (req, res) {
       query.overdueAction = { $ne: 'MARK_AS_PAID' };
       let { overdue, lastMonth, lastYear } = await getLastOverdueList({
         query,
-        date: req.query.date,
+        date: new Date(query?.year, query?.month, 1, 0, 0, 0),
       });
       const response = {
         docs: overdue,
@@ -149,8 +149,8 @@ router.get('/list', async function (req, res) {
       if (overdue && overdue.length !== 0) {
         overdue.forEach((i) => {
           i.isExistingData = true;
-          i.month = month;
-          i.year = year;
+          i.month = req.query.month;
+          i.year = req.query.year;
           if (i.debtorId && i.debtorId.entityName) {
             i.debtorId = {
               label: i.debtorId.entityName,
@@ -253,71 +253,6 @@ router.get('/', async function (req, res) {
     });
   }
 });
-
-/*/!**
- * Get overdue details
- *!/
-router.get('/:overdueId', async function (req, res) {
-  if (
-    !req.params.overdueId ||
-    !mongoose.Types.ObjectId.isValid(req.params.overdueId)
-  ) {
-    return res.status(400).send({
-      status: 'ERROR',
-      messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Require fields are missing.',
-    });
-  }
-  try {
-    const overdue = await Overdue.findOne({ _id: req.params.overdueId })
-      .populate({
-        path: 'debtorId insurerId clientId',
-        select: '_id name entityName',
-      })
-      .select({ isDeleted: 0, createdAt: 0, updatedAt: 0, __v: 0 })
-      .lean();
-    if (overdue) {
-      if (overdue.overdueType) {
-        overdue.overdueType = {
-          label: overdue.overdueType
-            .replace(/_/g, ' ')
-            .replace(/\w\S*!/g, function (txt) {
-              return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
-            }),
-          value: overdue.overdueType,
-        };
-      }
-      if (overdue.debtorId) {
-        overdue.debtorId = {
-          label: overdue.debtorId.entityName,
-          value: overdue.debtorId._id,
-        };
-      }
-      if (overdue.insurerId) {
-        overdue.insurerId = {
-          label: overdue.insurerId.name,
-          value: overdue.insurerId._id,
-        };
-      }
-      if (overdue.month && overdue.year) {
-        overdue.monthString = overdue.year + ',' + overdue.month;
-      }
-    }
-    res.status(200).send({
-      status: 'SUCCESS',
-      data: overdue,
-    });
-  } catch (e) {
-    Logger.log.error(
-      'Error occurred while get specific overdue detail',
-      e.message || e,
-    );
-    res.status(500).send({
-      status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
-    });
-  }
-});*/
 
 /**
  * Save overdue list
