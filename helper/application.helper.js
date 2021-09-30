@@ -1308,6 +1308,7 @@ const sendNotificationsToUser = async ({
   status,
   notifyUser = true,
   notifyClient = true,
+  addToProfile = true,
 }) => {
   try {
     const client = await Client.findOne({ _id: application.clientId }).lean();
@@ -1357,7 +1358,7 @@ const sendNotificationsToUser = async ({
           });
         }
       }
-      if (application?.debtorId) {
+      if (application?.debtorId && addToProfile) {
         checkForEntityInProfile({
           action: 'add',
           entityType: 'debtor',

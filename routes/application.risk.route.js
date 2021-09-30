@@ -1262,6 +1262,7 @@ router.put('/:applicationId', async function (req, res) {
       }
       let status = req.body.status;
       let approvedAmount = 0;
+      let isEndorsedLimit = false;
       applicationUpdate.status = req.body.status;
       if (req.body.status === 'APPROVED') {
         if (!req.body.creditLimit || !/^\d+$/.test(req.body.creditLimit)) {
@@ -1293,17 +1294,17 @@ router.put('/:applicationId', async function (req, res) {
         applicationUpdate.expiryDate = application?.expiryDate || expiryDate;
         applicationUpdate.acceptedAmount = parseInt(req.body.creditLimit);
         approvedAmount = applicationUpdate.acceptedAmount;
+        isEndorsedLimit = await checkForEndorsedLimit({
+          creditLimit: applicationUpdate.acceptedAmount,
+          clientId: application.clientId,
+        });
         const update = {
           creditLimit: applicationUpdate.acceptedAmount,
-          isEndorsedLimit: false,
+          isEndorsedLimit: isEndorsedLimit,
           activeApplicationId: application._id,
           expiryDate: applicationUpdate.expiryDate,
           isFromOldSystem: false,
         };
-        update.isEndorsedLimit = await checkForEndorsedLimit({
-          creditLimit: applicationUpdate.acceptedAmount,
-          clientId: application.clientId,
-        });
         await ClientDebtor.updateOne(
           { _id: application.clientDebtorId },
           update,
@@ -1359,6 +1360,7 @@ router.put('/:applicationId', async function (req, res) {
           userType: 'user',
           status: req.body.status,
           application,
+          addToProfile: !isEndorsedLimit,
         });
         //TODO uncomment to send decision letter
         /*sendDecisionLetter({
