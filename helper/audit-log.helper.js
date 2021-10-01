@@ -148,7 +148,8 @@ const getAuditLogList = async ({
       queryFilter.createdAt = dateQuery;
     }
 
-    const query = [];
+    let query = [];
+    let aggregationQuery = [];
     if (auditLogColumn.includes('entityRefId')) {
       query.push(
         {
@@ -212,6 +213,13 @@ const getAuditLogList = async ({
             },
             claimId: {
               $cond: [{ $eq: ['$entityType', 'claim'] }, '$entityRefId', null],
+            },
+            overdueId: {
+              $cond: [
+                { $eq: ['$entityType', 'overdue'] },
+                '$entityRefId',
+                null,
+              ],
             },
           },
         },
@@ -321,6 +329,14 @@ const getAuditLogList = async ({
           },
         },
         {
+          $lookup: {
+            from: 'overdues',
+            localField: 'overdueId',
+            foreignField: '_id',
+            as: 'overdueId',
+          },
+        },
+        {
           $addFields: {
             entityRefId: {
               $cond: [
@@ -387,7 +403,21 @@ const getAuditLogList = async ({
                                                               ],
                                                             },
                                                             '$insurerUserId.name',
-                                                            null,
+                                                            {
+                                                              $cond: [
+                                                                {
+                                                                  $eq: [
+                                                                    '$entityType',
+                                                                    'overdue',
+                                                                  ],
+                                                                },
+                                                                [
+                                                                  '$overdueId.month',
+                                                                  '$overdueId.year',
+                                                                ],
+                                                                null,
+                                                              ],
+                                                            },
                                                           ],
                                                         },
                                                       ],
@@ -418,7 +448,7 @@ const getAuditLogList = async ({
     }
 
     if (auditLogColumn.includes('userRefId') || requestedQuery.userRefId) {
-      query.push(
+      const conditions = [
         {
           $addFields: {
             clientUserId: {
@@ -466,14 +496,17 @@ const getAuditLogList = async ({
             },
           },
         },
-      );
-    }
-    if (requestedQuery.userRefId) {
-      query.push({
-        $match: {
-          'userRefId._id': mongoose.Types.ObjectId(requestedQuery.userRefId),
-        },
-      });
+      ];
+      if (requestedQuery.userRefId) {
+        aggregationQuery = [...aggregationQuery, ...conditions];
+        aggregationQuery.push({
+          $match: {
+            'userRefId._id': mongoose.Types.ObjectId(requestedQuery.userRefId),
+          },
+        });
+      } else {
+        query = [...query, ...conditions];
+      }
     }
 
     const fields = auditLogColumn.map((i) => [i, 1]);
@@ -483,9 +516,9 @@ const getAuditLogList = async ({
         return obj;
       }, {}),
     });
-    query.push({ $sort: sortingOptions });
+    aggregationQuery.push({ $sort: sortingOptions });
 
-    query.push({
+    aggregationQuery.push({
       $facet: {
         paginatedResult: [
           {
@@ -494,6 +527,7 @@ const getAuditLogList = async ({
               parseInt(requestedQuery.limit),
           },
           { $limit: parseInt(requestedQuery.limit) },
+          ...query,
         ],
         totalCount: [
           {
@@ -502,9 +536,11 @@ const getAuditLogList = async ({
         ],
       },
     });
-    query.unshift({ $match: queryFilter });
+    aggregationQuery.unshift({ $match: queryFilter });
 
-    const auditLogs = await AuditLog.aggregate(query).allowDiskUse(true);
+    const auditLogs = await AuditLog.aggregate(aggregationQuery).allowDiskUse(
+      true,
+    );
 
     const headers = [];
     for (let i = 0; i < moduleColumn.length; i++) {
@@ -514,10 +550,13 @@ const getAuditLogList = async ({
     }
     if (auditLogs && auditLogs.length !== 0) {
       auditLogs[0].paginatedResult.forEach((log) => {
-        console.log('log', log);
         if (auditLogColumn.includes('entityRefId')) {
           log.entityRefId =
-            log.entityRefId && log.entityRefId[0] ? log.entityRefId[0] : '';
+            log.entityRefId && log.entityRefId[0] && log.entityRefId[1]
+              ? log.entityRefId[0] + '/' + log.entityRefId[1]
+              : log?.entityRefId[0]
+              ? log.entityRefId[0]
+              : '';
         }
         if (auditLogColumn.includes('userRefId')) {
           log.userRefId =
