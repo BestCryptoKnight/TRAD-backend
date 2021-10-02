@@ -689,6 +689,74 @@ const downloadDecisionLetter = async ({ creditLimitId }) => {
   }
 };
 
+const updateActiveReportInCreditLimit = async ({ reportDetails, debtorId }) => {
+  try {
+    const reportCodes = {
+      HXBSC: ['HXBCA', 'HXPAA', 'HXPYA'],
+      HXBCA: ['HXPAA', 'HXPYA'],
+      HXPYA: ['HXPAA'],
+      HNBCau: ['NPA'],
+    };
+    const activeCreditLimit = await ClientDebtor.findOne({
+      isActive: true,
+      debtorId: mongoose.Types.ObjectId(debtorId),
+      $and: [
+        { creditLimit: { $exists: true } },
+        { creditLimit: { $ne: null } },
+        { creditLimit: { $ne: 0 } },
+        { currentReportId: { $exists: true } },
+        { currentReportId: { $ne: null } },
+      ],
+    })
+      .populate('currentReportId')
+      .lean();
+    if (activeCreditLimit && activeCreditLimit?.currentReportId) {
+      if (
+        activeCreditLimit.currentReportId?.productCode &&
+        reportCodes[activeCreditLimit.currentReportId.productCode]?.includes(
+          reportDetails.productCode,
+        )
+      ) {
+        console.log('reportDetails.productCode', reportDetails.productCode);
+        console.log(
+          'activeCreditLimit.currentReportId',
+          activeCreditLimit.currentReportId,
+        );
+        await ClientDebtor.updateMany(
+          {
+            isActive: true,
+            debtorId: mongoose.Types.ObjectId(debtorId),
+            $and: [
+              { creditLimit: { $exists: true } },
+              { creditLimit: { $ne: null } },
+              { creditLimit: { $ne: 0 } },
+            ],
+          },
+          { currentReportId: reportDetails._id },
+        );
+      }
+    } else {
+      await ClientDebtor.updateMany(
+        {
+          isActive: true,
+          debtorId: mongoose.Types.ObjectId(debtorId),
+          $and: [
+            { creditLimit: { $exists: true } },
+            { creditLimit: { $ne: null } },
+            { creditLimit: { $ne: 0 } },
+          ],
+        },
+        { currentReportId: reportDetails._id },
+      );
+    }
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in update credit report ion credit limit',
+      e.message || e,
+    );
+  }
+};
+
 module.exports = {
   getClientDebtorDetails,
   convertToCSV,
@@ -697,4 +765,5 @@ module.exports = {
   formatCSVList,
   checkForExpiringLimit,
   downloadDecisionLetter,
+  updateActiveReportInCreditLimit,
 };

@@ -7,6 +7,7 @@ const Alert = mongoose.model('alert');
 const Debtor = mongoose.model('debtor');
 const DebtorDirector = mongoose.model('debtor-director');
 const ClientDebtor = mongoose.model('client-debtor');
+const fs = require('fs');
 
 /*
  * Local Imports
@@ -22,6 +23,11 @@ const StaticData = require('./../static-files/staticData.json');
 const { addNotification } = require('./notification.helper');
 const { sendNotification } = require('./socket.helper');
 const { createTask } = require('./task.helper');
+const {
+  getEntityDetailsByABN,
+  getEntityDetailsByACN,
+  getEntityListByNameFromNZBN,
+} = require('./abr.helper');
 
 const retrieveAlertListFromIllion = async ({ startDate, endDate }) => {
   try {
@@ -273,91 +279,221 @@ const getAlertDetail = async ({ alertId }) => {
   }
 };
 
-//TODO remove after testing
-const addEntitiesToAlertProfile = async ({ debtorId }) => {
+//TODO remove import applications
+const addEntitiesToAlertProfile = async ({
+  entityType,
+  entityId,
+  action,
+  entityData = null,
+  unProcessed,
+}) => {
   try {
-    const debtor = await Debtor.findOne({ _id: debtorId }).lean();
+    const response = await getMonitoredEntities();
+    let lookupMethod;
+    let lookupValue;
     const entityList = [];
-    if (
-      debtor.address.country.code === 'AUS' ||
-      debtor.address.country.code === 'NZL'
-    ) {
-      const response = await getMonitoredEntities();
+    if (entityType === 'debtor') {
+      const debtor = await Debtor.findOne({ _id: entityId }).lean();
       if (
-        debtor.entityType !== 'TRUST' &&
-        debtor.entityType !== 'PARTNERSHIP'
+        debtor.address.country.code === 'AUS' ||
+        debtor.address.country.code === 'NZL'
       ) {
-        const lookupMethod =
+        lookupMethod =
           debtor.address.country.code === 'NZL'
             ? 'NCN'
             : debtor.abn
             ? 'ABN'
             : 'ACN';
-        const lookupValue =
+        lookupValue =
           debtor.address.country.code === 'NZL'
             ? debtor.acn
             : debtor.abn
             ? debtor.abn
             : debtor.acn;
-        if (lookupValue) {
-          const foundEntity = filterEntity({
-            monitoredEntities: response.monitoredEntities,
+        if (action === 'add') {
+          const valid = await checkForValidEntity({
             lookupValue,
             lookupMethod,
           });
-          if (!foundEntity) {
+          if (valid) {
+            if (
+              debtor.entityType !== 'TRUST' &&
+              debtor.entityType !== 'PARTNERSHIP'
+            ) {
+              if (lookupValue) {
+                const foundEntity = filterEntity({
+                  monitoredEntities: response.monitoredEntities,
+                  lookupValue,
+                  lookupMethod,
+                });
+                if (!foundEntity) {
+                  entityList.push({
+                    lookupMethod: lookupMethod,
+                    lookupValue: lookupValue,
+                  });
+                }
+              }
+            } else {
+              const stakeholders = await DebtorDirector.find({
+                debtorId: debtor._id,
+                isDeleted: false,
+                type: 'company',
+              }).lean();
+              if (stakeholders.length !== 0) {
+                for (let i = 0; i < stakeholders.length; i++) {
+                  if (
+                    stakeholders[i].country.code === 'AUS' ||
+                    stakeholders[i].country.code === 'NZL'
+                  ) {
+                    lookupMethod =
+                      stakeholders[i].country.code === 'NZL'
+                        ? 'NCN'
+                        : stakeholders[i].abn
+                        ? 'ABN'
+                        : 'ACN';
+                    lookupValue =
+                      stakeholders[i].country.code === 'NZL'
+                        ? stakeholders[i].acn
+                        : stakeholders[i].abn
+                        ? stakeholders[i].abn
+                        : stakeholders[i].acn;
+                    if (lookupValue) {
+                      const foundEntity = filterEntity({
+                        monitoredEntities: response.monitoredEntities,
+                        lookupValue,
+                        lookupMethod,
+                      });
+                      if (!foundEntity) {
+                        entityList.push({
+                          lookupMethod: lookupMethod,
+                          lookupValue: lookupValue,
+                        });
+                      }
+                    }
+                  }
+                }
+              } else {
+                unProcessed.push({
+                  entityType,
+                  entityId,
+                  reason: 'No stakeholder found',
+                });
+              }
+            }
+          } else {
+            unProcessed.push({
+              entityType,
+              entityId,
+              reason: 'Invalid lookup value',
+              request: {
+                lookupMethod: lookupMethod,
+                lookupValue: lookupValue,
+              },
+            });
+          }
+        } else {
+          const hasActiveCreditLimit = await checkForActiveCreditLimit({
+            debtorId: debtor._id,
+          });
+          if (!hasActiveCreditLimit) {
+            if (
+              debtor.entityType !== 'TRUST' &&
+              debtor.entityType !== 'PARTNERSHIP'
+            ) {
+              entityList.push({
+                lookupMethod: lookupMethod,
+                lookupValue: lookupValue,
+              });
+            } else {
+              const stakeholders = await DebtorDirector.find({
+                debtorId: debtor._id,
+                isDeleted: false,
+                type: 'company',
+              }).lean();
+              for (let i = 0; i < stakeholders.length; i++) {
+                if (
+                  stakeholders[i].country.code === 'AUS' ||
+                  stakeholders[i].country.code === 'NZL'
+                ) {
+                  await checkForEntityInProfile({
+                    action,
+                    entityId: stakeholders[i]._id,
+                    entityType: 'stakeholder',
+                  });
+                }
+              }
+            }
+          }
+        }
+      }
+    } else if (entityType === 'stakeholder') {
+      let stakeholder;
+      if (entityData) {
+        stakeholder = entityData;
+      } else {
+        stakeholder = await DebtorDirector.findOne({
+          _id: entityId,
+        }).lean();
+      }
+      if (
+        stakeholder.country.code === 'AUS' ||
+        stakeholder.country.code === 'NZL'
+      ) {
+        lookupMethod =
+          stakeholder.country.code === 'NZL'
+            ? 'NCN'
+            : stakeholder.abn
+            ? 'ABN'
+            : 'ACN';
+        lookupValue =
+          stakeholder.country.code === 'NZL'
+            ? stakeholder.acn
+            : stakeholder.abn
+            ? stakeholder.abn
+            : stakeholder.acn;
+        if (action === 'add') {
+          if (lookupValue) {
+            const foundEntity = filterEntity({
+              monitoredEntities: response.monitoredEntities,
+              lookupValue,
+              lookupMethod,
+            });
+            if (!foundEntity) {
+              entityList.push({
+                lookupMethod: lookupMethod,
+                lookupValue: lookupValue,
+              });
+            }
+          }
+        } else {
+          const query = stakeholder?.abn
+            ? { abn: stakeholder.abn, isDeleted: false }
+            : { acn: stakeholder.acn, isDeleted: false };
+          const anotherStakeholder = await DebtorDirector.findOne(query).lean();
+          if (!anotherStakeholder) {
+            /* updateEntitiesToAlertProfile({
+              entityList: [
+                {
+                  lookupMethod: lookupMethod,
+                  lookupValue: lookupValue,
+                },
+              ],
+              action,
+            });*/
             entityList.push({
               lookupMethod: lookupMethod,
               lookupValue: lookupValue,
             });
           }
         }
-      } else {
-        const stakeholders = await DebtorDirector.find({
-          debtorId: debtor._id,
-          isDeleted: false,
-          type: 'company',
-        }).lean();
-        for (let i = 0; i < stakeholders.length; i++) {
-          if (
-            stakeholders[i].country.code === 'AUS' ||
-            stakeholders[i].country.code === 'NZL'
-          ) {
-            const lookupMethod =
-              stakeholders[i].country.code === 'NZL'
-                ? 'NCN'
-                : stakeholders[i].abn
-                ? 'ABN'
-                : 'ACN';
-            const lookupValue =
-              stakeholders[i].country.code === 'NZL'
-                ? stakeholders[i].acn
-                : stakeholders[i].abn
-                ? stakeholders[i].abn
-                : stakeholders[i].acn;
-            if (lookupValue) {
-              const foundEntity = filterEntity({
-                monitoredEntities: response.monitoredEntities,
-                lookupValue,
-                lookupMethod,
-              });
-              if (!foundEntity) {
-                entityList.push({
-                  lookupMethod: lookupMethod,
-                  lookupValue: lookupValue,
-                });
-              }
-            }
-          }
-        }
-      }
-      if (entityList.length !== 0) {
-        console.log('entityList ::', entityList);
-        updateEntitiesToAlertProfile({ entityList, action: 'add' });
       }
     }
+    if (entityList.length !== 0) {
+      console.log('entityList ::', entityList);
+      return await updateEntitiesToAlertProfile({ entityList, action });
+    }
   } catch (e) {
-    Logger.log.error('Error occurred in add entity in alert profile');
+    Logger.log.error('Error occurred in check entity in alert profile');
     Logger.log.error(e);
   }
 };
@@ -716,7 +852,12 @@ const checkForActiveCreditLimit = async ({ debtorId }) => {
     const creditLimit = await ClientDebtor.findOne({
       isActive: true,
       debtorId: debtorId,
-      creditLimit: { $exists: true, $ne: null },
+      $and: [
+        { creditLimit: { $exists: true } },
+        { creditLimit: { $ne: null } },
+        { creditLimit: { $ne: 0 } },
+      ],
+      // creditLimit: { $exists: true, $ne: null },
     }).lean();
     return !!creditLimit;
   } catch (e) {
@@ -728,6 +869,80 @@ const checkForActiveCreditLimit = async ({ debtorId }) => {
   }
 };
 
+const addImportApplicationEntitiesToProfile = async () => {
+  try {
+    const unProcessed = [];
+    const processed = [];
+    const creditLimits = await ClientDebtor.find({
+      isActive: true,
+      $and: [
+        { creditLimit: { $exists: true } },
+        { creditLimit: { $ne: null } },
+        { creditLimit: { $ne: 0 } },
+      ],
+    }).lean();
+    for (let i = 0; i < creditLimits.length; i++) {
+      const data = await addEntitiesToAlertProfile({
+        entityType: 'debtor',
+        action: 'add',
+        entityId: creditLimits[i]?.debtorId,
+        unProcessed,
+      });
+      processed.push(data);
+      Logger.log.trace(
+        'Entity added successfully..',
+        creditLimits[i]?.debtorId,
+        'index',
+        i,
+      );
+    }
+    Logger.log.trace('UnProcessed', JSON.stringify(unProcessed, null, 3));
+    fs.writeFileSync('alert-response.json', JSON.stringify(processed, null, 3));
+  } catch (e) {
+    Logger.log.error('Error occurred in add entities to alert profile', e);
+  }
+};
+
+const checkForValidEntity = async ({ lookupValue, lookupMethod }) => {
+  try {
+    let valid = false;
+    let entityData;
+    if (lookupMethod === 'ABN') {
+      entityData = await getEntityDetailsByABN({ searchString: lookupValue });
+      if (entityData && entityData?.response?.businessEntity202001) {
+        valid = true;
+      }
+    } else if (lookupMethod === 'ACN') {
+      entityData = await getEntityDetailsByACN({ searchString: lookupValue });
+      if (entityData && entityData?.response?.businessEntity201408) {
+        valid = true;
+      }
+    } else if (lookupMethod === 'NCN') {
+      entityData = await getEntityListByNameFromNZBN({
+        searchString: lookupValue,
+      });
+      let identifiedData = {};
+      if (entityData && entityData.items && entityData.items.length !== 0) {
+        for (let i = 0; i < entityData.items.length; i++) {
+          if (
+            entityData.items[i].sourceRegisterUniqueId &&
+            entityData.items[i].sourceRegisterUniqueId === searchString
+          ) {
+            identifiedData = entityData.items[i];
+            break;
+          }
+        }
+        if (identifiedData?.nzbn) {
+          valid = true;
+        }
+      }
+    }
+    return valid;
+  } catch (e) {
+    console.log('Error occurred.........', e);
+  }
+};
+
 module.exports = {
   retrieveAlertListFromIllion,
   listEntitySpecificAlerts,
@@ -735,4 +950,5 @@ module.exports = {
   addEntitiesToAlertProfile,
   checkForEntityInProfile,
   checkForActiveCreditLimit,
+  addImportApplicationEntitiesToProfile,
 };

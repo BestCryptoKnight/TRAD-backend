@@ -552,9 +552,9 @@ const getAuditLogList = async ({
       auditLogs[0].paginatedResult.forEach((log) => {
         if (auditLogColumn.includes('entityRefId')) {
           log.entityRefId =
-            log.entityRefId && log.entityRefId[0] && log.entityRefId[1]
+            log?.entityRefId?.[0] && log.entityRefId?.[1]
               ? log.entityRefId[0] + '/' + log.entityRefId[1]
-              : log?.entityRefId[0]
+              : log?.entityRefId?.[0]
               ? log.entityRefId[0]
               : '';
         }
@@ -590,7 +590,7 @@ const getAuditLogList = async ({
       pages: Math.ceil(total / parseInt(requestedQuery.limit)),
     };
   } catch (e) {
-    Logger.log.error('Error occurred in get audit logs', e.message || e);
+    Logger.log.error('Error occurred in get audit logs', e);
     return Promise.reject(e.message);
   }
 };

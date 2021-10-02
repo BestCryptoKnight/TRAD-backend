@@ -717,6 +717,7 @@ const updateEntitiesToAlertProfile = async ({ entityList, action }) => {
       ABN: 0,
       ACN: 1,
       NCN: 2,
+      DUNS: 3,
     };
     entityList.forEach((i) => {
       i.lookupMethod = lookupType[i.lookupMethod];
@@ -724,12 +725,12 @@ const updateEntitiesToAlertProfile = async ({ entityList, action }) => {
     });
     console.log('entityList :: ', entityList);
     if (action === 'add') {
-      await addEntitiesToProfile({
+      return await addEntitiesToProfile({
         entities: entityList,
         integration: organization.integration,
       });
     } else if (action === 'remove') {
-      await removeEntitiesFromProfile({
+      return await removeEntitiesFromProfile({
         entities: entityList,
         integration: organization.integration,
       });

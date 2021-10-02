@@ -905,8 +905,6 @@ const submitApplication = async ({
         userType === 'user' ? userName : application.clientId.name
       }`,
     });
-    //TODO do not monitor for endorsed limit + call on application approve or surrendered
-    /*addEntitiesToAlertProfile({ debtorId: application.debtorId });*/
     return 'Application submitted successfully.';
   } catch (e) {
     Logger.log.error('Error occurred in submit application');

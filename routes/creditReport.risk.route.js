@@ -23,6 +23,9 @@ const {
   downloadDocument,
 } = require('./../helper/static-file.helper');
 const { sendNotification } = require('./../helper/socket.helper');
+const {
+  updateActiveReportInCreditLimit,
+} = require('./../helper/client-debtor.helper');
 
 /**
  * Get Column Names
@@ -337,8 +340,9 @@ router.put('/generate', async function (req, res) {
         ) {
           return res.status(400).send({
             status: 'ERROR',
-            messageCode: 'REQUIRE_FIELD_MISSING',
-            message: 'Require fields are missing.',
+            messageCode: 'NO_STAKEHOLDER_FOUND',
+            message:
+              'Sorry! Report cannot be fetched, as no respective stakeholder found to perform this operation',
           });
         }
         const stakeholder = await DebtorDirector.findOne({
@@ -413,7 +417,7 @@ router.put('/generate', async function (req, res) {
             response.keyPath = s3Response.key || s3Response.Key;
             response.originalFileName = fileName;
           }
-          await CreditReport.create(response);
+          const reportDetails = await CreditReport.create(response);
           //TODO update in client-debtor
           if (
             reportData.Envelope.Body.Response.DynamicDelinquencyScore &&
@@ -442,6 +446,10 @@ router.put('/generate', async function (req, res) {
             },
             type: 'user',
             userId: req.user._id,
+          });
+          await updateActiveReportInCreditLimit({
+            reportDetails,
+            debtorId: req.body.debtorId,
           });
         } else {
           const message =
