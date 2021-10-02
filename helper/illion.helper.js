@@ -448,7 +448,7 @@ const getMonitoredEntities = async () => {
       profileId: organization.illionAlertProfile.profileId,
     });
     const options = {
-      method: 'POST',
+      method: 'post',
       url: url,
       headers: {
         'Content-Type': 'application/json',
@@ -458,8 +458,8 @@ const getMonitoredEntities = async () => {
     const { data } = await axios(options);
     return data;
   } catch (e) {
-    Logger.log.error('Error occurred in get monitored entities');
-    Logger.log.error(e);
+    Logger.log.error('Error occurred in get monitored entities from profile');
+    Logger.log.error(e.response.data || e);
   }
 };
 

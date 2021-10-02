@@ -321,11 +321,14 @@ const addEntitiesToAlertProfile = async ({
               debtor.entityType !== 'PARTNERSHIP'
             ) {
               if (lookupValue) {
-                const foundEntity = filterEntity({
-                  monitoredEntities: response.monitoredEntities,
-                  lookupValue,
-                  lookupMethod,
-                });
+                let foundEntity;
+                if (response && response?.monitoredEntities?.length !== 0) {
+                  foundEntity = filterEntity({
+                    monitoredEntities: response.monitoredEntities,
+                    lookupValue,
+                    lookupMethod,
+                  });
+                }
                 if (!foundEntity) {
                   entityList.push({
                     lookupMethod: lookupMethod,
@@ -358,11 +361,17 @@ const addEntitiesToAlertProfile = async ({
                         ? stakeholders[i].abn
                         : stakeholders[i].acn;
                     if (lookupValue) {
-                      const foundEntity = filterEntity({
-                        monitoredEntities: response.monitoredEntities,
-                        lookupValue,
-                        lookupMethod,
-                      });
+                      let foundEntity;
+                      if (
+                        response &&
+                        response?.monitoredEntities?.length !== 0
+                      ) {
+                        foundEntity = filterEntity({
+                          monitoredEntities: response.monitoredEntities,
+                          lookupValue,
+                          lookupMethod,
+                        });
+                      }
                       if (!foundEntity) {
                         entityList.push({
                           lookupMethod: lookupMethod,
@@ -453,11 +462,14 @@ const addEntitiesToAlertProfile = async ({
             : stakeholder.acn;
         if (action === 'add') {
           if (lookupValue) {
-            const foundEntity = filterEntity({
-              monitoredEntities: response.monitoredEntities,
-              lookupValue,
-              lookupMethod,
-            });
+            let foundEntity;
+            if (response && response?.monitoredEntities?.length !== 0) {
+              foundEntity = filterEntity({
+                monitoredEntities: response.monitoredEntities,
+                lookupValue,
+                lookupMethod,
+              });
+            }
             if (!foundEntity) {
               entityList.push({
                 lookupMethod: lookupMethod,
