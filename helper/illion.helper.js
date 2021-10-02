@@ -437,7 +437,7 @@ const getMonitoredEntities = async () => {
       .select({ 'integration.illionAlert': 1, illionAlertProfile: 1 })
       .lean();
     const url = `${config.illion.alertAPIUrl}api/Entities/GetMonitoredEntities`;
-    const requestBody = {
+    const requestBody = JSON.stringify({
       requestHeader: {
         subscriber: {
           subscriberId: organization.integration.illionAlert.subscriberId,
@@ -446,10 +446,13 @@ const getMonitoredEntities = async () => {
         },
       },
       profileId: organization.illionAlertProfile.profileId,
-    };
+    });
     const options = {
       method: 'POST',
       url: url,
+      headers: {
+        'Content-Type': 'application/json',
+      },
       data: requestBody,
     };
     const { data } = await axios(options);
