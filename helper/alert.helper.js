@@ -53,7 +53,7 @@ const retrieveAlertListFromIllion = async ({ startDate, endDate }) => {
       illionAlertProfile: organization.illionAlertProfile,
       integration: organization.integration,
     });
-    if (response && response.alerts.length !== 0) {
+    if (response && response?.alerts?.length !== 0) {
       const alertList = [];
       let companyDetails = {};
       let usedFields = {};
