@@ -410,7 +410,7 @@ router.put('/generate', async function (req, res) {
             const fileName = req.body.productCode + '-' + Date.now() + '.pdf';
             const s3Response = await uploadFile({
               file: buffer,
-              filePath: 'decision-letters/' + fileName,
+              filePath: 'credit-reports/' + fileName,
               fileType: 'application/pdf',
               isPublicFile: false,
             });
