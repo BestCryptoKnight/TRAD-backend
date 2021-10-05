@@ -1372,10 +1372,7 @@ router.put('/user/:clientUserId', async function (req, res) {
         };
         //TODO change dummy email id to client's user email id for send mail on Portal-Access
         let mailObj = {
-          toAddress: [
-            'parth@team.humanpixel.com.au',
-            'chandani@team.humanpixel.com.au',
-          ],
+          toAddress: ['parth@team.humanpixel.com.au'],
           // toAddress: [clientUser.email],
           subject: 'Welcome to TRAD CLIENT PORTAL',
           text: {
