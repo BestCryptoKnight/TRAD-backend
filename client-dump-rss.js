@@ -107,6 +107,10 @@ let crmIds = [
     '8915',
     '8890',
     '9006',
+    '10575',
+    '11988',
+    '12280',
+    '12467'
 ];
 let processedCrmId = [];
 let main = async () => {

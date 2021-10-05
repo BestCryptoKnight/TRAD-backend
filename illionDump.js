@@ -41,7 +41,7 @@ const pdfFileOutputPath = [
   'processed_pdf_files_2021',
 ];
 const userId = '6035f169f30c50fec2f70d7e';
-const documentTypeId = '6149e1313cb7ffbec0f509ad';
+const documentTypeId = '6155be6ec8e217314ac90fdc';
 const validCountryArray = ['61', '64'];
 
 const pdfFileNames = fs.readdirSync(path.join(...pdfFileInputPath));
@@ -900,9 +900,9 @@ const resetClientDebtorCode = async () => {
 
 const main = async () => {
   console.log('Executing the DUMP Script at', new Date());
-  // storeMerchantCode();
   // await resetClientDebtorCode();
-  await importApplications();
+  // await storeMerchantCode();
+  // await importApplications();
   console.log('Successfully executed the DUMP Script at', new Date());
 };
 

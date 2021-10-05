@@ -10,6 +10,9 @@ const router = express.Router();
 router.get('/', function (req, res, next) {
     res.send("Hello, This is root");
 });
+router.post('/', function (req, res, next) {
+    res.send("Hello, This is root");
+});
 
 /**
  * Export Router
