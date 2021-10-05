@@ -353,7 +353,12 @@ const getClientDebtorList = async ({ searchString, clientId }) => {
     let queryFilter = {
       isActive: true,
       clientId: mongoose.Types.ObjectId(clientId),
-      creditLimit: { $exists: true, $ne: null },
+      // creditLimit: { $exists: true, $ne: null },
+      $and: [
+        { creditLimit: { $exists: true } },
+        { creditLimit: { $ne: null } },
+        { creditLimit: { $ne: 0 } },
+      ],
       entityName: { $regex: getRegexForSearch(searchString), $options: 'i' },
     };
     const debtors = await ClientDebtor.find(queryFilter)

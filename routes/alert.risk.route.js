@@ -12,6 +12,9 @@ const Organization = mongoose.model('organization');
 const config = require('../config');
 const Logger = require('./../services/logger');
 const { updateProfile } = require('./../helper/illion.helper');
+const {
+  addImportApplicationEntitiesToProfile,
+} = require('./../helper/alert.helper');
 
 /**
  * Update illion profile
@@ -46,6 +49,22 @@ router.put('/profile', async function (req, res) {
     });
   } catch (e) {
     Logger.log.error('Error occurred in update illion profile', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later',
+    });
+  }
+});
+
+router.get('/addToProfile', async function (req, res) {
+  try {
+    await addImportApplicationEntitiesToProfile();
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: 'Entities added successfully',
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in add entities in profile', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later',

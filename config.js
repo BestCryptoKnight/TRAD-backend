@@ -76,5 +76,6 @@ module.exports = {
     apiUrl: process.env.ILLION_API_URL,
     cronString: '0 1 * * *',
     alertAPIUrl: process.env.ILLION_ALERT_API_URL,
+    pdfReportAPIUrl: process.env.ILLION_PDF_REPORT_API_URL,
   },
 };

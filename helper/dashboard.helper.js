@@ -19,7 +19,12 @@ const getEndorsedLimit = async ({
   try {
     const query = {
       clientId: mongoose.Types.ObjectId(clientId),
-      creditLimit: { $exists: true, $ne: null },
+      // creditLimit: { $exists: true, $ne: null },
+      $and: [
+        { creditLimit: { $exists: true } },
+        { creditLimit: { $ne: null } },
+        { creditLimit: { $ne: 0 } },
+      ],
     };
     if (startDate && endDate) {
       query.updatedAt = {

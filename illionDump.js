@@ -656,33 +656,199 @@ const importApplications = async () => {
         if (
           validCountryArray.includes(
             applicationList[key][activeApplicationIndex]['cd_country'],
-          ) &&
-          allowedApplicationStatus.indexOf(
-            applicationList[key][activeApplicationIndex]['cd_status'],
-          ) !== -1 &&
-          allowedLimitTypes.indexOf(
-            activeApplicationDetails['tx_tcr_product'],
-          ) !== -1
+          )
         ) {
-          let application = await Application.findOne({
-            applicationId: key,
-          });
-          if (!application) {
-            application = new Application();
-          }
-          const client = await Client.findOne({
-            merchantCode: {
-              $in: [
-                applicationList[key][activeApplicationIndex][
-                  'id_merchant_submit'
+          if (
+            allowedApplicationStatus.indexOf(
+              applicationList[key][activeApplicationIndex]['cd_status'],
+            ) !== -1 &&
+            allowedLimitTypes.indexOf(
+              activeApplicationDetails['tx_tcr_product'],
+            ) !== -1
+          ) {
+            let application = await Application.findOne({
+              applicationId: key,
+            });
+            if (!application) {
+              application = new Application();
+            }
+            const client = await Client.findOne({
+              merchantCode: {
+                $in: [
+                  applicationList[key][activeApplicationIndex][
+                    'id_merchant_submit'
+                  ],
                 ],
-              ],
-            },
-          }).lean();
-          if (!client) {
+              },
+            }).lean();
+            if (!client) {
+              unProcessedApplicationIds.push({
+                applicationId: key,
+                reason: 'Client not found',
+                clientCode:
+                  applicationList[key][activeApplicationIndex][
+                    'id_merchant_submit'
+                  ],
+                applicationDate:
+                  applicationList[key][activeApplicationIndex]?.['dt_modify'],
+              });
+            } else {
+              const debtor = await createDebtor({
+                applicationId: key,
+                activeApplicationIndex,
+              });
+              if (debtor) {
+                if (
+                  debtor?.entityType === 'TRUST' ||
+                  debtor?.entityType === 'PARTNERSHIP'
+                ) {
+                  await Promise.all([
+                    await storeIndividual({
+                      debtorId: debtor._id,
+                      entityType: 'CoBorrower',
+                      activeApplicationIndex,
+                      applicationId: key,
+                    }),
+                    await storeCompany({
+                      debtorId: debtor._id,
+                      entityType: 'CoBorrower',
+                      activeApplicationIndex,
+                      applicationId: key,
+                    }),
+                  ]);
+                } else if (debtor?.entityType === 'SOLE_TRADER') {
+                  await storeIndividual({
+                    debtorId: debtor._id,
+                    entityType: 'CoBorrower',
+                    activeApplicationIndex,
+                    applicationId: key,
+                  });
+                }
+
+                const approvedApplicationDetails =
+                  applicationApprovalDetails?.[key]?.[activeApplicationIndex];
+                const applicationQuestions =
+                  questionAnswerList?.[key]?.[activeApplicationIndex];
+
+                application.applicationId = key;
+                application.clientId = client._id;
+                application.debtorId = debtor._id;
+                application.status = mapApplicationStatus({
+                  status:
+                    applicationList[key][activeApplicationIndex]['cd_status'],
+                });
+                application.isAutoApproved = false;
+                application.isExtendedPaymentTerms =
+                  applicationQuestions?.['extended_policy'] === '1';
+                application.isPassedOverdueAmount =
+                  applicationQuestions?.['extended_overdue'] === '1';
+                application.creditLimit = approvedApplicationDetails?.[
+                  'am_requsted'
+                ]
+                  ? parseInt(approvedApplicationDetails['am_requsted'])
+                  : 0;
+                application.acceptedAmount = approvedApplicationDetails?.[
+                  'am_granted'
+                ]
+                  ? parseInt(approvedApplicationDetails['am_granted'])
+                  : 0;
+                application.clientReference =
+                  approvedApplicationDetails?.['no_acc_reference'] || '';
+                application.comments =
+                  activeApplicationDetails?.['tx_comments'] || '';
+                application.requestDate = approvedApplicationDetails?.[
+                  'dt_submit'
+                ]
+                  ? moment(
+                      approvedApplicationDetails?.['dt_submit'],
+                      'DD/MM/YYYY HH:mm:ss a',
+                    ).toISOString()
+                  : null;
+                application.approvalOrDecliningDate = approvedApplicationDetails?.[
+                  'dt_effective'
+                ]
+                  ? moment(
+                      approvedApplicationDetails?.['dt_effective'],
+                      'DD/MM/YYYY HH:mm:ss a',
+                    ).toISOString()
+                  : approvedApplicationDetails?.['dt_approved']
+                  ? moment(
+                      approvedApplicationDetails?.['dt_approved'],
+                      'DD/MM/YYYY HH:mm:ss a',
+                    ).toISOString()
+                  : null;
+                application.isEndorsedLimit =
+                  activeApplicationDetails?.['tx_tcr_product'] ===
+                  'Endorsed Limit';
+                application.limitType = getLimitType(
+                  activeApplicationDetails?.['tx_tcr_product'],
+                );
+                await createNotes({
+                  applicationId: application._id,
+                  activeApplicationIndex,
+                  applicationNumber: key,
+                });
+                await createDocuments({
+                  applicationId: application._id,
+                  applicationNumber: key,
+                });
+                const inActiveStatus = ['CANCELLED', 'WITHDRAWN'];
+                const update = {
+                  clientId: client._id,
+                  debtorId: debtor._id,
+                  isActive: !inActiveStatus.includes(application.status),
+                  isFromOldSystem: true,
+                  isEndorsedLimit: application.isEndorsedLimit,
+                  creditLimit: application.acceptedAmount,
+                  activeApplicationId: application._id,
+                };
+                const clientDebtor = await createCreditLimit({
+                  clientId: client._id,
+                  debtorId: debtor._id,
+                  update,
+                });
+                application.clientDebtorId = clientDebtor?._id;
+                // TODO Application date change
+
+                application.createdAt = moment(
+                  applicationList[key][activeApplicationIndex]['dt_request'],
+                  'DD/MM/YYYY HH:mm:ss a',
+                ).toISOString();
+                await application.save();
+                // TODO Documents Helper function to Store Documents in DB + CP in other file
+
+                if (approvedApplicationDetails?.['dt_review']) {
+                  await Debtor.updateOne(
+                    { _id: debtor._id },
+                    {
+                      reviewDate: moment(
+                        approvedApplicationDetails['dt_review'],
+                        'DD/MM/YYYY HH:mm:ss a',
+                      ).toISOString(),
+                    },
+                  );
+                }
+                processedApplicationCount++;
+                console.log(
+                  'Application generated successfully.....',
+                  key,
+                  count + '/' + totalApplication,
+                );
+              }
+            }
+            /* else {
+            // TODO remove if else
+            console.log('Application skipped.........');
+          }*/
+          } else {
+            console.log(
+              'Skipping Application due to unwanted status or limit type',
+              key,
+              count + '/' + totalApplication,
+            );
             unProcessedApplicationIds.push({
               applicationId: key,
-              reason: 'Client not found',
+              reason: 'unwanted Status or Limit Type',
               clientCode:
                 applicationList[key][activeApplicationIndex][
                   'id_merchant_submit'
@@ -690,170 +856,7 @@ const importApplications = async () => {
               applicationDate:
                 applicationList[key][activeApplicationIndex]?.['dt_modify'],
             });
-          } else {
-            const debtor = await createDebtor({
-              applicationId: key,
-              activeApplicationIndex,
-            });
-            if (debtor) {
-              if (
-                debtor?.entityType === 'TRUST' ||
-                debtor?.entityType === 'PARTNERSHIP'
-              ) {
-                await Promise.all([
-                  await storeIndividual({
-                    debtorId: debtor._id,
-                    entityType: 'CoBorrower',
-                    activeApplicationIndex,
-                    applicationId: key,
-                  }),
-                  await storeCompany({
-                    debtorId: debtor._id,
-                    entityType: 'CoBorrower',
-                    activeApplicationIndex,
-                    applicationId: key,
-                  }),
-                ]);
-              } else if (debtor?.entityType === 'SOLE_TRADER') {
-                await storeIndividual({
-                  debtorId: debtor._id,
-                  entityType: 'CoBorrower',
-                  activeApplicationIndex,
-                  applicationId: key,
-                });
-              }
-
-              const approvedApplicationDetails =
-                applicationApprovalDetails?.[key]?.[activeApplicationIndex];
-              const applicationQuestions =
-                questionAnswerList?.[key]?.[activeApplicationIndex];
-
-              application.applicationId = key;
-              application.clientId = client._id;
-              application.debtorId = debtor._id;
-              application.status = mapApplicationStatus({
-                status:
-                  applicationList[key][activeApplicationIndex]['cd_status'],
-              });
-              application.isAutoApproved = false;
-              application.isExtendedPaymentTerms =
-                applicationQuestions?.['extended_policy'] === '1';
-              application.isPassedOverdueAmount =
-                applicationQuestions?.['extended_overdue'] === '1';
-              application.creditLimit = approvedApplicationDetails?.[
-                'am_requsted'
-              ]
-                ? parseInt(approvedApplicationDetails['am_requsted'])
-                : 0;
-              application.acceptedAmount = approvedApplicationDetails?.[
-                'am_granted'
-              ]
-                ? parseInt(approvedApplicationDetails['am_granted'])
-                : 0;
-              application.clientReference =
-                approvedApplicationDetails?.['no_acc_reference'] || '';
-              application.comments =
-                activeApplicationDetails?.['tx_comments'] || '';
-              application.requestDate = approvedApplicationDetails?.[
-                'dt_submit'
-              ]
-                ? moment(
-                    approvedApplicationDetails?.['dt_submit'],
-                    'DD/MM/YYYY HH:mm:ss a',
-                  ).toISOString()
-                : null;
-              application.approvalOrDecliningDate = approvedApplicationDetails?.[
-                'dt_effective'
-              ]
-                ? moment(
-                    approvedApplicationDetails?.['dt_effective'],
-                    'DD/MM/YYYY HH:mm:ss a',
-                  ).toISOString()
-                : approvedApplicationDetails?.['dt_approved']
-                ? moment(
-                    approvedApplicationDetails?.['dt_approved'],
-                    'DD/MM/YYYY HH:mm:ss a',
-                  ).toISOString()
-                : null;
-              application.isEndorsedLimit =
-                activeApplicationDetails?.['tx_tcr_product'] ===
-                'Endorsed Limit';
-              application.limitType = getLimitType(
-                activeApplicationDetails?.['tx_tcr_product'],
-              );
-              await createNotes({
-                applicationId: application._id,
-                activeApplicationIndex,
-                applicationNumber: key,
-              });
-              await createDocuments({
-                applicationId: application._id,
-                applicationNumber: key,
-              });
-              const inActiveStatus = ['CANCELLED', 'WITHDRAWN'];
-              const update = {
-                clientId: client._id,
-                debtorId: debtor._id,
-                isActive: !inActiveStatus.includes(application.status),
-                isFromOldSystem: true,
-                isEndorsedLimit: application.isEndorsedLimit,
-                creditLimit: application.acceptedAmount,
-                activeApplicationId: application._id,
-              };
-              const clientDebtor = await createCreditLimit({
-                clientId: client._id,
-                debtorId: debtor._id,
-                update,
-              });
-              application.clientDebtorId = clientDebtor?._id;
-              // TODO Application date change
-
-              application.createdAt = moment(
-                applicationList[key][activeApplicationIndex]['dt_request'],
-                'DD/MM/YYYY HH:mm:ss a',
-              ).toISOString();
-              await application.save();
-              // TODO Documents Helper function to Store Documents in DB + CP in other file
-
-              if (approvedApplicationDetails?.['dt_review']) {
-                await Debtor.updateOne(
-                  { _id: debtor._id },
-                  {
-                    reviewDate: moment(
-                      approvedApplicationDetails['dt_review'],
-                      'DD/MM/YYYY HH:mm:ss a',
-                    ).toISOString(),
-                  },
-                );
-              }
-              processedApplicationCount++;
-              console.log(
-                'Application generated successfully.....',
-                key,
-                count + '/' + totalApplication,
-              );
-            }
           }
-          /* else {
-          // TODO remove if else
-          console.log('Application skipped.........');
-        }*/
-        } else {
-          console.log(
-            'Skipping Application due to unwanted status or limit type',
-            key,
-            count + '/' + totalApplication,
-          );
-          unProcessedApplicationIds.push({
-            applicationId: key,
-            reason: 'unwanted Status or Limit Type',
-            clientCode:
-              applicationList[key][activeApplicationIndex][
-                'id_merchant_submit'
-              ],
-            applicationDate:
-              applicationList[key][activeApplicationIndex]?.['dt_modify'],
-          });
         }
       }
       count += 1;

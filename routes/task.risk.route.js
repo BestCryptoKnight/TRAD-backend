@@ -314,6 +314,7 @@ router.get('/', async function (req, res) {
     const taskColumn = req.user.manageColumns.find(
       (i) => i.moduleName === req.query.columnFor,
     );
+    const entityType = req.query.columnFor.split('-').shift();
     if (!module || !module.manageColumns || module.manageColumns.length === 0) {
       return res.status(400).send({
         status: 'ERROR',
@@ -419,12 +420,23 @@ router.get('/', async function (req, res) {
       tasks[0]['totalCount'].length !== 0
         ? tasks[0]['totalCount'][0]['count']
         : 0;
+
+    const selectedEntityDetails = {};
+    if (entityType && req.query.requestedEntityId) {
+      selectedEntityDetails.label = await getEntityName({
+        entityType,
+        entityId: req.query.requestedEntityId,
+      });
+      selectedEntityDetails.value = req.query.requestedEntityId;
+    }
+
     res.status(200).send({
       status: 'SUCCESS',
       data: {
         docs: response,
         headers,
         total,
+        selectedEntityDetails,
         page: parseInt(req.query.page),
         limit: parseInt(req.query.limit),
         pages: Math.ceil(total / parseInt(req.query.limit)),

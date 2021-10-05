@@ -189,8 +189,7 @@ const fetchCreditReportInPDFFormat = ({
       });
       const options = {
         method: 'post',
-        url:
-          'https://b2btest.dnb.com.au/illionProductB2B/Commercial/OrderCommercialBinaryReport',
+        url: config.illion.pdfReportAPIUrl,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -437,7 +436,7 @@ const getMonitoredEntities = async () => {
       .select({ 'integration.illionAlert': 1, illionAlertProfile: 1 })
       .lean();
     const url = `${config.illion.alertAPIUrl}api/Entities/GetMonitoredEntities`;
-    const requestBody = {
+    const requestBody = JSON.stringify({
       requestHeader: {
         subscriber: {
           subscriberId: organization.integration.illionAlert.subscriberId,
@@ -446,17 +445,20 @@ const getMonitoredEntities = async () => {
         },
       },
       profileId: organization.illionAlertProfile.profileId,
-    };
+    });
     const options = {
-      method: 'POST',
+      method: 'post',
       url: url,
+      headers: {
+        'Content-Type': 'application/json',
+      },
       data: requestBody,
     };
     const { data } = await axios(options);
     return data;
   } catch (e) {
-    Logger.log.error('Error occurred in get monitored entities');
-    Logger.log.error(e);
+    Logger.log.error('Error occurred in get monitored entities from profile');
+    Logger.log.error(e.response.data || e);
   }
 };
 

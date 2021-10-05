@@ -1044,6 +1044,7 @@ const checkGuidelines = async ({
         policy.excess &&
         application.creditLimit
       ) {
+        response = {};
         response = await checkForCreditLimit({
           policy,
           creditLimit: application.creditLimit,
@@ -1216,6 +1217,7 @@ const checkPriceRangeGuidelines = async ({
   try {
     let response = {};
     if (guidelines.paymentRiskLevel) {
+      response = {};
       if (reportData && reportData.DynamicDelinquencyScore) {
         response = await checkForRiskLevel({
           dynamicDelinquencyScore: reportData.DynamicDelinquencyScore,

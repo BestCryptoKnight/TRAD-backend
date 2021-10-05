@@ -28,8 +28,8 @@ const getClientListReport = async ({
     let queryFilter = {
       isDeleted: false,
     };
-    const query = [];
-    const aggregationQuery = [];
+    let query = [];
+    let aggregationQuery = [];
     if (!hasFullAccess) {
       queryFilter = Object.assign({}, queryFilter, {
         $or: [
@@ -48,66 +48,63 @@ const getClientListReport = async ({
         },
       });
     }
+
     if (
-      reportColumn.includes('riskAnalystId')
-      // || requestedQuery.riskAnalystId
+      reportColumn.includes('riskAnalystId') ||
+      requestedQuery.riskAnalystId
     ) {
-      query.push({
-        $lookup: {
-          from: 'users',
-          localField: 'riskAnalystId',
-          foreignField: '_id',
-          as: 'riskAnalystId',
+      const conditions = [
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'riskAnalystId',
+            foreignField: '_id',
+            as: 'riskAnalystId',
+          },
         },
-      });
+      ];
+      if (requestedQuery.riskAnalystId) {
+        aggregationQuery = [...aggregationQuery, ...conditions];
+        aggregationQuery.push({
+          $match: {
+            'riskAnalystId._id': mongoose.Types.ObjectId(
+              requestedQuery.riskAnalystId,
+            ),
+          },
+        });
+      } else {
+        query = [...query, ...conditions];
+      }
     }
-    if (requestedQuery.riskAnalystId) {
-      aggregationQuery.push({
-        $lookup: {
-          from: 'users',
-          localField: 'riskAnalystId',
-          foreignField: '_id',
-          as: 'riskAnalystId',
-        },
-      });
-      aggregationQuery.push({
-        $match: {
-          'riskAnalystId._id': mongoose.Types.ObjectId(
-            requestedQuery.riskAnalystId,
-          ),
-        },
-      });
-    }
+
     if (
-      reportColumn.includes('serviceManagerId')
-      // ||  requestedQuery.serviceManagerId
+      reportColumn.includes('serviceManagerId') ||
+      requestedQuery.serviceManagerId
     ) {
-      query.push({
-        $lookup: {
-          from: 'users',
-          localField: 'serviceManagerId',
-          foreignField: '_id',
-          as: 'serviceManagerId',
+      const conditions = [
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'serviceManagerId',
+            foreignField: '_id',
+            as: 'serviceManagerId',
+          },
         },
-      });
+      ];
+      if (requestedQuery.serviceManagerId) {
+        aggregationQuery = [...aggregationQuery, ...conditions];
+        aggregationQuery.push({
+          $match: {
+            'serviceManagerId._id': mongoose.Types.ObjectId(
+              requestedQuery.serviceManagerId,
+            ),
+          },
+        });
+      } else {
+        query = [...query, ...conditions];
+      }
     }
-    if (requestedQuery.serviceManagerId) {
-      aggregationQuery.push({
-        $lookup: {
-          from: 'users',
-          localField: 'serviceManagerId',
-          foreignField: '_id',
-          as: 'serviceManagerId',
-        },
-      });
-      aggregationQuery.push({
-        $match: {
-          'serviceManagerId._id': mongoose.Types.ObjectId(
-            requestedQuery.serviceManagerId,
-          ),
-        },
-      });
-    }
+
     let dateQuery = {};
     if (requestedQuery.inceptionStartDate || requestedQuery.inceptionEndDate) {
       if (requestedQuery.inceptionStartDate) {
@@ -117,7 +114,7 @@ const getClientListReport = async ({
       }
       if (requestedQuery.inceptionEndDate) {
         dateQuery = Object.assign({}, dateQuery, {
-          $lte: new Date() || new Date(requestedQuery.inceptionEndDate),
+          $lte: new Date(requestedQuery.inceptionEndDate),
         });
       }
       queryFilter.inceptionDate = dateQuery;

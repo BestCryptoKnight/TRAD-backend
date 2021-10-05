@@ -11,7 +11,7 @@
         },
         { "name": "userType", "label": "User Type", "type": "string" },
         { "name": "userRefId", "label": "User Name", "type": "string" },
-        { "name": "entityRefId", "label": "Module Name", "type": "string" },
+        { "name": "entityRefId", "label": "Entity Name", "type": "string" },
         { "name": "actionType", "label": "Action Type", "type": "string" },
         { "name": "createdAt", "label": "Created Date", "type": "date" }
       ],
