@@ -189,8 +189,7 @@ const fetchCreditReportInPDFFormat = ({
       });
       const options = {
         method: 'post',
-        url:
-          'https://b2btest.dnb.com.au/illionProductB2B/Commercial/OrderCommercialBinaryReport',
+        url: config.illion.pdfReportAPIUrl,
         headers: {
           'Content-Type': 'application/json',
         },
