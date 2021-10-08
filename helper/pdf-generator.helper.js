@@ -483,4 +483,4 @@ const getBase64 = async (url) => {
   }
 };
 
-module.exports = { generateDecisionLetter };
+module.exports = { generateDecisionLetter, getBase64 };

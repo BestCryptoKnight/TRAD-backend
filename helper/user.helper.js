@@ -71,4 +71,17 @@ const removeUserToken = async () => {
   }
 };
 
-module.exports = { getUserList, getAccessBaseUserList, removeUserToken };
+const getUserName = async ({ userId }) => {
+  try {
+    return await User.findOne({ _id: userId }).lean();
+  } catch (e) {
+    Logger.log.error('Error occurred in get user name', e);
+  }
+};
+
+module.exports = {
+  getUserList,
+  getAccessBaseUserList,
+  removeUserToken,
+  getUserName,
+};

@@ -30,6 +30,7 @@ const {
   getStakeholderDetails,
 } = require('./../helper/stakeholder.helper');
 const { checkForEntityInProfile } = require('./../helper/alert.helper');
+const { generateExcel } = require('./../helper/excel.helper');
 
 /**
  * Get Column Names
@@ -304,7 +305,22 @@ router.get('/details/:debtorId', async function (req, res) {
         $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED'],
       },
     }).lean();
-    if (application && application.status !== 'APPROVED') {
+    let anotherApplication;
+    if (application) {
+      anotherApplication = await Application.findOne({
+        _id: { $ne: application._id },
+        debtorId: req.params.debtorId,
+        clientId: req.user.clientId,
+        status: {
+          $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED'],
+        },
+      });
+    }
+    if (
+      application &&
+      application.status !== 'APPROVED' &&
+      anotherApplication
+    ) {
       return res.status(400).send({
         status: 'ERROR',
         messageCode: 'APPLICATION_ALREADY_EXISTS',
@@ -413,35 +429,99 @@ router.get('/download', async function (req, res) {
     const debtorColumn = [
       'entityName',
       'entityType',
-      'activeApplicationId',
-      'creditLimit',
-      'limitType',
-      'expiryDate',
       'abn',
-      'registrationNumber',
       'acn',
-      'createdAt',
-      'updatedAt',
+      'registrationNumber',
+      'country',
+      'requestedAmount',
+      'creditLimit',
+      'approvalOrDecliningDate',
+      'expiryDate',
+      'limitType',
+      'clientReference',
+      'comments',
     ];
     const response = await getClientCreditLimit({
       requestedQuery: req.query,
       debtorColumn: debtorColumn,
       clientId: req.user.clientId,
       moduleColumn: module.manageColumns,
+      isForDownload: true,
     });
-    if (response && response.docs.length !== 0) {
-      const client = await Client.findOne({ _id: req.user.clientId })
-        .select('clientCode')
-        .lean();
-      const finalArray = await formatCSVList({
-        moduleColumn: debtorColumn,
-        response: response.docs,
+    if (response && response?.docs.length > 500) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'DOWNLOAD_LIMIT_EXCEED',
+        message:
+          'User cannot download more than 500 records at a time. Please apply filter to narrow down the list',
       });
-      const csvResponse = await convertToCSV(finalArray);
-      const fileName = client.clientCode + '-credit-limit' + '.csv';
-      res.header('Content-Type', 'text/csv');
+    }
+    if (response && response.docs.length !== 0) {
+      const headers = [
+        { name: 'entityName', label: 'Debtor Name', type: 'string' },
+        { name: 'abn', label: 'ABN/NZBN', type: 'string' },
+        { name: 'acn', label: 'ACN/NCN', type: 'string' },
+        {
+          name: 'registrationNumber',
+          label: 'Registration Number',
+          type: 'string',
+        },
+        { name: 'country', label: 'Country', type: 'string' },
+        {
+          name: 'requestedAmount',
+          label: 'Requested Amount',
+          type: 'amount',
+        },
+        {
+          name: 'creditLimit',
+          label: 'Approved Amount',
+          type: 'amount',
+        },
+        {
+          name: 'approvalOrDecliningDate',
+          label: 'Approval Date',
+          type: 'date',
+        },
+        { name: 'expiryDate', label: 'Expiry Date', type: 'date' },
+        { name: 'limitType', label: 'Limit Type', type: 'string' },
+        {
+          name: 'clientReference',
+          label: 'Client Reference',
+          type: 'string',
+        },
+        { name: 'comments', label: 'Comments', type: 'string' },
+      ];
+      const finalArray = [];
+      let data = {};
+      response.docs.forEach((i) => {
+        data = {};
+        debtorColumn.map((key) => {
+          data[key] = i[key];
+        });
+        finalArray.push(data);
+      });
+      const client = await Client.findOne({ _id: req.user.clientId })
+        .select('clientCode name')
+        .lean();
+      response.filterArray.unshift({
+        label: 'Client Name',
+        value: client?.name,
+        type: 'string',
+      });
+      const excelData = await generateExcel({
+        data: finalArray,
+        reportFor: 'Credit Limit List',
+        headers,
+        filter: response.filterArray,
+      });
+      res.header(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
+      const fileName =
+        client?.clientCode + '-credit-limit-' + Date.now() + '.xlsx';
       res.setHeader('Content-Disposition', 'attachment; filename=' + fileName);
-      res.send(csvResponse);
+      res.status(200).send(excelData);
     } else {
       res.status(400).send({
         status: 'ERROR',

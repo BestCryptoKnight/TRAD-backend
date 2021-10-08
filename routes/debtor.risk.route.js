@@ -609,7 +609,22 @@ router.get('/details/:debtorId', async function (req, res) {
         $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED'],
       },
     }).lean();
-    if (application && application.status !== 'APPROVED') {
+    let anotherApplication;
+    if (application) {
+      anotherApplication = await Application.findOne({
+        _id: { $ne: application._id },
+        clientId: req.query.clientId,
+        debtorId: req.params.debtorId,
+        status: {
+          $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED'],
+        },
+      });
+    }
+    if (
+      application &&
+      application.status !== 'APPROVED' &&
+      anotherApplication
+    ) {
       return res.status(400).send({
         status: 'ERROR',
         messageCode: 'APPLICATION_ALREADY_EXISTS',

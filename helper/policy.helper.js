@@ -9,9 +9,9 @@ const Policy = mongoose.model('policy');
  * */
 const Logger = require('./../services/logger');
 
-const getPolicyDetails = ({ policyData }) => {
+const getPolicyDetails = ({ policyData, isForRisk = true }) => {
   try {
-    const policyColumns = [
+    let policyColumns = [
       { name: 'clientId', label: 'Client Name', type: 'string' },
       { name: 'insurerId', label: 'Insurer Name', type: 'string' },
       {
@@ -55,6 +55,31 @@ const getPolicyDetails = ({ policyData }) => {
         name: 'discretionaryLimit',
         label: 'Discretionary Limit',
         type: 'dollar',
+      },
+      {
+        name: 'creditChecks',
+        label: 'Credit Checks',
+        type: 'string',
+      },
+      {
+        name: 'healthChecks',
+        label: 'Health Checks',
+        type: 'string',
+      },
+      {
+        name: 'alerts247',
+        label: '24/7 Alerts',
+        type: 'string',
+      },
+      {
+        name: 'nzCreditChecks',
+        label: 'NZ Credit Checks',
+        type: 'string',
+      },
+      {
+        name: 'overdueReportingLimit',
+        label: 'Overdue Reporting Limit',
+        type: 'string',
       },
       { name: 'termsOfPayment', label: 'Terms Of Payment', type: 'string' },
       {
@@ -174,6 +199,18 @@ const getPolicyDetails = ({ policyData }) => {
       { name: 'inceptionDate', label: 'Inception Date', type: 'date' },
       { name: 'expiryDate', label: 'Expiry Date', type: 'date' },
     ];
+    if (!isForRisk) {
+      const fields = [
+        'policyPeriod',
+        'crmNote',
+        'brokersCommission',
+        'tcrServiceFee',
+        'rmpFee',
+        'grade',
+        'specialClauses',
+      ];
+      policyColumns = policyColumns.filter((i) => !fields.includes(i.name));
+    }
     let response = [];
     policyColumns.forEach((i) => {
       if (policyData.hasOwnProperty(i.name)) {
@@ -181,7 +218,7 @@ const getPolicyDetails = ({ policyData }) => {
           (i.name === 'insurerId' || i.name === 'clientId') &&
           policyData[i.name]
             ? policyData[i.name]['name']
-            : policyData[i.name] || '';
+            : policyData[i.name] || null;
         response.push({
           label: i.label,
           value: value,

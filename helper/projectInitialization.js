@@ -48,7 +48,7 @@ const createSuperAdmin = () => {
       await user.save();
       let mailObj = {
         toAddress: [user.email],
-        subject: 'Welcome to TRAD',
+        subject: 'Welcome to TCR',
         text: {
           name: user.name ? user.name : '',
           setPasswordLink:

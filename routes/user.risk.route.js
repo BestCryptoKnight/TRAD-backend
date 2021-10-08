@@ -157,7 +157,7 @@ router.get('/send-mail/:userId', async function (req, res) {
     promises.push(user.save());
     const mailObj = {
       toAddress: [user.email],
-      subject: 'Welcome to TRAD',
+      subject: 'Welcome to TCR',
       text: {
         name: user.name ? user.name : '',
         setPasswordLink:
@@ -394,7 +394,7 @@ router.post('/', async function (req, res) {
       await user.save();
       let mailObj = {
         toAddress: [user.email],
-        subject: 'Welcome to TRAD',
+        subject: 'Welcome to TCR',
         text: {
           name: user.name ? user.name : '',
           setPasswordLink:

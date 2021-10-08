@@ -796,7 +796,22 @@ router.get('/search-entity', async function (req, res) {
           $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED'],
         },
       }).lean();
-      if (application && application.status !== 'APPROVED') {
+      let anotherApplication;
+      if (application) {
+        anotherApplication = await Application.findOne({
+          _id: { $ne: application._id },
+          clientId: req.query.clientId,
+          debtorId: debtor._id,
+          status: {
+            $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED'],
+          },
+        });
+      }
+      if (
+        application &&
+        application.status !== 'APPROVED' &&
+        anotherApplication
+      ) {
         return res.status(400).send({
           status: 'ERROR',
           messageCode: 'APPLICATION_ALREADY_EXISTS',
@@ -804,6 +819,7 @@ router.get('/search-entity', async function (req, res) {
             'Application already exists, please create with another debtor',
         });
       } else if (application && application.status === 'APPROVED') {
+        console.log('----------HERE--------------');
         responseData.message =
           'You already have one approved application, do you still want to create another one?';
         responseData.messageCode = 'APPROVED_APPLICATION_ALREADY_EXISTS';

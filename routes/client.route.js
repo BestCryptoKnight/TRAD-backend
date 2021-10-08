@@ -26,36 +26,38 @@ router.get('/user/column-name', async function (req, res) {
     const customFields = [];
     const defaultFields = [];
     for (let i = 0; i < module.manageColumns.length; i++) {
-      if (
-        clientUserColumn &&
-        clientUserColumn.columns.includes(module.manageColumns[i].name)
-      ) {
-        if (module.defaultColumns.includes(module.manageColumns[i].name)) {
-          defaultFields.push({
-            name: module.manageColumns[i].name,
-            label: module.manageColumns[i].label,
-            isChecked: true,
-          });
+      if (module.manageColumns[i].name !== 'isDecisionMaker') {
+        if (
+          clientUserColumn &&
+          clientUserColumn.columns.includes(module.manageColumns[i].name)
+        ) {
+          if (module.defaultColumns.includes(module.manageColumns[i].name)) {
+            defaultFields.push({
+              name: module.manageColumns[i].name,
+              label: module.manageColumns[i].label,
+              isChecked: true,
+            });
+          } else {
+            customFields.push({
+              name: module.manageColumns[i].name,
+              label: module.manageColumns[i].label,
+              isChecked: true,
+            });
+          }
         } else {
-          customFields.push({
-            name: module.manageColumns[i].name,
-            label: module.manageColumns[i].label,
-            isChecked: true,
-          });
-        }
-      } else {
-        if (module.defaultColumns.includes(module.manageColumns[i].name)) {
-          defaultFields.push({
-            name: module.manageColumns[i].name,
-            label: module.manageColumns[i].label,
-            isChecked: false,
-          });
-        } else {
-          customFields.push({
-            name: module.manageColumns[i].name,
-            label: module.manageColumns[i].label,
-            isChecked: false,
-          });
+          if (module.defaultColumns.includes(module.manageColumns[i].name)) {
+            defaultFields.push({
+              name: module.manageColumns[i].name,
+              label: module.manageColumns[i].label,
+              isChecked: false,
+            });
+          } else {
+            customFields.push({
+              name: module.manageColumns[i].name,
+              label: module.manageColumns[i].label,
+              isChecked: false,
+            });
+          }
         }
       }
     }
@@ -100,8 +102,8 @@ router.get('/user', async function (req, res) {
     req.query.sortOrder = req.query.sortOrder || 'desc';
     req.query.limit = req.query.limit || 5;
     req.query.page = req.query.page || 1;
-    if (req.query.hasOwnProperty('isDecisionMaker')) {
-      queryFilter.isDecisionMaker = req.query.isDecisionMaker === 'true';
+    if (req.query.hasOwnProperty('hasPortalAccess')) {
+      queryFilter.hasPortalAccess = req.query.hasPortalAccess === 'true';
     }
     if (req.query.search) {
       queryFilter.name = {
@@ -289,13 +291,6 @@ router.get('/', async function (req, res) {
  * Update Column Names
  */
 router.put('/user/column-name', async function (req, res) {
-  if (!req.user || !req.user._id) {
-    Logger.log.error('User data not found in req');
-    return res.status(401).send({
-      status: 'ERROR',
-      message: 'Please first login to update the profile.',
-    });
-  }
   if (!req.body.hasOwnProperty('isReset') || !req.body.columns) {
     return res.status(400).send({
       status: 'ERROR',
@@ -307,7 +302,9 @@ router.put('/user/column-name', async function (req, res) {
     let updateColumns = [];
     if (req.body.isReset) {
       const module = StaticFile.modules.find((i) => i.name === 'client-user');
-      updateColumns = module.defaultColumns;
+      updateColumns = module.defaultColumns.filter(
+        (i) => i !== 'isDecisionMaker',
+      );
     } else {
       updateColumns = req.body.columns;
     }

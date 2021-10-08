@@ -57,7 +57,7 @@ const getApplicationList = async ({
 }) => {
   try {
     const query = [];
-    const aggregationQuery = [];
+    let aggregationQuery = [];
     const filterArray = [];
     let sortingOptions = {};
     requestedQuery.sortBy = requestedQuery.sortBy || '_id';
@@ -65,9 +65,10 @@ const getApplicationList = async ({
 
     // queryFilter.isDeleted = false;
     if (requestedQuery.clientId) {
-      requestedQuery.clientId = requestedQuery.clientId
-        .split(',')
-        .map((id) => mongoose.Types.ObjectId(id));
+      requestedQuery.clientId = mongoose.Types.ObjectId(
+        requestedQuery.clientId,
+      );
+      queryFilter.clientId = requestedQuery.clientId;
       if (isForDownload) {
         const client = await Client.findOne({ _id: requestedQuery.clientId })
           .select('name')
@@ -78,7 +79,7 @@ const getApplicationList = async ({
           type: 'string',
         });
       }
-    } else if (userId) {
+    } else if (userId && isForRisk) {
       let queryCondition = { status: { $ne: 'DRAFT' } };
       const clients = await Client.find({
         $or: [{ riskAnalystId: userId }, { serviceManagerId: userId }],
@@ -131,8 +132,8 @@ const getApplicationList = async ({
       }
     }
     if (
-      requestedQuery.clientId ||
       applicationColumn.includes('clientId') ||
+      requestedQuery.clientId ||
       requestedQuery.riskAnalystId ||
       requestedQuery.serviceManagerId
     ) {
@@ -152,13 +153,7 @@ const getApplicationList = async ({
         },
       );
     }
-    if (requestedQuery.clientId) {
-      query.push({
-        $match: {
-          'clientId._id': { $in: requestedQuery.clientId },
-        },
-      });
-    }
+
     if (requestedQuery.riskAnalystId) {
       query.push({
         $match: {
@@ -178,9 +173,10 @@ const getApplicationList = async ({
       });
     }
     if (requestedQuery.debtorId) {
-      requestedQuery.debtorId = requestedQuery.debtorId
-        .split(',')
-        .map((id) => mongoose.Types.ObjectId(id));
+      requestedQuery.debtorId = mongoose.Types.ObjectId(
+        requestedQuery.debtorId,
+      );
+      queryFilter.debtorId = requestedQuery.debtorId;
       if (isForDownload) {
         const debtor = await Debtor.findOne({ _id: requestedQuery.debtorId })
           .select('entityName')
@@ -193,8 +189,8 @@ const getApplicationList = async ({
       }
     }
     if (
-      requestedQuery.debtorId ||
       applicationColumn.includes('debtorId') ||
+      requestedQuery.debtorId ||
       applicationColumn.includes('entityType') ||
       requestedQuery.entityType
     ) {
@@ -265,13 +261,6 @@ const getApplicationList = async ({
       );
     }
 
-    if (requestedQuery.debtorId) {
-      query.push({
-        $match: {
-          'debtorId._id': { $in: requestedQuery.debtorId },
-        },
-      });
-    }
     if (requestedQuery.entityType) {
       query.push({
         $match: {
@@ -406,6 +395,8 @@ const getApplicationList = async ({
           ],
         },
       });
+    } else if (query.length !== 0) {
+      aggregationQuery = aggregationQuery.concat(query);
     }
     aggregationQuery.unshift({ $match: queryFilter });
 
@@ -427,6 +418,7 @@ const getApplicationList = async ({
 
     if (response && response.length !== 0) {
       response.forEach((application) => {
+        // console.log('application',application)
         if (applicationColumn.includes('entityType')) {
           application.entityType = formatString(
             application.debtorId.entityType,
@@ -1140,6 +1132,7 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
           isEndorsedLimit: false,
           activeApplicationId: applicationId,
           expiryDate: expiryDate,
+          isFromOldSystem: false,
         },
       );
       //TODO send notification

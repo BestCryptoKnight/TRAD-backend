@@ -350,6 +350,27 @@ router.get('/download', async function (req, res) {
           isForDownload: true,
         });
         break;
+      case 'usage-report':
+        reportColumn = [
+          'name',
+          'insurerId',
+          'noOfResChecks',
+          'noOfResChecksUsed',
+          'policyNumber',
+          'inceptionDate',
+          'expiryDate',
+          'riskAnalystId',
+          'serviceManagerId',
+        ];
+        reportFor = 'Usage Report';
+        response = await getUsageReport({
+          reportColumn: reportColumn,
+          hasFullAccess,
+          userId: req.user._id,
+          requestedQuery: req.query,
+          isForDownload: true,
+        });
+        break;
       default:
         return res.status(400).send({
           status: 'ERROR',

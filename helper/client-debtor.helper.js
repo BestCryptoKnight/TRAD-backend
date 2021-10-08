@@ -84,9 +84,16 @@ const getClientCreditLimit = async ({
   isForRisk = true,
   hasOnlyReadAccessForDebtorModule = false,
   hasOnlyReadAccessForApplicationModule = false,
+  isForDownload = false,
 }) => {
   try {
-    debtorColumn.push('isFromOldSystem');
+    if (!isForDownload) {
+      debtorColumn.push('isFromOldSystem');
+    } else {
+      debtorColumn.push('activeApplicationId');
+      debtorColumn.push('address.country');
+    }
+    const filterArray = [];
     const clientDebtorDetails = [
       'creditLimit',
       'expiryDate',
@@ -126,6 +133,13 @@ const getClientCreditLimit = async ({
           'debtorId.entityType': requestedQuery.entityType,
         },
       });
+      if (isForDownload) {
+        filterArray.push({
+          label: 'Entity Type',
+          value: formatString(requestedQuery.entityType),
+          type: 'string',
+        });
+      }
     }
     if (
       debtorColumn.includes('activeApplicationId') ||
@@ -215,77 +229,130 @@ const getClientCreditLimit = async ({
         ? debtors[0]['paginatedResult']
         : debtors;
 
-    const total =
-      debtors.length !== 0 &&
-      debtors[0]['totalCount'] &&
-      debtors[0]['totalCount'].length !== 0
-        ? debtors[0]['totalCount'][0]['count']
-        : 0;
+    if (isForDownload) {
+      let endorsedLimits = 0;
+      let creditChecks = 0;
 
-    const headers = [];
-    for (let i = 0; i < moduleColumn.length; i++) {
-      if (debtorColumn.includes(moduleColumn[i].name)) {
+      response.forEach((debtor) => {
+        if (debtor?.activeApplicationId?.limitType) {
+          debtor.limitType =
+            formatString(debtor.activeApplicationId?.limitType) || '';
+          debtor.activeApplicationId.limitType === 'ENDORSED'
+            ? endorsedLimits++
+            : debtor.activeApplicationId.limitType === 'CREDIT_CHECK'
+            ? creditChecks++
+            : null;
+        }
+        debtor.approvalOrDecliningDate =
+          debtor?.activeApplicationId?.approvalOrDecliningDate || '';
+        debtor.requestedAmount = debtor?.activeApplicationId?.creditLimit || '';
+        debtor.expiryDate = debtor?.activeApplicationId?.expiryDate || '';
+        debtor.clientReference =
+          debtor?.activeApplicationId?.clientReference || '';
+        debtor.comments = debtor?.activeApplicationId?.comments || '';
+
+        if (debtor.debtorId) {
+          delete debtor.debtorId._id;
+          for (let key in debtor.debtorId) {
+            debtor[key] = debtor.debtorId[key];
+          }
+          delete debtor.debtorId;
+        }
+        debtor.entityType = formatString(debtor?.entityType);
+        debtor.country = debtor?.address?.country?.name || '';
+        delete debtor.address;
+        delete debtor.activeApplicationId;
+      });
+      filterArray.push(
+        {
+          label: 'Endorsed Limits',
+          value: endorsedLimits,
+          type: 'string',
+        },
+        { label: 'Credit Checks', value: creditChecks, type: 'string' },
+      );
+      return {
+        docs: response,
+        filterArray,
+      };
+    } else {
+      const total =
+        debtors.length !== 0 &&
+        debtors[0]['totalCount'] &&
+        debtors[0]['totalCount'].length !== 0
+          ? debtors[0]['totalCount'][0]['count']
+          : 0;
+
+      const headers = [];
+      for (let i = 0; i < moduleColumn.length; i++) {
+        if (debtorColumn.includes(moduleColumn[i].name)) {
+          if (
+            ((hasOnlyReadAccessForDebtorModule || !isForRisk) &&
+              moduleColumn[i].name === 'entityName') ||
+            (hasOnlyReadAccessForApplicationModule &&
+              moduleColumn[i].name === 'activeApplicationId')
+          ) {
+            headers.push({
+              name: moduleColumn[i].name,
+              label: moduleColumn[i].label,
+              type: 'string',
+            });
+          } else {
+            headers.push(moduleColumn[i]);
+          }
+        }
+      }
+
+      response.forEach((debtor) => {
+        if (debtor.activeApplicationId?.limitType) {
+          debtor.limitType = formatString(debtor.activeApplicationId.limitType);
+        }
+        if (debtor.activeApplicationId?.expiryDate) {
+          debtor.expiryDate = debtor.activeApplicationId.expiryDate;
+        }
+        if (debtor.activeApplicationId?.applicationId) {
+          debtor.activeApplicationId = hasOnlyReadAccessForApplicationModule
+            ? debtor.activeApplicationId.applicationId
+            : {
+                _id: debtor.activeApplicationId._id,
+                value: debtor.activeApplicationId.applicationId,
+              };
+        }
+        if (debtor.debtorId) {
+          delete debtor.debtorId._id;
+          for (let key in debtor.debtorId) {
+            debtor[key] = debtor.debtorId[key];
+          }
+          delete debtor.debtorId;
+        }
+        if (debtor.entityType) {
+          debtor.entityType = formatString(debtor.entityType);
+        }
         if (
-          ((hasOnlyReadAccessForDebtorModule || !isForRisk) &&
-            moduleColumn[i].name === 'entityName') ||
-          (hasOnlyReadAccessForApplicationModule &&
-            moduleColumn[i].name === 'activeApplicationId')
+          debtor.entityName &&
+          isForRisk &&
+          !hasOnlyReadAccessForDebtorModule
         ) {
-          headers.push({
-            name: moduleColumn[i].name,
-            label: moduleColumn[i].label,
-            type: 'string',
-          });
-        } else {
-          headers.push(moduleColumn[i]);
+          debtor.entityName = {
+            id: debtor._id,
+            value: debtor.entityName,
+          };
         }
-      }
+        /*if (debtor.hasOwnProperty('isEndorsedLimit')) {
+          debtor.isEndorsedLimit = debtor.isEndorsedLimit
+            ? 'Endorsed'
+            : 'Assessed';
+        }*/
+      });
+      return {
+        docs: response,
+        headers,
+        total,
+        page: parseInt(requestedQuery.page),
+        limit: parseInt(requestedQuery.limit),
+        pages: Math.ceil(total / parseInt(requestedQuery.limit)),
+      };
     }
-    response.forEach((debtor) => {
-      if (debtor.activeApplicationId?.limitType) {
-        debtor.limitType = formatString(debtor.activeApplicationId.limitType);
-      }
-      if (debtor.activeApplicationId?.expiryDate) {
-        debtor.expiryDate = debtor.activeApplicationId.expiryDate;
-      }
-      if (debtor.activeApplicationId?.applicationId) {
-        debtor.activeApplicationId = hasOnlyReadAccessForApplicationModule
-          ? debtor.activeApplicationId.applicationId
-          : {
-              _id: debtor.activeApplicationId._id,
-              value: debtor.activeApplicationId.applicationId,
-            };
-      }
-      if (debtor.debtorId) {
-        delete debtor.debtorId._id;
-        for (let key in debtor.debtorId) {
-          debtor[key] = debtor.debtorId[key];
-        }
-        delete debtor.debtorId;
-      }
-      if (debtor.entityType) {
-        debtor.entityType = formatString(debtor.entityType);
-      }
-      if (debtor.entityName && isForRisk && !hasOnlyReadAccessForDebtorModule) {
-        debtor.entityName = {
-          id: debtor._id,
-          value: debtor.entityName,
-        };
-      }
-      /*if (debtor.hasOwnProperty('isEndorsedLimit')) {
-        debtor.isEndorsedLimit = debtor.isEndorsedLimit
-          ? 'Endorsed'
-          : 'Assessed';
-      }*/
-    });
-    return {
-      docs: response,
-      headers,
-      total,
-      page: parseInt(requestedQuery.page),
-      limit: parseInt(requestedQuery.limit),
-      pages: Math.ceil(total / parseInt(requestedQuery.limit)),
-    };
   } catch (e) {
     Logger.log.error('Error occurred in get client credit-limit list');
     Logger.log.error(e.message || e);

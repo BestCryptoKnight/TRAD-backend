@@ -23,6 +23,40 @@ const { getClaimById, downloadDocument } = require('./../helper/rss.helper');
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
+const clientClaimColumn = {
+  name: 'claim',
+  manageColumns: [
+    { name: 'name', label: 'Claim Name', type: 'string' },
+    // {
+    //   name: 'accountid',
+    //   label: 'Client Name',
+    //   type: 'modal',
+    //   request: { method: 'GET', url: 'client/details' },
+    // },
+    {
+      name: 'grossdebtamount',
+      label: 'Gross Debt Amount',
+      type: 'amount',
+    },
+    { name: 'amountpaid', label: 'Amount Paid', type: 'amount' },
+    {
+      name: 'claimpaidbyuw',
+      label: 'Claim Paid by U/W',
+      type: 'date',
+    },
+    {
+      name: 'underwriter',
+      label: 'Insurer Name',
+      type: 'string',
+    },
+    {
+      name: 'stage',
+      label: 'Stage',
+      type: 'string',
+    },
+  ],
+  defaultColumns: ['name', 'stage', 'grossdebtamount', 'amountpaid', 'stage'],
+};
 
 /**
  * Get Column Names
@@ -36,13 +70,14 @@ router.get('/column-name', async function (req, res) {
     });
   }
   try {
-    const module = StaticFile.modules.find(
-      (i) => i.name === req.query.columnFor,
-    );
     const claimColumn = req.user.manageColumns.find(
       (i) => i.moduleName === req.query.columnFor,
     );
-    if (!module || !module.manageColumns || module.manageColumns.length === 0) {
+    if (
+      !clientClaimColumn ||
+      !clientClaimColumn.manageColumns ||
+      clientClaimColumn.manageColumns.length === 0
+    ) {
       return res.status(400).send({
         status: 'ERROR',
         messageCode: 'BAD_REQUEST',
@@ -51,36 +86,43 @@ router.get('/column-name', async function (req, res) {
     }
     let customFields = [];
     let defaultFields = [];
-    for (let i = 0; i < module.manageColumns.length; i++) {
+    for (let i = 0; i < clientClaimColumn.manageColumns.length; i++) {
       if (
         claimColumn &&
-        claimColumn.columns.includes(module.manageColumns[i].name) &&
-        module.manageColumns[i].name !== 'description'
+        claimColumn.columns.includes(clientClaimColumn.manageColumns[i].name)
       ) {
-        if (module.defaultColumns.includes(module.manageColumns[i].name)) {
+        if (
+          clientClaimColumn.defaultColumns.includes(
+            clientClaimColumn.manageColumns[i].name,
+          )
+        ) {
           defaultFields.push({
-            name: module.manageColumns[i].name,
-            label: module.manageColumns[i].label,
+            name: clientClaimColumn.manageColumns[i].name,
+            label: clientClaimColumn.manageColumns[i].label,
             isChecked: true,
           });
         } else {
           customFields.push({
-            name: module.manageColumns[i].name,
-            label: module.manageColumns[i].label,
+            name: clientClaimColumn.manageColumns[i].name,
+            label: clientClaimColumn.manageColumns[i].label,
             isChecked: true,
           });
         }
-      } else if (module.manageColumns[i].name !== 'description') {
-        if (module.defaultColumns.includes(module.manageColumns[i].name)) {
+      } else {
+        if (
+          clientClaimColumn.defaultColumns.includes(
+            clientClaimColumn.manageColumns[i].name,
+          )
+        ) {
           defaultFields.push({
-            name: module.manageColumns[i].name,
-            label: module.manageColumns[i].label,
+            name: clientClaimColumn.manageColumns[i].name,
+            label: clientClaimColumn.manageColumns[i].label,
             isChecked: false,
           });
         } else {
           customFields.push({
-            name: module.manageColumns[i].name,
-            label: module.manageColumns[i].label,
+            name: clientClaimColumn.manageColumns[i].name,
+            label: clientClaimColumn.manageColumns[i].label,
             isChecked: false,
           });
         }
@@ -106,7 +148,6 @@ router.get('/column-name', async function (req, res) {
  */
 router.get('/', async function (req, res) {
   try {
-    const module = StaticFile.modules.find((i) => i.name === 'claim');
     const claimColumn = req.user.manageColumns.find(
       (i) => i.moduleName === 'claim',
     );
@@ -114,7 +155,7 @@ router.get('/', async function (req, res) {
       claimColumn: claimColumn.columns,
       requestedQuery: req.query,
       hasFullAccess: false,
-      moduleColumn: module.manageColumns,
+      moduleColumn: clientClaimColumn.manageColumns,
       clientId: req.user.clientId,
       isForRisk: false,
     });
@@ -245,13 +286,7 @@ router.get('/:entityId', async function (req, res) {
  * Add Claim in RSS
  */
 router.post('/', async function (req, res) {
-  if (
-    !req.body ||
-    !req.body.name ||
-    !req.body.hasOwnProperty('claimsinforequested') ||
-    !req.body.underwriter ||
-    !req.body.stage
-  ) {
+  if (!req.body || !req.body.name || !req.body.underwriter || !req.body.stage) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -328,14 +363,10 @@ router.put('/column-name', async function (req, res) {
   }
   try {
     let updateColumns = [];
-    let module;
     switch (req.body.columnFor) {
       case 'claim':
         if (req.body.isReset) {
-          module = StaticFile.modules.find(
-            (i) => i.name === req.body.columnFor,
-          );
-          updateColumns = module.defaultColumns;
+          updateColumns = clientClaimColumn.defaultColumns;
         } else {
           updateColumns = req.body.columns;
         }

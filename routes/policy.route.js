@@ -27,36 +27,38 @@ router.get('/column-name', async function (req, res) {
     const customFields = [];
     const defaultFields = [];
     for (let i = 0; i < module.manageColumns.length; i++) {
-      if (
-        policyColumn &&
-        policyColumn.columns.includes(module.manageColumns[i].name)
-      ) {
-        if (module.defaultColumns.includes(module.manageColumns[i].name)) {
-          defaultFields.push({
-            name: module.manageColumns[i].name,
-            label: module.manageColumns[i].label,
-            isChecked: true,
-          });
+      if (module.manageColumns[i].name !== 'policyPeriod') {
+        if (
+          policyColumn &&
+          policyColumn.columns.includes(module.manageColumns[i].name)
+        ) {
+          if (module.defaultColumns.includes(module.manageColumns[i].name)) {
+            defaultFields.push({
+              name: module.manageColumns[i].name,
+              label: module.manageColumns[i].label,
+              isChecked: true,
+            });
+          } else {
+            customFields.push({
+              name: module.manageColumns[i].name,
+              label: module.manageColumns[i].label,
+              isChecked: true,
+            });
+          }
         } else {
-          customFields.push({
-            name: module.manageColumns[i].name,
-            label: module.manageColumns[i].label,
-            isChecked: true,
-          });
-        }
-      } else {
-        if (module.defaultColumns.includes(module.manageColumns[i].name)) {
-          defaultFields.push({
-            name: module.manageColumns[i].name,
-            label: module.manageColumns[i].label,
-            isChecked: false,
-          });
-        } else {
-          customFields.push({
-            name: module.manageColumns[i].name,
-            label: module.manageColumns[i].label,
-            isChecked: false,
-          });
+          if (module.defaultColumns.includes(module.manageColumns[i].name)) {
+            defaultFields.push({
+              name: module.manageColumns[i].name,
+              label: module.manageColumns[i].label,
+              isChecked: false,
+            });
+          } else {
+            customFields.push({
+              name: module.manageColumns[i].name,
+              label: module.manageColumns[i].label,
+              isChecked: false,
+            });
+          }
         }
       }
     }
@@ -94,7 +96,7 @@ router.get('/client/policy-details/:policyId', async function (req, res) {
       .populate({ path: 'insurerId clientId', select: 'name' })
       .select({ __v: 0 })
       .lean();
-    const response = await getPolicyDetails({ policyData });
+    const response = await getPolicyDetails({ policyData, isForRisk: false });
     res.status(200).send({
       status: 'SUCCESS',
       data: { response, header: 'Policy Details' },
@@ -199,7 +201,7 @@ router.put('/column-name', async function (req, res) {
     let updateColumns = [];
     if (req.body.isReset) {
       const module = StaticFile.modules.find((i) => i.name === 'client-policy');
-      updateColumns = module.defaultColumns;
+      updateColumns = module.defaultColumns.filter((i) => i !== 'policyPeriod');
     } else {
       updateColumns = req.body.columns;
     }

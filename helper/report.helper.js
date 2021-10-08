@@ -7,6 +7,7 @@ const Policy = mongoose.model('policy');
 const Application = mongoose.model('application');
 const ClientDebtor = mongoose.model('client-debtor');
 const Debtor = mongoose.model('debtor');
+const Insurer = mongoose.model('insurer');
 
 /*
  * Local Imports
@@ -14,6 +15,7 @@ const Debtor = mongoose.model('debtor');
 const Logger = require('./../services/logger');
 const { formatString } = require('./overdue.helper');
 const { getClaimsDetails } = require('./rss.helper');
+const { getUserName } = require('./user.helper');
 
 /*
 Get Client List Report
@@ -540,6 +542,8 @@ const getLimitListReport = async ({
         ? clientDebtors[0]['totalCount'][0]['count']
         : 0;
 
+    let endorsedLimits = 0;
+    let creditChecks = 0;
     response.forEach((limit) => {
       if (limit.insurerId) {
         limit.insurerId =
@@ -628,6 +632,11 @@ const getLimitListReport = async ({
       if (limit?.activeApplicationId?.[0]?.limitType) {
         limit.limitType =
           formatString(limit.activeApplicationId[0].limitType) || '';
+        limit.activeApplicationId[0].limitType === 'ENDORSED'
+          ? endorsedLimits++
+          : limit.activeApplicationId[0].limitType === 'CREDIT_CHECK'
+          ? creditChecks++
+          : null;
       }
       if (limit?.activeApplicationId?.[0]?.comments) {
         limit.comments = limit.activeApplicationId[0]?.comments || '';
@@ -638,6 +647,16 @@ const getLimitListReport = async ({
       }
       delete limit.activeApplicationId;
     });
+    if (isForDownload) {
+      filterArray.push(
+        {
+          label: 'Endorsed Limits',
+          value: endorsedLimits,
+          type: 'string',
+        },
+        { label: 'Credit Checks', value: creditChecks, type: 'string' },
+      );
+    }
     return { response, total, filterArray };
   } catch (e) {
     Logger.log.error('Error occurred in get limit list report');
@@ -698,10 +717,10 @@ const getPendingApplicationReport = async ({
     }
     if (requestedQuery.debtorId) {
       queryFilter.debtorId = mongoose.Types.ObjectId(requestedQuery.debtorId);
-      const debtor = await Debtor.findOne({ _id: requestedQuery.debtorId })
-        .select('entityName')
-        .lean();
       if (isForDownload) {
+        const debtor = await Debtor.findOne({ _id: requestedQuery.debtorId })
+          .select('entityName')
+          .lean();
         filterArray.push({
           label: 'Debtor',
           value: debtor && debtor.entityName ? debtor.entityName : '',
@@ -1254,17 +1273,32 @@ const getUsageReport = async ({
   userId,
   reportColumn,
   requestedQuery,
+  isForDownload = false,
 }) => {
   try {
     let queryFilter = {
       isDeleted: false,
     };
     const query = [];
+    const filterArray = [];
     if (requestedQuery.clientIds) {
       const clientIds = requestedQuery.clientIds
         .split(',')
         .map((id) => mongoose.Types.ObjectId(id));
       queryFilter._id = { $in: clientIds };
+      if (isForDownload) {
+        const clients = await Client.find({ _id: { $in: clientIds } })
+          .select('name')
+          .lean();
+        filterArray.push({
+          label: 'Client',
+          value: clients
+            .map((i) => i.name)
+            .toString()
+            .replace(/,/g, ', '),
+          type: 'string',
+        });
+      }
     } else if (!hasFullAccess) {
       queryFilter = Object.assign({}, queryFilter, {
         $or: [
@@ -1290,6 +1324,16 @@ const getUsageReport = async ({
           'insurerId._id': mongoose.Types.ObjectId(requestedQuery.insurerId),
         },
       });
+      if (isForDownload) {
+        const insurer = await Insurer.findOne({
+          _id: requestedQuery.insurerId,
+        }).lean();
+        filterArray.push({
+          label: 'Insurer',
+          value: insurer?.name,
+          type: 'string',
+        });
+      }
     }
     if (
       reportColumn.includes('riskAnalystId') ||
@@ -1312,6 +1356,16 @@ const getUsageReport = async ({
           ),
         },
       });
+      if (isForDownload) {
+        const user = await getUserName({
+          userId: requestedQuery.riskAnalystId,
+        });
+        filterArray.push({
+          label: 'User',
+          value: user?.name,
+          type: 'string',
+        });
+      }
     }
     if (reportColumn.includes('serviceManagerId')) {
       query.push({
@@ -1331,6 +1385,16 @@ const getUsageReport = async ({
           ),
         },
       });
+      if (isForDownload) {
+        const user = await getUserName({
+          userId: requestedQuery.serviceManagerId,
+        });
+        filterArray.push({
+          label: 'User',
+          value: user?.name,
+          type: 'string',
+        });
+      }
     }
     const fields = reportColumn.map((i) => {
       if (
@@ -1439,9 +1503,9 @@ const getUsageReport = async ({
                 $match: {
                   clientId: i.clientId,
                   status: {
-                    $nin: ['DRAFT'],
+                    $in: ['APPROVED', 'DECLINED'],
                   },
-                  createdAt: {
+                  approvalOrDecliningDate: {
                     $gte: new Date(i.inceptionDate),
                     $lte: new Date(i.expiryDate),
                   },
@@ -1524,12 +1588,12 @@ const getUsageReport = async ({
             : 0;
       }
       if (isRESChecksUsedSelected) {
-        client.totalApplication = clientApplications[client._id]
+        client.noOfResChecksUsed = clientApplications[client._id]
           ? clientApplications[client._id]
           : 0;
       }
     });
-    return { response, total };
+    return { response, total, filterArray };
   } catch (e) {
     Logger.log.error('Error occurred in get client list report');
     Logger.log.error(e.message || e);

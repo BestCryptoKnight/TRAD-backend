@@ -56,13 +56,7 @@ const applicationSchema = new Schema(
     comments: { type: Schema.Types.String },
     limitType: {
       type: Schema.Types.String,
-      enum: [
-        'ENDORSED',
-        'DISCRETIONARY_LIMIT',
-        'CREDIT_CHECK',
-        'HEALTH_CHECK',
-        'MONITORING',
-      ],
+      enum: ['ENDORSED', 'CREDIT_CHECK', 'HEALTH_CHECK', '247_ALERT'],
     },
     isDeleted: { type: Schema.Types.Boolean, default: false },
   },

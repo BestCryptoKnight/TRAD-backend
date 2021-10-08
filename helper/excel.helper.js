@@ -1,15 +1,40 @@
 const ExcelJS = require('exceljs');
 
 const { numberWithCommas } = require('./report.helper');
+const config = require('./../config');
+const { getBase64 } = require('./pdf-generator.helper');
 
 const generateExcel = ({ data, reportFor, headers, filter, title }) => {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet(reportFor);
+
+    const base64Data = await getBase64(
+      `${config.staticServing.bucketURL}static-files/mail-images/tcr-logo.png`,
+    );
+    const image = workbook.addImage({
+      base64: base64Data,
+      extension: 'png',
+    });
+    worksheet.addImage(image, 'A1:A1');
+
+    const currentDate = new Date();
+    filter.unshift({
+      label: 'Report Printing Date',
+      value: `${
+        currentDate.getDate() +
+        '/' +
+        (currentDate.getMonth() + 1) +
+        '/' +
+        currentDate.getFullYear()
+      }`,
+      type: 'string',
+    });
+
     const row = worksheet.addRow([
       title ? `${title}: ${reportFor}` : `${reportFor}`,
     ]);
-    row.height = 30;
+    row.height = 40;
     let date;
     for (let i = 0; i <= filter.length; i++) {
       if (filter[i]) {
@@ -36,6 +61,7 @@ const generateExcel = ({ data, reportFor, headers, filter, title }) => {
         };
         row.height =
           filter[i].value.length / 15 < 15 ? 15 : filter[i].value.length / 15;
+        row.height = row.height + 5;
       }
     }
     worksheet.getCell('A1').alignment = {
@@ -61,6 +87,22 @@ const generateExcel = ({ data, reportFor, headers, filter, title }) => {
       case 'Application List':
         addColumnsForApplicationList({ data, worksheet, headers, filter });
         break;
+      case 'Usage Report':
+        addColumnsForUsageReport({
+          data,
+          worksheet,
+          headers,
+          filter,
+        });
+        break;
+      case 'Credit Limit List':
+        addColumnsForCreditLimitList({
+          data,
+          worksheet,
+          headers,
+          filter,
+        });
+        break;
     }
     workbook.xlsx.writeBuffer().then((buffer) => {
       return resolve(buffer);
@@ -78,7 +120,7 @@ const addColumnsForApplicationList = async ({
     worksheet.mergeCells('A1:S1');
     for (let i = 0; i <= filter.length; i++) {
       if (filter[i]) {
-        worksheet.mergeCells(`A${i + 2}:O${i + 2}`);
+        worksheet.mergeCells(`A${i + 2}:S${i + 2}`);
       }
     }
     worksheet.getColumn(1).width = 40;
@@ -102,7 +144,7 @@ const addColumnsForApplicationList = async ({
     worksheet.getColumn(19).width = 20;
     worksheet.addRow();
     worksheet.mergeCells(
-      `A${worksheet.lastRow.number}:O${worksheet.lastRow.number}`,
+      `A${worksheet.lastRow.number}:S${worksheet.lastRow.number}`,
     );
     await addDataForTable({ data, headers, worksheet });
   } catch (e) {
@@ -119,7 +161,7 @@ const addColumnsForLimitList = async ({ data, worksheet, headers, filter }) => {
       }
     }
     worksheet.getColumn(1).width = 40;
-    worksheet.getColumn(2).width = 30;
+    worksheet.getColumn(2).width = 25;
     worksheet.getColumn(3).width = 40;
     worksheet.getColumn(4).width = 20;
     worksheet.getColumn(5).width = 20;
@@ -132,7 +174,7 @@ const addColumnsForLimitList = async ({ data, worksheet, headers, filter }) => {
     worksheet.getColumn(12).width = 20;
     worksheet.getColumn(13).width = 20;
     worksheet.getColumn(14).width = 30;
-    worksheet.getColumn(15).width = 20;
+    worksheet.getColumn(15).width = 35;
     worksheet.addRow();
     worksheet.mergeCells(
       `A${worksheet.lastRow.number}:O${worksheet.lastRow.number}`,
@@ -167,6 +209,76 @@ const addColumnsForPendingApplicationList = async ({
     worksheet.addRow();
     worksheet.mergeCells(
       `A${worksheet.lastRow.number}:H${worksheet.lastRow.number}`,
+    );
+    await addDataForTable({ data, headers, worksheet });
+  } catch (e) {
+    console.log('Error occurred in add limit list data', e);
+  }
+};
+
+const addColumnsForUsageReport = async ({
+  data,
+  worksheet,
+  headers,
+  filter,
+}) => {
+  try {
+    worksheet.mergeCells('A1:J1');
+    for (let i = 0; i <= filter.length; i++) {
+      if (filter[i]) {
+        worksheet.mergeCells(`A${i + 2}:J${i + 2}`);
+      }
+    }
+    worksheet.getColumn(1).width = 40;
+    worksheet.getColumn(2).width = 30;
+    worksheet.getColumn(3).width = 30;
+    worksheet.getColumn(4).width = 30;
+    worksheet.getColumn(5).width = 30;
+    worksheet.getColumn(6).width = 30;
+    worksheet.getColumn(7).width = 20;
+    worksheet.getColumn(8).width = 20;
+    worksheet.getColumn(9).width = 25;
+    worksheet.getColumn(10).width = 25;
+    worksheet.addRow();
+    worksheet.mergeCells(
+      `A${worksheet.lastRow.number}:J${worksheet.lastRow.number}`,
+    );
+    await addDataForTable({ data, headers, worksheet });
+  } catch (e) {
+    console.log('Error occurred in add limit list data', e);
+  }
+};
+
+const addColumnsForCreditLimitList = async ({
+  data,
+  worksheet,
+  headers,
+  filter,
+}) => {
+  try {
+    worksheet.mergeCells('A1:M1');
+    for (let i = 0; i <= filter.length; i++) {
+      if (filter[i]) {
+        worksheet.mergeCells(`A${i + 2}:M${i + 2}`);
+      }
+    }
+    worksheet.getColumn(1).width = 45;
+    worksheet.getColumn(2).width = 25;
+    worksheet.getColumn(3).width = 25;
+    worksheet.getColumn(4).width = 25;
+    worksheet.getColumn(5).width = 20;
+    worksheet.getColumn(6).width = 25;
+    worksheet.getColumn(7).width = 25;
+    worksheet.getColumn(8).width = 20;
+    worksheet.getColumn(9).width = 25;
+    worksheet.getColumn(10).width = 25;
+    worksheet.getColumn(11).width = 20;
+    worksheet.getColumn(12).width = 20;
+    worksheet.getColumn(13).width = 40;
+
+    worksheet.addRow();
+    worksheet.mergeCells(
+      `A${worksheet.lastRow.number}:M${worksheet.lastRow.number}`,
     );
     await addDataForTable({ data, headers, worksheet });
   } catch (e) {

@@ -655,7 +655,22 @@ router.get('/search-entity', async function (req, res) {
           $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED'],
         },
       }).lean();
-      if (application && application.status !== 'APPROVED') {
+      let anotherApplication;
+      if (application && application?._id) {
+        anotherApplication = await Application.findOne({
+          _id: { $ne: application._id },
+          clientId: req.user.clientId,
+          debtorId: debtor._id,
+          status: {
+            $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED'],
+          },
+        });
+      }
+      if (
+        application &&
+        application.status !== 'APPROVED' &&
+        anotherApplication
+      ) {
         return res.status(400).send({
           status: 'ERROR',
           messageCode: 'APPLICATION_ALREADY_EXISTS',

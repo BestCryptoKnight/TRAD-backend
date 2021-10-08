@@ -1370,11 +1370,9 @@ router.put('/user/:clientUserId', async function (req, res) {
           signUpToken: signUpToken,
           manageColumns: manageColumns,
         };
-        //TODO change dummy email id to client's user email id for send mail on Portal-Access
         let mailObj = {
-          toAddress: ['parth@team.humanpixel.com.au'],
-          // toAddress: [clientUser.email],
-          subject: 'Welcome to TRAD CLIENT PORTAL',
+          toAddress: [clientUser.email],
+          subject: 'Welcome to TCR CLIENT PORTAL',
           text: {
             name: clientUser.name,
             setPasswordLink:
@@ -1409,7 +1407,9 @@ router.put('/user/:clientUserId', async function (req, res) {
           },
           mailFor: 'newClientUser',
         };
-        promises.push(MailHelper.sendMail(mailObj));
+        //TODO uncomment to send mail on Portal-Access
+
+        // promises.push(MailHelper.sendMail(mailObj));
         message = 'Login access sent successfully';
       } else {
         //TODO revert portal access
