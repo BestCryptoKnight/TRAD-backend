@@ -9,6 +9,7 @@
     "node": ">12"
   },
   "dependencies": {
+    "@kevit/log4js-teams": "^1.0.4",
     "archiver": "^5.3.0",
     "aws-cloudfront-sign": "^2.2.0",
     "aws-sdk": "^2.847.0",
