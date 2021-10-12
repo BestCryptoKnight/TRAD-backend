@@ -309,6 +309,12 @@ router.get('/user/:insurerId', async function (req, res) {
           value: user.name,
         };
       }
+      if (user?.hasOwnProperty('hasLeftCompany')) {
+        user.hasLeftCompany = user.hasLeftCompany ? 'Yes' : 'No';
+      }
+      if (user?.hasOwnProperty('isDecisionMaker')) {
+        user.isDecisionMaker = user.isDecisionMaker ? 'Yes' : 'No';
+      }
     });
     const headers = [];
     for (let i = 0; i < module.manageColumns.length; i++) {

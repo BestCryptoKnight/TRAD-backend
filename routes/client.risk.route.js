@@ -407,9 +407,6 @@ router.get('/user/:clientId', async function (req, res) {
                 value: user.sendDecisionLetter,
               };
         }
-        if (user.hasOwnProperty('isDecisionMaker')) {
-          user.isDecisionMaker = user.isDecisionMaker ? 'Yes' : 'No';
-        }
         if (user.hasOwnProperty('hasLeftCompany')) {
           user.hasLeftCompany = user.hasLeftCompany ? 'Yes' : 'No';
         }
@@ -456,17 +453,13 @@ router.get('/user-details/:clientUserId', async function (req, res) {
       _id: req.params.clientUserId,
     })
       .select(
-        'name contactNumber department hasPortalAccess hasLeftCompany isDecisionMaker email createdAt updatedAt',
+        'name contactNumber department hasPortalAccess hasLeftCompany email createdAt updatedAt',
       )
       .lean();
     let response = [];
     module.manageColumns.forEach((i) => {
       if (clientUser.hasOwnProperty(i.name)) {
-        if (
-          i.name === 'isDecisionMaker' ||
-          i.name === 'hasPortalAccess' ||
-          i.name === 'hasLeftCompany'
-        ) {
+        if (i.name === 'hasPortalAccess' || i.name === 'hasLeftCompany') {
           clientUser[i.name] = clientUser[i.name] ? 'Yes' : 'No';
         }
         response.push({

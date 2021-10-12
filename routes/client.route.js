@@ -26,38 +26,36 @@ router.get('/user/column-name', async function (req, res) {
     const customFields = [];
     const defaultFields = [];
     for (let i = 0; i < module.manageColumns.length; i++) {
-      if (module.manageColumns[i].name !== 'isDecisionMaker') {
-        if (
-          clientUserColumn &&
-          clientUserColumn.columns.includes(module.manageColumns[i].name)
-        ) {
-          if (module.defaultColumns.includes(module.manageColumns[i].name)) {
-            defaultFields.push({
-              name: module.manageColumns[i].name,
-              label: module.manageColumns[i].label,
-              isChecked: true,
-            });
-          } else {
-            customFields.push({
-              name: module.manageColumns[i].name,
-              label: module.manageColumns[i].label,
-              isChecked: true,
-            });
-          }
+      if (
+        clientUserColumn &&
+        clientUserColumn.columns.includes(module.manageColumns[i].name)
+      ) {
+        if (module.defaultColumns.includes(module.manageColumns[i].name)) {
+          defaultFields.push({
+            name: module.manageColumns[i].name,
+            label: module.manageColumns[i].label,
+            isChecked: true,
+          });
         } else {
-          if (module.defaultColumns.includes(module.manageColumns[i].name)) {
-            defaultFields.push({
-              name: module.manageColumns[i].name,
-              label: module.manageColumns[i].label,
-              isChecked: false,
-            });
-          } else {
-            customFields.push({
-              name: module.manageColumns[i].name,
-              label: module.manageColumns[i].label,
-              isChecked: false,
-            });
-          }
+          customFields.push({
+            name: module.manageColumns[i].name,
+            label: module.manageColumns[i].label,
+            isChecked: true,
+          });
+        }
+      } else {
+        if (module.defaultColumns.includes(module.manageColumns[i].name)) {
+          defaultFields.push({
+            name: module.manageColumns[i].name,
+            label: module.manageColumns[i].label,
+            isChecked: false,
+          });
+        } else {
+          customFields.push({
+            name: module.manageColumns[i].name,
+            label: module.manageColumns[i].label,
+            isChecked: false,
+          });
         }
       }
     }
@@ -147,10 +145,11 @@ router.get('/user', async function (req, res) {
     const headers = [];
     for (let i = 0; i < module.manageColumns.length; i++) {
       if (clientColumn.columns.includes(module.manageColumns[i].name)) {
-        if (module.manageColumns[i].name === 'hasPortalAccess') {
-          module.manageColumns[i].type = 'string';
-        }
-        if (module.manageColumns[i].name === 'name') {
+        if (
+          module.manageColumns[i].name === 'hasPortalAccess' ||
+          module.manageColumns[i].name === 'sendDecisionLetter' ||
+          module.manageColumns[i].name === 'name'
+        ) {
           module.manageColumns[i].type = 'string';
         }
         delete module.manageColumns[i].request;
@@ -163,8 +162,8 @@ router.get('/user', async function (req, res) {
         if (user.hasOwnProperty('hasPortalAccess')) {
           user.hasPortalAccess = user.hasPortalAccess ? 'Yes' : 'No';
         }
-        if (user.hasOwnProperty('isDecisionMaker')) {
-          user.isDecisionMaker = user.isDecisionMaker ? 'Yes' : 'No';
+        if (user.hasOwnProperty('sendDecisionLetter')) {
+          user.sendDecisionLetter = user.sendDecisionLetter ? 'Yes' : 'No';
         }
         if (user.hasOwnProperty('hasLeftCompany')) {
           user.hasLeftCompany = user.hasLeftCompany ? 'Yes' : 'No';
@@ -212,7 +211,15 @@ router.get('/details/:clientId', async function (req, res) {
       _id: req.params.clientId,
     })
       .populate({ path: 'riskAnalystId serviceManagerId', select: 'name' })
-      .select({ isDeleted: 0, crmClientId: 0, __v: 0 })
+      .select({
+        isDeleted: 0,
+        crmClientId: 0,
+        __v: 0,
+        sector: 0,
+        salesPerson: 0,
+        referredBy: 0,
+        website: 0,
+      })
       .lean();
     let response = [];
     module.manageColumns.forEach((i) => {
@@ -275,7 +282,16 @@ router.get('/', async function (req, res) {
         path: 'riskAnalystId serviceManagerId insurerId',
         select: 'name',
       })
-      .select({ isDeleted: 0, __v: 0, updatedAt: 0, createdAt: 0 })
+      .select({
+        isDeleted: 0,
+        __v: 0,
+        updatedAt: 0,
+        createdAt: 0,
+        sector: 0,
+        salesPerson: 0,
+        referredBy: 0,
+        website: 0,
+      })
       .lean();
     res.status(200).send({ status: 'SUCCESS', data: client });
   } catch (e) {
@@ -302,9 +318,7 @@ router.put('/user/column-name', async function (req, res) {
     let updateColumns = [];
     if (req.body.isReset) {
       const module = StaticFile.modules.find((i) => i.name === 'client-user');
-      updateColumns = module.defaultColumns.filter(
-        (i) => i !== 'isDecisionMaker',
-      );
+      updateColumns = module.defaultColumns;
     } else {
       updateColumns = req.body.columns;
     }

@@ -233,11 +233,6 @@
           "label": "Left Company",
           "type": "string"
         },
-        {
-          "name": "isDecisionMaker",
-          "label": "Decision Maker",
-          "type": "string"
-        },
         { "name": "email", "label": "Email", "type": "string" },
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
@@ -247,8 +242,7 @@
         "contactNumber",
         "department",
         "hasPortalAccess",
-        "email",
-        "isDecisionMaker"
+        "email"
       ]
     },
     {

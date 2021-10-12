@@ -42,12 +42,12 @@ module.exports = ({ name, setPasswordLink }) => {
                 </tr>
 
 
-                <tr>
+               <!-- <tr>
                     <td align="center" valign="center" width="100"
                         style="padding: 3px 15%; font-size: 15px; color: #37404D; background-color: white; opacity: .5">
                         We’re glad you’re here.
                     </td>
-                </tr>
+                </tr>-->
 
                 <tr>
                     <td align="center" valign="center" width="80"
@@ -107,8 +107,8 @@ module.exports = ({ name, setPasswordLink }) => {
                                         <tr style="font-size: 13px; color: #003A78">
                                             <td align="center">
                                                 <a style="color: #003A78; text-decoration: none"
-                                                   href="https://info@tradecreditrisk.com.au/">
-                                                    info@tradecreditrisk.com.au
+                                                   href="mailto:creditlimits@tradecreditrisk.com.au">
+                                                    creditlimits@tradecreditrisk.com.au
                                                 </a>
                                             </td>
                                         </tr>

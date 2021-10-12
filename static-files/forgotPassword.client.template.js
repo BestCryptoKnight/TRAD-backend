@@ -250,8 +250,8 @@ module.exports = ({
                                         <tr style="font-size: 13px; color: #003A78">
                                             <td align="center">
                                                 <a style="color: #003A78; text-decoration: none"
-                                                   href="https://info@tradecreditrisk.com.au/">
-                                                    info@tradecreditrisk.com.au
+                                                   href="mailto:creditlimits@tradecreditrisk.com.au">
+                                                    creditlimits@tradecreditrisk.com.au
                                                 </a>
                                             </td>
                                         </tr>
