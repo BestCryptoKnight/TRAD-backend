@@ -1118,13 +1118,14 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
     const date = new Date();
     if (blockers.length === 0 && identifiedInsurer !== 'euler') {
       //TODO approve credit limit
-      update.approvalOrDecliningDate = date;
+      update.approvalOrDecliningDate = new Date();
       let expiryDate = new Date(date.setMonth(date.getMonth() + 12));
       expiryDate = new Date(expiryDate.setDate(expiryDate.getDate() - 1));
       update.expiryDate = expiryDate;
       update.status = 'APPROVED';
       update.acceptedAmount = application.creditLimit;
       update.isAutoApproved = true;
+      update.limitType = 'CREDIT_CHECK';
       await ClientDebtor.updateOne(
         { _id: application.clientDebtorId._id },
         {
@@ -1142,14 +1143,6 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
         userId,
         status: 'APPROVED',
       });
-      //TODO uncomment to add in alert profile
-      /*if (application?.debtorId) {
-        checkForEntityInProfile({
-          action: 'add',
-          entityType: 'debtor',
-          entityId: application.debtorId,
-        });
-      }*/
     } else {
       //TODO create Task + send Notification
       update.status = 'REVIEW_APPLICATION';

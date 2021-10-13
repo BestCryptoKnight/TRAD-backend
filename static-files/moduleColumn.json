@@ -897,7 +897,7 @@
         { "name": "creditLimit", "label": "Credit Limit", "type": "amount" },
         {
           "name": "isEndorsedLimit",
-          "label": "Credit Type",
+          "label": "Credit Checks",
           "type": "string"
         },
         {

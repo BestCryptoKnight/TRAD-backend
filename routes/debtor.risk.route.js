@@ -1142,7 +1142,9 @@ router.put('/credit-limit/:debtorId', async function (req, res) {
   try {
     const clientDebtor = await ClientDebtor.findOne({
       _id: req.params.debtorId,
-    }).lean();
+    })
+      .populate({ path: 'clientId debtorId', select: 'name entityName' })
+      .lean();
     if (req.body.action === 'modify') {
       if (!req.body.creditLimit || !/^\d+$/.test(req.body.creditLimit)) {
         return res.status(400).send({
@@ -1151,6 +1153,14 @@ router.put('/credit-limit/:debtorId', async function (req, res) {
           message: 'Require fields are missing',
         });
       }
+      await addAuditLog({
+        entityType: 'credit-limit',
+        entityRefId: clientDebtor._id,
+        actionType: 'edit',
+        userType: 'user',
+        userRefId: req.user._id,
+        logDescription: `A credit limit of ${clientDebtor?.clientId?.name} ${clientDebtor?.debtorId?.entityName} is modified by ${req.user.name}`,
+      });
       await generateNewApplication({
         clientDebtorId: clientDebtor._id,
         createdByType: 'user',
@@ -1165,14 +1175,22 @@ router.put('/credit-limit/:debtorId', async function (req, res) {
           isActive: false,
         },
       );
+      await addAuditLog({
+        entityType: 'credit-limit',
+        entityRefId: clientDebtor._id,
+        actionType: 'edit',
+        userType: 'user',
+        userRefId: req.user._id,
+        logDescription: `A credit limit of ${clientDebtor?.clientId?.name} ${clientDebtor?.debtorId?.entityName} is surrendered by ${req.user.name}`,
+      });
       const hasActiveCreditLimit = await checkForActiveCreditLimit({
-        debtorId: clientDebtor?.debtorId,
+        debtorId: clientDebtor?.debtorId?._id,
       });
       if (!hasActiveCreditLimit) {
         //TODO uncomment to remove entity from alert profile
-        if (clientDebtor?.debtorId) {
+        if (clientDebtor?.debtorId?._id) {
           checkForEntityInProfile({
-            entityId: clientDebtor.debtorId,
+            entityId: clientDebtor.debtorId._id,
             action: 'remove',
             entityType: 'debtor',
           });

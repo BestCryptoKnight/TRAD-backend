@@ -1301,7 +1301,6 @@ const storeReportData = async ({
       countryCode,
       productCode,
     });
-    // console.log('response ', response);
   } catch (e) {
     Logger.log.error('Error occurred in store report data ', e);
   }

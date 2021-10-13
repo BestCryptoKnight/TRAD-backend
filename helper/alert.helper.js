@@ -717,7 +717,7 @@ const checkForEntityInProfile = async ({
 
 const filterEntity = ({ monitoredEntities, lookupMethod, lookupValue }) => {
   try {
-    const foundEntity = monitoredEntities.find((i) => {
+    const foundEntity = monitoredEntities?.find((i) => {
       return (
         i.companyNumbers[lookupMethod.toLowerCase()]?.toString() ===
         lookupValue.toString()

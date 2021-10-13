@@ -742,7 +742,9 @@ const downloadDecisionLetter = async ({ creditLimitId }) => {
         requestedAmount: parseInt(
           clientDebtor?.activeApplicationId?.creditLimit,
         ).toFixed(2),
-        approvedAmount: clientDebtor?.creditLimit?.toFixed(2),
+        approvedAmount: clientDebtor?.activeApplicationId?.acceptedAmount?.toFixed(
+          2,
+        ),
         approvalStatus: clientDebtor?.activeApplicationId?.comments,
       };
       bufferData = await generateDecisionLetter(response);

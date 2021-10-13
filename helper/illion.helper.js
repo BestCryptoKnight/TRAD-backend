@@ -195,12 +195,13 @@ const fetchCreditReportInPDFFormat = ({
         },
         data: requestBody,
       };
+      Logger.log.info('Options..', options);
       Logger.log.info('Making a request to illion at', new Date());
       const { data } = await axios(options);
+      Logger.log.info('PDF Report fetched at', new Date());
       return resolve(data);
     } catch (e) {
-      console.log('Error in fetching pdf report from');
-      console.log(e);
+      Logger.log.error('Error occurred in fetch PDF report', e);
       return reject(e.message || e);
     }
   });

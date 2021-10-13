@@ -31,6 +31,7 @@ const {
 } = require('./../helper/stakeholder.helper');
 const { checkForEntityInProfile } = require('./../helper/alert.helper');
 const { generateExcel } = require('./../helper/excel.helper');
+const { addAuditLog } = require('./../helper/audit-log.helper');
 
 /**
  * Get Column Names
@@ -728,7 +729,9 @@ router.put('/credit-limit/:creditLimitId', async function (req, res) {
   try {
     const clientDebtor = await ClientDebtor.findOne({
       _id: req.params.creditLimitId,
-    }).lean();
+    })
+      .populate({ path: 'clientId debtorId', select: 'name entityName' })
+      .lean();
     if (req.body.action === 'modify') {
       if (!req.body.creditLimit || !/^\d+$/.test(req.body.creditLimit)) {
         return res.status(400).send({
@@ -737,6 +740,14 @@ router.put('/credit-limit/:creditLimitId', async function (req, res) {
           message: 'Require fields are missing',
         });
       }
+      await addAuditLog({
+        entityType: 'credit-limit',
+        entityRefId: req.params.creditLimitId,
+        actionType: 'edit',
+        userType: 'client-user',
+        userRefId: req.user.clientId,
+        logDescription: `A credit limit of ${clientDebtor?.clientId?.name} ${clientDebtor?.debtorId?.entityName} is modified by ${clientDebtor?.clientId?.name}`,
+      });
       await generateNewApplication({
         clientDebtorId: clientDebtor._id,
         createdById: req.user.clientId,
@@ -748,18 +759,30 @@ router.put('/credit-limit/:creditLimitId', async function (req, res) {
         { _id: req.params.creditLimitId },
         {
           creditLimit: undefined,
-          activeApplicationId: undefined,
           isActive: false,
         },
       );
-      //TODO uncomment to remove entity from alert profile
-      /*if (clientDebtor?.debtorId) {
-        checkForEntityInProfile({
-          entityId: clientDebtor.debtorId,
-          action: 'remove',
-          entityType: 'debtor',
-        });
-      }*/
+      await addAuditLog({
+        entityType: 'credit-limit',
+        entityRefId: req.params.creditLimitId,
+        actionType: 'edit',
+        userType: 'client-user',
+        userRefId: req.user.clientId,
+        logDescription: `A credit limit of ${clientDebtor?.clientId?.name} ${clientDebtor?.debtorId?.entityName} is surrendered by ${clientDebtor?.clientId?.name}`,
+      });
+      const hasActiveCreditLimit = await checkForActiveCreditLimit({
+        debtorId: clientDebtor?.debtorId?._id,
+      });
+      if (!hasActiveCreditLimit) {
+        //TODO uncomment to remove entity from alert profile
+        if (clientDebtor?.debtorId?._id) {
+          checkForEntityInProfile({
+            entityId: clientDebtor.debtorId._id,
+            action: 'remove',
+            entityType: 'debtor',
+          });
+        }
+      }
     }
     res.status(200).send({
       status: 'SUCCESS',
