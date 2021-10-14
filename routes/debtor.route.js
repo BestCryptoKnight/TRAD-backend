@@ -449,12 +449,12 @@ router.get('/download', async function (req, res) {
       moduleColumn: module.manageColumns,
       isForDownload: true,
     });
-    if (response && response?.docs.length > 500) {
+    if (response && response?.docs.length > 20000) {
       return res.status(400).send({
         status: 'ERROR',
         messageCode: 'DOWNLOAD_LIMIT_EXCEED',
         message:
-          'User cannot download more than 500 records at a time. Please apply filter to narrow down the list',
+          'User cannot download more than 20000 records at a time. Please apply filter to narrow down the list',
       });
     }
     if (response && response.docs.length !== 0) {

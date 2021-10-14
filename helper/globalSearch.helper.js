@@ -198,10 +198,41 @@ const getDebtorList = async ({
         _id: { $in: debtorIds },
       };
     }
-    queryFilter.entityName = {
-      $regex: getRegexForSearch(searchString),
-      $options: 'i',
-    };
+    if (isForGlobalSearch) {
+      queryFilter = Object.assign({}, queryFilter, {
+        $or: [
+          {
+            entityName: {
+              $regex: getRegexForSearch(searchString),
+              $options: 'i',
+            },
+          },
+          {
+            acn: {
+              $regex: searchString,
+              $options: 'i',
+            },
+          },
+          {
+            abn: {
+              $regex: searchString,
+              $options: 'i',
+            },
+          },
+          {
+            registrationNumber: {
+              $regex: searchString,
+              $options: 'i',
+            },
+          },
+        ],
+      });
+    } else {
+      queryFilter.entityName = {
+        $regex: getRegexForSearch(searchString),
+        $options: 'i',
+      };
+    }
     console.log('queryFilter', queryFilter);
     const fields = isForGlobalSearch
       ? '_id entityName'

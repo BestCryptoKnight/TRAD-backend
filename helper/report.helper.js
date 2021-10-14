@@ -906,6 +906,7 @@ const getReviewReport = async ({
   userId,
   reportColumn,
   requestedQuery,
+  isForDownload = false,
 }) => {
   try {
     const queryFilter = {
@@ -918,8 +919,18 @@ const getReviewReport = async ({
       // creditLimit: { $exists: true, $ne: null },
     };
     let dateQuery = {};
+    const filterArray = [];
     if (requestedQuery.date) {
       requestedQuery.date = new Date(requestedQuery.date);
+      if (isForDownload) {
+        filterArray.push({
+          label: 'Month-Year',
+          value: `${(requestedQuery.date.getMonth() + 1)
+            .toString()
+            .padStart(2, '0')}/${requestedQuery.date.getFullYear()}`,
+          type: 'string',
+        });
+      }
       const firstDay = new Date(
         requestedQuery.date.getFullYear(),
         requestedQuery.date.getMonth(),
@@ -930,7 +941,7 @@ const getReviewReport = async ({
         requestedQuery.date.getMonth() + 1,
         0,
       );
-      if (requestedQuery.startDate) {
+      /*if (requestedQuery.startDate) {
         dateQuery = {
           $gte: new Date(requestedQuery.startDate),
         };
@@ -939,7 +950,7 @@ const getReviewReport = async ({
         dateQuery = Object.assign({}, dateQuery, {
           $lte: new Date(requestedQuery.endDate),
         });
-      }
+      }*/
       dateQuery = {
         $gte: firstDay,
         $lte: lastDay,
@@ -949,6 +960,15 @@ const getReviewReport = async ({
       const date = new Date();
       const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
       dateQuery = { $lt: lastDay };
+      if (isForDownload) {
+        filterArray.push({
+          label: 'Month-Year',
+          value: `${(date.getMonth() + 1)
+            .toString()
+            .padStart(2, '0')}/${date.getFullYear()}`,
+          type: 'string',
+        });
+      }
       // queryFilter.expiryDate = dateQuery;
     }
     if (requestedQuery.clientIds) {
@@ -956,6 +976,19 @@ const getReviewReport = async ({
         .split(',')
         .map((id) => mongoose.Types.ObjectId(id));
       queryFilter.clientId = { $in: clientIds };
+      if (isForDownload) {
+        const clients = await Client.find({ _id: { $in: clientIds } })
+          .select('name')
+          .lean();
+        filterArray.push({
+          label: 'Client',
+          value: clients
+            .map((i) => i.name)
+            .toString()
+            .replace(/,/g, ', '),
+          type: 'string',
+        });
+      }
     } else if (!hasFullAccess) {
       const clients = await Client.find({
         isDeleted: false,
@@ -968,6 +1001,16 @@ const getReviewReport = async ({
     }
     if (requestedQuery.debtorId) {
       queryFilter.debtorId = mongoose.Types.ObjectId(requestedQuery.debtorId);
+      if (isForDownload) {
+        const debtor = await Debtor.findOne({ _id: requestedQuery.debtorId })
+          .select('entityName')
+          .lean();
+        filterArray.push({
+          label: 'Debtor',
+          value: debtor && debtor.entityName ? debtor.entityName : '',
+          type: 'string',
+        });
+      }
     }
     if (requestedQuery.limitStartDate || requestedQuery.limitEndDate) {
       let dateFilter = {};
@@ -1261,7 +1304,7 @@ const getReviewReport = async ({
       delete limit.currentReportId;
       delete limit.activeApplicationId;
     });
-    return { response, total };
+    return { response, total, filterArray };
   } catch (e) {
     Logger.log.error('Error occurred in get review report');
     Logger.log.error(e);

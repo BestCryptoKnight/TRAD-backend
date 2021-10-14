@@ -350,6 +350,36 @@ router.get('/download', async function (req, res) {
           isForDownload: true,
         });
         break;
+      case 'review-report':
+        reportColumn = [
+          'clientId',
+          'insurerId',
+          'debtorId',
+          'entityType',
+          'abn',
+          'acn',
+          'registrationNumber',
+          'country',
+          'requestedCreditLimit',
+          'creditLimit',
+          'approvalOrDecliningDate',
+          'applicationExpiryDate',
+          'expiryDate',
+          'reportExpiryDate',
+          'reportName',
+          'limitType',
+          'clientReference',
+          'comments',
+        ];
+        reportFor = 'Review Report';
+        response = await getReviewReport({
+          reportColumn: reportColumn,
+          hasFullAccess,
+          userId: req.user._id,
+          requestedQuery: req.query,
+          isForDownload: true,
+        });
+        break;
       case 'usage-report':
         reportColumn = [
           'name',
@@ -378,12 +408,12 @@ router.get('/download', async function (req, res) {
           message: 'Please pass correct fields',
         });
     }
-    if (response && response?.response.length > 500) {
+    if (response && response?.response.length > 20000) {
       return res.status(400).send({
         status: 'ERROR',
         messageCode: 'DOWNLOAD_LIMIT_EXCEED',
         message:
-          'User cannot download more than 500 records at a time. Please apply filter to narrow down the list',
+          'User cannot download more than 20000 records at a time. Please apply filter to narrow down the list',
       });
     }
     const headers = [];

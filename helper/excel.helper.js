@@ -95,6 +95,14 @@ const generateExcel = ({ data, reportFor, headers, filter, title }) => {
           filter,
         });
         break;
+      case 'Review Report':
+        addColumnsForReviewReport({
+          data,
+          worksheet,
+          headers,
+          filter,
+        });
+        break;
       case 'Credit Limit List':
         addColumnsForCreditLimitList({
           data,
@@ -242,6 +250,47 @@ const addColumnsForUsageReport = async ({
     worksheet.addRow();
     worksheet.mergeCells(
       `A${worksheet.lastRow.number}:J${worksheet.lastRow.number}`,
+    );
+    await addDataForTable({ data, headers, worksheet });
+  } catch (e) {
+    console.log('Error occurred in add limit list data', e);
+  }
+};
+
+const addColumnsForReviewReport = async ({
+  data,
+  worksheet,
+  headers,
+  filter,
+}) => {
+  try {
+    worksheet.mergeCells('A1:R1');
+    for (let i = 0; i <= filter.length; i++) {
+      if (filter[i]) {
+        worksheet.mergeCells(`A${i + 2}:R${i + 2}`);
+      }
+    }
+    worksheet.getColumn(1).width = 40;
+    worksheet.getColumn(2).width = 25;
+    worksheet.getColumn(3).width = 40;
+    worksheet.getColumn(4).width = 25;
+    worksheet.getColumn(5).width = 25;
+    worksheet.getColumn(6).width = 25;
+    worksheet.getColumn(7).width = 25;
+    worksheet.getColumn(8).width = 20;
+    worksheet.getColumn(9).width = 25;
+    worksheet.getColumn(10).width = 25;
+    worksheet.getColumn(11).width = 30;
+    worksheet.getColumn(12).width = 25;
+    worksheet.getColumn(13).width = 25;
+    worksheet.getColumn(14).width = 25;
+    worksheet.getColumn(15).width = 35;
+    worksheet.getColumn(16).width = 25;
+    worksheet.getColumn(17).width = 25;
+    worksheet.getColumn(18).width = 35;
+    worksheet.addRow();
+    worksheet.mergeCells(
+      `A${worksheet.lastRow.number}:R${worksheet.lastRow.number}`,
     );
     await addDataForTable({ data, headers, worksheet });
   } catch (e) {

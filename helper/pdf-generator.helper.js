@@ -9,6 +9,7 @@ const axios = require('axios');
  * Local Imports
  * */
 const config = require('../config');
+const { numberWithCommas } = require('./report.helper');
 
 const generateDecisionLetter = async ({
   approvalStatus,
@@ -117,7 +118,7 @@ const generateDecisionLetter = async ({
     });
     pdf.moveDown(0.5);
     pdf.fill('#003A78').font('Helvetica-Bold').fontSize(19);
-    pdf.text(`${requestedAmount} AUD`, {
+    pdf.text(`${numberWithCommas(requestedAmount)} AUD`, {
       align: 'center',
     });
     /*Applied Limit Ends*/
@@ -132,7 +133,7 @@ const generateDecisionLetter = async ({
     });
     pdf.moveDown(0.5);
     pdf.fill('#003A78').font('Helvetica-Bold').fontSize(19);
-    pdf.text(`${approvedAmount} AUD`, {
+    pdf.text(`${numberWithCommas(approvedAmount)} AUD`, {
       align: 'center',
     });
     /*Applied Limit Ends*/
@@ -145,21 +146,27 @@ const generateDecisionLetter = async ({
     pdf.fill('#828F9D').font('Helvetica').fontSize(11.25);
     if (status === 'DECLINED') {
       pdf.text(
-        `After careful analysis, we are unable to provide a recommendation of $${requestedAmount} on ${debtorName} based on the following adverse information:`,
+        `After careful analysis, we are unable to provide a recommendation of $${numberWithCommas(
+          requestedAmount,
+        )} on ${debtorName} based on the following adverse information:`,
         {
           // align: 'center',
         },
       );
     } else if (status === 'APPROVED') {
       pdf.text(
-        `After careful analysis, we are pleased to provide a recommendation of $${approvedAmount} on ${debtorName}`,
+        `After careful analysis, we are pleased to provide a recommendation of $${numberWithCommas(
+          approvedAmount,
+        )} on ${debtorName}`,
         {
           // align: 'center',
         },
       );
     } else if (status === 'PARTIALLY_APPROVED') {
       pdf.text(
-        `After careful analysis, we are pleased to provide a recommendation of $${approvedAmount} on ${debtorName}`,
+        `After careful analysis, we are pleased to provide a recommendation of $${numberWithCommas(
+          approvedAmount,
+        )} on ${debtorName}`,
         {
           // align: 'center',
         },
