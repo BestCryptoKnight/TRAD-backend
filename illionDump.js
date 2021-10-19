@@ -4,6 +4,12 @@
 const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
+const Alert = mongoose.model('alert');
+const AuditLog = mongoose.model('audit-log');
+const CreditReport = mongoose.model('credit-report');
+const Notification = mongoose.model('notification');
+const Overdue = mongoose.model('overdue');
+const Task = mongoose.model('task');
 const Client = mongoose.model('client');
 const Debtor = mongoose.model('debtor');
 const Organization = mongoose.model('organization');
@@ -896,6 +902,74 @@ const resetClientDebtorCode = async () => {
     organization.entityCount.debtor = i;
     promiseArr.push(organization.save());
     await Promise.all(promiseArr);
+  } catch (e) {
+    console.log('Error in resetting Client and Debtor Code', e.message || e);
+  }
+};
+
+const removeRedundantDebtors = async () => {
+  try {
+    const debtorPipeline = [
+      {
+        '$match': {
+          'abn': {
+            '$exists': true,
+            '$ne': null
+          }
+        }
+      }, {
+        '$group': {
+          '_id': '$abn',
+          'debtors': {
+            '$push': '$$ROOT'
+          }
+        }
+      }, {
+        '$project': {
+          'debtorsLength': {
+            '$size': '$debtors'
+          },
+          'debtors': '$debtors'
+        }
+      }, {
+        '$match': {
+          'debtorsLength': {
+            '$gt': 1
+          }
+        }
+      }, {
+        '$count': 'count'
+      }
+    ]
+    const debtorGroups = await Debtor.aggregate(debtorPipeline);
+    const deletedDetails = [];
+    for (let i = 0; i < debtorGroups.length; i += 1) {
+      const debtorIds = debtorGroups.debtors.map(d => d._id);
+      const primaryDebtorId = debtorIds.shift();
+      if(primaryDebtorId && primaryDebtorId.length > 0) {
+        const promiseArr = [];
+        promiseArr.push(Alert.updateMany({entityType: 'debtor', entityId: {$in: debtorIds}}, {$set: {entityId: primaryDebtorId}}));
+        promiseArr.push(Application.updateMany({debtorId: {$in: debtorIds}}, {$set: {debtorId: primaryDebtorId}}));
+        promiseArr.push(AuditLog.updateMany({entityType: 'debtor', entityRefId: {$in: debtorIds}}, {$set: {entityRefId: primaryDebtorId}}));
+        promiseArr.push(ClientDebtor.updateMany({debtorId: {$in: debtorIds}}, {$set: {debtorId: primaryDebtorId}}));
+        promiseArr.push(CreditReport.updateMany({entityType: 'debtor', entityId: {$in: debtorIds}}, {$set: {entityId: primaryDebtorId}}));
+        promiseArr.push(Debtor.deleteMany({_id: {$in: debtorIds}}));
+        promiseArr.push(DebtorDirector.updateMany({debtorId: {$in: debtorIds}}, {$set: {debtorId: primaryDebtorId}}));
+        promiseArr.push(Document.updateMany({entityType: 'debtor', entityRefId: {$in: debtorIds}}, {$set: {entityRefId: primaryDebtorId}}));
+        promiseArr.push(Note.updateMany({entityType: 'debtor', entityId: {$in: debtorIds}}, {$set: {entityId: primaryDebtorId}}));
+        promiseArr.push(Notification.updateMany({entityType: 'debtor', entityId: {$in: debtorIds}}, {$set: {entityId: primaryDebtorId}}));
+        promiseArr.push(Overdue.updateMany({debtorId: {$in: debtorIds}}, {$set: {debtorId: primaryDebtorId}}));
+        promiseArr.push(Task.updateMany({entityType: 'debtor', entityId: {$in: debtorIds}}, {$set: {entityId: primaryDebtorId}}));
+        let results = await Promise.all(promiseArr);
+        deletedDetails.push({
+          primaryDebtorId,
+          otherDebtorIds: debtorIds,
+          results
+        })
+      }
+    }
+    fs.writeFileSync('delete-debtor-results.json', JSON.stringify(deletedDetails));
+    console.log('Successfully deleted redundant debtors and supportive DB documents', );
   } catch (e) {
     console.log('Error in resetting Client and Debtor Code', e.message || e);
   }

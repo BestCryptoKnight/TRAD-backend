@@ -50,7 +50,7 @@ const debtorSchema = new Schema(
     },
     reviewDate: { type: Schema.Types.Date },
     riskRating: { type: Schema.Types.String },
-    isActive: { type: Schema.Types.Boolean, default: false },
+    isActive: { type: Schema.Types.Boolean, default: true },
     // isDeleted: { type: Schema.Types.Boolean, default: false },
   },
   { timestamps: true },

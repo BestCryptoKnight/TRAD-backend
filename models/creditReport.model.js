@@ -15,7 +15,7 @@ const creditReportSchema = new Schema(
       type: Schema.Types.String,
       enum: ['debtor', 'debtor-director'],
     },
-    reportProvider: { type: Schema.Types.String, enum: ['illion', 'equifax'] },
+    reportProvider: { type: Schema.Types.String, enum: ['illion'] },
     name: { type: Schema.Types.String },
     productCode: { type: Schema.Types.String },
     creditReport: { type: Schema.Types.Mixed },
