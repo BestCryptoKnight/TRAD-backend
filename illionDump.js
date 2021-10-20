@@ -19,8 +19,6 @@ const Note = mongoose.model('note');
 const Document = mongoose.model('document');
 const Application = mongoose.model('application');
 const moment = require('moment');
-const sameDebtors = [];
-const sameDebtorABN = [];
 /*
  * Local Imports
  * */
@@ -40,20 +38,20 @@ const pdfFileInputPath = [
   'output_files_2021',
   'pdf_files',
 ];
-// const pdfFileOutputPath = [
-//   __dirname,
-//   '..',
-//   'illion_dump_files',
-//   'output_files_2021',
-//   'processed_pdf_files_2021',
-// ];
+const pdfFileOutputPath = [
+  __dirname,
+  '..',
+  'illion_dump_files',
+  'output_files_2021',
+  'processed_pdf_files_2021',
+];
 const userId = '6035f169f30c50fec2f70d7e';
 const documentTypeId = '6155be6ec8e217314ac90fdc';
 const validCountryArray = ['61', '64'];
 
-// const pdfFileNames = fs.readdirSync(path.join(...pdfFileInputPath));
-// console.log('pdfFileNames', pdfFileNames);
-// console.log('pdfFileNames length', pdfFileNames.length);
+const pdfFileNames = fs.readdirSync(path.join(...pdfFileInputPath));
+console.log('pdfFileNames', pdfFileNames);
+console.log('pdfFileNames length', pdfFileNames.length);
 
 let applicationList = fs.readFileSync(
   path.join(...inputFilePath, 'application-list-filtered.json'),
@@ -297,19 +295,14 @@ const createDebtor = async ({ applicationId, activeApplicationIndex }) => {
     const foundDebtor =
       companyList?.[applicationId]?.[activeApplicationIndex]?.['Principal'] ||
       null
-    // console.log('applicationId::', applicationId);
-    // console.log('activeApplicationIndex::', activeApplicationIndex);
-    // console.log('foundDebtor::', foundDebtor);
     if (foundDebtor) {
       const abn =
         foundDebtor?.['tx_abn'] || foundDebtor?.['tx_company_nzbn'] || '';
       const acn =
         foundDebtor?.['tx_acn'] || foundDebtor?.['tx_company_no'] || '';
       const query = abn ? { abn: abn } : { acn: acn };
-      // console.log('query',query)
       const existingDebtor = await Debtor.findOne(query).lean();
       if (!existingDebtor) {
-        // console.log('in if, creating debtor', existingDebtor);
         const organization = await Organization.findOne({ isDeleted: false })
           .select('entityCount')
           .lean();
@@ -340,14 +333,9 @@ const createDebtor = async ({ applicationId, activeApplicationIndex }) => {
           { $inc: { 'entityCount.debtor': 1 } },
         );
         return debtor;
-      } else {
-        console.log('in else, debtor exists::', existingDebtor);
-        sameDebtors.push(existingDebtor)
-        sameDebtorABN.push(existingDebtor.abn)
       }
       return existingDebtor;
     } else {
-        console.log('in main else');
       unProcessedApplicationIds.push({
         applicationId: applicationId,
         reason: 'Debtor not found',
@@ -584,10 +572,10 @@ const createDocuments = async ({ applicationNumber, applicationId }) => {
           documentTypeId,
         }),
       );
-      // fs.copyFileSync(
-      //   path.join(...pdfFileInputPath, document),
-      //   path.join(...pdfFileOutputPath, document),
-      // );
+      fs.copyFileSync(
+        path.join(...pdfFileInputPath, document),
+        path.join(...pdfFileOutputPath, document),
+      );
     });
     await Promise.all(promises);
   } catch (e) {
@@ -804,10 +792,10 @@ const importApplications = async () => {
                   activeApplicationIndex,
                   applicationNumber: key,
                 });
-                // await createDocuments({
-                //   applicationId: application._id,
-                //   applicationNumber: key,
-                // });
+                await createDocuments({
+                  applicationId: application._id,
+                  applicationNumber: key,
+                });
                 const inActiveStatus = ['CANCELLED', 'WITHDRAWN'];
                 const update = {
                   clientId: client._id,
@@ -947,16 +935,17 @@ const removeRedundantDebtors = async () => {
             '$gt': 1
           }
         }
-      }, {
-        '$count': 'count'
       }
     ]
     const debtorGroups = await Debtor.aggregate(debtorPipeline);
     const deletedDetails = [];
+    console.log('Received Debtor Groups,processing them...');
+    // console.log(JSON.stringify(debtorGroups, null, 3));
     for (let i = 0; i < debtorGroups.length; i += 1) {
-      const debtorIds = debtorGroups.debtors.map(d => d._id);
+      const debtorIds = debtorGroups[i].debtors.map(d => d._id);
+      console.log(JSON.stringify(debtorIds, null, 3));
       const primaryDebtorId = debtorIds.shift();
-      if(primaryDebtorId && primaryDebtorId.length > 0) {
+      if(primaryDebtorId && debtorIds.length > 0) {
         const promiseArr = [];
         promiseArr.push(Alert.updateMany({entityType: 'debtor', entityId: {$in: debtorIds}}, {$set: {entityId: primaryDebtorId}}));
         promiseArr.push(Application.updateMany({debtorId: {$in: debtorIds}}, {$set: {debtorId: primaryDebtorId}}));
@@ -990,7 +979,7 @@ const main = async () => {
   // await resetClientDebtorCode();
   // await storeMerchantCode();
   // await importApplications();
-  await removeRedundantDebtors();
+  // await removeRedundantDebtors();
   // fs.writeFileSync('same-debtors.json', JSON.stringify(sameDebtors));
   // console.log('Successfully executed the DUMP Script', JSON.stringify(sameDebtorABN));
   console.log('Successfully executed the DUMP Script at', new Date());
