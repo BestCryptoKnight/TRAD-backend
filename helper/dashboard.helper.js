@@ -68,17 +68,18 @@ const getRESChecks = async ({
   clientId,
   startDate,
   endDate,
-  noOfResChecks,
+  noOfCreditChecks,
 }) => {
   try {
     const query = {
       clientId: mongoose.Types.ObjectId(clientId),
       status: {
-        $in: ['APPROVED', 'DECLINED'],
+        $nin: ['DRAFT'],
       },
+      limitType: { $eq: 'CREDIT_CHECK' },
     };
     if (startDate && endDate) {
-      query.approvalOrDecliningDate = {
+      query.requestDate = {
         $gte: new Date(startDate),
         $lte: new Date(endDate),
       };
@@ -96,7 +97,7 @@ const getRESChecks = async ({
     ]).allowDiskUse(true);
     const response = {};
     if (data && data.length !== 0) {
-      response.totalCount = parseInt(noOfResChecks);
+      response.totalCount = parseInt(noOfCreditChecks);
       response.applicationCount = data[0]['count'];
     } else {
       response.totalCount = 0;

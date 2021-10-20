@@ -746,7 +746,21 @@ const downloadDecisionLetter = async ({ creditLimitId }) => {
           2,
         ),
         approvalStatus: clientDebtor?.activeApplicationId?.comments,
+        country: clientDebtor?.debtorId?.address?.country?.code,
+        tradingName: clientDebtor?.debtorId?.tradingName,
+        requestedDate: clientDebtor?.activeApplicationId?.requestDate,
+        approvalOrDecliningDate:
+          clientDebtor?.activeApplicationId?.approvalOrDecliningDate,
+        expiryDate: clientDebtor?.activeApplicationId?.expiryDate,
       };
+      if (response.country === 'AUS' || response.country === 'NZL') {
+        response.abn = clientDebtor?.debtorId?.abn;
+        response.acn = clientDebtor?.debtorId?.acn;
+      } else {
+        response.registrationNumber =
+          clientDebtor?.debtorId?.registrationNumber;
+      }
+      console.log('------------------------------', response);
       bufferData = await generateDecisionLetter(response);
     }
     return {

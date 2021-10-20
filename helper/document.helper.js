@@ -132,12 +132,17 @@ const getSpecificEntityDocumentList = async ({
         uploadByType: 'client-user',
         uploadById: mongoose.Types.ObjectId(clientId),
       },
-      { uploadByType: 'user', isPublic: true },
+      // { uploadByType: 'user', isPublic: true },
     ];
     if (userId) {
       conditions.push({
         uploadByType: 'user',
-        uploadById: mongoose.Types.ObjectId(userId),
+        // uploadById: mongoose.Types.ObjectId(userId),
+      });
+    } else {
+      conditions.push({
+        uploadByType: 'user',
+        isPublic: true,
       });
     }
     const query = [

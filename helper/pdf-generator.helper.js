@@ -23,6 +23,11 @@ const generateDecisionLetter = async ({
   approvedAmount,
   status,
   serviceManagerNumber,
+  country,
+  tradingName,
+  requestedDate,
+  approvalOrDecliningDate,
+  expiryDate,
 }) => {
   const pdfBuffer = await new Promise(async (resolve) => {
     const date = new Date();
@@ -75,9 +80,10 @@ const generateDecisionLetter = async ({
     // table.plugins[1].x = 0
     //   pdf.moveDown(3);
     pdf.fill('#FFFFFF').font('Helvetica-Bold').fontSize(15);
-    pdf.text('RES Check', 0, 120, {
+    pdf.text('Credit Check', 0, 110, {
       align: 'center',
     });
+    pdf.moveDown(0.5);
     pdf.text(`${clientName}`, {
       align: 'center',
     });
@@ -88,6 +94,12 @@ const generateDecisionLetter = async ({
     pdf.text(`Debtor Name: ${debtorName}`, {
       align: 'center',
     });
+    if (tradingName) {
+      pdf.moveDown(0.3);
+      pdf.text(`Name: ${tradingName}`, {
+        align: 'center',
+      });
+    }
     pdf.moveDown(0.3);
     if (registrationNumber) {
       pdf.text(`Registration Number: ${registrationNumber}`, {
@@ -95,17 +107,52 @@ const generateDecisionLetter = async ({
       });
     } else {
       if (acn) {
-        pdf.text(`ACN: ${acn}`, {
+        pdf.text(`${country === 'AUS' ? 'ACN' : 'NCN'}: ${acn}`, {
           align: 'center',
         });
         pdf.moveDown(0.3);
       }
       if (abn) {
-        pdf.text(`ABN: ${abn}`, {
+        pdf.text(`${country === 'AUS' ? 'ABN' : 'NZBN'}: ${abn}`, {
           align: 'center',
         });
       }
     }
+    /*if (requestedDate) {
+      pdf.moveDown(0.3);
+      pdf.text(
+        `Requested Date: ${requestedDate.getDate()}/${
+          requestedDate.getMonth() + 1
+        }/${requestedDate.getFullYear()}`,
+        {
+          align: 'center',
+        },
+      );
+    }
+    if (approvalOrDecliningDate) {
+      pdf.moveDown(0.3);
+      pdf.text(
+        `${
+          status === 'DECLINED' ? 'Declining' : 'Approved'
+        } Date: ${approvalOrDecliningDate.getDate()}/${
+            approvalOrDecliningDate.getMonth() + 1
+        }/${approvalOrDecliningDate.getFullYear()}`,
+        {
+          align: 'center',
+        },
+      );
+    }
+    if (expiryDate && status !== 'DECLINED') {
+      pdf.moveDown(0.3);
+      pdf.text(
+        `Expiry Date: ${expiryDate.getDate()}/${
+            expiryDate.getMonth() + 1
+        }/${expiryDate.getFullYear()}`,
+        {
+          align: 'center',
+        },
+      );
+    }*/
     /*Debtor Details Ends*/
     /*Applied Limit Starts*/
     pdf.rect(0, 235, 595.28, 62).fillOpacity(1).fill('#F4F6F8');

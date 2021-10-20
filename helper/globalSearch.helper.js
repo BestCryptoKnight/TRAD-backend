@@ -233,7 +233,6 @@ const getDebtorList = async ({
         $options: 'i',
       };
     }
-    console.log('queryFilter', queryFilter);
     const fields = isForGlobalSearch
       ? '_id entityName'
       : requestFrom && requestFrom === 'overdue'
@@ -379,6 +378,9 @@ const getApplicationList = async ({
   }
 };
 
+/*
+Get Debtor List for Client Panel
+ */
 const getClientDebtorList = async ({ searchString, clientId }) => {
   try {
     let queryFilter = {
@@ -390,16 +392,101 @@ const getClientDebtorList = async ({ searchString, clientId }) => {
         { creditLimit: { $ne: null } },
         { creditLimit: { $ne: 0 } },
       ],
-      entityName: { $regex: getRegexForSearch(searchString), $options: 'i' },
     };
-    const debtors = await ClientDebtor.find(queryFilter)
-      .select('_id entityName')
-      .lean();
+    /* const debtors = await ClientDebtor.find(queryFilter)
+      .populate({
+        path: 'debtorId',
+        match: {
+          $or: [
+            {
+              entityName: {
+                $regex: getRegexForSearch(searchString),
+                $options: 'i',
+              },
+            },
+            {
+              acn: {
+                $regex: searchString,
+                $options: 'i',
+              },
+            },
+            {
+              abn: {
+                $regex: searchString,
+                $options: 'i',
+              },
+            },
+            {
+              registrationNumber: {
+                $regex: searchString,
+                $options: 'i',
+              },
+            },
+          ],
+        },
+        select: 'entityName abn acn',
+      })
+      .select('_id debtorId')
+      .lean();*/
+    const debtors = await ClientDebtor.aggregate([
+      { $match: queryFilter },
+      {
+        $lookup: {
+          from: 'debtors',
+          localField: 'debtorId',
+          foreignField: '_id',
+          as: 'debtorId',
+        },
+      },
+      {
+        $unwind: {
+          path: '$debtorId',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $match: {
+          $or: [
+            {
+              'debtorId.entityName': {
+                $regex: getRegexForSearch(searchString),
+                $options: 'i',
+              },
+            },
+            {
+              'debtorId.acn': {
+                $regex: searchString,
+                $options: 'i',
+              },
+            },
+            {
+              'debtorId.abn': {
+                $regex: searchString,
+                $options: 'i',
+              },
+            },
+            {
+              'debtorId.registrationNumber': {
+                $regex: searchString,
+                $options: 'i',
+              },
+            },
+          ],
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          'debtorId.entityName': 1,
+        },
+      },
+    ]).allowDiskUse(true);
+
     debtors.forEach((debtor) => {
-      debtor.title = debtor.entityName;
+      debtor.title = debtor?.debtorId?.entityName;
       debtor.module = 'debtor';
       debtor.hasSubModule = false;
-      delete debtor.entityName;
+      delete debtor.debtorId;
     });
     return debtors;
   } catch (e) {

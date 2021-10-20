@@ -15,7 +15,6 @@ const {
   getTaskList,
   getApplications,
   getClientDebtorList,
-  getDebtorList,
 } = require('./../helper/globalSearch.helper');
 
 router.get('/', authenticate, async function (req, res) {
@@ -34,16 +33,9 @@ router.get('/', authenticate, async function (req, res) {
         isForRisk: false,
         clientId: req.user.clientId,
       }),
-      /* getClientDebtorList({
-        searchString: req.query.searchString,
+      getClientDebtorList({
         clientId: req.user.clientId,
-      }),*/
-      getDebtorList({
-        moduleAccess: req.user.moduleAccess,
         searchString: req.query.searchString,
-        userId: req.user._id,
-        isForRisk: false,
-        clientId: req.user.clientId,
       }),
       getTaskList({
         searchString: req.query.searchString,

@@ -31,7 +31,7 @@ router.get('/', async function (req, res) {
         expiryDate: { $gt: new Date() },
       })
         .select(
-          'clientId product policyPeriod noOfResChecks discretionaryLimit aggregateOfCreditLimit inceptionDate expiryDate',
+          'clientId product policyPeriod noOfResChecks discretionaryLimit aggregateOfCreditLimit inceptionDate expiryDate creditChecks',
         )
         .lean(),
       Policy.findOne({
@@ -44,7 +44,7 @@ router.get('/', async function (req, res) {
         expiryDate: { $gt: new Date() },
       })
         .select(
-          'clientId product noOfResChecks policyPeriod discretionaryLimit inceptionDate expiryDate',
+          'clientId product noOfResChecks policyPeriod discretionaryLimit inceptionDate expiryDate creditChecks',
         )
         .lean(),
     ]);
@@ -63,11 +63,11 @@ router.get('/', async function (req, res) {
           ? ciPolicy.expiryDate
           : rmpPolicy.expiryDate;
     }
-    const noOfRESCheckCount =
-      rmpPolicy && rmpPolicy.noOfResChecks
-        ? rmpPolicy.noOfResChecks
-        : ciPolicy && ciPolicy.noOfResChecks
-        ? ciPolicy.noOfResChecks
+    const noOfCreditChecks =
+      rmpPolicy && rmpPolicy.creditChecks
+        ? rmpPolicy.creditChecks
+        : ciPolicy && ciPolicy.creditChecks
+        ? ciPolicy.creditChecks
         : 0;
     const [
       endorsedLimit,
@@ -96,7 +96,7 @@ router.get('/', async function (req, res) {
         clientId: req.user.clientId,
         startDate,
         endDate,
-        noOfResChecks: noOfRESCheckCount,
+        noOfCreditChecks,
       }),
     ]);
     if (ciPolicy) {

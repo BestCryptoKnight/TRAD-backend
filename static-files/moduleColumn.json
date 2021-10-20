@@ -1033,8 +1033,8 @@
         },
         { "name": "insurerId", "label": "Insurer Name", "type": "string" },
         {
-          "name": "noOfResChecks",
-          "label": "No of RES Checks",
+          "name": "creditChecks",
+          "label": "No of Credit Checks",
           "type": "number"
         },
         {
@@ -1071,7 +1071,7 @@
         "name",
         "discretionaryLimit",
         "insurerId",
-        "noOfResChecks",
+        "creditChecks",
         "riskAnalystId",
         "serviceManagerId"
       ]
@@ -1206,6 +1206,7 @@
           "label": "Application Expiry Date",
           "type": "date"
         },
+        { "name": "reviewDate", "label": "Debtor Review Date", "type": "date" },
         {
           "name": "expiryDate",
           "label": "Credit Limit Expiry Date",
@@ -1242,12 +1243,12 @@
         { "name": "name", "label": "Client Name", "type": "string" },
         { "name": "insurerId", "label": "Insurer Name", "type": "string" },
         {
-          "name": "noOfResChecks",
+          "name": "creditChecks",
           "label": "Total Credit Checks Assigned",
           "type": "number"
         },
         {
-          "name": "noOfResChecksUsed",
+          "name": "noOfCreditChecksUsed",
           "label": "No. of used Credit Checks",
           "type": "number"
         },
@@ -1276,8 +1277,8 @@
       "defaultColumns": [
         "clientId",
         "insurerId",
-        "noOfResChecks",
-        "noOfResChecksUsed",
+        "creditChecks",
+        "noOfCreditChecksUsed",
         "policyNumber",
         "inceptionDate",
         "expiryDate"

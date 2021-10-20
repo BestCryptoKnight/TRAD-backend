@@ -63,11 +63,11 @@ router.get('/:entityId', async function (req, res) {
                 createdByType: 'client-user',
                 createdById: mongoose.Types.ObjectId(application.clientId),
               },
-              { createdByType: 'user', isPublic: true },
-              {
+              { createdByType: 'user' },
+              /*{
                 createdByType: 'user',
                 createdById: mongoose.Types.ObjectId(req.user._id),
-              },
+              },*/
             ],
           },
         ],
@@ -81,11 +81,11 @@ router.get('/:entityId', async function (req, res) {
         mongoose.Types.ObjectId(i._id),
       );
       const conditions = [
-        { createdByType: 'user', isPublic: true },
-        {
+        { createdByType: 'user' },
+        /* {
           createdByType: 'user',
           createdById: mongoose.Types.ObjectId(req.user._id),
-        },
+        },*/
       ];
       if (debtor && debtor.clientId) {
         conditions.push({
@@ -123,11 +123,11 @@ router.get('/:entityId', async function (req, res) {
           },
           {
             $or: [
-              { createdByType: 'user', isPublic: true },
-              {
+              { createdByType: 'user' },
+              /*{
                 createdByType: 'user',
                 createdById: mongoose.Types.ObjectId(req.user._id),
-              },
+              },*/
             ],
           },
         ],
