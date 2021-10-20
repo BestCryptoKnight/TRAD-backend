@@ -1321,7 +1321,6 @@ const generateApplications = async (importId, userId) => {
       });
       let debtor = await Debtor.findOne({
         [searchParam]: searchValue,
-        isActive: true,
       });
       let clientDebtor;
       if (debtor) {
@@ -1446,6 +1445,7 @@ const generateApplications = async (importId, userId) => {
                     .postCode
                 : null),
           },
+          isActive: (importApplicationDump.applications[i].abrResponseForDebtor?.isActive === 'Active' || importApplicationDump.applications[i].abrResponseForDebtor?.isActive === true )
         });
         if (
           importApplicationDump.applications[i].address.countryCode === 'AUS' ||
