@@ -51,17 +51,18 @@ const removeUserToken = async () => {
       date.setHours(date.getHours() - config.jwt.expireTime),
     );
     const promises = [];
+    let update;
     for (let i = 0; i < users.length; i++) {
       if (users[i].jwtToken.length !== 0) {
+        update = {};
         users[i].jwtToken = users[i].jwtToken.filter((i) => {
           return expireTime < i.lastAPICallTime;
         });
-        promises.push(
-          User.updateOne(
-            { _id: users[i]._id },
-            { $set: { jwtToken: users[i].jwtToken } },
-          ),
-        );
+        update.jwtToken = users[i].jwtToken;
+        if (users[i].jwtToken.length === 0) {
+          update.socketIds = [];
+        }
+        promises.push(User.updateOne({ _id: users[i]._id }, { $set: update }));
       }
     }
     await Promise.all(promises);

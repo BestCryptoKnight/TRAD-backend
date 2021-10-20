@@ -1340,7 +1340,7 @@ router.put('/:applicationId', async function (req, res) {
         ) {
           const update = {
             // creditLimit: undefined,
-            activeApplicationId: undefined,
+            // activeApplicationId: undefined,
             // isActive: false,
           };
           if (req.body.status === 'DECLINED') {

@@ -235,12 +235,12 @@ router.get('/:entityId', async function (req, res) {
         },
         { uploadByType: 'user', isPublic: true },
       ];
-      if (req.user._id) {
+      /* if (req.user._id) {
         conditions.push({
           uploadByType: 'user',
           uploadById: mongoose.Types.ObjectId(req.user._id),
         });
-      }
+      }*/
       query = {
         $and: [
           { isDeleted: false },

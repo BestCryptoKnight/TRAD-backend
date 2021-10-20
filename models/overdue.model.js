@@ -26,6 +26,9 @@ const overdueSchema = new Schema(
         'PAYMENT_EXPECTED',
         'DISPUTE',
         'LEGAL/COLLECTIONS',
+        'WRITTEN_OFF',
+        'CLAIM_TO_BE_SUBMITTED_TO_TCR',
+        'QUERIED_INVOICES_TO_BE_RECONCILED',
       ],
     },
     overdueAction: {

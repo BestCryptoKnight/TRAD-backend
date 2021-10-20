@@ -242,14 +242,14 @@ router.get('/:entityId', async function (req, res) {
           uploadByType: 'client-user',
           uploadById: mongoose.Types.ObjectId(application.clientId),
         },
-        { uploadByType: 'user', isPublic: true },
+        { uploadByType: 'user' },
       ];
-      if (req.user._id) {
+      /*if (req.user._id) {
         conditions.push({
           uploadByType: 'user',
           uploadById: mongoose.Types.ObjectId(req.user._id),
         });
-      }
+      }*/
       query = {
         $and: [
           { isDeleted: false },
@@ -273,11 +273,11 @@ router.get('/:entityId', async function (req, res) {
         {
           entityRefId: { $in: applicationIds },
         },
-        { uploadByType: 'user', isPublic: true },
-        {
+        { uploadByType: 'user' },
+        /* {
           uploadByType: 'user',
           uploadById: mongoose.Types.ObjectId(req.user._id),
-        },
+        },*/
       ];
       if (debtor && debtor.clientId) {
         conditions.push({
@@ -303,7 +303,8 @@ router.get('/:entityId', async function (req, res) {
           {
             entityRefId: mongoose.Types.ObjectId(req.params.entityId),
           },
-          {
+          { uploadByType: 'user' },
+          /*{
             $or: [
               { uploadByType: 'user', isPublic: true },
               {
@@ -311,7 +312,7 @@ router.get('/:entityId', async function (req, res) {
                 uploadById: mongoose.Types.ObjectId(req.user._id),
               },
             ],
-          },
+          },*/
         ],
       };
     }

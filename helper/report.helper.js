@@ -189,7 +189,7 @@ const getClientListReport = async ({
     const clientApplications = {};
     if (
       reportColumn.includes('discretionaryLimit') ||
-      reportColumn.includes('noOfResChecks') ||
+      reportColumn.includes('creditChecks') ||
       reportColumn.includes('totalApplication') ||
       reportColumn.includes('remainingApplication')
     ) {
@@ -202,7 +202,7 @@ const getClientListReport = async ({
           expiryDate: { $gt: new Date() },
         })
           .select(
-            '_id clientId product discretionaryLimit noOfResChecks inceptionDate expiryDate',
+            '_id clientId product discretionaryLimit creditChecks inceptionDate expiryDate',
           )
           .lean(),
         Policy.find({
@@ -215,7 +215,7 @@ const getClientListReport = async ({
           expiryDate: { $gt: new Date() },
         })
           .select(
-            '_id clientId product discretionaryLimit noOfResChecks inceptionDate expiryDate',
+            '_id clientId product discretionaryLimit creditChecks inceptionDate expiryDate',
           )
           .lean(),
       ]);
@@ -224,14 +224,15 @@ const getClientListReport = async ({
       });
       rmpPolicy.forEach((policy) => {
         if (policies[policy.clientId]) {
-          policies[policy.clientId]['noOfResChecks'] = policy['noOfResChecks']
-            ? policy['noOfResChecks']
-            : policies[policy.clientId]['noOfResChecks'];
-          policies[policy.clientId]['discretionaryLimit'] = policies[
-            policy.clientId
-          ]['discretionaryLimit']
-            ? policy['discretionaryLimit']
-            : policy['discretionaryLimit'];
+          policies[policy.clientId]['creditChecks'] = policy['creditChecks']
+            ? policy['creditChecks']
+            : policies[policy.clientId]['creditChecks'];
+
+          policies[policy.clientId]['discretionaryLimit'] =
+            policies[policy.clientId]['discretionaryLimit'] &&
+            parseInt(policies[policy.clientId]['discretionaryLimit']) === 0
+              ? policy?.['discretionaryLimit']
+              : policies[policy.clientId]?.['discretionaryLimit'];
         } else {
           policies[policy.clientId] = policy;
         }
@@ -272,7 +273,7 @@ const getClientListReport = async ({
       }
     }
     const isLimitSelected = reportColumn.includes('discretionaryLimit');
-    const isRESChecksSelected = reportColumn.includes('noOfResChecks');
+    const isCreditChecksSelected = reportColumn.includes('creditChecks');
     const isTotalApplicationSelected = reportColumn.includes(
       'totalApplication',
     );
@@ -305,10 +306,10 @@ const getClientListReport = async ({
             ? parseInt(policies[client._id]['discretionaryLimit'])
             : 0;
       }
-      if (isRESChecksSelected) {
-        client.noOfResChecks =
-          policies[client._id] && policies[client._id]['noOfResChecks']
-            ? policies[client._id]['noOfResChecks']
+      if (isCreditChecksSelected) {
+        client.creditChecks =
+          policies[client._id] && policies[client._id]['creditChecks']
+            ? policies[client._id]['creditChecks']
             : 0;
       }
       if (isTotalApplicationSelected) {
@@ -319,13 +320,13 @@ const getClientListReport = async ({
       if (isRemainingApplicationSelected) {
         client.remainingApplication =
           policies[client._id] &&
-          policies[client._id]['noOfResChecks'] &&
-          policies[client._id]['noOfResChecks'].length !== 0 &&
+          policies[client._id]['creditChecks'] &&
+          policies[client._id]['creditChecks'].length !== 0 &&
           clientApplications[client._id]
-            ? parseInt(policies[client._id]['noOfResChecks']) -
+            ? parseInt(policies[client._id]['creditChecks']) -
                 clientApplications[client._id] >=
               0
-              ? parseInt(policies[client._id]['noOfResChecks']) -
+              ? parseInt(policies[client._id]['creditChecks']) -
                 clientApplications[client._id]
               : 0
             : 0;
@@ -1036,12 +1037,21 @@ const getReviewReport = async ({
           as: 'currentReportId',
         },
       },
+      {
+        $lookup: {
+          from: 'debtors',
+          localField: 'debtorId',
+          foreignField: '_id',
+          as: 'debtorId',
+        },
+      },
     ];
     if (Object.keys(dateQuery).length !== 0) {
       query.push({
         $match: {
           $or: [
             { 'currentReportId.expiryDate': dateQuery },
+            { 'debtorId.reviewDate': dateQuery },
             { expiryDate: dateQuery },
           ],
         },
@@ -1088,7 +1098,7 @@ const getReviewReport = async ({
         },
       });
     }
-    if (
+    /*if (
       reportColumn.includes('debtorId') ||
       reportColumn.includes('entityType') ||
       reportColumn.includes('abn') ||
@@ -1104,7 +1114,7 @@ const getReviewReport = async ({
           as: 'debtorId',
         },
       });
-    }
+    }*/
     if (
       reportColumn.includes('requestedCreditLimit') ||
       reportColumn.includes('approvalOrDecliningDate') ||
@@ -1133,7 +1143,8 @@ const getReviewReport = async ({
         i === 'abn' ||
         i === 'acn' ||
         i === 'registrationNumber' ||
-        i === 'entityType'
+        i === 'entityType' ||
+        i === 'reviewDate'
       ) {
         i = 'debtorId.' + i;
       }
@@ -1242,6 +1253,11 @@ const getReviewReport = async ({
       if (limit.debtorId && limit.debtorId[0] && limit.debtorId[0].entityName) {
         limit.debtorId = limit.debtorId[0]['entityName']
           ? limit.debtorId[0]['entityName']
+          : '';
+      }
+      if (limit.debtorId && limit.debtorId[0] && limit.debtorId[0].reviewDate) {
+        limit.debtorId = limit.debtorId[0]['reviewDate']
+          ? limit.debtorId[0]['reviewDate']
           : '';
       }
       if (
@@ -1490,10 +1506,10 @@ const getUsageReport = async ({
     const clientApplications = {};
     if (
       reportColumn.includes('policyNumber') ||
-      reportColumn.includes('noOfResChecks') ||
+      reportColumn.includes('creditChecks') ||
       reportColumn.includes('inceptionDate') ||
       reportColumn.includes('expiryDate') ||
-      reportColumn.includes('noOfResChecksUsed')
+      reportColumn.includes('noOfCreditChecksUsed')
     ) {
       const clientIds = response.map((i) => i._id);
       const [ciPolicy, rmpPolicy] = await Promise.all([
@@ -1504,7 +1520,7 @@ const getUsageReport = async ({
           expiryDate: { $gt: new Date() },
         })
           .select(
-            '_id clientId product policyNumber noOfResChecks inceptionDate expiryDate',
+            '_id clientId product policyNumber creditChecks inceptionDate expiryDate',
           )
           .lean(),
         Policy.find({
@@ -1517,7 +1533,7 @@ const getUsageReport = async ({
           expiryDate: { $gt: new Date() },
         })
           .select(
-            '_id clientId product policyNumber noOfResChecks inceptionDate expiryDate',
+            '_id clientId product policyNumber creditChecks inceptionDate expiryDate',
           )
           .lean(),
       ]);
@@ -1526,9 +1542,9 @@ const getUsageReport = async ({
       });
       rmpPolicy.forEach((policy) => {
         if (policies[policy.clientId]) {
-          policies[policy.clientId]['noOfResChecks'] = policy['noOfResChecks']
-            ? policy['noOfResChecks']
-            : policies[policy.clientId]['noOfResChecks'];
+          policies[policy.clientId]['creditChecks'] = policy['creditChecks']
+            ? policy['creditChecks']
+            : policies[policy.clientId]['creditChecks'];
           if (policy['policyNumber']) {
             policies[policy.clientId]['otherPolicyNumber'] =
               policy['policyNumber'];
@@ -1537,7 +1553,7 @@ const getUsageReport = async ({
           policies[policy.clientId] = policy;
         }
       });
-      if (reportColumn.includes('noOfResChecksUsed')) {
+      if (reportColumn.includes('noOfCreditChecksUsed')) {
         const promises = [];
         rmpPolicy.map((i) => {
           promises.push(
@@ -1546,12 +1562,13 @@ const getUsageReport = async ({
                 $match: {
                   clientId: i.clientId,
                   status: {
-                    $in: ['APPROVED', 'DECLINED'],
+                    $nin: ['DRAFT'],
                   },
-                  approvalOrDecliningDate: {
+                  requestDate: {
                     $gte: new Date(i.inceptionDate),
                     $lte: new Date(i.expiryDate),
                   },
+                  limitType: { $eq: 'CREDIT_CHECK' },
                 },
               },
               {
@@ -1572,8 +1589,10 @@ const getUsageReport = async ({
       }
     }
     const isPolicyNumberSelected = reportColumn.includes('policyNumber');
-    const isRESChecksSelected = reportColumn.includes('noOfResChecks');
-    const isRESChecksUsedSelected = reportColumn.includes('noOfResChecksUsed');
+    const isCreditChecksSelected = reportColumn.includes('creditChecks');
+    const isCreditChecksUsedSelected = reportColumn.includes(
+      'noOfCreditChecksUsed',
+    );
     const isInceptionDateSelected = reportColumn.includes('inceptionDate');
     const isExpiryDateSelected = reportColumn.includes('expiryDate');
     response.forEach((client) => {
@@ -1612,10 +1631,10 @@ const getUsageReport = async ({
             : policies[client._id]['otherPolicyNumber'];
         }
       }
-      if (isRESChecksSelected) {
-        client.noOfResChecks =
-          policies[client._id] && policies[client._id]['noOfResChecks']
-            ? policies[client._id]['noOfResChecks']
+      if (isCreditChecksSelected) {
+        client.creditChecks =
+          policies[client._id] && policies[client._id]['creditChecks']
+            ? policies[client._id]['creditChecks']
             : 0;
       }
       if (isInceptionDateSelected) {
@@ -1630,8 +1649,8 @@ const getUsageReport = async ({
             ? policies[client._id]['expiryDate']
             : 0;
       }
-      if (isRESChecksUsedSelected) {
-        client.noOfResChecksUsed = clientApplications[client._id]
+      if (isCreditChecksUsedSelected) {
+        client.noOfCreditChecksUsed = clientApplications[client._id]
           ? clientApplications[client._id]
           : 0;
       }

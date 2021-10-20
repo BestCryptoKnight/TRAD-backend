@@ -9,7 +9,6 @@ const Organization = mongoose.model('organization');
 /*
  * Local Imports
  * */
-const config = require('../config');
 const Logger = require('./../services/logger');
 const { updateProfile } = require('./../helper/illion.helper');
 const {

@@ -50,7 +50,15 @@ router.get('/entity-list', async function (req, res) {
       { _id: 'PAID', name: 'Paid' },
       { _id: 'INSOLVENCY', name: 'Insolvency' },
       { _id: 'REPAYMENT_PLAN', name: 'Repayment Plan' },
-      { _id: 'RETURNED_CHEQUE', name: 'Returned Cheque' },
+      { _id: 'WRITTEN_OFF', name: 'Written Off' },
+      {
+        _id: 'CLAIM_TO_BE_SUBMITTED_TO_TCR',
+        name: 'Claim to be submitted to TCR',
+      },
+      {
+        _id: 'QUERIED_INVOICES_TO_BE_RECONCILED',
+        name: 'Queried Invoices to be Reconciled',
+      },
       { _id: 'RETENTION', name: 'Retention' },
       { _id: 'PAYMENT_EXPECTED', name: 'Payment expected' },
       { _id: 'DISPUTE', name: 'Dispute' },

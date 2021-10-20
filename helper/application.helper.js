@@ -992,7 +992,7 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
           expiryDate: { $gt: new Date() },
         })
           .select(
-            'clientId product noOfResChecks policyPeriod excess discretionaryLimit inceptionDate expiryDate',
+            'clientId product creditChecks policyPeriod excess discretionaryLimit inceptionDate expiryDate',
           )
           .lean(),
         Policy.findOne({
@@ -1005,7 +1005,7 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
           expiryDate: { $gt: new Date() },
         })
           .select(
-            'clientId product noOfResChecks policyPeriod excess discretionaryLimit inceptionDate expiryDate',
+            'clientId product creditChecks policyPeriod excess discretionaryLimit inceptionDate expiryDate',
           )
           .lean(),
       ]);
@@ -1027,27 +1027,28 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
           ciPolicy && ciPolicy.expiryDate
             ? ciPolicy.expiryDate
             : rmpPolicy.expiryDate;
-        const noOfRESCheckCount =
-          rmpPolicy && rmpPolicy.noOfResChecks
-            ? rmpPolicy.noOfResChecks
-            : ciPolicy && ciPolicy.noOfResChecks
-            ? ciPolicy.noOfResChecks
+        const noOfCreditChecks =
+          rmpPolicy && rmpPolicy.creditChecks
+            ? rmpPolicy.creditChecks
+            : ciPolicy && ciPolicy.creditChecks
+            ? ciPolicy.creditChecks
             : 0;
-        console.log(noOfRESCheckCount, 'noOfRESCheckCount');
+        console.log(noOfCreditChecks, 'noOfCreditChecks');
         const count = await Application.countDocuments({
           clientId: application.clientId._id,
           status: {
             $nin: ['DRAFT'],
           },
-          createdAt: {
+          requestDate: {
             $gte: new Date(startDate),
             $lte: new Date(endDate),
           },
+          limitType: { $eq: 'CREDIT_CHECK' },
         }).exec();
         console.log('count', count);
-        if (count > parseInt(noOfRESCheckCount)) {
+        if (count > parseInt(noOfCreditChecks)) {
           continueWithAutomation = false;
-          blockers.push('Client has used all RES checks');
+          blockers.push('Client has used all Credit checks');
         }
       }
       if (continueWithAutomation) {
@@ -1458,6 +1459,11 @@ const sendDecisionLetter = async ({
           : '',
       requestedAmount: parseInt(application.creditLimit).toFixed(2),
       approvedAmount: approvedAmount.toFixed(2),
+      country: debtor?.address?.country?.code,
+      tradingName: debtor?.tradingName,
+      requestedDate: application.requestDate,
+      approvalOrDecliningDate: application.approvalOrDecliningDate,
+      expiryDate: application.expiryDate,
     };
     const mailObj = {
       toAddress: [],
@@ -1466,24 +1472,20 @@ const sendDecisionLetter = async ({
       mailFor: 'decisionLetter',
       attachments: [],
     };
-    if (debtor && debtor.address && debtor.address.country) {
-      if (
-        debtor.address.country.code === 'AUS' ||
-        debtor.address.country.code === 'NZL'
-      ) {
-        response.abn = debtor.abn ? debtor.abn : '';
-        response.acn = debtor.acn ? debtor.acn : '';
-      } else {
-        response.registrationNumber = debtor.registrationNumber
-          ? debtor.registrationNumber
-          : '';
-      }
+    if (response?.country === 'AUS' || response?.country === 'NZL') {
+      response.abn = debtor.abn ? debtor.abn : '';
+      response.acn = debtor.acn ? debtor.acn : '';
+    } else {
+      response.registrationNumber = debtor.registrationNumber
+        ? debtor.registrationNumber
+        : '';
     }
     if (status === 'DECLINED') {
       response.rejectionReason = reason;
     } else {
       response.approvalStatus = reason;
     }
+    console.log('response', response);
     const bufferData = await generateDecisionLetter(response);
     mailObj.attachments.push({
       content: bufferData,
