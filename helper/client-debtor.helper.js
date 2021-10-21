@@ -711,7 +711,7 @@ const downloadDecisionLetter = async ({ creditLimitId }) => {
       })
       .populate({
         path: 'debtorId',
-        select: 'entityName registrationNumber abn acn address',
+        select: 'entityName registrationNumber abn acn address tradingName',
       })
       .populate('activeApplicationId')
       .lean();

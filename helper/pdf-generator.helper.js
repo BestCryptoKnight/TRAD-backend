@@ -3,6 +3,7 @@
  * */
 const PDFDocument = require('pdfkit');
 let PdfTable = require('voilab-pdf-table');
+const VoilabPdfTable = require('voilab-pdf-table/plugins/fitcolumn');
 const axios = require('axios');
 
 /*
@@ -33,17 +34,10 @@ const generateDecisionLetter = async ({
     const date = new Date();
     let buffer;
     let pdf = new PDFDocument({
-        autoFirstPage: false,
-        bufferPages: true,
-      }),
-      table = new PdfTable(pdf);
-    table
-      .addPlugin(
-        new (require('voilab-pdf-table/plugins/fitcolumn'))({
-          column: 'item',
-        }),
-      )
-      .addPlugin(new (require('voilab-pdf-table/plugins/rowshader'))());
+      autoFirstPage: false,
+      bufferPages: true,
+    });
+    const table = new PdfTable(pdf);
     let buffers = [];
     // const width = pdf.widthOfString(orderData.items);
     // const h = pdf.heightOfString(orderData.items,{width});
@@ -56,6 +50,24 @@ const generateDecisionLetter = async ({
         right: 0,
       },
     });
+    table
+      .addPlugin(new VoilabPdfTable())
+      // set defaults to your columns
+      .setColumnsDefaults({
+        padding: [4, 0, 0, 20],
+      })
+      .addColumns([
+        {
+          id: 'column1',
+          width: 277,
+          align: 'left',
+        },
+        {
+          id: 'column2',
+          width: 277,
+          align: 'right',
+        },
+      ]);
     /*Top Border Starts*/
     pdf.rect(0, 0, 595.28, 15.6).fillOpacity(1).fill('#123A78');
     pdf.rect(0, 15.6, 595.28, 15.6).fillOpacity(1).fill('#EF7B11');
@@ -89,7 +101,7 @@ const generateDecisionLetter = async ({
     });
     /*Page Title with Client Ends*/
     /*Debtor Details Starts*/
-    pdf.moveDown(1.3);
+    pdf.moveDown(1.0);
     pdf.fill('#003A78').font('Helvetica').fontSize(11.25);
     pdf.text(`Debtor Name: ${debtorName}`, {
       align: 'center',
@@ -100,93 +112,87 @@ const generateDecisionLetter = async ({
         align: 'center',
       });
     }
-    pdf.moveDown(0.3);
+    const tableData = [];
     if (registrationNumber) {
+      pdf.moveDown(0.3);
       pdf.text(`Registration Number: ${registrationNumber}`, {
         align: 'center',
       });
     } else {
+      const companyNumbers = {};
       if (acn) {
-        pdf.text(`${country === 'AUS' ? 'ACN' : 'NCN'}: ${acn}`, {
-          align: 'center',
-        });
-        pdf.moveDown(0.3);
+        companyNumbers.column2 = `${
+          country === 'AUS' ? 'ACN:' : 'NCN:'
+        } ${acn}`;
       }
       if (abn) {
-        pdf.text(`${country === 'AUS' ? 'ABN' : 'NZBN'}: ${abn}`, {
-          align: 'center',
-        });
+        companyNumbers.column1 = `${
+          country === 'AUS' ? 'ABN:' : 'NZBN:'
+        } ${abn}`;
       }
+      tableData.push(companyNumbers);
     }
-    /*if (requestedDate) {
-      pdf.moveDown(0.3);
-      pdf.text(
-        `Requested Date: ${requestedDate.getDate()}/${
+    if (requestedDate) {
+      tableData.push({
+        column1: `Requested Date: ${requestedDate.getDate()}/${
           requestedDate.getMonth() + 1
         }/${requestedDate.getFullYear()}`,
-        {
-          align: 'center',
-        },
-      );
-    }
-    if (approvalOrDecliningDate) {
-      pdf.moveDown(0.3);
-      pdf.text(
-        `${
+        column2: `${
           status === 'DECLINED' ? 'Declining' : 'Approved'
         } Date: ${approvalOrDecliningDate.getDate()}/${
-            approvalOrDecliningDate.getMonth() + 1
+          approvalOrDecliningDate.getMonth() + 1
         }/${approvalOrDecliningDate.getFullYear()}`,
-        {
-          align: 'center',
-        },
-      );
+      });
     }
     if (expiryDate && status !== 'DECLINED') {
-      pdf.moveDown(0.3);
-      pdf.text(
-        `Expiry Date: ${expiryDate.getDate()}/${
-            expiryDate.getMonth() + 1
+      tableData.push({
+        column1: `Expiry Date: ${expiryDate.getDate()}/${
+          expiryDate.getMonth() + 1
         }/${expiryDate.getFullYear()}`,
-        {
-          align: 'center',
-        },
-      );
-    }*/
+      });
+    }
+    table.addBody(tableData);
+
+    pdf.moveDown(0.3);
     /*Debtor Details Ends*/
     /*Applied Limit Starts*/
-    pdf.rect(0, 235, 595.28, 62).fillOpacity(1).fill('#F4F6F8');
+    pdf.y = pdf.y + 3;
+    pdf.rect(0, pdf.y, 595.28, 62).fillOpacity(1).fill('#F4F6F8');
     // table.plugins[1].shade1 = '#F4F6F8'
     // table.plugins[1].x = 0
     //   pdf.moveDown(3);
+    pdf.y = pdf.y + 15;
     pdf.fill('#828F9D').font('Helvetica-Bold').fontSize(11.25);
-    pdf.text('Credit Limit Request:', 0, 250, {
+    pdf.text('Credit Limit Request:', 0, pdf.y, {
       align: 'center',
     });
     pdf.moveDown(0.5);
     pdf.fill('#003A78').font('Helvetica-Bold').fontSize(19);
-    pdf.text(`${numberWithCommas(requestedAmount)} AUD`, {
+    pdf.text(`$${numberWithCommas(requestedAmount)} AUD`, {
       align: 'center',
     });
     /*Applied Limit Ends*/
     /*Applied Limit Starts*/
-    pdf.rect(0, 304, 595.28, 62).fillOpacity(1).fill('#F4F6F8');
+    pdf.y = pdf.y + 12;
+    pdf.rect(0, pdf.y, 595.28, 62).fillOpacity(1).fill('#F4F6F8');
     // table.plugins[1].shade1 = '#F4F6F8'
     // table.plugins[1].x = 0
     //   pdf.moveDown(3);
+    pdf.y = pdf.y + 14;
     pdf.fill('#828F9D').font('Helvetica-Bold').fontSize(11.25);
-    pdf.text('Credit Limit Opinion:', 0, 318, {
+    pdf.text('Credit Limit Opinion:', 0, pdf.y, {
       align: 'center',
     });
     pdf.moveDown(0.5);
     pdf.fill('#003A78').font('Helvetica-Bold').fontSize(19);
-    pdf.text(`${numberWithCommas(approvedAmount)} AUD`, {
+    pdf.text(`$${numberWithCommas(approvedAmount)} AUD`, {
       align: 'center',
     });
     /*Applied Limit Ends*/
     /*Summary Starts*/
+    pdf.y = pdf.y + 14;
     pdf.fill('#003A78').font('Helvetica-Bold').fontSize(11.25);
-    pdf.text('Summary:', 20, 390, {
+    pdf.text('Summary:', 20, pdf.y, {
       // align: 'center',
     });
     pdf.moveDown(0.6);
@@ -307,220 +313,10 @@ Please contact your Service Manager${
       align: 'center',
     });
     /*Footer Ends*/
-    // table.plugins[1].x = 0
-    // table
-    //   .setColumnsDefaults({
-    //     // headerBorder: 'B',
-    //     align: 'justify',
-    //     padding: [5, 0, 1, 0],
-    //   })
-    //   .addColumns([
-    //     {
-    //       id: 'item',
-    //       width: 100,
-    //       align: 'left',
-    //     },
-    //     {
-    //       id: 'quantity',
-    //       width: 25,
-    //       align: 'left',
-    //     },
-    //     {
-    //       id: 'itemPrice',
-    //       width: 40,
-    //       align: 'left',
-    //     },
-    //     {
-    //       id: 'totalPrice',
-    //       width: 49,
-    //       align: 'left',
-    //     },
-    //   ]);
-    // table.addBody(orderData.items);
-    // pdf.font('Helvetica-Bold')
-    //     .fontSize(15)
-    //     .text(organizationData.business.name, {
-    //         align: 'center',
-    //         lineGap: 2,
-    //     });
-    // pdf.font('Helvetica')
-    //     .fontSize(12)
-    //     .text(organizationData.business.address1, { align: 'center' })
-    //     .moveUp(0.2)
-    //     .text(organizationData.business.address2, { align: 'center' })
-    //     .moveUp(0.2)
-    //     .text(organizationData.business.address3, {
-    //         align: 'center',
-    //         lineGap: 3,
-    //     });
-
-    // orderData.orderDate = getServerTime({
-    //     date: orderData.orderDate,
-    //     timezone: organizationData.business.timeZone,
-    // });
-    // pdf.text(
-    //     orderData.orderDate.getDate() +
-    //         '/' +
-    //         (orderData.orderDate.getMonth() + 1) +
-    //         '/' +
-    //         orderData.orderDate.getFullYear() +
-    //         ' ' +
-    //         (orderData.orderDate.getHours().toString().length === 1
-    //             ? '0'
-    //             : '') +
-    //         orderData.orderDate.getHours() +
-    //         ':' +
-    //         (orderData.orderDate.getMinutes().toString().length === 1
-    //             ? '0'
-    //             : '') +
-    //         orderData.orderDate.getMinutes(),
-    //     {
-    //         align: 'right',
-    //         lineGap: 3,
-    //     },
-    // );
-    // if (
-    //     orderData &&
-    //     orderData.customerId &&
-    //     orderData.customerId.customerName
-    // ) {
-    //     pdf.text('Customer: ' + orderData.customerId.customerName, {
-    //         align: 'left',
-    //         lineGap: 3,
-    //     });
-    // } else if (
-    //     orderData &&
-    //     orderData.waiterId &&
-    //     orderData.waiterId.bartenderName
-    // ) {
-    //     pdf.text('Waiter: ' + orderData.waiterId.bartenderName, {
-    //         align: 'left',
-    //         lineGap: 3,
-    //     });
-    // } else if (
-    //     orderData &&
-    //     orderData.bartenderId &&
-    //     orderData.bartenderId.bartenderName
-    // ) {
-    //     pdf.text('Waiter: ' + orderData.bartenderId.bartenderName, {
-    //         align: 'left',
-    //         lineGap: 3,
-    //     });
-    // } else {
-    //     pdf.text('Order No: ' + orderData.orderNumber, {
-    //         align: 'left',
-    //         lineGap: 3,
-    //     });
-    // }
-    // pdf.text('Table No: ' + orderData.tableNumber, {
-    //     align: 'left',
-    //     lineGap: 3,
-    // });
-    // pdf.text('Status: ' + getPaymentStatusStr(orderData.paymentStatus), {
-    //     align: 'left',
-    //     lineGap: 4,
-    // });
-    // pdf.fontSize(10);
-    // pdf.moveTo(pdf.page.margins.left, pdf.y)
-    //     .lineTo(pdf.page.width - pdf.page.margins.left, pdf.y)
-    //     .lineWidth(0.5)
-    //     .stroke();
-    // pdf.moveDown(0.2);
-    // pdf.font('Helvetica-Bold')
-    //     .text('Name', pdf.x, pdf.y)
-    //     .moveUp()
-    //     .text('Qty.', 100, pdf.y, { align: 'left' })
-    //     .moveUp()
-    //     .text('Price', 125, pdf.y, { align: 'left' })
-    //     .moveUp()
-    //     .text('Total', 165, pdf.y, { align: 'left' })
-    //     .font('Helvetica');
-    // pdf.moveTo(pdf.page.margins.left, pdf.y)
-    //     .lineTo(pdf.page.width - pdf.page.margins.left, pdf.y)
-    //     .lineWidth(0.5)
-    //     .stroke();
-    // pdf.moveDown(0.2);
-
-    // table.plugins[1].shade1 = '#123A78'
-    // table.plugins[1].shade2 = '#EF7B11'
-    // table.plugins[1].textColor = '#fff'
-    // table.plugins[1].x = 0
-    //     table
-    //     .setColumnsDefaults({
-    //         // headerBorder: 'B',
-    //         align: 'justify',
-    //         padding: [5, 0, 1, 0],
-    //     })
-    //     .addColumns([
-    //         {
-    //             id: 'item',
-    //             width: 100,
-    //             align: 'left',
-    //         },
-    //         {
-    //             id: 'quantity',
-    //             width: 25,
-    //             align: 'left',
-    //         },
-    //         {
-    //             id: 'itemPrice',
-    //             width: 40,
-    //             align: 'left',
-    //         },
-    //         {
-    //             id: 'totalPrice',
-    //             width: 49,
-    //             align: 'left',
-    //         },
-    //     ]);
-    // table.addBody(orderData.items);
-    // pdf.moveDown();
-    // pdf.moveTo(pdf.page.margins.left + pdf.page.margins.right, pdf.y)
-    //     .lineTo(
-    //         pdf.page.width - pdf.page.margins.left - pdf.page.margins.right,
-    //         pdf.y,
-    //     )
-    //     .lineWidth(0.5)
-    //     .dash(3, { space: 5 })
-    //     .stroke();
-    // pdf.moveDown();
-    // pdf.x = pdf.page.width - pdf.page.margins.left - pdf.x;
-    // pdf.fontSize(13).text(
-    //     'Sub Total :  ' + euroConverter(orderData.totalAmount),
-    //     { lineGap: 3, align: 'right' },
-    // );
-    // pdf.text(
-    //     'Vat (' +
-    //         organizationData.vat +
-    //         '%) : ' +
-    //         euroConverter(orderData.vatAmount),
-    //     {
-    //         align: 'right',
-    //         lineGap: 3,
-    //     },
-    // );
-    // pdf.font('Helvetica-Bold').text(
-    //     'Grand Total : ' + euroConverter(orderData.grandTotalAmount),
-    //     {
-    //         align: 'right',
-    //         lineGap: 3,
-    //     },
-    // );
-    // pdf.font('Helvetica').text(
-    //     'Tip Amount : ' + euroConverter(orderData.tipAmount),
-    //     {
-    //         align: 'right',
-    //         lineGap: 3,
-    //     },
-    // );
     pdf.on('data', buffers.push.bind(buffers));
     pdf.on('end', async () => {
       let pdfData = Buffer.concat(buffers);
       resolve(pdfData);
-      /*fs.writeFile('abc.pdf', pdfData, (err) => {
-        if (err) throw err;
-        console.log('The file has been saved!');
-      });*/
     });
     pdf.end();
   });

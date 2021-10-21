@@ -38,6 +38,9 @@ const sendMail = ({ toAddress, subject, text, html, mailFor, attachments }) => {
         mailBody.html = newAdminTemplate({
           name: text.name,
           setPasswordLink: text.setPasswordLink,
+          address: text.address,
+          email: text.email,
+          contactNumber: text.contactNumber,
         });
         break;
       case 'adminForgotPassword':
@@ -45,6 +48,9 @@ const sendMail = ({ toAddress, subject, text, html, mailFor, attachments }) => {
           name: text.name,
           otp: text.otp,
           expireTime: text.expireTime,
+          address: text.address,
+          email: text.email,
+          contactNumber: text.contactNumber,
         });
         break;
       case 'newClientUser':

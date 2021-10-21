@@ -6,6 +6,7 @@ const router = express.Router();
 let mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const User = mongoose.model('user');
+const Organization = mongoose.model('organization');
 
 /*
  * Local Imports
@@ -178,6 +179,7 @@ router.post('/forget-password', async (req, res) => {
         });
       }
       let data = await User.generateOtp(user);
+      const organization = await Organization.findOne().lean();
       let mailObj = {
         toAddress: [req.body.email],
         subject: 'Reset Password OTP',
@@ -185,6 +187,9 @@ router.post('/forget-password', async (req, res) => {
           name: user.name ? user.name : '',
           otp: data.verificationOtp,
           expireTime: 5,
+          email: organization?.email || '-',
+          contactNumber: organization?.contactNumber || '-',
+          address: organization?.address,
         },
         mailFor: 'adminForgotPassword',
       };
