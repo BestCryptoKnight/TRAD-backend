@@ -549,7 +549,7 @@ router.get(
         creditLimitId: req.params.creditLimitId,
       });
       if (bufferData) {
-        const fileName = applicationNumber + '_ResCheckDecision.pdf';
+        const fileName = applicationNumber + '_CreditCheckDecision.pdf';
         res
           .writeHead(200, {
             'Content-Type': 'application/pdf',

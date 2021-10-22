@@ -971,7 +971,7 @@ const checkForValidEntity = async ({ lookupValue, lookupMethod }) => {
         for (let i = 0; i < entityData.items.length; i++) {
           if (
             entityData.items[i].sourceRegisterUniqueId &&
-            entityData.items[i].sourceRegisterUniqueId === searchString
+            entityData.items[i].sourceRegisterUniqueId === lookupValue
           ) {
             identifiedData = entityData.items[i];
             break;
