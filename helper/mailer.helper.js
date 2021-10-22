@@ -2,6 +2,8 @@
  * Module Imports
  * */
 const nodemailer = require('nodemailer');
+const mongoose = require('mongoose');
+const Organization = mongoose.model('organization');
 
 /*
  * Local Imports
@@ -22,12 +24,13 @@ const transporter = nodemailer.createTransport({
   },
 });
 const sendMail = ({ toAddress, subject, text, html, mailFor, attachments }) => {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     let toAddressStr = '';
     toAddress.forEach((toAddr) => {
       toAddressStr += toAddr + ', ';
     });
     toAddressStr.substr(0, toAddressStr.lastIndexOf(','));
+    const organization = await Organization.findOne().lean();
     const mailBody = {
       from: config.mailer.fromAddress,
       to: toAddressStr,
@@ -38,9 +41,9 @@ const sendMail = ({ toAddress, subject, text, html, mailFor, attachments }) => {
         mailBody.html = newAdminTemplate({
           name: text.name,
           setPasswordLink: text.setPasswordLink,
-          address: text.address,
-          email: text.email,
-          contactNumber: text.contactNumber,
+          address: organization?.address || '-',
+          email: organization?.email || '-',
+          contactNumber: organization?.contactNumber || '-',
         });
         break;
       case 'adminForgotPassword':
@@ -48,9 +51,9 @@ const sendMail = ({ toAddress, subject, text, html, mailFor, attachments }) => {
           name: text.name,
           otp: text.otp,
           expireTime: text.expireTime,
-          address: text.address,
-          email: text.email,
-          contactNumber: text.contactNumber,
+          address: organization?.address || '-',
+          email: organization?.email || '-',
+          contactNumber: organization?.contactNumber || '-',
         });
         break;
       case 'newClientUser':
@@ -63,14 +66,12 @@ const sendMail = ({ toAddress, subject, text, html, mailFor, attachments }) => {
           serviceManagerName: text.serviceManagerName,
           serviceManagerNumber: text.serviceManagerNumber,
           serviceManagerEmail: text.serviceManagerEmail,
+          address: organization?.address || '-',
+          email: organization?.email || '-',
+          contactNumber: organization?.contactNumber || '-',
         });
         break;
       case 'clientForgotPassword':
-        // html = forgotPasswordTemplate({
-        //     name: text.name,
-        //     resetPasswordLink: text.resetPasswordLink,
-        //     forgotPasswordLink: text.forgotPasswordLink,
-        // });
         mailBody.html = forgotPasswordClientTemplate({
           name: text.name,
           otp: text.otp,
@@ -81,6 +82,9 @@ const sendMail = ({ toAddress, subject, text, html, mailFor, attachments }) => {
           serviceManagerName: text.serviceManagerName,
           serviceManagerNumber: text.serviceManagerNumber,
           serviceManagerEmail: text.serviceManagerEmail,
+          address: organization?.address || '-',
+          email: organization?.email || '-',
+          contactNumber: organization?.contactNumber || '-',
         });
         break;
       case 'profileUpdate':

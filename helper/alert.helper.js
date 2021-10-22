@@ -279,6 +279,7 @@ const getAlertDetail = async ({ alertId }) => {
   }
 };
 
+let entityList = [];
 //TODO remove import applications
 const addEntitiesToAlertProfile = async ({
   entityType,
@@ -286,12 +287,14 @@ const addEntitiesToAlertProfile = async ({
   action,
   entityData = null,
   unProcessed,
+  response,
+  clientDebtorId,
+  isLastCall,
 }) => {
   try {
-    const response = await getMonitoredEntities();
+    // const response = await getMonitoredEntities();
     let lookupMethod;
     let lookupValue;
-    const entityList = [];
     if (entityType === 'debtor') {
       const debtor = await Debtor.findOne({ _id: entityId }).lean();
       if (
@@ -401,35 +404,30 @@ const addEntitiesToAlertProfile = async ({
             });
           }
         } else {
-          const hasActiveCreditLimit = await checkForActiveCreditLimit({
-            debtorId: debtor._id,
-          });
-          if (!hasActiveCreditLimit) {
-            if (
-              debtor.entityType !== 'TRUST' &&
-              debtor.entityType !== 'PARTNERSHIP'
-            ) {
-              entityList.push({
-                lookupMethod: lookupMethod,
-                lookupValue: lookupValue,
-              });
-            } else {
-              const stakeholders = await DebtorDirector.find({
-                debtorId: debtor._id,
-                isDeleted: false,
-                type: 'company',
-              }).lean();
-              for (let i = 0; i < stakeholders.length; i++) {
-                if (
-                  stakeholders[i].country.code === 'AUS' ||
-                  stakeholders[i].country.code === 'NZL'
-                ) {
-                  await checkForEntityInProfile({
-                    action,
-                    entityId: stakeholders[i]._id,
-                    entityType: 'stakeholder',
-                  });
-                }
+          if (
+            debtor.entityType !== 'TRUST' &&
+            debtor.entityType !== 'PARTNERSHIP'
+          ) {
+            entityList.push({
+              lookupMethod: lookupMethod,
+              lookupValue: lookupValue,
+            });
+          } else {
+            const stakeholders = await DebtorDirector.find({
+              debtorId: debtor._id,
+              isDeleted: false,
+              type: 'company',
+            }).lean();
+            for (let i = 0; i < stakeholders.length; i++) {
+              if (
+                stakeholders[i].country.code === 'AUS' ||
+                stakeholders[i].country.code === 'NZL'
+              ) {
+                await checkForEntityInProfile({
+                  action,
+                  entityId: stakeholders[i]._id,
+                  entityType: 'stakeholder',
+                });
               }
             }
           }
@@ -500,9 +498,17 @@ const addEntitiesToAlertProfile = async ({
         }
       }
     }
-    if (entityList.length !== 0) {
-      console.log('entityList ::', entityList);
-      return await updateEntitiesToAlertProfile({ entityList, action });
+    if (entityList.length === 1000 || isLastCall) {
+      const responseData = await updateEntitiesToAlertProfile({
+        entityList,
+        action,
+      });
+      console.log('Awaiting........................');
+      entityList = [];
+      console.log('Reset array.................');
+      return responseData;
+    } else {
+      return clientDebtorId;
     }
   } catch (e) {
     Logger.log.error('Error occurred in check entity in alert profile');
@@ -518,6 +524,7 @@ const checkForEntityInProfile = async ({
   entityId,
   action,
   entityData = null,
+  clientDebtorId,
 }) => {
   try {
     const response = await getMonitoredEntities();
@@ -697,10 +704,20 @@ const checkForEntityInProfile = async ({
               ],
               action,
             });*/
-            entityList.push({
-              lookupMethod: lookupMethod,
-              lookupValue: lookupValue,
-            });
+            let foundEntity;
+            if (response && response?.monitoredEntities?.length !== 0) {
+              foundEntity = filterEntity({
+                monitoredEntities: response.monitoredEntities,
+                lookupValue,
+                lookupMethod,
+              });
+            }
+            if (foundEntity) {
+              entityList.push({
+                lookupMethod: lookupMethod,
+                lookupValue: lookupValue,
+              });
+            }
           }
         }
       }
@@ -892,6 +909,7 @@ const checkForActiveCreditLimit = async ({ debtorId }) => {
 
 const addImportApplicationEntitiesToProfile = async () => {
   try {
+    const response = await getMonitoredEntities();
     const unProcessed = [];
     const processed = [];
     const creditLimits = await ClientDebtor.find({
@@ -901,6 +919,7 @@ const addImportApplicationEntitiesToProfile = async () => {
         { creditLimit: { $ne: null } },
         { creditLimit: { $ne: 0 } },
       ],
+      isEndorsedLimit: false,
     }).lean();
     for (let i = 0; i < creditLimits.length; i++) {
       const data = await addEntitiesToAlertProfile({
@@ -908,6 +927,9 @@ const addImportApplicationEntitiesToProfile = async () => {
         action: 'add',
         entityId: creditLimits[i]?.debtorId,
         unProcessed,
+        response,
+        clientDebtorId: creditLimits[i]?._id,
+        isLastCall: i === creditLimits.length,
       });
       processed.push(data);
       Logger.log.trace(
@@ -915,6 +937,8 @@ const addImportApplicationEntitiesToProfile = async () => {
         creditLimits[i]?.debtorId,
         'index',
         i,
+        'Entity length',
+        entityList.length,
       );
     }
     Logger.log.trace('UnProcessed', JSON.stringify(unProcessed, null, 3));

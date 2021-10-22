@@ -7,7 +7,6 @@ const jwt = require('jsonwebtoken');
 let mongoose = require('mongoose');
 const User = mongoose.model('user');
 const Client = mongoose.model('client');
-const Organization = mongoose.model('organization');
 
 /*
  * Local Imports
@@ -156,7 +155,6 @@ router.get('/send-mail/:userId', async function (req, res) {
     user.signUpToken = signUpToken;
     const promises = [];
     promises.push(user.save());
-    const organization = await Organization.findOne().lean();
     const mailObj = {
       toAddress: [user.email],
       subject: 'Welcome to TCR',
@@ -167,9 +165,6 @@ router.get('/send-mail/:userId', async function (req, res) {
           config.server.frontendUrls.setPasswordPage +
           '?token=' +
           signUpToken,
-        email: organization?.email || '-',
-        contactNumber: organization?.contactNumber || '-',
-        address: organization?.address,
       },
       mailFor: 'newAdminUser',
     };
@@ -397,7 +392,6 @@ router.post('/', async function (req, res) {
       );
       user.signUpToken = signUpToken;
       await user.save();
-      const organization = await Organization.findOne().lean();
       let mailObj = {
         toAddress: [user.email],
         subject: 'Welcome to TCR',
@@ -408,9 +402,6 @@ router.post('/', async function (req, res) {
             config.server.frontendUrls.setPasswordPage +
             '?token=' +
             signUpToken,
-          email: organization?.email || '-',
-          contactNumber: organization?.contactNumber || '-',
-          address: organization?.address,
         },
         mailFor: 'newAdminUser',
       };

@@ -185,6 +185,17 @@ const getDuplicateData = async () => {
   }
 };
 
+const updateSurrenderedStatus = async () => {
+  try {
+    await ClientDebtor.updateMany(
+      { creditLimit: null, activeApplicationId: { $exists: true } },
+      { status: 'SURRENDERED' },
+    );
+  } catch (e) {
+    Logger.log.error('Error occurred in update credit limit status', e);
+  }
+};
+
 const updateCreditLimit = async () => {
   try {
     const creditLimits = await ClientDebtor.find({
@@ -207,22 +218,28 @@ const updateCreditLimit = async () => {
           oldCreditLimit: creditLimits[i].creditLimit,
           oldIsActiveFlag: creditLimits[i].isActive,
         });
-        switch (application.status) {
-          case 'APPROVED':
-            creditLimits[i].status = application.status;
-            creditLimits[i].creditLimit = application.acceptedAmount;
-            creditLimits[i].isActive = true;
-            break;
-          case 'DECLINED':
-            creditLimits[i].status = application.status;
-            creditLimits[i].creditLimit = 0;
-            creditLimits[i].isActive = true;
-            break;
-          case 'WITHDRAWN':
-          case 'CANCELLED':
-            creditLimits[i].creditLimit = 0;
-            creditLimits[i].isActive = false;
-            break;
+        creditLimits[i].activeApplicationId = application._id;
+        if (
+          !creditLimits[i]?.status ||
+          creditLimits[i]?.status !== 'SURRENDERED'
+        ) {
+          switch (application.status) {
+            case 'APPROVED':
+              creditLimits[i].status = application.status;
+              creditLimits[i].creditLimit = application.acceptedAmount;
+              creditLimits[i].isActive = true;
+              break;
+            case 'DECLINED':
+              creditLimits[i].status = application.status;
+              creditLimits[i].creditLimit = 0;
+              creditLimits[i].isActive = true;
+              break;
+            case 'WITHDRAWN':
+            case 'CANCELLED':
+              creditLimits[i].creditLimit = 0;
+              creditLimits[i].isActive = false;
+              break;
+          }
         }
         await ClientDebtor.updateOne(
           { _id: creditLimits[i]._id },

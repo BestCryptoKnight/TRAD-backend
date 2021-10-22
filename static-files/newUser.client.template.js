@@ -11,6 +11,9 @@ module.exports = ({
   serviceManagerNumber,
   riskAnalystEmail,
   serviceManagerEmail,
+  email,
+  contactNumber,
+  address,
 }) => {
   let mailTemplate = `<html>
 <head>
@@ -225,8 +228,8 @@ module.exports = ({
                                         <tr style="font-size: 13px; color: #003A78">
                                             <td align="center">
                                                 <a style="color: #003A78; text-decoration: none"
-                                                   href="tel:1234420581">
-                                                    1234 420 581
+                                                   href="tel:${contactNumber}">
+                                                    ${contactNumber}
                                                 </a>
                                             </td>
                                         </tr>
@@ -242,8 +245,8 @@ module.exports = ({
                                         <tr style="font-size: 13px; color: #003A78">
                                             <td align="center">
                                                 <a style="color: #003A78; text-decoration: none"
-                                                   href="mailto:creditlimits@tradecreditrisk.com.au">
-                                                    creditlimits@tradecreditrisk.com.au
+                                                   href="mailto:${email}">
+                                                    ${email}
                                                 </a>
                                             </td>
                                         </tr>
@@ -258,7 +261,7 @@ module.exports = ({
                                         </tr>
                                         <tr style="font-size: 13px; color: #003A78">
                                             <td align="center">
-                                                Suite 11, 857 Doncaster Road Doncaster East, Victoria 3109
+                                                ${address}
                                             </td>
                                         </tr>
                                     </table>
