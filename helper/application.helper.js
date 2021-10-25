@@ -464,6 +464,9 @@ const getApplicationList = async ({
             ? 'Yes'
             : 'No';
         }
+        if (application?.limitType) {
+          application.limitType = formatString(application.limitType);
+        }
         delete application.clientDebtorId;
       });
     }
