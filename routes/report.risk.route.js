@@ -352,24 +352,24 @@ router.get('/download', async function (req, res) {
         break;
       case 'review-report':
         reportColumn = [
-          'clientId',
-          'insurerId',
-          'debtorId',
-          'entityType',
+          'entityName',
           'abn',
           'acn',
           'registrationNumber',
+          'entityType',
+          'reviewDate',
           'country',
-          'requestedCreditLimit',
-          'creditLimit',
-          'approvalOrDecliningDate',
-          'applicationExpiryDate',
-          'expiryDate',
-          'reportExpiryDate',
-          'reportName',
-          'limitType',
-          'clientReference',
-          'comments',
+          'riskRating',
+          'tradingName',
+          'property',
+          'unitNumber',
+          'streetNumber',
+          'streetName',
+          'streetType',
+          'suburb',
+          'state',
+          'postCode',
+          'contactNumber',
         ];
         reportFor = 'Review Report';
         response = await getReviewReport({

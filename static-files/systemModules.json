@@ -69,8 +69,8 @@
     {
       "name": "organization",
       "label": "Organization",
-      "isDefault": false,
-      "accessTypes": ["read", "write", "full-access"]
+      "isDefault": true,
+      "accessTypes": ["read"]
     },
     {
       "name": "overdue",
