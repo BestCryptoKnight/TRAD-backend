@@ -553,6 +553,7 @@ router.get('/details/:applicationId', async function (req, res) {
       response.orderOnHand = application.orderOnHand;
       response.outstandingAmount = application.outstandingAmount;
       response.clientReference = application.clientReference;
+      response.limitType = application.limitType;
       // response.note = application.note;
       const status = ['DRAFT', 'APPROVED', 'DECLINED'];
       response.applicationStatus = StaticData.applicationStatus.filter(
