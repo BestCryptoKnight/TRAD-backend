@@ -742,7 +742,7 @@ router.get(
         creditLimitId: req.params.creditLimitId,
       });
       if (bufferData) {
-        const fileName = applicationNumber + '_ResCheckDecision.pdf';
+        const fileName = applicationNumber + '_CreditCheckDecision.pdf';
         res
           .writeHead(200, {
             'Content-Type': 'application/pdf',
@@ -1419,8 +1419,7 @@ router.put('/user/:clientUserId', async function (req, res) {
           mailFor: 'newClientUser',
         };
         //TODO uncomment to send mail on Portal-Access
-
-        // promises.push(MailHelper.sendMail(mailObj));
+        promises.push(MailHelper.sendMail(mailObj));
         message = 'Login access sent successfully';
       } else {
         //TODO revert portal access
