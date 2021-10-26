@@ -36,6 +36,7 @@ module.exports = {
   uploadLocations: uploadLocations,
   mailer: {
     fromAddress: process.env.FROM_EMAIL_ADDRESS || 'no-reply@kevit.io',
+    replyTo: process.env.REPLY_TO_EMAIL_ADDRESS || 'no-reply@kevit.io',
     sendgridApiKey: process.env.SENDGRID_API_KEY,
     send: process.env.SEND_MAIL || true,
   },

@@ -33,6 +33,7 @@ const sendMail = ({ toAddress, subject, text, html, mailFor, attachments }) => {
     const organization = await Organization.findOne().lean();
     const mailBody = {
       from: config.mailer.fromAddress,
+      replyTo: config.mailer.replyTo,
       to: toAddressStr,
       subject: subject,
     };
