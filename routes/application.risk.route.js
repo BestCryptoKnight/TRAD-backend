@@ -1379,12 +1379,12 @@ router.put('/:applicationId', async function (req, res) {
           addToProfile: !isEndorsedLimit,
         });
         //TODO uncomment to send decision letter
-        /*sendDecisionLetter({
+        sendDecisionLetter({
           reason: req.body.comments || '',
           status,
           application,
           approvedAmount,
-        });*/
+        });
       }
     }
     //TODO notify user
