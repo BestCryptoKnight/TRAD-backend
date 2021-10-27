@@ -1419,7 +1419,7 @@ router.put('/user/:clientUserId', async function (req, res) {
           mailFor: 'newClientUser',
         };
         //TODO uncomment to send mail on Portal-Access
-        promises.push(MailHelper.sendMail(mailObj));
+        // promises.push(MailHelper.sendMail(mailObj));
         message = 'Login access sent successfully';
       } else {
         //TODO revert portal access
