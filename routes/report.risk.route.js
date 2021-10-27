@@ -11,6 +11,7 @@ const User = mongoose.model('user');
  * */
 const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
+const StaticData = require('./../static-files/staticData.json');
 const {
   getClientListReport,
   getLimitListReport,
@@ -141,6 +142,7 @@ router.get('/entity-list', async function (req, res) {
         insurerId: insurers,
         riskAnalystId: riskAnalystList,
         serviceManagerId: serviceManagerList,
+        entityType: StaticData.entityType,
       },
     });
   } catch (e) {
