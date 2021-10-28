@@ -1198,6 +1198,13 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
     }
     //TODO notify user
     await Application.updateOne({ _id: applicationId }, update);
+    if (blockers.length === 0 && identifiedInsurer !== 'euler') {
+      sendDecisionLetter({
+        applicationId,
+        status: 'APPROVED',
+        approvedAmount: application.creditLimit,
+      });
+    }
   } catch (e) {
     Logger.log.error('Error occurred in check for automation ', e);
   }
