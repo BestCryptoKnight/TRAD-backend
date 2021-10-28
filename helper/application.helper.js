@@ -30,6 +30,8 @@ const {
 const {
   getEntityDetailsByABN,
   getEntityDetailsByNZBN,
+  getEntityDetailsByACN,
+  getEntityListByNameFromNZBN,
 } = require('./abr.helper');
 const { addAuditLog, getRegexForSearch } = require('./audit-log.helper');
 const { storeStakeholderDetails } = require('./stakeholder.helper');
@@ -584,34 +586,71 @@ const storeCompanyDetails = async ({
         }
       }
     }
-    if (requestBody.address.country.code === 'AUS' && requestBody.abn) {
-      const entityData = await getEntityDetailsByABN({
-        searchString: requestBody.abn,
-      });
+    if (
+      requestBody.address.country.code === 'AUS' &&
+      (requestBody.abn || requestBody.acn)
+    ) {
+      let entityData;
+      if (requestBody.abn) {
+        entityData = await getEntityDetailsByABN({
+          searchString: requestBody.abn,
+        });
+      } else {
+        entityData = await getEntityDetailsByACN({
+          searchString: requestBody.acn,
+        });
+      }
       if (
         !entityData ||
         !entityData.response ||
-        !entityData.response.businessEntity202001
+        !(
+          entityData.response.businessEntity202001 ||
+          entityData.response.businessEntity201408
+        )
       ) {
         return {
           status: 'ERROR',
-          messageCode: 'INVALID_ABN_NUMBER',
-          message: 'Invalid Australian Business Number',
+          messageCode: 'INVALID_NUMBER',
+          message: requestBody.abn
+            ? 'Invalid Australian Business Number'
+            : 'Invalid Australian Company Number',
         };
       }
     }
-    if (requestBody.address.country.code === 'NZL' && requestBody.abn) {
-      const entityData = await getEntityDetailsByNZBN({
-        searchString: requestBody.abn,
-      });
+    if (
+      requestBody.address.country.code === 'NZL' &&
+      (requestBody.abn || requestBody.acn)
+    ) {
+      let entityData;
+      if (requestBody.abn) {
+        entityData = await getEntityDetailsByNZBN({
+          searchString: requestBody.abn,
+        });
+      } else {
+        entityData = await getEntityListByNameFromNZBN({
+          searchString: requestBody.acn,
+        });
+        if (entityData && entityData.items && entityData.items.length !== 0) {
+          for (let i = 0; i < entityData.items.length; i++) {
+            if (
+              entityData.items[i]?.sourceRegisterUniqueId === requestBody.acn
+            ) {
+              entityData = entityData.items[i];
+              break;
+            }
+          }
+        }
+      }
       if (entityData && entityData.status === 'ERROR') {
         return entityData;
       }
       if (!entityData || !entityData.nzbn || !entityData.entityName) {
         return {
           status: 'ERROR',
-          messageCode: 'INVALID_NZBN_NUMBER',
-          message: 'Invalid New Zealand Business Number',
+          messageCode: 'INVALID_NUMBER',
+          message: requestBody.abn
+            ? 'Invalid New Zealand Business Number'
+            : 'Invalid New Zealand Company Number',
         };
       }
     }
