@@ -54,6 +54,9 @@ const {
 } = require('./../helper/alert.helper');
 const { checkForEndorsedLimit } = require('./../helper/policy.helper');
 const { getUserList } = require('./../helper/user.helper');
+const {
+  downloadDecisionLetterFromApplication,
+} = require('./../helper/client-debtor.helper');
 
 /**
  * Get Column Names
@@ -373,6 +376,43 @@ router.get('/download', async function (req, res) {
     });
   }
 });
+
+/**
+ * Download Decision Letter
+ */
+router.get(
+  '/download/decision-letter/:applicationId',
+  async function (req, res) {
+    try {
+      const {
+        bufferData,
+        applicationNumber,
+      } = await downloadDecisionLetterFromApplication({
+        applicationId: req.params.applicationId,
+      });
+      if (bufferData) {
+        const fileName = applicationNumber + '_CreditCheckDecision.pdf';
+        res
+          .writeHead(200, {
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': 'attachment; filename=' + fileName,
+          })
+          .end(bufferData);
+      } else {
+        res.status(400).send({
+          status: 'ERROR',
+          message: 'No decision letter found',
+        });
+      }
+    } catch (e) {
+      Logger.log.error('Error occurred in download in decision letter', e);
+      res.status(500).send({
+        status: 'ERROR',
+        message: e.message || 'Something went wrong, please try again later.',
+      });
+    }
+  },
+);
 
 /**
  * Get Application Modal details
@@ -1267,6 +1307,10 @@ router.put('/:applicationId', async function (req, res) {
       if (req.body.comments) {
         applicationUpdate.comments = req.body.comments;
       }
+      await Application.updateOne(
+        { _id: req.params.applicationId },
+        applicationUpdate,
+      );
     } else if (req.body.update === 'credit-limit') {
       if (application.status === 'SUBMITTED') {
         return res.status(400).send({
@@ -1363,7 +1407,10 @@ router.put('/:applicationId', async function (req, res) {
           );
         }
       }
-
+      await Application.updateOne(
+        { _id: req.params.applicationId },
+        applicationUpdate,
+      );
       if (req.body.status === 'APPROVED' || req.body.status === 'DECLINED') {
         applicationUpdate.comments = req.body.comments || '';
         logDescription = `An application ${
@@ -1378,20 +1425,22 @@ router.put('/:applicationId', async function (req, res) {
           application,
           addToProfile: !isEndorsedLimit,
         });
-        //TODO uncomment to send decision letter
-        /*sendDecisionLetter({
-          reason: req.body.comments || '',
-          status,
-          application,
-          approvedAmount,
-        });*/
+        if (application?.limitType === 'CREDIT_CHECK') {
+          //TODO uncomment to send decision letter
+          /*sendDecisionLetter({
+            reason: req.body.comments || '',
+            status,
+            approvedAmount,
+            applicationId:application._id
+          });*/
+        }
       }
     }
-    //TODO notify user
+    /* //TODO notify user
     await Application.updateOne(
       { _id: req.params.applicationId },
       applicationUpdate,
-    );
+    );*/
     await addAuditLog({
       entityType: 'application',
       entityRefId: application._id,
