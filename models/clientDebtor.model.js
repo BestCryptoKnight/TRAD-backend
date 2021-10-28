@@ -21,6 +21,11 @@ const clientDebtorSchema = new Schema(
     activeApplicationId: { type: Schema.Types.ObjectId, ref: 'application' },
     currentReportId: { type: Schema.Types.ObjectId, ref: 'credit-report' },
     isFromOldSystem: { type: Schema.Types.Boolean, default: false },
+    status: {
+      type: Schema.Types.String,
+      enum: ['APPROVED', 'DECLINED', 'SURRENDERED', 'APPLIED'],
+      default: 'APPLIED',
+    },
   },
   { timestamps: true },
 );

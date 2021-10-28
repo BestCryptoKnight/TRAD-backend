@@ -30,6 +30,8 @@ const {
 const {
   getEntityDetailsByABN,
   getEntityDetailsByNZBN,
+  getEntityDetailsByACN,
+  getEntityListByNameFromNZBN,
 } = require('./abr.helper');
 const { addAuditLog, getRegexForSearch } = require('./audit-log.helper');
 const { storeStakeholderDetails } = require('./stakeholder.helper');
@@ -584,34 +586,71 @@ const storeCompanyDetails = async ({
         }
       }
     }
-    if (requestBody.address.country.code === 'AUS' && requestBody.abn) {
-      const entityData = await getEntityDetailsByABN({
-        searchString: requestBody.abn,
-      });
+    if (
+      requestBody.address.country.code === 'AUS' &&
+      (requestBody.abn || requestBody.acn)
+    ) {
+      let entityData;
+      if (requestBody.abn) {
+        entityData = await getEntityDetailsByABN({
+          searchString: requestBody.abn,
+        });
+      } else {
+        entityData = await getEntityDetailsByACN({
+          searchString: requestBody.acn,
+        });
+      }
       if (
         !entityData ||
         !entityData.response ||
-        !entityData.response.businessEntity202001
+        !(
+          entityData.response.businessEntity202001 ||
+          entityData.response.businessEntity201408
+        )
       ) {
         return {
           status: 'ERROR',
-          messageCode: 'INVALID_ABN_NUMBER',
-          message: 'Invalid Australian Business Number',
+          messageCode: 'INVALID_NUMBER',
+          message: requestBody.abn
+            ? 'Invalid Australian Business Number'
+            : 'Invalid Australian Company Number',
         };
       }
     }
-    if (requestBody.address.country.code === 'NZL' && requestBody.abn) {
-      const entityData = await getEntityDetailsByNZBN({
-        searchString: requestBody.abn,
-      });
+    if (
+      requestBody.address.country.code === 'NZL' &&
+      (requestBody.abn || requestBody.acn)
+    ) {
+      let entityData;
+      if (requestBody.abn) {
+        entityData = await getEntityDetailsByNZBN({
+          searchString: requestBody.abn,
+        });
+      } else {
+        entityData = await getEntityListByNameFromNZBN({
+          searchString: requestBody.acn,
+        });
+        if (entityData && entityData.items && entityData.items.length !== 0) {
+          for (let i = 0; i < entityData.items.length; i++) {
+            if (
+              entityData.items[i]?.sourceRegisterUniqueId === requestBody.acn
+            ) {
+              entityData = entityData.items[i];
+              break;
+            }
+          }
+        }
+      }
       if (entityData && entityData.status === 'ERROR') {
         return entityData;
       }
       if (!entityData || !entityData.nzbn || !entityData.entityName) {
         return {
           status: 'ERROR',
-          messageCode: 'INVALID_NZBN_NUMBER',
-          message: 'Invalid New Zealand Business Number',
+          messageCode: 'INVALID_NUMBER',
+          message: requestBody.abn
+            ? 'Invalid New Zealand Business Number'
+            : 'Invalid New Zealand Company Number',
         };
       }
     }
@@ -1138,6 +1177,7 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
           activeApplicationId: applicationId,
           expiryDate: expiryDate,
           isFromOldSystem: false,
+          status: 'APPROVED',
         },
       );
       //TODO send notification
@@ -1159,6 +1199,14 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
     }
     //TODO notify user
     await Application.updateOne({ _id: applicationId }, update);
+    if (blockers.length === 0 && identifiedInsurer !== 'euler') {
+      //TODO uncomment to send decision letter
+      /*sendDecisionLetter({
+        applicationId,
+        status: 'APPROVED',
+        approvedAmount: application.creditLimit,
+      });*/
+    }
   } catch (e) {
     Logger.log.error('Error occurred in check for automation ', e);
   }
@@ -1433,77 +1481,84 @@ const sendNotificationsToUser = async ({
 };
 
 const sendDecisionLetter = async ({
-  application,
-  reason,
+  reason = null,
   status,
   approvedAmount,
+  applicationId,
 }) => {
   try {
-    const [client, debtor] = await Promise.all([
-      Client.findOne({ _id: application.clientId })
-        .populate({
-          path: 'serviceManagerId',
-          select: 'name email contactNumber',
-        })
-        .lean(),
-      Debtor.findOne({ _id: application.debtorId })
-        .select('entityName registrationNumber abn acn address')
-        .lean(),
-    ]);
-    const response = {
-      status: status,
-      clientName: client && client.name ? client.name : '',
-      debtorName: debtor && debtor.entityName ? debtor.entityName : '',
-      serviceManagerNumber:
-        client &&
-        client.serviceManagerId &&
-        client.serviceManagerId.contactNumber
-          ? client.serviceManagerId.contactNumber
-          : '',
-      requestedAmount: parseInt(application.creditLimit).toFixed(2),
-      approvedAmount: approvedAmount.toFixed(2),
-      country: debtor?.address?.country?.code,
-      tradingName: debtor?.tradingName,
-      requestedDate: application.requestDate,
-      approvalOrDecliningDate: application.approvalOrDecliningDate,
-      expiryDate: application.expiryDate,
-    };
-    const mailObj = {
-      toAddress: [],
-      subject: `Decision Letter for ${response.debtorName}`,
-      text: `Decision Letter for ${response.debtorName}`,
-      mailFor: 'decisionLetter',
-      attachments: [],
-    };
-    if (response?.country === 'AUS' || response?.country === 'NZL') {
-      response.abn = debtor.abn ? debtor.abn : '';
-      response.acn = debtor.acn ? debtor.acn : '';
-    } else {
-      response.registrationNumber = debtor.registrationNumber
-        ? debtor.registrationNumber
-        : '';
-    }
-    if (status === 'DECLINED') {
-      response.rejectionReason = reason;
-    } else {
-      response.approvalStatus = reason;
-    }
-    console.log('response', response);
-    const bufferData = await generateDecisionLetter(response);
-    mailObj.attachments.push({
-      content: bufferData,
-      filename: `decisionLetter.pdf`,
-      type: 'application/pdf',
-      disposition: 'attachment',
-    });
+    const application = await Application.findOne({
+      _id: applicationId,
+    }).lean();
     const clientUsers = await ClientUser.find({
-      clientId: client._id,
+      clientId: application.clientId,
       sendDecisionLetter: true,
     })
       .select('email')
       .lean();
-    mailObj.toAddress = clientUsers.map((i) => i.email);
-    await sendMail(mailObj);
+    if (clientUsers?.length !== 0) {
+      const [client, debtor] = await Promise.all([
+        Client.findOne({ _id: application.clientId })
+          .populate({
+            path: 'serviceManagerId',
+            select: 'name email contactNumber',
+          })
+          .lean(),
+        Debtor.findOne({ _id: application.debtorId })
+          .select('entityName registrationNumber abn acn address')
+          .lean(),
+      ]);
+      const response = {
+        status: status,
+        clientName: client && client.name ? client.name : '',
+        debtorName: debtor && debtor.entityName ? debtor.entityName : '',
+        serviceManagerNumber:
+          client &&
+          client.serviceManagerId &&
+          client.serviceManagerId.contactNumber
+            ? client.serviceManagerId.contactNumber
+            : '',
+        requestedAmount: parseInt(application.creditLimit).toFixed(2),
+        approvedAmount: approvedAmount.toFixed(2),
+        country: debtor?.address?.country?.code,
+        tradingName: debtor?.tradingName,
+        requestedDate: application.requestDate,
+        approvalOrDecliningDate: application.approvalOrDecliningDate,
+        expiryDate: application.expiryDate,
+      };
+      const mailObj = {
+        toAddress: [],
+        subject: `Decision Letter for ${response.debtorName}`,
+        text: `Decision Letter for ${response.debtorName}`,
+        mailFor: 'decisionLetter',
+        attachments: [],
+      };
+      if (response?.country === 'AUS' || response?.country === 'NZL') {
+        response.abn = debtor.abn ? debtor.abn : '';
+        response.acn = debtor.acn ? debtor.acn : '';
+      } else {
+        response.registrationNumber = debtor.registrationNumber
+          ? debtor.registrationNumber
+          : '';
+      }
+      if (status === 'DECLINED') {
+        response.rejectionReason = reason;
+      } else {
+        response.approvalStatus = reason;
+      }
+      console.log('response', response);
+      const bufferData = await generateDecisionLetter(response);
+      mailObj.attachments.push({
+        content: bufferData,
+        filename: `decisionLetter.pdf`,
+        type: 'application/pdf',
+        disposition: 'attachment',
+      });
+      mailObj.toAddress = clientUsers.map((i) => i.email);
+      await sendMail(mailObj);
+    } else {
+      Logger.log.info('No user found to send decision letter');
+    }
   } catch (e) {
     Logger.log.error('Error occurred in mail decision letter');
     Logger.log.error(e);

@@ -4,6 +4,7 @@
 const mongoose = require('mongoose');
 const ClientDebtor = mongoose.model('client-debtor');
 const Client = mongoose.model('client');
+const Application = mongoose.model('application');
 
 /*
  * Local Imports
@@ -87,8 +88,13 @@ const getClientCreditLimit = async ({
   isForDownload = false,
 }) => {
   try {
+    let sendAsHeader = true;
     if (!isForDownload) {
       debtorColumn.push('isFromOldSystem');
+      if (!debtorColumn.includes('limitType')) {
+        sendAsHeader = false;
+        debtorColumn.push('limitType');
+      }
     } else {
       debtorColumn.push('activeApplicationId');
       debtorColumn.push('address.country');
@@ -284,6 +290,12 @@ const getClientCreditLimit = async ({
           : 0;
 
       const headers = [];
+      if (!sendAsHeader) {
+        const index = debtorColumn.indexOf('limitType');
+        if (index > -1) {
+          debtorColumn.splice(index, 1);
+        }
+      }
       for (let i = 0; i < moduleColumn.length; i++) {
         if (debtorColumn.includes(moduleColumn[i].name)) {
           if (
@@ -370,7 +382,12 @@ const getDebtorCreditLimit = async ({
   userId,
 }) => {
   try {
+    let sendAsHeader = true;
     debtorColumn.push('isFromOldSystem');
+    if (!debtorColumn.includes('limitType')) {
+      sendAsHeader = false;
+      debtorColumn.push('limitType');
+    }
     const clientDebtorDetails = [
       'creditLimit',
       'expiryDate',
@@ -512,6 +529,12 @@ const getDebtorCreditLimit = async ({
         : 0;
 
     const headers = [];
+    if (!sendAsHeader) {
+      const index = debtorColumn.indexOf('limitType');
+      if (index > -1) {
+        debtorColumn.splice(index, 1);
+      }
+    }
     for (let i = 0; i < moduleColumn.length; i++) {
       if (debtorColumn.includes(moduleColumn[i].name)) {
         if (
@@ -772,6 +795,74 @@ const downloadDecisionLetter = async ({ creditLimitId }) => {
   }
 };
 
+const downloadDecisionLetterFromApplication = async ({ applicationId }) => {
+  try {
+    const query = {
+      _id: applicationId,
+    };
+    const application = await Application.findOne(query)
+      .populate({
+        path: 'clientId',
+        populate: {
+          path: 'serviceManagerId',
+          select: 'name email contactNumber',
+        },
+      })
+      .populate({
+        path: 'debtorId',
+        select: 'entityName registrationNumber abn acn address tradingName',
+      })
+      .lean();
+    console.log(application);
+    let bufferData;
+    if (!application?.isApprovedFromOldSystem) {
+      const response = {
+        status:
+          parseInt(application.acceptedAmount) >
+          parseInt(application?.creditLimit)
+            ? 'PARTIALLY_APPROVED'
+            : 'APPROVED',
+        clientName:
+          application.clientId && application.clientId.name
+            ? application.clientId.name
+            : '',
+        debtorName:
+          application.debtorId && application.debtorId.entityName
+            ? application.debtorId.entityName
+            : '',
+        serviceManagerNumber:
+          application.clientId &&
+          application.clientId.serviceManagerId &&
+          application.clientId.serviceManagerId.contactNumber
+            ? application.clientId.serviceManagerId.contactNumber
+            : '',
+        requestedAmount: parseInt(application?.creditLimit).toFixed(2),
+        approvedAmount: application?.acceptedAmount?.toFixed(2),
+        approvalStatus: application?.comments,
+        country: application?.debtorId?.address?.country?.code,
+        tradingName: application?.debtorId?.tradingName,
+        requestedDate: application?.requestDate,
+        approvalOrDecliningDate: application?.approvalOrDecliningDate,
+        expiryDate: application?.expiryDate,
+      };
+      if (response.country === 'AUS' || response.country === 'NZL') {
+        response.abn = application?.debtorId?.abn;
+        response.acn = application?.debtorId?.acn;
+      } else {
+        response.registrationNumber = application?.debtorId?.registrationNumber;
+      }
+      console.log('------------------------------', response);
+      bufferData = await generateDecisionLetter(response);
+    }
+    return {
+      applicationNumber: application?.applicationId,
+      bufferData,
+    };
+  } catch (e) {
+    Logger.log.error('Error occurred in download decision letter', e);
+  }
+};
+
 const updateActiveReportInCreditLimit = async ({ reportDetails, debtorId }) => {
   try {
     const reportCodes = {
@@ -849,4 +940,5 @@ module.exports = {
   checkForExpiringLimit,
   downloadDecisionLetter,
   updateActiveReportInCreditLimit,
+  downloadDecisionLetterFromApplication,
 };

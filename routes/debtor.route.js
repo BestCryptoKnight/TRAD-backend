@@ -549,7 +549,7 @@ router.get(
         creditLimitId: req.params.creditLimitId,
       });
       if (bufferData) {
-        const fileName = applicationNumber + '_ResCheckDecision.pdf';
+        const fileName = applicationNumber + '_CreditCheckDecision.pdf';
         res
           .writeHead(200, {
             'Content-Type': 'application/pdf',
@@ -758,8 +758,9 @@ router.put('/credit-limit/:creditLimitId', async function (req, res) {
       await ClientDebtor.updateOne(
         { _id: req.params.creditLimitId },
         {
-          creditLimit: undefined,
+          creditLimit: 0,
           isActive: false,
+          status: 'SURRENDERED',
         },
       );
       await addAuditLog({

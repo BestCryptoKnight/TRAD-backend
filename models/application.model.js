@@ -59,6 +59,7 @@ const applicationSchema = new Schema(
       enum: ['ENDORSED', 'CREDIT_CHECK', 'HEALTH_CHECK', '247_ALERT'],
     },
     isDeleted: { type: Schema.Types.Boolean, default: false },
+    isApprovedFromOldSystem: { type: Schema.Types.Boolean, default: false },
   },
   { timestamps: true },
 );
