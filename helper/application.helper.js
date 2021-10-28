@@ -1177,6 +1177,7 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
           activeApplicationId: applicationId,
           expiryDate: expiryDate,
           isFromOldSystem: false,
+          status: 'APPROVED',
         },
       );
       //TODO send notification
@@ -1199,11 +1200,12 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
     //TODO notify user
     await Application.updateOne({ _id: applicationId }, update);
     if (blockers.length === 0 && identifiedInsurer !== 'euler') {
-      sendDecisionLetter({
+      //TODO uncomment to send decision letter
+      /*sendDecisionLetter({
         applicationId,
         status: 'APPROVED',
         approvedAmount: application.creditLimit,
-      });
+      });*/
     }
   } catch (e) {
     Logger.log.error('Error occurred in check for automation ', e);

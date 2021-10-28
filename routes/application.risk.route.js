@@ -1364,6 +1364,7 @@ router.put('/:applicationId', async function (req, res) {
           activeApplicationId: application._id,
           expiryDate: applicationUpdate.expiryDate,
           isFromOldSystem: false,
+          status: 'APPROVED',
         };
         await ClientDebtor.updateOne(
           { _id: application.clientDebtorId },
@@ -1391,6 +1392,7 @@ router.put('/:applicationId', async function (req, res) {
             update.isFromOldSystem = false;
             update.creditLimit = 0;
             applicationUpdate.acceptedAmount = 0;
+            update.status = 'DECLINED';
           } else {
             update.creditLimit = undefined;
             update.isActive = false;

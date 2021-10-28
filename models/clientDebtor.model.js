@@ -24,6 +24,7 @@ const clientDebtorSchema = new Schema(
     status: {
       type: Schema.Types.String,
       enum: ['APPROVED', 'DECLINED', 'SURRENDERED', 'APPLIED'],
+      default: 'APPLIED',
     },
   },
   { timestamps: true },

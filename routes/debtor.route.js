@@ -758,8 +758,9 @@ router.put('/credit-limit/:creditLimitId', async function (req, res) {
       await ClientDebtor.updateOne(
         { _id: req.params.creditLimitId },
         {
-          creditLimit: undefined,
+          creditLimit: 0,
           isActive: false,
+          status: 'SURRENDERED',
         },
       );
       await addAuditLog({
