@@ -89,11 +89,16 @@ const getClientCreditLimit = async ({
 }) => {
   try {
     let sendAsHeader = true;
+    let sendLimitAsHeader = true;
     if (!isForDownload) {
       debtorColumn.push('isFromOldSystem');
       if (!debtorColumn.includes('limitType')) {
         sendAsHeader = false;
         debtorColumn.push('limitType');
+      }
+      if (!debtorColumn.includes('creditLimit')) {
+        sendLimitAsHeader = false;
+        debtorColumn.push('creditLimit');
       }
     } else {
       debtorColumn.push('activeApplicationId');
@@ -307,6 +312,12 @@ const getClientCreditLimit = async ({
           debtorColumn.splice(index, 1);
         }
       }
+      if (!sendLimitAsHeader) {
+        const index = debtorColumn.indexOf('creditLimit');
+        if (index > -1) {
+          debtorColumn.splice(index, 1);
+        }
+      }
       for (let i = 0; i < moduleColumn.length; i++) {
         if (debtorColumn.includes(moduleColumn[i].name)) {
           if (
@@ -394,10 +405,15 @@ const getDebtorCreditLimit = async ({
 }) => {
   try {
     let sendAsHeader = true;
+    let sendLimitAsHeader = true;
     debtorColumn.push('isFromOldSystem');
     if (!debtorColumn.includes('limitType')) {
       sendAsHeader = false;
       debtorColumn.push('limitType');
+    }
+    if (!debtorColumn.includes('creditLimit')) {
+      sendLimitAsHeader = false;
+      debtorColumn.push('creditLimit');
     }
     const clientDebtorDetails = [
       'creditLimit',
@@ -555,6 +571,12 @@ const getDebtorCreditLimit = async ({
     const headers = [];
     if (!sendAsHeader) {
       const index = debtorColumn.indexOf('limitType');
+      if (index > -1) {
+        debtorColumn.splice(index, 1);
+      }
+    }
+    if (!sendLimitAsHeader) {
+      const index = debtorColumn.indexOf('creditLimit');
       if (index > -1) {
         debtorColumn.splice(index, 1);
       }
