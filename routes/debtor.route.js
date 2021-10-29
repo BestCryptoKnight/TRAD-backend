@@ -733,7 +733,11 @@ router.put('/credit-limit/:creditLimitId', async function (req, res) {
       .populate({ path: 'clientId debtorId', select: 'name entityName' })
       .lean();
     if (req.body.action === 'modify') {
-      if (!req.body.creditLimit || !/^\d+$/.test(req.body.creditLimit)) {
+      if (
+        !req.body.creditLimit.toString() ||
+        typeof req.body.creditLimit !== 'number' ||
+        isNaN(req.body.creditLimit)
+      ) {
         return res.status(400).send({
           status: 'ERROR',
           messageCode: 'REQUIRE_FIELD_MISSING',
