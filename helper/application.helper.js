@@ -1468,7 +1468,7 @@ const sendNotificationsToUser = async ({
       }
       if (application?.debtorId) {
         checkForEntityInProfile({
-          action: 'add',
+          action: 'remove',
           entityType: 'debtor',
           entityId: application.debtorId,
         });

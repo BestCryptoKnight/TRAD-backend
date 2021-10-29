@@ -103,10 +103,14 @@ const getClientCreditLimit = async ({
     const clientDebtorDetails = [
       'creditLimit',
       'expiryDate',
-      'activeApplicationId',
       'isFromOldSystem',
       'createdAt',
       'updatedAt',
+    ];
+    const applicationDetails = [
+      'limitType',
+      'expiryDate',
+      'activeApplicationId',
     ];
     const queryFilter = {
       isActive: true,
@@ -169,10 +173,17 @@ const getClientCreditLimit = async ({
       );
     }
     const fields = debtorColumn.map((i) => {
-      i = !clientDebtorDetails.includes(i) ? 'debtorId.' + i : i;
+      i = clientDebtorDetails.includes(i)
+        ? i
+        : applicationDetails.includes(i) && i !== 'activeApplicationId'
+        ? 'activeApplicationId.' + i
+        : i === 'activeApplicationId'
+        ? 'activeApplicationId.applicationId'
+        : 'debtorId.' + i;
       return [i, 1];
     });
     fields.push(['debtorId._id', 1]);
+    fields.push(['activeApplicationId._id', 1]);
     aggregationQuery.push({
       $project: fields.reduce((obj, [key, val]) => {
         obj[key] = val;
@@ -391,10 +402,14 @@ const getDebtorCreditLimit = async ({
     const clientDebtorDetails = [
       'creditLimit',
       'expiryDate',
-      'activeApplicationId',
       'isFromOldSystem',
       'createdAt',
       'updatedAt',
+    ];
+    const applicationDetails = [
+      'limitType',
+      'expiryDate',
+      'activeApplicationId',
     ];
     const queryFilter = {
       isActive: true,
@@ -453,9 +468,18 @@ const getDebtorCreditLimit = async ({
       );
     }
     const fields = debtorColumn.map((i) => {
-      i = !clientDebtorDetails.includes(i) ? 'clientId.' + i : i;
+      console.log('i', i);
+      // i = !clientDebtorDetails.includes(i) ? 'clientId.' + i : i;
+      i = clientDebtorDetails.includes(i)
+        ? i
+        : applicationDetails.includes(i) && i !== 'activeApplicationId'
+        ? 'activeApplicationId.' + i
+        : i === 'activeApplicationId'
+        ? 'activeApplicationId.applicationId'
+        : 'clientId.' + i;
       return [i, 1];
     });
+    fields.push(['activeApplicationId._id', 1]);
     if (debtorColumn.includes('name')) {
       fields.push(['clientId._id', 1]);
     }
@@ -596,7 +620,7 @@ const getDebtorCreditLimit = async ({
       pages: Math.ceil(total / parseInt(requestedQuery.limit)),
     };
   } catch (e) {
-    Logger.log.error('Error occurred in get debtor credit-limit list');
+    Logger.log.error('Error occurred in get debtor credit-limit list', e);
     Logger.log.error(e.message || e);
   }
 };
