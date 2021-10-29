@@ -614,6 +614,7 @@ router.get('/details/:applicationId', async function (req, res) {
           request: { method: 'GET', url: 'debtor/drawer' },
         },
       ];
+      response._id = application._id;
     }
     res.status(200).send({
       status: 'SUCCESS',
