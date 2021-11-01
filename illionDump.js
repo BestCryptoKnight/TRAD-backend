@@ -93,6 +93,9 @@ let applicationDetails = fs.readFileSync(
 );
 applicationDetails = JSON.parse(applicationDetails.toString());
 
+let updatedDebtorList = fs.writeFileSync(path.join(__dirname, '..', ''));
+updatedDebtorList = JSON.parse(updatedDebtorList.toString());
+
 const allowedApplicationStatus = [
   'Approved',
   'Withdraw',
@@ -290,13 +293,114 @@ const entityAddress = ({
   }
 };
 
-const createDebtor = async ({ applicationId, activeApplicationIndex }) => {
+const createDebtor = async ({
+  applicationId,
+  activeApplicationIndex,
+  clientId,
+}) => {
   try {
     const foundDebtor =
       companyList?.[applicationId]?.[activeApplicationIndex]?.['Principal'] ||
-      null
+      null;
     if (foundDebtor) {
-      const abn =
+      const dbDebtor = await Debtor.findOne({
+        entityName: foundDebtor['nm_legal'],
+        abn: { $ne: '11111111111' },
+      }).lean();
+      if (!dbDebtor) {
+        const excelDebtor = updatedDebtorList.find(
+          (i) => i['Principal Company Name'] === foundDebtor['nm_legal'],
+        );
+        console.log('Found debtor......', excelDebtor);
+        if (
+          excelDebtor &&
+          (excelDebtor['Processed ABN'] || excelDebtor['Processed ACN'])
+        ) {
+          const abn = excelDebtor['Processed ABN'];
+          const acn = excelDebtor['Processed ACN'];
+          const query = abn ? { abn: abn } : { acn: acn };
+          const existingDebtor = await Debtor.findOne(query).lean();
+          if (!existingDebtor) {
+            const organization = await Organization.findOne({
+              isDeleted: false,
+            })
+              .select('entityCount')
+              .lean();
+            const debtorAddress = await entityAddress({
+              applicationId,
+              activeApplicationIndex,
+              entityType: 'Principal',
+            });
+            const debtorDetails = {
+              debtorCode:
+                'D' +
+                (organization.entityCount.debtor + 1)
+                  .toString()
+                  .padStart(4, '0'),
+              isActive: true,
+              abn: excelDebtor['Processed ABN'],
+              acn: excelDebtor['Processed ACN'],
+              entityType: entityTypes({
+                entityType: foundDebtor['cd_type_entity'],
+              }),
+              entityName: foundDebtor['nm_legal'],
+              tradingName:
+                foundDebtor['nm_trading'] ||
+                excelDebtor['Principal Trading Name'],
+              address: debtorAddress.address,
+            };
+            const debtor = Debtor.create(debtorDetails);
+            await Organization.updateOne(
+              { isDeleted: false },
+              { $inc: { 'entityCount.debtor': 1 } },
+            );
+            return { debtor, isAllowed: true };
+          } else {
+            unProcessedApplicationIds.push({
+              applicationId: applicationId,
+              reason: 'Debtor found from database',
+              clientCode:
+                applicationList[applicationId][activeApplicationIndex][
+                  'id_merchant_submit'
+                ],
+              date:
+                applicationList?.[applicationId]?.[activeApplicationIndex]?.[
+                  'dt_modify'
+                ],
+            });
+            return { debtor: existingDebtor, isAllowed: false };
+          }
+        } else {
+          unProcessedApplicationIds.push({
+            applicationId: applicationId,
+            reason: 'Debtor not found from excel',
+            clientCode:
+              applicationList[applicationId][activeApplicationIndex][
+                'id_merchant_submit'
+              ],
+            date:
+              applicationList?.[applicationId]?.[activeApplicationIndex]?.[
+                'dt_modify'
+              ],
+          });
+          return { debtor: null, isAllowed: false };
+        }
+      } else {
+        unProcessedApplicationIds.push({
+          applicationId: applicationId,
+          reason: 'Debtor found from database',
+          clientCode:
+            applicationList[applicationId][activeApplicationIndex][
+              'id_merchant_submit'
+            ],
+          date:
+            applicationList?.[applicationId]?.[activeApplicationIndex]?.[
+              'dt_modify'
+            ],
+        });
+        return { debtor: dbDebtor, isAllowed: false };
+      }
+      /*const abn =
         foundDebtor?.['tx_abn'] || foundDebtor?.['tx_company_nzbn'] || '';
       const acn =
         foundDebtor?.['tx_acn'] || foundDebtor?.['tx_company_no'] || '';
@@ -334,7 +438,7 @@ const createDebtor = async ({ applicationId, activeApplicationIndex }) => {
         );
         return debtor;
       }
-      return existingDebtor;
+      return existingDebtor;*/
     } else {
       unProcessedApplicationIds.push({
         applicationId: applicationId,
@@ -348,7 +452,7 @@ const createDebtor = async ({ applicationId, activeApplicationIndex }) => {
             'dt_modify'
           ],
       });
-      return null;
+      return { debtor: null, isAllowed: false };
     }
   } catch (e) {
     console.log('Error occurred in create debtor', e);
@@ -483,13 +587,15 @@ const storeCompany = async ({
   }
 };
 
-const createCreditLimit = async ({ debtorId, clientId, update }) => {
+const createCreditLimit = async ({ debtorId, clientId, update, isAllowed }) => {
   try {
-    await ClientDebtor.updateOne(
-      { clientId: clientId, debtorId: debtorId },
-      update,
-      { upsert: true },
-    );
+    if (isAllowed) {
+      await ClientDebtor.updateOne(
+        { clientId: clientId, debtorId: debtorId },
+        update,
+        { upsert: true },
+      );
+    }
     const clientDebtor = await ClientDebtor.findOne({
       clientId: clientId,
       debtorId: debtorId,
@@ -909,68 +1015,371 @@ const removeRedundantDebtors = async () => {
   try {
     const debtorPipeline = [
       {
-        '$match': {
-          'abn': {
-            '$exists': true,
-            '$ne': null
-          }
-        }
-      }, {
-        '$group': {
-          '_id': '$abn',
-          'debtors': {
-            '$push': '$$ROOT'
-          }
-        }
-      }, {
-        '$project': {
-          'debtorsLength': {
-            '$size': '$debtors'
+        $match: {
+          abn: {
+            $exists: true,
+            $ne: null,
           },
-          'debtors': '$debtors'
-        }
-      }, {
-        '$match': {
-          'debtorsLength': {
-            '$gt': 1
-          }
-        }
-      }
-    ]
+        },
+      },
+      {
+        $group: {
+          _id: '$abn',
+          debtors: {
+            $push: '$$ROOT',
+          },
+        },
+      },
+      {
+        $project: {
+          debtorsLength: {
+            $size: '$debtors',
+          },
+          debtors: '$debtors',
+        },
+      },
+      {
+        $match: {
+          debtorsLength: {
+            $gt: 1,
+          },
+        },
+      },
+    ];
     const debtorGroups = await Debtor.aggregate(debtorPipeline);
     const deletedDetails = [];
     console.log('Received Debtor Groups,processing them...');
     // console.log(JSON.stringify(debtorGroups, null, 3));
     for (let i = 0; i < debtorGroups.length; i += 1) {
-      const debtorIds = debtorGroups[i].debtors.map(d => d._id);
+      const debtorIds = debtorGroups[i].debtors.map((d) => d._id);
       console.log(JSON.stringify(debtorIds, null, 3));
       const primaryDebtorId = debtorIds.shift();
-      if(primaryDebtorId && debtorIds.length > 0) {
+      if (primaryDebtorId && debtorIds.length > 0) {
         const promiseArr = [];
-        promiseArr.push(Alert.updateMany({entityType: 'debtor', entityId: {$in: debtorIds}}, {$set: {entityId: primaryDebtorId}}));
-        promiseArr.push(Application.updateMany({debtorId: {$in: debtorIds}}, {$set: {debtorId: primaryDebtorId}}));
-        promiseArr.push(AuditLog.updateMany({entityType: 'debtor', entityRefId: {$in: debtorIds}}, {$set: {entityRefId: primaryDebtorId}}));
-        promiseArr.push(ClientDebtor.updateMany({debtorId: {$in: debtorIds}}, {$set: {debtorId: primaryDebtorId}}));
-        promiseArr.push(CreditReport.updateMany({entityType: 'debtor', entityId: {$in: debtorIds}}, {$set: {entityId: primaryDebtorId}}));
-        promiseArr.push(Debtor.deleteMany({_id: {$in: debtorIds}}));
-        promiseArr.push(DebtorDirector.updateMany({debtorId: {$in: debtorIds}}, {$set: {debtorId: primaryDebtorId}}));
-        promiseArr.push(Document.updateMany({entityType: 'debtor', entityRefId: {$in: debtorIds}}, {$set: {entityRefId: primaryDebtorId}}));
-        promiseArr.push(Note.updateMany({entityType: 'debtor', entityId: {$in: debtorIds}}, {$set: {entityId: primaryDebtorId}}));
-        promiseArr.push(Notification.updateMany({entityType: 'debtor', entityId: {$in: debtorIds}}, {$set: {entityId: primaryDebtorId}}));
-        promiseArr.push(Overdue.updateMany({debtorId: {$in: debtorIds}}, {$set: {debtorId: primaryDebtorId}}));
-        promiseArr.push(Task.updateMany({entityType: 'debtor', entityId: {$in: debtorIds}}, {$set: {entityId: primaryDebtorId}}));
+        promiseArr.push(
+          Alert.updateMany(
+            { entityType: 'debtor', entityId: { $in: debtorIds } },
+            { $set: { entityId: primaryDebtorId } },
+          ),
+        );
+        promiseArr.push(
+          Application.updateMany(
+            { debtorId: { $in: debtorIds } },
+            { $set: { debtorId: primaryDebtorId } },
+          ),
+        );
+        promiseArr.push(
+          AuditLog.updateMany(
+            { entityType: 'debtor', entityRefId: { $in: debtorIds } },
+            { $set: { entityRefId: primaryDebtorId } },
+          ),
+        );
+        promiseArr.push(
+          ClientDebtor.updateMany(
+            { debtorId: { $in: debtorIds } },
+            { $set: { debtorId: primaryDebtorId } },
+          ),
+        );
+        promiseArr.push(
+          CreditReport.updateMany(
+            { entityType: 'debtor', entityId: { $in: debtorIds } },
+            { $set: { entityId: primaryDebtorId } },
+          ),
+        );
+        promiseArr.push(Debtor.deleteMany({ _id: { $in: debtorIds } }));
+        promiseArr.push(
+          DebtorDirector.updateMany(
+            { debtorId: { $in: debtorIds } },
+            { $set: { debtorId: primaryDebtorId } },
+          ),
+        );
+        promiseArr.push(
+          Document.updateMany(
+            { entityType: 'debtor', entityRefId: { $in: debtorIds } },
+            { $set: { entityRefId: primaryDebtorId } },
+          ),
+        );
+        promiseArr.push(
+          Note.updateMany(
+            { entityType: 'debtor', entityId: { $in: debtorIds } },
+            { $set: { entityId: primaryDebtorId } },
+          ),
+        );
+        promiseArr.push(
+          Notification.updateMany(
+            { entityType: 'debtor', entityId: { $in: debtorIds } },
+            { $set: { entityId: primaryDebtorId } },
+          ),
+        );
+        promiseArr.push(
+          Overdue.updateMany(
+            { debtorId: { $in: debtorIds } },
+            { $set: { debtorId: primaryDebtorId } },
+          ),
+        );
+        promiseArr.push(
+          Task.updateMany(
+            { entityType: 'debtor', entityId: { $in: debtorIds } },
+            { $set: { entityId: primaryDebtorId } },
+          ),
+        );
         let results = await Promise.all(promiseArr);
         deletedDetails.push({
           primaryDebtorId,
           otherDebtorIds: debtorIds,
-          results
-        })
+          results,
+        });
       }
     }
-    fs.writeFileSync('delete-debtor-results.json', JSON.stringify(deletedDetails));
-    console.log('Successfully deleted redundant debtors and supportive DB documents', );
+    fs.writeFileSync(
+      'delete-debtor-results.json',
+      JSON.stringify(deletedDetails),
+    );
+    console.log(
+      'Successfully deleted redundant debtors and supportive DB documents',
+    );
   } catch (e) {
     console.log('Error in resetting Client and Debtor Code', e.message || e);
+  }
+};
+
+const updateApplicationsAndDebtors = async () => {
+  try {
+    let count = 0;
+    for (let key in applicationList) {
+      const activeApplicationIndex = Math.max(
+        ...Object.keys(applicationList[key]),
+      );
+      if (
+        activeApplicationIndex &&
+        applicationList[key][activeApplicationIndex]
+      ) {
+        const activeApplicationDetails =
+          applicationDetails?.[key]?.[activeApplicationIndex];
+        if (
+          validCountryArray.includes(
+            applicationList[key][activeApplicationIndex]['cd_country'],
+          ) &&
+          companyList?.[key]?.[activeApplicationIndex]?.['Principal']?.[
+            'tx_abn'
+          ] === '11111111111'
+        ) {
+          if (
+            allowedApplicationStatus.indexOf(
+              applicationList[key][activeApplicationIndex]['cd_status'],
+            ) !== -1 &&
+            allowedLimitTypes.indexOf(
+              activeApplicationDetails['tx_tcr_product'],
+            ) !== -1
+          ) {
+            let application = await Application.findOne({
+              applicationId: key,
+            });
+            if (!application) {
+              application = new Application();
+            }
+            const client = await Client.findOne({
+              merchantCode: {
+                $in: [
+                  applicationList[key][activeApplicationIndex][
+                    'id_merchant_submit'
+                  ],
+                ],
+              },
+            }).lean();
+            if (!client) {
+              unProcessedApplicationIds.push({
+                applicationId: key,
+                reason: 'Client not found',
+                clientCode:
+                  applicationList[key][activeApplicationIndex][
+                    'id_merchant_submit'
+                  ],
+                applicationDate:
+                  applicationList[key][activeApplicationIndex]?.['dt_modify'],
+              });
+            } else {
+              const { debtor, isAllowed } = await createDebtor({
+                applicationId: key,
+                activeApplicationIndex,
+                clientId: client._id,
+              });
+              if (debtor) {
+                if (
+                  debtor?.entityType === 'TRUST' ||
+                  debtor?.entityType === 'PARTNERSHIP'
+                ) {
+                  await Promise.all([
+                    await storeIndividual({
+                      debtorId: debtor._id,
+                      entityType: 'CoBorrower',
+                      activeApplicationIndex,
+                      applicationId: key,
+                    }),
+                    await storeCompany({
+                      debtorId: debtor._id,
+                      entityType: 'CoBorrower',
+                      activeApplicationIndex,
+                      applicationId: key,
+                    }),
+                  ]);
+                } else if (debtor?.entityType === 'SOLE_TRADER') {
+                  await storeIndividual({
+                    debtorId: debtor._id,
+                    entityType: 'CoBorrower',
+                    activeApplicationIndex,
+                    applicationId: key,
+                  });
+                }
+
+                const approvedApplicationDetails =
+                  applicationApprovalDetails?.[key]?.[activeApplicationIndex];
+                const applicationQuestions =
+                  questionAnswerList?.[key]?.[activeApplicationIndex];
+
+                application.applicationId = key;
+                application.clientId = client._id;
+                application.debtorId = debtor._id;
+                application.status = mapApplicationStatus({
+                  status:
+                    applicationList[key][activeApplicationIndex]['cd_status'],
+                });
+                application.isAutoApproved = false;
+                application.isExtendedPaymentTerms =
+                  applicationQuestions?.['extended_policy'] === '1';
+                application.isPassedOverdueAmount =
+                  applicationQuestions?.['extended_overdue'] === '1';
+                application.creditLimit = approvedApplicationDetails?.[
+                  'am_requsted'
+                ]
+                  ? parseInt(approvedApplicationDetails['am_requsted'])
+                  : 0;
+                application.acceptedAmount = approvedApplicationDetails?.[
+                  'am_granted'
+                ]
+                  ? parseInt(approvedApplicationDetails['am_granted'])
+                  : 0;
+                application.clientReference =
+                  approvedApplicationDetails?.['no_acc_reference'] || '';
+                application.comments =
+                  activeApplicationDetails?.['tx_comments'] || '';
+                application.requestDate = approvedApplicationDetails?.[
+                  'dt_submit'
+                ]
+                  ? moment(
+                      approvedApplicationDetails?.['dt_submit'],
+                      'DD/MM/YYYY HH:mm:ss a',
+                    ).toISOString()
+                  : null;
+                application.approvalOrDecliningDate = approvedApplicationDetails?.[
+                  'dt_effective'
+                ]
+                  ? moment(
+                      approvedApplicationDetails?.['dt_effective'],
+                      'DD/MM/YYYY HH:mm:ss a',
+                    ).toISOString()
+                  : approvedApplicationDetails?.['dt_approved']
+                  ? moment(
+                      approvedApplicationDetails?.['dt_approved'],
+                      'DD/MM/YYYY HH:mm:ss a',
+                    ).toISOString()
+                  : null;
+                application.isEndorsedLimit =
+                  activeApplicationDetails?.['tx_tcr_product'] ===
+                  'Endorsed Limit';
+                application.limitType = getLimitType(
+                  activeApplicationDetails?.['tx_tcr_product'],
+                );
+                /* await createNotes({
+                  applicationId: application._id,
+                  activeApplicationIndex,
+                  applicationNumber: key,
+                });
+                await createDocuments({
+                  applicationId: application._id,
+                  applicationNumber: key,
+                });*/
+                const inActiveStatus = ['CANCELLED', 'WITHDRAWN'];
+                const update = {
+                  clientId: client._id,
+                  debtorId: debtor._id,
+                  isActive: !inActiveStatus.includes(application.status),
+                  isFromOldSystem: true,
+                  isEndorsedLimit: application.isEndorsedLimit,
+                  creditLimit: application.acceptedAmount,
+                  activeApplicationId: application._id,
+                };
+                const clientDebtor = await createCreditLimit({
+                  clientId: client._id,
+                  debtorId: debtor._id,
+                  update,
+                  isAllowed,
+                });
+                application.clientDebtorId = clientDebtor?._id;
+                // TODO Application date change
+
+                application.createdAt = moment(
+                  applicationList[key][activeApplicationIndex]['dt_request'],
+                  'DD/MM/YYYY HH:mm:ss a',
+                ).toISOString();
+                await application.save();
+                // TODO Documents Helper function to Store Documents in DB + CP in other file
+
+                if (approvedApplicationDetails?.['dt_review']) {
+                  await Debtor.updateOne(
+                    { _id: debtor._id },
+                    {
+                      reviewDate: moment(
+                        approvedApplicationDetails['dt_review'],
+                        'DD/MM/YYYY HH:mm:ss a',
+                      ).toISOString(),
+                    },
+                  );
+                }
+                processedApplicationCount++;
+                console.log(
+                  'Application generated successfully.....',
+                  key,
+                  count + '/' + totalApplication,
+                );
+              }
+            }
+            /* else {
+            // TODO remove if else
+            console.log('Application skipped.........');
+          }*/
+          } else {
+            console.log(
+              'Skipping Application due to unwanted status or limit type',
+              key,
+              count + '/' + totalApplication,
+            );
+            unProcessedApplicationIds.push({
+              applicationId: key,
+              reason: 'unwanted Status or Limit Type',
+              clientCode:
+                applicationList[key][activeApplicationIndex][
+                  'id_merchant_submit'
+                ],
+              applicationDate:
+                applicationList[key][activeApplicationIndex]?.['dt_modify'],
+            });
+          }
+        }
+      }
+      count += 1;
+    }
+    console.log('unProcessedApplicationIds', unProcessedApplicationIds);
+    fs.writeFileSync(
+      'unProcessedApplicationIds.json',
+      JSON.stringify(unProcessedApplicationIds),
+    );
+    console.log(
+      'Processed Application Count..............',
+      processedApplicationCount,
+    );
+  } catch (e) {
+    console.log('Error occurred in import applications', e);
   }
 };
 
