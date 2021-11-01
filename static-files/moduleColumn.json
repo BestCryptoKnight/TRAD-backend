@@ -555,6 +555,11 @@
           "label": "Limit Type",
           "type": "string"
         },
+        {
+          "name": "approvalOrDecliningDate",
+          "label": "Approval Date",
+          "type": "date"
+        },
         { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
         { "name": "abn", "label": "ABN/NZBN", "type": "string" },
         {
@@ -904,6 +909,11 @@
           "name": "limitType",
           "label": "Limit Type",
           "type": "string"
+        },
+        {
+          "name": "approvalOrDecliningDate",
+          "label": "Approval Date",
+          "type": "date"
         },
         { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
         { "name": "abn", "label": "ABN", "type": "string" },

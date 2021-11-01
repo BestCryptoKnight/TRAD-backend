@@ -116,6 +116,7 @@ const getClientCreditLimit = async ({
       'limitType',
       'expiryDate',
       'activeApplicationId',
+      'approvalOrDecliningDate',
     ];
     const queryFilter = {
       isActive: true,
@@ -344,6 +345,10 @@ const getClientCreditLimit = async ({
         if (debtor.activeApplicationId?.expiryDate) {
           debtor.expiryDate = debtor.activeApplicationId.expiryDate;
         }
+        if (debtor.activeApplicationId?.approvalOrDecliningDate) {
+          debtor.approvalOrDecliningDate =
+            debtor.activeApplicationId.approvalOrDecliningDate;
+        }
         if (debtor.activeApplicationId?.applicationId) {
           debtor.activeApplicationId = hasOnlyReadAccessForApplicationModule
             ? debtor.activeApplicationId.applicationId
@@ -425,6 +430,7 @@ const getDebtorCreditLimit = async ({
     const applicationDetails = [
       'limitType',
       'expiryDate',
+      'approvalOrDecliningDate',
       'activeApplicationId',
     ];
     const queryFilter = {
@@ -605,6 +611,10 @@ const getDebtorCreditLimit = async ({
       }
       if (debtor.activeApplicationId?.expiryDate) {
         debtor.expiryDate = debtor.activeApplicationId.expiryDate;
+      }
+      if (debtor.activeApplicationId?.approvalOrDecliningDate) {
+        debtor.approvalOrDecliningDate =
+          debtor.activeApplicationId.approvalOrDecliningDate;
       }
       if (debtor.activeApplicationId?.applicationId) {
         debtor.activeApplicationId = hasOnlyReadAccessForApplicationModule
