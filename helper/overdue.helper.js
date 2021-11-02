@@ -517,11 +517,11 @@ const updateList = async ({
         !requestBody.list[i].hasOwnProperty('outstandingAmount') ||
         requestBody.list[i].outstandingAmount <= 0
       ) {
-        return {
+        return Promise.reject({
           status: 'ERROR',
           messageCode: 'REQUIRE_FIELD_MISSING',
           message: 'Require fields are missing.',
-        };
+        });
       }
       update = {};
       update.clientId = isForRisk ? requestBody.list[i].clientId : clientId;
@@ -584,12 +584,12 @@ const updateList = async ({
           year: update.year,
         }).lean();
         if (overdue) {
-          return {
+          return Promise.reject({
             status: 'ERROR',
             messageCode: 'OVERDUE_ALREADY_EXISTS',
             message:
               'Overdue already exists, please create with another debtor',
-          };
+          });
         }
         newOverdues.push(Overdue.create(update));
       } else {
@@ -600,12 +600,12 @@ const updateList = async ({
           year: update.year,
         }).lean();
         if (overdue && overdue._id.toString() !== requestBody.list[i]._id) {
-          return {
+          return Promise.reject({
             status: 'ERROR',
             messageCode: 'OVERDUE_ALREADY_EXISTS',
             message:
               'Overdue already exists, please create with another debtor',
-          };
+          });
         }
         if (!overdue) {
           promises.push(Overdue.create(update));

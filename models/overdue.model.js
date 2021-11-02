@@ -52,6 +52,7 @@ const overdueSchema = new Schema(
     ninetyPlusDaysAmount: { type: Schema.Types.Number },
     outstandingAmount: { type: Schema.Types.Number },
     isDeleted: { type: Schema.Types.Boolean, default: false },
+    nilOverdue: { type: Schema.Types.Boolean, default: false },
   },
   { timestamps: true },
 );

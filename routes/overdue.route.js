@@ -266,7 +266,14 @@ router.get('/', async function (req, res) {
  * Save overdue list
  */
 router.put('/list', async function (req, res) {
-  if (!req.body.list || req.body.list === 0) {
+  if (
+    (req.body.hasOwnProperty('nilOverdue') &&
+      req.body.nilOverdue &&
+      (req.body.list !== 0 || !req.body.month || !req.body.year)) ||
+    (req.body.hasOwnProperty('nilOverdue') &&
+      !req.body.nilOverdue &&
+      (!req.body.list || req.body.list === 0))
+  ) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -274,30 +281,49 @@ router.put('/list', async function (req, res) {
     });
   }
   try {
-    const overdueArr = req.body.list.map((i) => {
-      return (
-        (i.debtorId ? i.debtorId : i.acn) +
-        i.month.toString().padStart(2, '0') +
-        i.year
-      );
-    });
-    let isDuplicate = overdueArr.some((element, index) => {
-      return overdueArr.indexOf(element) !== index;
-    });
-    if (isDuplicate) {
-      return res.status(400).send({
-        status: 'ERROR',
-        messageCode: 'INVALID_DATA',
-        message: 'Overdue list is invalid',
+    if (req.body.nilOverdue) {
+      const overdueArr = req.body.list.map((i) => {
+        return (
+          (i.debtorId ? i.debtorId : i.acn) +
+          i.month.toString().padStart(2, '0') +
+          i.year
+        );
       });
-    }
-    const response = await updateList({
-      isForRisk: false,
-      requestBody: req.body,
-      clientId: req.user.clientId,
-    });
-    if (response && response.status && response.status === 'ERROR') {
-      return res.status(400).send(response);
+      let isDuplicate = overdueArr.some((element, index) => {
+        return overdueArr.indexOf(element) !== index;
+      });
+      if (isDuplicate) {
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'INVALID_DATA',
+          message: 'Overdue list is invalid',
+        });
+      }
+      await updateList({
+        isForRisk: false,
+        requestBody: req.body,
+        clientId: req.user.clientId,
+      });
+    } else {
+      //TODO send notifications
+      await Overdue.updateOne(
+        {
+          clientId: req.user.clientId,
+          month: req.body.month,
+          year: req.body.year,
+        },
+        {
+          clientId: req.user.clientId,
+          month: req.body.month,
+          year: req.body.year,
+          nilOverdue: req.body.nilOverdue,
+          list: [],
+        },
+        {
+          upsert: true,
+          setDefaultsOnInsert: true,
+        },
+      );
     }
     res.status(200).send({
       status: 'SUCCESS',
