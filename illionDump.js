@@ -1199,12 +1199,21 @@ const updateApplicationsAndDebtors = async () => {
                   applicationList[key][activeApplicationIndex]?.['dt_modify'],
               });
             } else {
-              const { debtor, isAllowed } = await createDebtor({
+              let { debtor, isAllowed } = await createDebtor({
                 applicationId: key,
                 activeApplicationIndex,
                 clientId: client._id,
               });
               if (debtor) {
+                const creditLimit = await ClientDebtor.findOne({
+                  clientId: client._id,
+                  debtorId: debtor._id,
+                  isActive: true,
+                  creditLimit: { $exists: true, $ne: 0 },
+                }).lean();
+                if (!creditLimit) {
+                  isAllowed = true;
+                }
                 if (
                   debtor?.entityType === 'TRUST' ||
                   debtor?.entityType === 'PARTNERSHIP'
