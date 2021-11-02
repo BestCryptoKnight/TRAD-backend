@@ -24,13 +24,18 @@ const moment = require('moment');
  * */
 const StaticData = require('./static-files/staticData.json');
 const unProcessedApplicationIds = [];
+let processedDebtors = fs.readFileSync(
+  path.join(__dirname, 'processedDebtors20.json'),
+);
+processedDebtors = JSON.parse(processedDebtors.toString());
+
+let unProcessedDebtors = fs.readFileSync(
+  path.join(__dirname, 'unProcessedDebtors20.json'),
+);
+unProcessedDebtors = JSON.parse(unProcessedDebtors.toString());
+
 let processedApplicationCount = 0;
-const inputFilePath = [
-  __dirname,
-  '..',
-  'illion_dump_files',
-  'output_files_2020',
-];
+const inputFilePath = [__dirname, '..', 'JSON-files', 'json_files_2021'];
 const pdfFileInputPath = [
   __dirname,
   '..',
@@ -49,9 +54,9 @@ const userId = '6035f169f30c50fec2f70d7e';
 const documentTypeId = '6155be6ec8e217314ac90fdc';
 const validCountryArray = ['61', '64'];
 
-const pdfFileNames = fs.readdirSync(path.join(...pdfFileInputPath));
+/*const pdfFileNames = fs.readdirSync(path.join(...pdfFileInputPath));
 console.log('pdfFileNames', pdfFileNames);
-console.log('pdfFileNames length', pdfFileNames.length);
+console.log('pdfFileNames length', pdfFileNames.length);*/
 
 let applicationList = fs.readFileSync(
   path.join(...inputFilePath, 'application-list-filtered.json'),
@@ -93,8 +98,11 @@ let applicationDetails = fs.readFileSync(
 );
 applicationDetails = JSON.parse(applicationDetails.toString());
 
-let updatedDebtorList = fs.writeFileSync(path.join(__dirname, '..', ''));
+let updatedDebtorList = fs.readFileSync(
+  path.join(__dirname, '..', 'oldPortalData.json'),
+);
 updatedDebtorList = JSON.parse(updatedDebtorList.toString());
+console.log('updatedDebtorList', updatedDebtorList.length);
 
 const allowedApplicationStatus = [
   'Approved',
@@ -308,13 +316,19 @@ const createDebtor = async ({
         abn: { $ne: '11111111111' },
       }).lean();
       if (!dbDebtor) {
-        const excelDebtor = updatedDebtorList.find(
-          (i) => i['Principal Company Name'] === foundDebtor['nm_legal'],
-        );
+        console.log('applicationId--------', applicationId);
+        const excelDebtor = updatedDebtorList.find((i) => {
+          if (i['Application ID'] === applicationId) {
+            console.log('applicationId', applicationId);
+            return i;
+          }
+        });
         console.log('Found debtor......', excelDebtor);
         if (
           excelDebtor &&
-          (excelDebtor['Processed ABN'] || excelDebtor['Processed ACN'])
+          (excelDebtor['Processed ABN'] || excelDebtor['Processed ACN']) &&
+          ((excelDebtor['Country'] && excelDebtor['Country'] === 'Australia') ||
+            excelDebtor['Country'] === 'New zealand')
         ) {
           const abn = excelDebtor['Processed ABN'];
           const acn = excelDebtor['Processed ACN'];
@@ -349,15 +363,34 @@ const createDebtor = async ({
                 excelDebtor['Principal Trading Name'],
               address: debtorAddress.address,
             };
-            const debtor = Debtor.create(debtorDetails);
+            console.log('debtorDetails', debtorDetails);
+            const debtor = await Debtor.create(debtorDetails);
             await Organization.updateOne(
               { isDeleted: false },
               { $inc: { 'entityCount.debtor': 1 } },
             );
+            console.log('debtor', debtor);
+            processedDebtors.push({
+              applicationId: applicationId,
+              reason: 'Debtor created',
+              clientCode:
+                applicationList[applicationId][activeApplicationIndex][
+                  'id_merchant_submit'
+                ],
+              date:
+                applicationList?.[applicationId]?.[activeApplicationIndex]?.[
+                  'dt_modify'
+                ],
+              abn: debtor.abn,
+              acn: debtor.acn,
+              country: debtor.address?.country,
+              debtorId: debtor._id,
+              entityType: debtor.entityType,
+            });
             return { debtor, isAllowed: true };
           } else {
             // Check for the Array
-            unProcessedApplicationIds.push({
+            processedDebtors.push({
               applicationId: applicationId,
               reason: 'Debtor found from database',
               clientCode:
@@ -368,13 +401,22 @@ const createDebtor = async ({
                 applicationList?.[applicationId]?.[activeApplicationIndex]?.[
                   'dt_modify'
                 ],
+              abn: existingDebtor.abn,
+              acn: existingDebtor.acn,
+              country: existingDebtor.address.country.code,
+              debtorId: excelDebtor._id,
+              entityType: excelDebtor.entityType,
             });
             return { debtor: existingDebtor, isAllowed: false };
           }
         } else {
-          unProcessedApplicationIds.push({
+          unProcessedDebtors.push({
             applicationId: applicationId,
-            reason: 'Debtor not found from excel', // Change message
+            reason: !excelDebtor
+              ? 'Debtor not found from excel'
+              : !excelDebtor['Processed ABN'] && !excelDebtor['Processed ACN']
+              ? 'No ABN or ACN found'
+              : 'Country other than AUS/NZL', // Change message
             clientCode:
               applicationList[applicationId][activeApplicationIndex][
                 'id_merchant_submit'
@@ -387,7 +429,7 @@ const createDebtor = async ({
           return { debtor: null, isAllowed: false };
         }
       } else {
-        unProcessedApplicationIds.push({
+        processedDebtors.push({
           applicationId: applicationId,
           reason: 'Debtor found from database',
           clientCode:
@@ -398,6 +440,11 @@ const createDebtor = async ({
             applicationList?.[applicationId]?.[activeApplicationIndex]?.[
               'dt_modify'
             ],
+          abn: dbDebtor.abn,
+          acn: dbDebtor.acn,
+          country: dbDebtor.address.country.code,
+          debtorId: dbDebtor._id,
+          entityType: dbDebtor.entityType,
         });
         return { debtor: dbDebtor, isAllowed: false };
       }
@@ -441,7 +488,7 @@ const createDebtor = async ({
       }
       return existingDebtor;*/
     } else {
-      unProcessedApplicationIds.push({
+      unProcessedDebtors.push({
         applicationId: applicationId,
         reason: 'Debtor not found',
         clientCode:
@@ -1380,8 +1427,12 @@ const updateApplicationsAndDebtors = async () => {
     }
     console.log('unProcessedApplicationIds', unProcessedApplicationIds);
     fs.writeFileSync(
-      'unProcessedApplicationIds.json',
-      JSON.stringify(unProcessedApplicationIds),
+      'unProcessedDebtors21.json',
+      JSON.stringify(unProcessedDebtors),
+    );
+    fs.writeFileSync(
+      'processedDebtors21.json',
+      JSON.stringify(processedDebtors),
     );
     console.log(
       'Processed Application Count..............',
@@ -1408,4 +1459,5 @@ main();
 module.exports = {
   storeMerchantCode,
   importApplications,
+  updateApplicationsAndDebtors,
 };
