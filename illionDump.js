@@ -356,6 +356,7 @@ const createDebtor = async ({
             );
             return { debtor, isAllowed: true };
           } else {
+            // Check for the Array
             unProcessedApplicationIds.push({
               applicationId: applicationId,
               reason: 'Debtor found from database',
@@ -373,7 +374,7 @@ const createDebtor = async ({
         } else {
           unProcessedApplicationIds.push({
             applicationId: applicationId,
-            reason: 'Debtor not found from excel',
+            reason: 'Debtor not found from excel', // Change message
             clientCode:
               applicationList[applicationId][activeApplicationIndex][
                 'id_merchant_submit'
@@ -1143,6 +1144,7 @@ const removeRedundantDebtors = async () => {
   }
 };
 
+// TODO Add arrays to collect, ABN< ACN< NZBN and NCN
 const updateApplicationsAndDebtors = async () => {
   try {
     let count = 0;
@@ -1325,8 +1327,6 @@ const updateApplicationsAndDebtors = async () => {
                   isAllowed,
                 });
                 application.clientDebtorId = clientDebtor?._id;
-                // TODO Application date change
-
                 application.createdAt = moment(
                   applicationList[key][activeApplicationIndex]['dt_request'],
                   'DD/MM/YYYY HH:mm:ss a',
