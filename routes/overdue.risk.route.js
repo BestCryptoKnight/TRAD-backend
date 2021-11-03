@@ -406,17 +406,7 @@ router.post('/', async function (req, res) {
  * Save overdue list
  */
 router.put('/list', async function (req, res) {
-  if (
-    (req.body.hasOwnProperty('nilOverdue') &&
-      req.body.nilOverdue &&
-      (req.body.list !== 0 ||
-        !req.body.month ||
-        !req.body.year ||
-        !req.body.clientId)) ||
-    (req.body.hasOwnProperty('nilOverdue') &&
-      !req.body.nilOverdue &&
-      (!req.body.list || req.body.list === 0))
-  ) {
+  if (!req.body.hasOwnProperty('nilOverdue')) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -424,7 +414,14 @@ router.put('/list', async function (req, res) {
     });
   }
   try {
-    if (req.body.nilOverdue) {
+    if (!req.body.nilOverdue) {
+      if (!req.body.list || req.body.list.length === 0) {
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'REQUIRE_FIELD_MISSING',
+          message: 'Require fields are missing.',
+        });
+      }
       const overdueArr = req.body.list.map((i) => {
         return (
           i.clientId +
@@ -453,6 +450,19 @@ router.put('/list', async function (req, res) {
         return res.status(400).send(response);
       }
     } else {
+      if (
+        req.body.list.length !== 0 ||
+        !req.body.month ||
+        !req.body.year ||
+        !req.body.clientId
+      ) {
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'REQUIRE_FIELD_MISSING',
+          message: 'Require fields are missing.',
+        });
+      }
+
       //TODO send notifications
       await Overdue.updateOne(
         {
@@ -466,6 +476,7 @@ router.put('/list', async function (req, res) {
           year: req.body.year,
           nilOverdue: req.body.nilOverdue,
           list: [],
+          status: 'REPORTED_TO_INSURER',
         },
         {
           upsert: true,
