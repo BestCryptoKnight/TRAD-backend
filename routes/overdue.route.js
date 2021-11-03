@@ -21,6 +21,8 @@ const {
 } = require('./../helper/overdue.helper');
 const { getCurrentDebtorList } = require('./../helper/debtor.helper');
 const { addNotification } = require('./../helper/notification.helper');
+const { getUserDetailsByClientId } = require('./../helper/client.helper');
+const { sendNotification } = require('./../helper/socket.helper');
 
 /**
  * Get Entity List
@@ -333,6 +335,33 @@ router.put('/list', async function (req, res) {
           setDefaultsOnInsert: true,
         },
       );
+      const overdue = await Overdue.findOne({
+        clientId: req.user.clientId,
+        month: req.body.month,
+        year: req.body.year,
+      }).lean();
+      const client = await getUserDetailsByClientId({
+        clientId: req.user.clientId,
+      });
+      if (client?.riskAnalystId) {
+        const overdueNotification = await addNotification({
+          userId: client.riskAnalystId,
+          userType: 'user',
+          description: `A nil overdue is submitted by ${client?.name}`,
+          entityType: 'overdue',
+          entityId: overdue._id,
+        });
+        if (overdueNotification) {
+          sendNotification({
+            notificationObj: {
+              type: 'OVERDUE_ADDED',
+              data: overdueNotification,
+            },
+            type: 'user',
+            userId: client.riskAnalystId,
+          });
+        }
+      }
     }
     res.status(200).send({
       status: 'SUCCESS',
