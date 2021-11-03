@@ -105,7 +105,6 @@ router.get('/list', async function (req, res) {
       month: req.query.month.toString().padStart(2, '0'),
       year: req.query.year.toString(),
       clientId: req.user.clientId,
-      nilOverdue: false,
     };
     const overdue = await Overdue.find(query)
       .populate({
@@ -119,7 +118,7 @@ router.get('/list', async function (req, res) {
       .lean();
     client = client && client.name ? client.name : '';
     if (overdue && overdue.length !== 0) {
-      overdue.forEach((i) => {
+      /*  overdue.forEach((i) => {
         i.isExistingData = true;
         if (i.overdueAction !== 'MARK_AS_PAID') {
           delete i.overdueAction;
@@ -144,10 +143,43 @@ router.get('/list', async function (req, res) {
           value: i.status,
           label: formatString(i.status),
         };
+      });*/
+      let isNilOverdue = false;
+      for (let i = 0; i < overdue.length; i++) {
+        if (overdue[i].nilOverdue) {
+          isNilOverdue = true;
+          break;
+        } else {
+          overdue[i].isExistingData = true;
+          if (overdue[i].overdueAction !== 'MARK_AS_PAID') {
+            delete overdue[i].overdueAction;
+          }
+          if (overdue[i].debtorId && overdue[i].debtorId.entityName) {
+            overdue[i].debtorId = {
+              label: overdue[i].debtorId.entityName,
+              value: overdue[i].debtorId._id,
+            };
+          }
+          if (overdue[i].insurerId && overdue[i].insurerId.name) {
+            overdue[i].insurerId = {
+              label: overdue[i].insurerId.name,
+              value: overdue[i].insurerId._id,
+            };
+          }
+          overdue[i].overdueType = {
+            value: overdue[i].overdueType,
+            label: formatString(overdue[i].overdueType),
+          };
+          overdue[i].status = {
+            value: overdue[i].status,
+            label: formatString(overdue[i].status),
+          };
+        }
+      }
+      return res.status(200).send({
+        status: 'SUCCESS',
+        data: { docs: isNilOverdue ? [] : overdue, client, isNilOverdue },
       });
-      return res
-        .status(200)
-        .send({ status: 'SUCCESS', data: { docs: overdue, client } });
     } else {
       query.overdueAction = { $ne: 'MARK_AS_PAID' };
       let { overdue, lastMonth, lastYear } = await getLastOverdueList({
@@ -157,9 +189,10 @@ router.get('/list', async function (req, res) {
       const response = {
         docs: overdue,
         client,
+        isNilOverdue: false,
       };
       if (overdue && overdue.length !== 0) {
-        overdue.forEach((i) => {
+        /*overdue.forEach((i) => {
           i.isExistingData = true;
           i.month = req.query.month;
           i.year = req.query.year;
@@ -183,8 +216,43 @@ router.get('/list', async function (req, res) {
             value: 'SUBMITTED',
             label: 'Submitted',
           };
-        });
-        response.previousEntries = getMonthString(lastMonth) + ' ' + lastYear;
+        });*/
+
+        for (let i = 0; i < overdue.length; i++) {
+          if (overdue[i].nilOverdue) {
+            response.isNilOverdue = true;
+            break;
+          } else {
+            overdue[i].isExistingData = true;
+            overdue[i].month = req.query.month;
+            overdue[i].year = req.query.year;
+            if (overdue[i].debtorId && overdue[i].debtorId.entityName) {
+              overdue[i].debtorId = {
+                label: overdue[i].debtorId.entityName,
+                value: overdue[i].debtorId._id,
+              };
+            }
+            if (overdue[i].insurerId && overdue[i].insurerId.name) {
+              overdue[i].insurerId = {
+                label: overdue[i].insurerId.name,
+                value: overdue[i].insurerId._id,
+              };
+            }
+            overdue[i].overdueType = {
+              value: overdue[i].overdueType,
+              label: formatString(overdue[i].overdueType),
+            };
+            overdue[i].status = {
+              value: 'SUBMITTED',
+              label: 'Submitted',
+            };
+          }
+        }
+        if (response.isNilOverdue) {
+          response.docs = [];
+        } else {
+          response.previousEntries = getMonthString(lastMonth) + ' ' + lastYear;
+        }
       }
       return res.status(200).send({
         status: 'SUCCESS',
