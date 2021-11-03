@@ -102,6 +102,7 @@ router.get('/list', async function (req, res) {
       month: req.query.month.toString().padStart(2, '0'),
       year: req.query.year.toString(),
       clientId: req.query.clientId,
+      nilOverdue: false,
     };
     const overdue = await Overdue.find(query)
       .populate({

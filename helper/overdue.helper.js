@@ -265,6 +265,7 @@ const getOverdueList = async ({
       amounts: 1,
       debtors: 1,
       status: 1,
+      nilOverdue: 1,
       _id: 0,
     };
     if (isForRisk && !isForSubmodule) {
@@ -297,6 +298,7 @@ const getOverdueList = async ({
               overdueType: '$overdueType',
               status: '$status',
               amount: '$outstandingAmount',
+              nilOverdue: '$nilOverdue',
             },
           },
           submitted: {
@@ -403,7 +405,9 @@ const getOverdueList = async ({
     overdueList[0].paginatedResult.forEach((i) => {
       if (i.debtors.length !== 0) {
         i.debtors.forEach((j) => {
-          j.overdueType = formatString(j.overdueType);
+          j.overdueType = j.nilOverdue
+            ? 'Nil Overdue'
+            : formatString(j.overdueType);
           j.status = formatString(j.status);
         });
       }

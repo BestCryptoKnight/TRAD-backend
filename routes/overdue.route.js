@@ -20,6 +20,7 @@ const {
   updateList,
 } = require('./../helper/overdue.helper');
 const { getCurrentDebtorList } = require('./../helper/debtor.helper');
+const { addNotification } = require('./../helper/notification.helper');
 
 /**
  * Get Entity List
@@ -102,6 +103,7 @@ router.get('/list', async function (req, res) {
       month: req.query.month.toString().padStart(2, '0'),
       year: req.query.year.toString(),
       clientId: req.user.clientId,
+      nilOverdue: false,
     };
     const overdue = await Overdue.find(query)
       .populate({
