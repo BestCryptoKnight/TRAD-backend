@@ -387,11 +387,12 @@ const createDebtor = async ({
                 applicationList?.[applicationId]?.[activeApplicationIndex]?.[
                   'dt_modify'
                 ],
+              name: debtor.entityName,
               abn: debtor.abn,
               acn: debtor.acn,
-              country: debtor.address?.country,
-              debtorId: debtor._id,
               entityType: debtor.entityType,
+              country: debtor.address?.country?.code || debtor.address?.country,
+              debtorId: debtor._id,
             });
             return { debtor, isAllowed: true };
           } else {
@@ -407,11 +408,14 @@ const createDebtor = async ({
                 applicationList?.[applicationId]?.[activeApplicationIndex]?.[
                   'dt_modify'
                 ],
-              abn: existingDebtor.abn,
-              acn: existingDebtor.acn,
-              country: existingDebtor.address.country.code,
-              debtorId: excelDebtor._id,
+              name: excelDebtor?.entityName,
+              abn: existingDebtor?.abn,
+              acn: existingDebtor?.acn,
               entityType: excelDebtor.entityType,
+              country:
+                existingDebtor.address.country?.code ||
+                existingDebtor.address.country,
+              debtorId: excelDebtor._id,
             });
             return { debtor: existingDebtor, isAllowed: false };
           }
@@ -446,11 +450,12 @@ const createDebtor = async ({
             applicationList?.[applicationId]?.[activeApplicationIndex]?.[
               'dt_modify'
             ],
+          name: dbDebtor?.entityName,
           abn: dbDebtor.abn,
           acn: dbDebtor.acn,
-          country: dbDebtor.address.country.code,
-          debtorId: dbDebtor._id,
           entityType: dbDebtor.entityType,
+          country: dbDebtor.address.country?.code || dbDebtor.address.country,
+          debtorId: dbDebtor._id,
         });
         return { debtor: dbDebtor, isAllowed: false };
       }
