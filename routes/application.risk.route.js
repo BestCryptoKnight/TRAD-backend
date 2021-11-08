@@ -1429,12 +1429,12 @@ router.put('/:applicationId', async function (req, res) {
         });
         if (application?.limitType === 'CREDIT_CHECK') {
           //TODO uncomment to send decision letter
-          /*sendDecisionLetter({
+          sendDecisionLetter({
             reason: req.body.comments || '',
             status,
             approvedAmount,
             applicationId:application._id
-          });*/
+          });
         }
       }
     }
