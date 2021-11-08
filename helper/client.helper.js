@@ -409,9 +409,21 @@ const removeClientUserToken = async () => {
   }
 };
 
+const getUserDetailsByClientId = async ({ clientId }) => {
+  try {
+    const client = await Client.findOne({ _id: clientId })
+      .select('name serviceManagerId riskAnalystId')
+      .lean();
+    return client;
+  } catch (e) {
+    Logger.log.error('Error occurred in get user details', e);
+  }
+};
+
 module.exports = {
   getClientList,
   getUserClientList,
   getClientListWithDetails,
   removeClientUserToken,
+  getUserDetailsByClientId,
 };

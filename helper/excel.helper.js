@@ -272,22 +272,22 @@ const addColumnsForReviewReport = async ({
     }
     worksheet.getColumn(1).width = 40;
     worksheet.getColumn(2).width = 25;
-    worksheet.getColumn(3).width = 40;
+    worksheet.getColumn(3).width = 25;
     worksheet.getColumn(4).width = 25;
-    worksheet.getColumn(5).width = 25;
+    worksheet.getColumn(5).width = 40;
     worksheet.getColumn(6).width = 25;
     worksheet.getColumn(7).width = 25;
     worksheet.getColumn(8).width = 20;
-    worksheet.getColumn(9).width = 25;
-    worksheet.getColumn(10).width = 25;
-    worksheet.getColumn(11).width = 30;
+    worksheet.getColumn(9).width = 20;
+    worksheet.getColumn(10).width = 20;
+    worksheet.getColumn(11).width = 25;
     worksheet.getColumn(12).width = 25;
     worksheet.getColumn(13).width = 25;
     worksheet.getColumn(14).width = 25;
-    worksheet.getColumn(15).width = 35;
+    worksheet.getColumn(15).width = 25;
     worksheet.getColumn(16).width = 25;
     worksheet.getColumn(17).width = 25;
-    worksheet.getColumn(18).width = 35;
+    worksheet.getColumn(18).width = 25;
     worksheet.addRow();
     worksheet.mergeCells(
       `A${worksheet.lastRow.number}:R${worksheet.lastRow.number}`,

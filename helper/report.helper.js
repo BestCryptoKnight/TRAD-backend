@@ -16,6 +16,11 @@ const Logger = require('./../services/logger');
 const { formatString } = require('./overdue.helper');
 const { getClaimsDetails } = require('./rss.helper');
 const { getUserName } = require('./user.helper');
+const {
+  getStateName,
+  getDebtorFullAddress,
+  getStreetTypeName,
+} = require('./debtor.helper');
 
 /*
 Get Client List Report
@@ -910,17 +915,39 @@ const getReviewReport = async ({
   isForDownload = false,
 }) => {
   try {
-    const queryFilter = {
-      isActive: true,
-      $and: [
-        { creditLimit: { $exists: true } },
-        { creditLimit: { $ne: null } },
-        { creditLimit: { $ne: 0 } },
-      ],
-      // creditLimit: { $exists: true, $ne: null },
-    };
+    const addressFields = [
+      'fullAddress',
+      'property',
+      'unitNumber',
+      'streetNumber',
+      'streetName',
+      'streetType',
+      'suburb',
+      'state',
+      'country',
+      'postCode',
+    ];
+    const queryFilter = {};
     let dateQuery = {};
     const filterArray = [];
+    if (!hasFullAccess && userId) {
+      const clients = await Client.find({
+        isDeleted: false,
+        $or: [{ riskAnalystId: userId }, { serviceManagerId: userId }],
+      })
+        .select({ _id: 1 })
+        .lean();
+      const clientIds = clients.map((i) => i._id);
+      const clientDebtor = await ClientDebtor.find({
+        clientId: { $in: clientIds },
+      })
+        .select('debtorId')
+        .lean();
+      const debtorIds = clientDebtor.map((i) =>
+        mongoose.Types.ObjectId(i.debtorId),
+      );
+      queryFilter['_id'] = { $in: debtorIds };
+    }
     if (requestedQuery.date) {
       requestedQuery.date = new Date(requestedQuery.date);
       if (isForDownload) {
@@ -956,7 +983,6 @@ const getReviewReport = async ({
         $gte: firstDay,
         $lte: lastDay,
       };
-      // queryFilter.expiryDate = dateQuery;
     } else if (Object.keys(requestedQuery).length === 1) {
       const date = new Date();
       const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
@@ -970,45 +996,26 @@ const getReviewReport = async ({
           type: 'string',
         });
       }
-      // queryFilter.expiryDate = dateQuery;
     }
-    if (requestedQuery.clientIds) {
-      const clientIds = requestedQuery.clientIds
-        .split(',')
-        .map((id) => mongoose.Types.ObjectId(id));
-      queryFilter.clientId = { $in: clientIds };
+    if (requestedQuery.entityType) {
+      queryFilter.entityType = requestedQuery.entityType;
       if (isForDownload) {
-        const clients = await Client.find({ _id: { $in: clientIds } })
-          .select('name')
-          .lean();
         filterArray.push({
-          label: 'Client',
-          value: clients
-            .map((i) => i.name)
-            .toString()
-            .replace(/,/g, ', '),
+          label: 'Entity Type',
+          value: formatString(requestedQuery.entityType),
           type: 'string',
         });
       }
-    } else if (!hasFullAccess) {
-      const clients = await Client.find({
-        isDeleted: false,
-        $or: [{ riskAnalystId: userId }, { serviceManagerId: userId }],
-      })
-        .select('_id')
-        .lean();
-      const clientIds = clients.map((i) => i._id);
-      queryFilter.clientId = { $in: clientIds };
     }
     if (requestedQuery.debtorId) {
-      queryFilter.debtorId = mongoose.Types.ObjectId(requestedQuery.debtorId);
+      queryFilter._id = mongoose.Types.ObjectId(requestedQuery.debtorId);
       if (isForDownload) {
         const debtor = await Debtor.findOne({ _id: requestedQuery.debtorId })
           .select('entityName')
           .lean();
         filterArray.push({
           label: 'Debtor',
-          value: debtor && debtor.entityName ? debtor.entityName : '',
+          value: debtor && debtor?.entityName ? debtor.entityName : '',
           type: 'string',
         });
       }
@@ -1028,34 +1035,14 @@ const getReviewReport = async ({
       queryFilter.expiryDate = dateFilter;
     }
 
-    const query = [
-      {
-        $lookup: {
-          from: 'credit-reports',
-          localField: 'currentReportId',
-          foreignField: '_id',
-          as: 'currentReportId',
-        },
-      },
-      {
-        $lookup: {
-          from: 'debtors',
-          localField: 'debtorId',
-          foreignField: '_id',
-          as: 'debtorId',
-        },
-      },
-    ];
+    const query = [];
     if (Object.keys(dateQuery).length !== 0) {
-      query.push({
-        $match: {
-          $or: [
-            { 'currentReportId.expiryDate': dateQuery },
-            { 'debtorId.reviewDate': dateQuery },
-            { expiryDate: dateQuery },
-          ],
-        },
-      });
+      // query.push({
+      //   $match: {
+      //     expiryDate: dateQuery,
+      //   },
+      // });
+      queryFilter.reviewDate = dateQuery;
     }
     if (requestedQuery.reportStartDate || requestedQuery.reportEndDate) {
       let dateFilter = {};
@@ -1075,7 +1062,7 @@ const getReviewReport = async ({
         },
       });
     }
-    if (
+    /*if (
       reportColumn.includes('clientId') ||
       reportColumn.includes('insurerId')
     ) {
@@ -1097,7 +1084,7 @@ const getReviewReport = async ({
           as: 'insurerId',
         },
       });
-    }
+    }*/
     /*if (
       reportColumn.includes('debtorId') ||
       reportColumn.includes('entityType') ||
@@ -1115,7 +1102,7 @@ const getReviewReport = async ({
         },
       });
     }*/
-    if (
+    /* if (
       reportColumn.includes('requestedCreditLimit') ||
       reportColumn.includes('approvalOrDecliningDate') ||
       reportColumn.includes('applicationExpiryDate') ||
@@ -1131,43 +1118,10 @@ const getReviewReport = async ({
           as: 'activeApplicationId',
         },
       });
-    }
+    }*/
     const fields = reportColumn.map((i) => {
-      if (i === 'clientId' || i === 'insurerId') {
-        i = i + '.name';
-      }
-      if (i === 'debtorId') {
-        i = i + '.entityName';
-      }
-      if (
-        i === 'abn' ||
-        i === 'acn' ||
-        i === 'registrationNumber' ||
-        i === 'entityType' ||
-        i === 'reviewDate'
-      ) {
-        i = 'debtorId.' + i;
-      }
-      if (i === 'country') {
-        i = 'debtorId.address.' + i;
-      }
-      if (i === 'approvalOrDecliningDate') {
-        i = 'activeApplicationId.' + i;
-      }
-      if (i === 'requestedCreditLimit') {
-        i = 'activeApplicationId.creditLimit';
-      }
-      if (i === 'limitType' || i === 'clientReference' || i === 'comments') {
-        i = 'activeApplicationId.' + i;
-      }
-      if (i === 'applicationExpiryDate') {
-        i = 'activeApplicationId.expiryDate';
-      }
-      if (i === 'reportExpiryDate') {
-        i = 'currentReportId.expiryDate';
-      }
-      if (i === 'reportName') {
-        i = 'currentReportId.name';
+      if (addressFields.includes(i)) {
+        i = 'address';
       }
       return [i, 1];
     });
@@ -1197,128 +1151,60 @@ const getReviewReport = async ({
       });
     }
     query.unshift({ $match: queryFilter });
-    const clientDebtors = await ClientDebtor.aggregate(query).allowDiskUse(
-      true,
-    );
+    const debtors = await Debtor.aggregate(query).allowDiskUse(true);
     const response =
-      clientDebtors && clientDebtors[0] && clientDebtors[0]['paginatedResult']
-        ? clientDebtors[0]['paginatedResult']
-        : clientDebtors;
+      debtors && debtors[0] && debtors[0]['paginatedResult']
+        ? debtors[0]['paginatedResult']
+        : debtors;
     const total =
-      clientDebtors.length !== 0 &&
-      clientDebtors[0]['totalCount'] &&
-      clientDebtors[0]['totalCount'].length !== 0
-        ? clientDebtors[0]['totalCount'][0]['count']
+      debtors.length !== 0 &&
+      debtors[0]['totalCount'] &&
+      debtors[0]['totalCount'].length !== 0
+        ? debtors[0]['totalCount'][0]['count']
         : 0;
-    response.forEach((limit) => {
-      if (limit.insurerId) {
-        limit.insurerId =
-          limit.insurerId && limit.insurerId[0] && limit.insurerId[0]['name']
-            ? limit.insurerId[0]['name']
-            : '';
+    response.forEach((debtor) => {
+      if (reportColumn.includes('property')) {
+        debtor.property = debtor.address.property;
       }
-      if (limit.clientId) {
-        limit.clientId =
-          limit.clientId && limit.clientId[0] && limit.clientId[0]['name']
-            ? limit.clientId[0]['name']
-            : '';
+      if (reportColumn.includes('unitNumber')) {
+        debtor.unitNumber = debtor.address.unitNumber;
       }
-      if (limit.debtorId && limit.debtorId[0] && limit.debtorId[0].abn) {
-        limit.abn = limit.debtorId[0]['abn'] ? limit.debtorId[0]['abn'] : '';
+      if (reportColumn.includes('streetNumber')) {
+        debtor.streetNumber = debtor.address.streetNumber;
       }
-      if (limit.debtorId && limit.debtorId[0] && limit.debtorId[0].acn) {
-        limit.acn = limit.debtorId[0]['acn'] ? limit.debtorId[0]['acn'] : '';
+      if (reportColumn.includes('streetName')) {
+        debtor.streetName = debtor.address.streetName;
       }
-      if (
-        limit.debtorId &&
-        limit.debtorId[0] &&
-        limit.debtorId[0].registrationNumber
-      ) {
-        limit.registrationNumber = limit.debtorId[0]['registrationNumber']
-          ? limit.debtorId[0]['registrationNumber']
-          : '';
+      if (reportColumn.includes('streetType')) {
+        debtor.streetType = getStreetTypeName(debtor.address.streetType).label;
       }
-      if (limit.debtorId && limit.debtorId[0] && limit.debtorId[0].address) {
-        limit.country =
-          limit.debtorId[0]['address']['country'] &&
-          limit.debtorId[0]['address']['country']['name']
-            ? limit.debtorId[0]['address']['country']['name']
-            : '';
+      if (reportColumn.includes('suburb')) {
+        debtor.suburb = debtor.address.suburb;
       }
-      if (limit.debtorId && limit.debtorId[0] && limit.debtorId[0].entityType) {
-        limit.entityType = limit.debtorId[0]['entityType']
-          ? formatString(limit.debtorId[0]['entityType'])
-          : '';
+      if (reportColumn.includes('state')) {
+        const state = getStateName(
+          debtor.address.state,
+          debtor.address.country.code,
+        );
+        debtor.state = state && state.name ? state.name : debtor.address.state;
       }
-      if (limit.debtorId && limit.debtorId[0] && limit.debtorId[0].entityName) {
-        limit.debtorId = limit.debtorId[0]['entityName']
-          ? limit.debtorId[0]['entityName']
-          : '';
+      if (reportColumn.includes('country')) {
+        debtor.country = debtor.address.country.name;
       }
-      if (limit.debtorId && limit.debtorId[0] && limit.debtorId[0].reviewDate) {
-        limit.debtorId = limit.debtorId[0]['reviewDate']
-          ? limit.debtorId[0]['reviewDate']
-          : '';
+      if (reportColumn.includes('postCode')) {
+        debtor.postCode = debtor.address.postCode;
       }
-      if (
-        limit.activeApplicationId &&
-        limit.activeApplicationId[0] &&
-        limit.activeApplicationId[0].creditLimit
-      ) {
-        limit.requestedCreditLimit = limit.activeApplicationId[0].creditLimit
-          ? limit.activeApplicationId[0].creditLimit
-          : '';
+      if (reportColumn.includes('fullAddress')) {
+        debtor.fullAddress = getDebtorFullAddress({
+          address: debtor.address,
+          country: debtor.address.country,
+        });
       }
-      if (
-        limit.activeApplicationId &&
-        limit.activeApplicationId[0] &&
-        limit.activeApplicationId[0].approvalOrDecliningDate
-      ) {
-        limit.approvalOrDecliningDate = limit.activeApplicationId[0]
-          .approvalOrDecliningDate
-          ? limit.activeApplicationId[0].approvalOrDecliningDate
-          : '';
+      if (debtor.entityType) {
+        debtor.entityType = formatString(debtor.entityType);
       }
-      if (
-        limit.activeApplicationId &&
-        limit.activeApplicationId[0] &&
-        limit.activeApplicationId[0].expiryDate
-      ) {
-        limit.applicationExpiryDate = limit.activeApplicationId[0].expiryDate
-          ? limit.activeApplicationId[0].expiryDate
-          : '';
-      }
-      if (
-        limit.currentReportId &&
-        limit.currentReportId[0] &&
-        limit.currentReportId[0].name
-      ) {
-        limit.reportName = limit.currentReportId[0].name
-          ? limit.currentReportId[0].name
-          : '';
-      }
-      if (
-        limit.currentReportId &&
-        limit.currentReportId[0] &&
-        limit.currentReportId[0].expiryDate
-      ) {
-        limit.reportExpiryDate = limit.currentReportId[0].expiryDate
-          ? limit.currentReportId[0].expiryDate
-          : '';
-      }
-      if (limit?.activeApplicationId?.[0]?.limitType) {
-        limit.limitType =
-          formatString(limit.activeApplicationId[0].limitType) || '';
-      }
-      if (limit?.activeApplicationId[0]?.comments) {
-        limit.comments = limit.activeApplicationId[0]?.comments || '';
-      }
-      if (limit?.activeApplicationId[0]?.clientReference) {
-        limit.clientReference =
-          limit.activeApplicationId[0]?.clientReference || '';
-      }
-      delete limit.currentReportId;
-      delete limit.activeApplicationId;
+      delete debtor.address;
+      delete debtor.id;
     });
     return { response, total, filterArray };
   } catch (e) {

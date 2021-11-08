@@ -555,6 +555,11 @@
           "label": "Limit Type",
           "type": "string"
         },
+        {
+          "name": "approvalOrDecliningDate",
+          "label": "Approval Date",
+          "type": "date"
+        },
         { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
         { "name": "abn", "label": "ABN/NZBN", "type": "string" },
         {
@@ -905,6 +910,11 @@
           "label": "Limit Type",
           "type": "string"
         },
+        {
+          "name": "approvalOrDecliningDate",
+          "label": "Approval Date",
+          "type": "date"
+        },
         { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
         { "name": "abn", "label": "ABN", "type": "string" },
         { "name": "acn", "label": "ACN", "type": "string" },
@@ -1170,14 +1180,7 @@
     {
       "name": "review-report",
       "manageColumns": [
-        { "name": "clientId", "label": "Client Name", "type": "string" },
-        { "name": "insurerId", "label": "Insurer Name", "type": "string" },
-        { "name": "debtorId", "label": "Debtor Name", "type": "string" },
-        {
-          "name": "entityType",
-          "label": "Debtor Entity Type",
-          "type": "string"
-        },
+        { "name": "entityName", "label": "Entity Name", "type": "string" },
         { "name": "abn", "label": "ABN/NZBN", "type": "string" },
         { "name": "acn", "label": "ACN/NCN", "type": "string" },
         {
@@ -1185,56 +1188,36 @@
           "label": "Registration Number",
           "type": "string"
         },
+        { "name": "tradingName", "label": "Trading Name", "type": "string" },
+        { "name": "entityType", "label": "Entity Type", "type": "string" },
+        { "name": "reviewDate", "label": "Review Date", "type": "date" },
+        { "name": "fullAddress", "label": "Full Address", "type": "string" },
+        { "name": "property", "label": "Property", "type": "string" },
+        { "name": "unitNumber", "label": "Unit Number", "type": "string" },
+        { "name": "streetNumber", "label": "Street Number", "type": "string" },
+        { "name": "streetName", "label": "Street Name", "type": "string" },
+        { "name": "streetType", "label": "Street Type", "type": "string" },
+        { "name": "suburb", "label": "Suburb", "type": "string" },
+        { "name": "state", "label": "Country/State", "type": "string" },
         { "name": "country", "label": "Country", "type": "string" },
+        { "name": "postCode", "label": "Postcode/Zip", "type": "string" },
         {
-          "name": "requestedCreditLimit",
-          "label": "Requested Amount",
-          "type": "amount"
-        },
-        {
-          "name": "creditLimit",
-          "label": "Approved Amount",
-          "type": "amount"
-        },
-        {
-          "name": "approvalOrDecliningDate",
-          "label": "Application Approval Date",
-          "type": "date"
-        },
-        {
-          "name": "applicationExpiryDate",
-          "label": "Application Expiry Date",
-          "type": "date"
-        },
-        { "name": "reviewDate", "label": "Debtor Review Date", "type": "date" },
-        {
-          "name": "expiryDate",
-          "label": "Credit Limit Expiry Date",
-          "type": "date"
-        },
-        {
-          "name": "reportExpiryDate",
-          "label": "Report Expiry Date",
-          "type": "date"
-        },
-        { "name": "reportName", "label": "Report Name", "type": "date" },
-        { "name": "limitType", "label": "Limit Type", "type": "string" },
-        {
-          "name": "clientReference",
-          "label": "Client Reference",
+          "name": "contactNumber",
+          "label": "Contact Number",
           "type": "string"
         },
-        { "name": "comments", "label": "Comments", "type": "string" }
+        { "name": "riskRating", "label": "Risk Rating", "type": "string" },
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
       "defaultColumns": [
-        "clientId",
-        "insurerId",
-        "debtorId",
-        "entityType",
         "abn",
+        "entityName",
+        "acn",
+        "entityType",
         "registrationNumber",
-        "country",
-        "applicationExpiryDate"
+        "riskRating",
+        "reviewDate",
+        "country"
       ]
     },
     {

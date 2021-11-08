@@ -265,6 +265,7 @@ const getOverdueList = async ({
       amounts: 1,
       debtors: 1,
       status: 1,
+      nilOverdue: 1,
       _id: 0,
     };
     if (isForRisk && !isForSubmodule) {
@@ -297,6 +298,7 @@ const getOverdueList = async ({
               overdueType: '$overdueType',
               status: '$status',
               amount: '$outstandingAmount',
+              nilOverdue: '$nilOverdue',
             },
           },
           submitted: {
@@ -403,7 +405,9 @@ const getOverdueList = async ({
     overdueList[0].paginatedResult.forEach((i) => {
       if (i.debtors.length !== 0) {
         i.debtors.forEach((j) => {
-          j.overdueType = formatString(j.overdueType);
+          j.overdueType = j.nilOverdue
+            ? 'Nil Overdue'
+            : formatString(j.overdueType);
           j.status = formatString(j.status);
         });
       }
@@ -517,11 +521,11 @@ const updateList = async ({
         !requestBody.list[i].hasOwnProperty('outstandingAmount') ||
         requestBody.list[i].outstandingAmount <= 0
       ) {
-        return {
+        return Promise.reject({
           status: 'ERROR',
           messageCode: 'REQUIRE_FIELD_MISSING',
           message: 'Require fields are missing.',
-        };
+        });
       }
       update = {};
       update.clientId = isForRisk ? requestBody.list[i].clientId : clientId;
@@ -584,12 +588,12 @@ const updateList = async ({
           year: update.year,
         }).lean();
         if (overdue) {
-          return {
+          return Promise.reject({
             status: 'ERROR',
             messageCode: 'OVERDUE_ALREADY_EXISTS',
             message:
               'Overdue already exists, please create with another debtor',
-          };
+          });
         }
         newOverdues.push(Overdue.create(update));
       } else {
@@ -600,12 +604,12 @@ const updateList = async ({
           year: update.year,
         }).lean();
         if (overdue && overdue._id.toString() !== requestBody.list[i]._id) {
-          return {
+          return Promise.reject({
             status: 'ERROR',
             messageCode: 'OVERDUE_ALREADY_EXISTS',
             message:
               'Overdue already exists, please create with another debtor',
-          };
+          });
         }
         if (!overdue) {
           promises.push(Overdue.create(update));

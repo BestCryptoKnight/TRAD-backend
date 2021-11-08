@@ -363,7 +363,6 @@ const getDebtorListWithDetails = async ({
       // isActive: true,
     };
     const addressFields = [
-      'fullAddress',
       'property',
       'unitNumber',
       'streetNumber',
@@ -417,7 +416,7 @@ const getDebtorListWithDetails = async ({
     }
     const fields = debtorColumn.map((i) => {
       if (addressFields.includes(i)) {
-        i = 'address.' + i;
+        i = 'address';
       }
       return [i, 1];
     });

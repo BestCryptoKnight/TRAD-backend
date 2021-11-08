@@ -306,6 +306,7 @@ router.post('/verify-otp', async (req, res) => {
       email: {
         $regex: new RegExp('^' + req.body.email.toLowerCase() + '$', 'i'),
       },
+      isDeleted: false,
     });
     if (!clientUser) {
       return res.status(400).send({

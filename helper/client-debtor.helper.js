@@ -89,11 +89,16 @@ const getClientCreditLimit = async ({
 }) => {
   try {
     let sendAsHeader = true;
+    let sendLimitAsHeader = true;
     if (!isForDownload) {
       debtorColumn.push('isFromOldSystem');
       if (!debtorColumn.includes('limitType')) {
         sendAsHeader = false;
         debtorColumn.push('limitType');
+      }
+      if (!debtorColumn.includes('creditLimit')) {
+        sendLimitAsHeader = false;
+        debtorColumn.push('creditLimit');
       }
     } else {
       debtorColumn.push('activeApplicationId');
@@ -103,10 +108,15 @@ const getClientCreditLimit = async ({
     const clientDebtorDetails = [
       'creditLimit',
       'expiryDate',
-      'activeApplicationId',
       'isFromOldSystem',
       'createdAt',
       'updatedAt',
+    ];
+    const applicationDetails = [
+      'limitType',
+      'expiryDate',
+      'activeApplicationId',
+      'approvalOrDecliningDate',
     ];
     const queryFilter = {
       isActive: true,
@@ -169,10 +179,17 @@ const getClientCreditLimit = async ({
       );
     }
     const fields = debtorColumn.map((i) => {
-      i = !clientDebtorDetails.includes(i) ? 'debtorId.' + i : i;
+      i = clientDebtorDetails.includes(i)
+        ? i
+        : applicationDetails.includes(i) && i !== 'activeApplicationId'
+        ? 'activeApplicationId.' + i
+        : i === 'activeApplicationId'
+        ? 'activeApplicationId.applicationId'
+        : 'debtorId.' + i;
       return [i, 1];
     });
     fields.push(['debtorId._id', 1]);
+    fields.push(['activeApplicationId._id', 1]);
     aggregationQuery.push({
       $project: fields.reduce((obj, [key, val]) => {
         obj[key] = val;
@@ -296,6 +313,12 @@ const getClientCreditLimit = async ({
           debtorColumn.splice(index, 1);
         }
       }
+      if (!sendLimitAsHeader) {
+        const index = debtorColumn.indexOf('creditLimit');
+        if (index > -1) {
+          debtorColumn.splice(index, 1);
+        }
+      }
       for (let i = 0; i < moduleColumn.length; i++) {
         if (debtorColumn.includes(moduleColumn[i].name)) {
           if (
@@ -321,6 +344,10 @@ const getClientCreditLimit = async ({
         }
         if (debtor.activeApplicationId?.expiryDate) {
           debtor.expiryDate = debtor.activeApplicationId.expiryDate;
+        }
+        if (debtor.activeApplicationId?.approvalOrDecliningDate) {
+          debtor.approvalOrDecliningDate =
+            debtor.activeApplicationId.approvalOrDecliningDate;
         }
         if (debtor.activeApplicationId?.applicationId) {
           debtor.activeApplicationId = hasOnlyReadAccessForApplicationModule
@@ -383,18 +410,28 @@ const getDebtorCreditLimit = async ({
 }) => {
   try {
     let sendAsHeader = true;
+    let sendLimitAsHeader = true;
     debtorColumn.push('isFromOldSystem');
     if (!debtorColumn.includes('limitType')) {
       sendAsHeader = false;
       debtorColumn.push('limitType');
     }
+    if (!debtorColumn.includes('creditLimit')) {
+      sendLimitAsHeader = false;
+      debtorColumn.push('creditLimit');
+    }
     const clientDebtorDetails = [
       'creditLimit',
       'expiryDate',
-      'activeApplicationId',
       'isFromOldSystem',
       'createdAt',
       'updatedAt',
+    ];
+    const applicationDetails = [
+      'limitType',
+      'expiryDate',
+      'approvalOrDecliningDate',
+      'activeApplicationId',
     ];
     const queryFilter = {
       isActive: true,
@@ -453,9 +490,18 @@ const getDebtorCreditLimit = async ({
       );
     }
     const fields = debtorColumn.map((i) => {
-      i = !clientDebtorDetails.includes(i) ? 'clientId.' + i : i;
+      console.log('i', i);
+      // i = !clientDebtorDetails.includes(i) ? 'clientId.' + i : i;
+      i = clientDebtorDetails.includes(i)
+        ? i
+        : applicationDetails.includes(i) && i !== 'activeApplicationId'
+        ? 'activeApplicationId.' + i
+        : i === 'activeApplicationId'
+        ? 'activeApplicationId.applicationId'
+        : 'clientId.' + i;
       return [i, 1];
     });
+    fields.push(['activeApplicationId._id', 1]);
     if (debtorColumn.includes('name')) {
       fields.push(['clientId._id', 1]);
     }
@@ -535,6 +581,12 @@ const getDebtorCreditLimit = async ({
         debtorColumn.splice(index, 1);
       }
     }
+    if (!sendLimitAsHeader) {
+      const index = debtorColumn.indexOf('creditLimit');
+      if (index > -1) {
+        debtorColumn.splice(index, 1);
+      }
+    }
     for (let i = 0; i < moduleColumn.length; i++) {
       if (debtorColumn.includes(moduleColumn[i].name)) {
         if (
@@ -559,6 +611,10 @@ const getDebtorCreditLimit = async ({
       }
       if (debtor.activeApplicationId?.expiryDate) {
         debtor.expiryDate = debtor.activeApplicationId.expiryDate;
+      }
+      if (debtor.activeApplicationId?.approvalOrDecliningDate) {
+        debtor.approvalOrDecliningDate =
+          debtor.activeApplicationId.approvalOrDecliningDate;
       }
       if (debtor.activeApplicationId?.applicationId) {
         debtor.activeApplicationId = hasOnlyReadAccessForApplicationModule
@@ -596,7 +652,7 @@ const getDebtorCreditLimit = async ({
       pages: Math.ceil(total / parseInt(requestedQuery.limit)),
     };
   } catch (e) {
-    Logger.log.error('Error occurred in get debtor credit-limit list');
+    Logger.log.error('Error occurred in get debtor credit-limit list', e);
     Logger.log.error(e.message || e);
   }
 };

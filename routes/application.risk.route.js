@@ -54,6 +54,9 @@ const {
 } = require('./../helper/alert.helper');
 const { checkForEndorsedLimit } = require('./../helper/policy.helper');
 const { getUserList } = require('./../helper/user.helper');
+const {
+  downloadDecisionLetterFromApplication,
+} = require('./../helper/client-debtor.helper');
 
 /**
  * Get Column Names
@@ -373,6 +376,43 @@ router.get('/download', async function (req, res) {
     });
   }
 });
+
+/**
+ * Download Decision Letter
+ */
+router.get(
+  '/download/decision-letter/:applicationId',
+  async function (req, res) {
+    try {
+      const {
+        bufferData,
+        applicationNumber,
+      } = await downloadDecisionLetterFromApplication({
+        applicationId: req.params.applicationId,
+      });
+      if (bufferData) {
+        const fileName = applicationNumber + '_CreditCheckDecision.pdf';
+        res
+          .writeHead(200, {
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': 'attachment; filename=' + fileName,
+          })
+          .end(bufferData);
+      } else {
+        res.status(400).send({
+          status: 'ERROR',
+          message: 'No decision letter found',
+        });
+      }
+    } catch (e) {
+      Logger.log.error('Error occurred in download in decision letter', e);
+      res.status(500).send({
+        status: 'ERROR',
+        message: e.message || 'Something went wrong, please try again later.',
+      });
+    }
+  },
+);
 
 /**
  * Get Application Modal details

@@ -1243,6 +1243,7 @@ const generateNewApplication = async ({
         createdByType: createdByType,
         createdById: createdById,
         status: 'SUBMITTED',
+        requestDate: new Date(),
       };
       applicationDetails.applicationId =
         application.clientId.clientCode +
@@ -1256,12 +1257,25 @@ const generateNewApplication = async ({
         { isDeleted: false },
         { $inc: { 'entityCount.application': 1 } },
       );
+      if (creditLimit === 0) {
+        applicationDetails.status = 'REVIEW_APPLICATION';
+        applicationDetails.isAutoApproved = false;
+      }
       const applicationData = await Application.create(applicationDetails);
-      checkForAutomation({
-        applicationId: applicationData._id,
-        userId: createdById,
-        userType: createdByType,
-      });
+      if (creditLimit !== 0) {
+        checkForAutomation({
+          applicationId: applicationData._id,
+          userId: createdById,
+          userType: createdByType,
+        });
+      } else if (creditLimit === 0) {
+        sendNotificationsToUser({
+          application: applicationData,
+          userType: createdByType,
+          userId: createdById,
+          status: applicationData.status,
+        });
+      }
     }
     return application;
   } catch (e) {
@@ -1468,7 +1482,7 @@ const sendNotificationsToUser = async ({
       }
       if (application?.debtorId) {
         checkForEntityInProfile({
-          action: 'add',
+          action: 'remove',
           entityType: 'debtor',
           entityId: application.debtorId,
         });

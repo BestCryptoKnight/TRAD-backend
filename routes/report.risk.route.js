@@ -11,6 +11,7 @@ const User = mongoose.model('user');
  * */
 const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
+const StaticData = require('./../static-files/staticData.json');
 const {
   getClientListReport,
   getLimitListReport,
@@ -141,6 +142,7 @@ router.get('/entity-list', async function (req, res) {
         insurerId: insurers,
         riskAnalystId: riskAnalystList,
         serviceManagerId: serviceManagerList,
+        entityType: StaticData.entityType,
       },
     });
   } catch (e) {
@@ -352,24 +354,24 @@ router.get('/download', async function (req, res) {
         break;
       case 'review-report':
         reportColumn = [
-          'clientId',
-          'insurerId',
-          'debtorId',
-          'entityType',
+          'entityName',
           'abn',
           'acn',
           'registrationNumber',
+          'entityType',
+          'reviewDate',
           'country',
-          'requestedCreditLimit',
-          'creditLimit',
-          'approvalOrDecliningDate',
-          'applicationExpiryDate',
-          'expiryDate',
-          'reportExpiryDate',
-          'reportName',
-          'limitType',
-          'clientReference',
-          'comments',
+          'riskRating',
+          'tradingName',
+          'property',
+          'unitNumber',
+          'streetNumber',
+          'streetName',
+          'streetType',
+          'suburb',
+          'state',
+          'postCode',
+          'contactNumber',
         ];
         reportFor = 'Review Report';
         response = await getReviewReport({
