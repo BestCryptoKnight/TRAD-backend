@@ -856,6 +856,7 @@ const createTaskOnAlert = async ({ alertList }) => {
         dueDate: new Date(date.setDate(date.getDate() + 7)),
         entityType: 'debtor',
         entityId: filteredData[i].debtorId,
+        priority: 'URGENT',
       };
       await createTask(data);
       const notification = await addNotification({

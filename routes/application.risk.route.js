@@ -51,6 +51,8 @@ const { generateExcel } = require('../helper/excel.helper.js');
 const {
   listEntitySpecificAlerts,
   getAlertDetail,
+  checkForActiveCreditLimit,
+  checkForEntityInProfile,
 } = require('./../helper/alert.helper');
 const { checkForEndorsedLimit } = require('./../helper/policy.helper');
 const { getUserList } = require('./../helper/user.helper');
@@ -1433,8 +1435,22 @@ router.put('/:applicationId', async function (req, res) {
             reason: req.body.comments || '',
             status,
             approvedAmount,
-            applicationId:application._id
+            applicationId: application._id,
           });
+        }
+      }
+      if (req.body.status === 'DECLINED') {
+        const hasActiveCreditLimit = await checkForActiveCreditLimit({
+          debtorId: application?.debtorId,
+        });
+        if (!hasActiveCreditLimit) {
+          if (application?.debtorId) {
+            checkForEntityInProfile({
+              entityId: application?.debtorId,
+              action: 'remove',
+              entityType: 'debtor',
+            });
+          }
         }
       }
     }

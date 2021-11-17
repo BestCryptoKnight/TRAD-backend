@@ -1426,6 +1426,7 @@ const sendNotificationsToUser = async ({
         dueDate: new Date(date.setDate(date.getDate() + 7)),
         entityType: 'application',
         entityId: application._id,
+        priority: 'URGENT',
       };
       const task = await createTask(data);
       await addAuditLog({

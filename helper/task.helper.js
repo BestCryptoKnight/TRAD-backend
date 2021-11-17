@@ -99,6 +99,7 @@ const aggregationQuery = async ({
   try {
     let queryFilter = {
       isDeleted: false,
+      isCompleted: false,
     };
     const query = [];
     const aggregationQuery = [];
