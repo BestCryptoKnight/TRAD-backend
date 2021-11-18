@@ -1201,11 +1201,11 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
     await Application.updateOne({ _id: applicationId }, update);
     if (blockers.length === 0 && identifiedInsurer !== 'euler') {
       //TODO uncomment to send decision letter
-      /*sendDecisionLetter({
+      sendDecisionLetter({
         applicationId,
         status: 'APPROVED',
         approvedAmount: application.creditLimit,
-      });*/
+      });
     }
   } catch (e) {
     Logger.log.error('Error occurred in check for automation ', e);
