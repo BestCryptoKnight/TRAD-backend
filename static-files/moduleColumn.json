@@ -549,7 +549,7 @@
             "url": "application/drawer-details"
           }
         },
-        { "name": "creditLimit", "label": "Credit Limit", "type": "string" },
+        { "name": "creditLimit", "label": "Credit Limit", "type": "amount" },
         {
           "name": "limitType",
           "label": "Limit Type",
@@ -1708,7 +1708,7 @@
           "label": "Debtor Entity Name",
           "type": "string"
         },
-        { "name": "creditLimit", "label": "Credit Limit", "type": "string" },
+        { "name": "creditLimit", "label": "Credit Limit", "type": "amount" },
         { "name": "reason", "label": "Reason", "type": "string" }
       ]
     }
