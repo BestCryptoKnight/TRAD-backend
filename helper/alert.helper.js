@@ -889,13 +889,14 @@ Check for active credit limit
 const checkForActiveCreditLimit = async ({ debtorId }) => {
   try {
     const creditLimit = await ClientDebtor.findOne({
-      isActive: true,
+      // isActive: true,
       debtorId: debtorId,
-      $and: [
-        { creditLimit: { $exists: true } },
-        { creditLimit: { $ne: null } },
-        { creditLimit: { $ne: 0 } },
-      ],
+      status: { $exists: true, $in: ['APPROVED'] },
+      // $and: [
+      //   { creditLimit: { $exists: true } },
+      //   { creditLimit: { $ne: null } },
+      //   { creditLimit: { $ne: 0 } },
+      // ],
       // creditLimit: { $exists: true, $ne: null },
     }).lean();
     return !!creditLimit;

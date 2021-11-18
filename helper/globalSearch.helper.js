@@ -384,14 +384,15 @@ Get Debtor List for Client Panel
 const getClientDebtorList = async ({ searchString, clientId }) => {
   try {
     let queryFilter = {
-      isActive: true,
+      // isActive: true,
       clientId: mongoose.Types.ObjectId(clientId),
+      status: { $exists: true, $in: ['APPROVED', 'DECLINED'] },
       // creditLimit: { $exists: true, $ne: null },
-      $and: [
-        { creditLimit: { $exists: true } },
-        { creditLimit: { $ne: null } },
-        { creditLimit: { $ne: 0 } },
-      ],
+      // $and: [
+      //   { creditLimit: { $exists: true } },
+      //   { creditLimit: { $ne: null } },
+      //   { creditLimit: { $ne: 0 } },
+      // ],
     };
     /* const debtors = await ClientDebtor.find(queryFilter)
       .populate({
