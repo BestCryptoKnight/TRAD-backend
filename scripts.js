@@ -14,9 +14,9 @@ const Application = mongoose.model('application');
 /*
  * Local Imports
  * */
-const Logger = require('./../services/logger');
+const Logger = require('./services/logger');
 const { fetchCreditReportInPDFFormat } = require('./helper/illion.helper');
-const { uploadFile } = require('./static-file.helper');
+const { uploadFile } = require('./helper/static-file.helper');
 const { getClientPolicies } = require('./helper/rss.helper');
 
 const fetchPDFCreditReports = async () => {
@@ -191,18 +191,17 @@ const updateSurrenderedStatus = async () => {
       { creditLimit: null, activeApplicationId: { $exists: true } },
       { status: 'SURRENDERED' },
     );
+    console.log('Script executed successfully................');
   } catch (e) {
     Logger.log.error('Error occurred in update credit limit status', e);
   }
 };
-
 const updateCreditLimit = async () => {
   try {
-    const creditLimits = await ClientDebtor.find({
-      creditLimit: { $ne: null },
-    }).lean();
+    const creditLimits = await ClientDebtor.find({}).lean();
     const updatedCreditLimits = [];
     for (let i = 0; i < creditLimits.length; i++) {
+      console.log('index.........', i);
       const application = await Application.find({
         status: { $in: ['APPROVED', 'DECLINED', 'WITHDRAWN', 'CANCELLED'] },
         clientId: creditLimits[i].clientId,
@@ -210,33 +209,39 @@ const updateCreditLimit = async () => {
       })
         .sort({ approvalOrDecliningDate: -1 })
         .limit(1);
-      if (creditLimits[i]?.activeApplicationId !== application?._id) {
+      if (
+        application &&
+        application.length !== 0 &&
+        application[0]?._id &&
+        (!creditLimits[i]?.activeApplicationId ||
+          creditLimits[i]?.activeApplicationId !== application[0]?._id ||
+          !creditLimits[i]?.status)
+      ) {
         updatedCreditLimits.push({
           _id: creditLimits[i]._id,
           oldApplicationId: creditLimits[i].activeApplicationId,
-          newApplicationId: application._id,
+          newApplicationId: application[0]._id,
           oldCreditLimit: creditLimits[i].creditLimit,
           oldIsActiveFlag: creditLimits[i].isActive,
         });
-        creditLimits[i].activeApplicationId = application._id;
+        creditLimits[i].activeApplicationId = application[0]._id;
         if (
           !creditLimits[i]?.status ||
           creditLimits[i]?.status !== 'SURRENDERED'
         ) {
-          switch (application.status) {
+          switch (application[0].status) {
             case 'APPROVED':
-              creditLimits[i].status = application.status;
-              creditLimits[i].creditLimit = application.acceptedAmount;
+              creditLimits[i].status = application[0].status;
+              creditLimits[i].creditLimit = application[0].acceptedAmount;
               creditLimits[i].isActive = true;
               break;
             case 'DECLINED':
-              creditLimits[i].status = application.status;
+              creditLimits[i].status = application[0].status;
               creditLimits[i].creditLimit = 0;
               creditLimits[i].isActive = true;
               break;
             case 'WITHDRAWN':
             case 'CANCELLED':
-              creditLimits[i].creditLimit = 0;
               creditLimits[i].isActive = false;
               break;
           }
@@ -258,4 +263,9 @@ const updateCreditLimit = async () => {
   } catch (e) {
     console.log('Error occurred in update credit limit..', e);
   }
+};
+
+module.exports = {
+  updateSurrenderedStatus,
+  updateCreditLimit,
 };

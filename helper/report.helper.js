@@ -353,12 +353,13 @@ const getLimitListReport = async ({
 }) => {
   try {
     const queryFilter = {
-      isActive: true,
-      $and: [
-        { creditLimit: { $exists: true } },
-        { creditLimit: { $ne: null } },
-        { creditLimit: { $ne: 0 } },
-      ],
+      // isActive: true,
+      // $and: [
+      //   { creditLimit: { $exists: true } },
+      //   { creditLimit: { $ne: null } },
+      //   { creditLimit: { $ne: 0 } },
+      // ],
+      status: { $exists: true, $in: ['APPROVED', 'DECLINED'] },
       // creditLimit: { $exists: true, $ne: null },
     };
     const query = [];

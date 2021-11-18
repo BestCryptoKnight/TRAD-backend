@@ -119,14 +119,15 @@ const getClientCreditLimit = async ({
       'approvalOrDecliningDate',
     ];
     const queryFilter = {
-      isActive: true,
+      // isActive: true,
       clientId: mongoose.Types.ObjectId(clientId),
+      status: { $exists: true, $in: ['APPROVED', 'DECLINED'] },
       // creditLimit: { $exists: true, $ne: null },
-      $and: [
-        { creditLimit: { $exists: true } },
-        { creditLimit: { $ne: null } },
-        { creditLimit: { $ne: 0 } },
-      ],
+      // $and: [
+      //   { creditLimit: { $exists: true } },
+      //   { creditLimit: { $ne: null } },
+      //   { creditLimit: { $ne: 0 } },
+      // ],
     };
     const aggregationQuery = [
       {
@@ -434,14 +435,15 @@ const getDebtorCreditLimit = async ({
       'activeApplicationId',
     ];
     const queryFilter = {
-      isActive: true,
+      // isActive: true,
       debtorId: mongoose.Types.ObjectId(debtorId),
+      status: { $exists: true, $in: ['APPROVED', 'DECLINED'] },
       // creditLimit: { $exists: true, $ne: null },
-      $and: [
-        { creditLimit: { $exists: true } },
-        { creditLimit: { $ne: null } },
-        { creditLimit: { $ne: 0 } },
-      ],
+      // $and: [
+      //   { creditLimit: { $exists: true } },
+      //   { creditLimit: { $ne: null } },
+      //   { creditLimit: { $ne: 0 } },
+      // ],
     };
     if (!hasFullAccessForClientModule && userId) {
       const clients = await Client.find({
@@ -490,7 +492,6 @@ const getDebtorCreditLimit = async ({
       );
     }
     const fields = debtorColumn.map((i) => {
-      console.log('i', i);
       // i = !clientDebtorDetails.includes(i) ? 'clientId.' + i : i;
       i = clientDebtorDetails.includes(i)
         ? i
@@ -708,7 +709,8 @@ const checkForExpiringLimit = async ({ startDate, endDate }) => {
   try {
     const creditLimits = await ClientDebtor.find({
       expiryDate: { $exists: true, $ne: null, $gte: startDate, $lte: endDate },
-      isActive: true,
+      // isActive: true,
+      status: { $exists: true, $in: ['APPROVED'] },
     })
       .populate({
         path: 'clientId',
