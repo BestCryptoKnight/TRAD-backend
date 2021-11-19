@@ -196,6 +196,7 @@ const updateSurrenderedStatus = async () => {
     Logger.log.error('Error occurred in update credit limit status', e);
   }
 };
+
 const updateCreditLimit = async () => {
   try {
     const creditLimits = await ClientDebtor.find({}).lean();
@@ -265,7 +266,106 @@ const updateCreditLimit = async () => {
   }
 };
 
-module.exports = {
-  updateSurrenderedStatus,
-  updateCreditLimit,
+const removeRedundantCreditLimits = async () => {
+  try {
+    console.log('Script started successfully.........', new Date());
+    const clientDebtorPipeline = [
+      {
+        $group: {
+          _id: { clientId: '$clientId', debtorId: '$debtorId' },
+          applications: { $push: '$activeApplicationId' },
+          creditLimits: { $push: '$$ROOT' },
+        },
+      },
+      {
+        $project: {
+          id: '$_id',
+          creditLimitsLength: {
+            $size: '$creditLimits',
+          },
+          creditLimits: '$creditLimits',
+          applications: '$applications',
+        },
+      },
+      {
+        $match: {
+          creditLimitsLength: {
+            $gt: 1,
+          },
+        },
+      },
+    ];
+    const clientDebtors = await ClientDebtor.aggregate(
+      clientDebtorPipeline,
+    ).allowDiskUse(true);
+    console.log('Processing credit limits..........');
+    const deletedCreditLimits = [];
+    for (let i = 0; i < clientDebtors.length; i++) {
+      const clientDebtorIds = clientDebtors[i].creditLimits.map((d) => d._id);
+      console.log(JSON.stringify(clientDebtorIds, null, 3));
+      const primaryClientDebtorId = clientDebtorIds.shift();
+      const application = await Application.find({
+        status: { $in: ['APPROVED', 'DECLINED', 'WITHDRAWN', 'CANCELLED'] },
+        clientId: clientDebtors[i].id.clientId,
+        debtorId: clientDebtors[i].id.debtorId,
+      })
+        .sort({ approvalOrDecliningDate: -1 })
+        .limit(1);
+      if (primaryClientDebtorId && application && application.length !== 0) {
+        const promiseArr = [];
+        const update = {
+          activeApplicationId: application[0]._id,
+        };
+        switch (application[0].status) {
+          case 'APPROVED':
+            update.status = application[0].status;
+            update.creditLimit = application[0].acceptedAmount;
+            update.isActive = true;
+            break;
+          case 'DECLINED':
+            update.status = application[0].status;
+            update.creditLimit = 0;
+            update.isActive = true;
+            break;
+          case 'WITHDRAWN':
+          case 'CANCELLED':
+            update.creditLimit = 0;
+            update.isActive = false;
+            break;
+        }
+        promiseArr.push(
+          ClientDebtor.deleteMany({ _id: { $in: clientDebtorIds } }),
+        );
+        promiseArr.push(
+          ClientDebtor.updateOne({ _id: primaryClientDebtorId }, update),
+        );
+        promiseArr.push(
+          Application.updateMany(
+            {
+              clientId: clientDebtors[i].id.clientId,
+              debtorId: clientDebtors[i].id.debtorId,
+            },
+            { $set: { clientDebtorId: primaryClientDebtorId } },
+          ),
+        );
+        let results = await Promise.all(promiseArr);
+        deletedCreditLimits.push({
+          primaryClientDebtorId,
+          otherDebtorIds: clientDebtorIds,
+          results,
+        });
+      }
+    }
+    fs.writeFileSync(
+      'delete-credit-limits-results.json',
+      JSON.stringify(deletedCreditLimits),
+    );
+    console.log(
+      'Successfully deleted redundant credit limits.................',
+    );
+  } catch (e) {
+    console.log('Error occurred in remove redundant credit limits..', e);
+  }
 };
+
+module.exports = { removeRedundantCreditLimits };
