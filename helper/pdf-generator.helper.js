@@ -226,7 +226,7 @@ const generateDecisionLetter = async ({
       );
     }
     pdf.moveDown(0.6);
-    pdf.fill('#FE5050').font('Helvetica').fontSize(11.25);
+    pdf.fill('#828F9D').font('Helvetica').fontSize(11.25);
     if (status === 'DECLINED' && rejectionReason) {
       pdf.text(rejectionReason, {
         // align: 'center',
