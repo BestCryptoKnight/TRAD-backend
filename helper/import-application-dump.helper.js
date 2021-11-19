@@ -1324,9 +1324,10 @@ const generateApplications = async (importId, userId) => {
       });
       let clientDebtor;
       if (debtor) {
+        //TODO change query
         clientDebtor = await ClientDebtor.findOne({
-          [searchParam]: searchValue,
-          isActive: true,
+          clientId: client._id,
+          debtorId: debtor._id,
         });
         let existingApplication = await Application.findOne({
           debtorId: debtor._id,
@@ -1445,7 +1446,11 @@ const generateApplications = async (importId, userId) => {
                     .postCode
                 : null),
           },
-          isActive: (importApplicationDump.applications[i].abrResponseForDebtor?.isActive === 'Active' || importApplicationDump.applications[i].abrResponseForDebtor?.isActive === true )
+          isActive:
+            importApplicationDump.applications[i].abrResponseForDebtor
+              ?.isActive === 'Active' ||
+            importApplicationDump.applications[i].abrResponseForDebtor
+              ?.isActive === true,
         });
         if (
           importApplicationDump.applications[i].address.countryCode === 'AUS' ||
