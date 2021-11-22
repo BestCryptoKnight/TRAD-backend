@@ -1131,7 +1131,7 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
     console.log('continueWithAutomation', continueWithAutomation);
     console.log('blockers', blockers);
     let identifiedInsurer;
-    if (continueWithAutomation) {
+    if (continueWithAutomation && application?.clientId?.insurerId?.name) {
       identifiedInsurer = await identifyInsurer({
         insurerName: application.clientId.insurerId.name,
       });
@@ -1155,6 +1155,9 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
         response = await insurerTrad({ application, type: type, policy });
       }
       blockers = blockers.concat(response);
+    } else {
+      continueWithAutomation = false;
+      blockers.push('No Insurer found');
     }
     const update = {};
     update.blockers = blockers;
