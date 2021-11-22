@@ -5,6 +5,7 @@ const PDFDocument = require('pdfkit');
 let PdfTable = require('voilab-pdf-table');
 const VoilabPdfTable = require('voilab-pdf-table/plugins/fitcolumn');
 const axios = require('axios');
+const moment = require('moment-timezone');
 
 /*
  * Local Imports
@@ -31,7 +32,9 @@ const generateDecisionLetter = async ({
   expiryDate,
 }) => {
   const pdfBuffer = await new Promise(async (resolve) => {
-    const date = new Date();
+    const date =
+      moment().tz(config.organization.timeZone).format('DD/MM/YYYY') ||
+      new Date();
     let buffer;
     let pdf = new PDFDocument({
       autoFirstPage: false,
@@ -79,12 +82,7 @@ const generateDecisionLetter = async ({
     );
     pdf.image(buffer, 30, 52, { fit: [250, 250] });
     pdf.fill('#EF7B10').font('Helvetica-Bold');
-    pdf.text(
-      `Date: ${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`,
-      490,
-      70,
-      {},
-    );
+    pdf.text(`Date: ${date}`, 490, 70, {});
     /*Header with Logo Ends*/
     /*Page Title with Client Starts*/
     pdf.rect(0, 100.2, 595.28, 62).fillOpacity(1).fill('#003A78');
@@ -134,21 +132,21 @@ const generateDecisionLetter = async ({
     }
     if (requestedDate) {
       tableData.push({
-        column1: `Requested Date: ${requestedDate.getDate()}/${
-          requestedDate.getMonth() + 1
-        }/${requestedDate.getFullYear()}`,
+        column1: `Requested Date: ${moment(requestedDate)
+          .tz(config.organization.timeZone)
+          .format('DD/MM/YYYY')}`,
         column2: `${
           status === 'DECLINED' ? 'Declining' : 'Approved'
-        } Date: ${approvalOrDecliningDate.getDate()}/${
-          approvalOrDecliningDate.getMonth() + 1
-        }/${approvalOrDecliningDate.getFullYear()}`,
+        } Date: ${moment(approvalOrDecliningDate)
+          .tz(config.organization.timeZone)
+          .format('DD/MM/YYYY')}`,
       });
     }
     if (expiryDate && status !== 'DECLINED') {
       tableData.push({
-        column1: `Expiry Date: ${expiryDate.getDate()}/${
-          expiryDate.getMonth() + 1
-        }/${expiryDate.getFullYear()}`,
+        column1: `Expiry Date: ${moment(expiryDate)
+          .tz(config.organization.timeZone)
+          .format('DD/MM/YYYY')}`,
       });
     }
     table.addBody(tableData);
