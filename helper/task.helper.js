@@ -95,14 +95,16 @@ const aggregationQuery = async ({
   isForRisk = true,
   hasFullAccess = false,
   userId,
+  isForDownload = false,
 }) => {
   try {
     let queryFilter = {
       isDeleted: false,
       isCompleted: false,
     };
+    const filterArray = [];
     const query = [];
-    const aggregationQuery = [];
+    let aggregationQuery = [];
 
     const listCreatedBy = requestedQuery.listCreatedBy
       ? requestedQuery.listCreatedBy
@@ -140,9 +142,23 @@ const aggregationQuery = async ({
 
     if (requestedQuery.priority) {
       queryFilter.priority = requestedQuery.priority.toUpperCase();
+      if (isForDownload) {
+        filterArray.push({
+          label: 'Priority',
+          value: requestedQuery.priority,
+          type: 'string',
+        });
+      }
     }
     if (requestedQuery.isCompleted) {
       queryFilter.isCompleted = requestedQuery.isCompleted === 'true';
+      if (isForDownload) {
+        filterArray.push({
+          label: 'Completed Task',
+          value: 'Yes',
+          type: 'string',
+        });
+      }
     }
 
     if (requestedQuery.startDate || requestedQuery.endDate) {
@@ -151,11 +167,25 @@ const aggregationQuery = async ({
         dateQuery = {
           $gte: new Date(requestedQuery.startDate),
         };
+        if (isForDownload) {
+          filterArray.push({
+            label: 'Start Date',
+            value: requestedQuery.startDate,
+            type: 'date',
+          });
+        }
       }
       if (requestedQuery.endDate) {
         dateQuery = Object.assign({}, dateQuery, {
           $lte: new Date(requestedQuery.endDate),
         });
+        if (isForDownload) {
+          filterArray.push({
+            label: 'End Date',
+            value: requestedQuery.endDate,
+            type: 'date',
+          });
+        }
       }
       queryFilter.dueDate = dateQuery;
     }
@@ -485,10 +515,12 @@ const aggregationQuery = async ({
           ],
         },
       });
+    } else {
+      aggregationQuery = aggregationQuery.concat(query);
     }
     aggregationQuery.unshift({ $match: queryFilter });
 
-    return aggregationQuery;
+    return { query: aggregationQuery, filterArray };
   } catch (e) {
     Logger.log.error(
       'Error occurred in task aggregation query ',
