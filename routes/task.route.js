@@ -360,7 +360,7 @@ router.get('/', async function (req, res) {
       req.query.requestedEntityId = req.user.clientId;
     }*/
     taskColumn.columns.push('isCompleted');
-    const query = await aggregationQuery({
+    const { query } = await aggregationQuery({
       taskColumn: taskColumn.columns,
       requestedQuery: req.query,
       isForRisk: false,
