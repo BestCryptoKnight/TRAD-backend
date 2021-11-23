@@ -740,6 +740,38 @@ const updateEntitiesToAlertProfile = async ({ entityList, action }) => {
   }
 };
 
+const generateRandomNumber = async ({ length = 8 }) => {
+  try {
+    const characters = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let result = '';
+    for (let i = length; i > 0; --i) {
+      result += characters[Math.floor(Math.random() * characters.length)];
+    }
+    return result;
+  } catch (e) {
+    Logger.log.error('Error occurred in generate random number', e);
+  }
+};
+
+const checkForRegistrationNumber = async () => {
+  try {
+    let generateNumber = true;
+    let randomNumber;
+    do {
+      randomNumber = await generateRandomNumber({});
+      const debtor = await Debtor.findOne({
+        registrationNumber: randomNumber,
+      }).lean();
+      if (!debtor) {
+        generateNumber = false;
+      }
+    } while (generateNumber);
+    return randomNumber;
+  } catch (e) {
+    Logger.log.error('Error occurred in check for registration number', e);
+  }
+};
+
 module.exports = {
   createDebtor,
   getDebtorFullAddress,
@@ -751,4 +783,5 @@ module.exports = {
   checkForReviewDebtor,
   updateEntitiesToAlertProfile,
   getCurrentDebtorList,
+  checkForRegistrationNumber,
 };
