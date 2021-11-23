@@ -24,6 +24,7 @@ const {
 const {
   getDebtorFullAddress,
   getCurrentDebtorList,
+  checkForRegistrationNumber,
 } = require('./../helper/debtor.helper');
 const { generateNewApplication } = require('./../helper/application.helper');
 const {
@@ -159,6 +160,25 @@ router.get('/', async function (req, res) {
     });
   } catch (e) {
     Logger.log.error('Error occurred in get client-debtor details ', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Generate Company Registration Number
+ */
+router.get('/generate/registration-number', async function (req, res) {
+  try {
+    const registrationNumber = await checkForRegistrationNumber();
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: registrationNumber,
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in generate registration number ', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
