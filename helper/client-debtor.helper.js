@@ -4,6 +4,7 @@
 const mongoose = require('mongoose');
 const ClientDebtor = mongoose.model('client-debtor');
 const Client = mongoose.model('client');
+const Debtor = mongoose.model('debtor');
 const Application = mongoose.model('application');
 
 /*
@@ -129,6 +130,24 @@ const getClientCreditLimit = async ({
       //   { creditLimit: { $ne: 0 } },
       // ],
     };
+    if (requestedQuery.debtorIds) {
+      let debtorIds = requestedQuery.debtorIds.split(',');
+      if (isForDownload) {
+        const debtors = await Debtor.find({ _id: { $in: debtorIds } })
+          .select('entityName')
+          .lean();
+        filterArray.push({
+          label: 'Debtor',
+          value: debtors
+            .map((i) => i.entityName)
+            .toString()
+            .replace(/,/g, ', '),
+          type: 'string',
+        });
+      }
+      debtorIds = debtorIds.map((id) => mongoose.Types.ObjectId(id));
+      queryFilter.debtorId = { $in: debtorIds };
+    }
     const aggregationQuery = [
       {
         $lookup: {

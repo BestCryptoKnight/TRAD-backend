@@ -111,6 +111,14 @@ const generateExcel = ({ data, reportFor, headers, filter, title }) => {
           filter,
         });
         break;
+      case 'Task List':
+        addColumnsForTaskList({
+          data,
+          worksheet,
+          headers,
+          filter,
+        });
+        break;
     }
     workbook.xlsx.writeBuffer().then((buffer) => {
       return resolve(buffer);
@@ -332,6 +340,35 @@ const addColumnsForCreditLimitList = async ({
     await addDataForTable({ data, headers, worksheet });
   } catch (e) {
     console.log('Error occurred in add limit list data', e);
+  }
+};
+
+const addColumnsForTaskList = async ({ data, worksheet, headers, filter }) => {
+  try {
+    worksheet.mergeCells('A1:J1');
+    for (let i = 0; i <= filter.length; i++) {
+      if (filter[i]) {
+        worksheet.mergeCells(`A${i + 2}:J${i + 2}`);
+      }
+    }
+    worksheet.getColumn(1).width = 25;
+    worksheet.getColumn(2).width = 45;
+    worksheet.getColumn(3).width = 35;
+    worksheet.getColumn(4).width = 20;
+    worksheet.getColumn(5).width = 25;
+    worksheet.getColumn(6).width = 25;
+    worksheet.getColumn(7).width = 25;
+    worksheet.getColumn(8).width = 20;
+    worksheet.getColumn(9).width = 20;
+    worksheet.getColumn(10).width = 20;
+
+    worksheet.addRow();
+    worksheet.mergeCells(
+      `A${worksheet.lastRow.number}:J${worksheet.lastRow.number}`,
+    );
+    await addDataForTable({ data, headers, worksheet });
+  } catch (e) {
+    console.log('Error occurred in add task list data', e);
   }
 };
 

@@ -58,6 +58,7 @@ module.exports = {
   organization: {
     name: 'Trade Credit Risk',
     insurerName: 'Trade Credit Risk',
+    timeZone: 'Australia/Melbourne',
   },
   environment: process.env.ENVIRONMENT || 'dev',
   staticServing: {

@@ -25,6 +25,7 @@ const { addAuditLog, getEntityName } = require('./../helper/audit-log.helper');
 const { sendNotification } = require('./../helper/socket.helper');
 const { addNotification } = require('./../helper/notification.helper');
 const { getCurrentDebtorList } = require('./../helper/debtor.helper');
+const { generateExcel } = require('./../helper/excel.helper');
 
 /**
  * Get Column Names
@@ -256,6 +257,86 @@ router.get('/details/:taskId', async function (req, res) {
 });
 
 /**
+ * Download Excel
+ */
+router.get('/download', async function (req, res) {
+  try {
+    const module = StaticFile.modules.find((i) => i.name === 'task');
+    const taskColumn = [
+      'priority',
+      'description',
+      'comments',
+      'entityType',
+      'entityId',
+      'createdById',
+      'assigneeId',
+      'dueDate',
+      'createdAt',
+      'updatedAt',
+    ];
+    const hasFullAccess =
+      req.accessTypes && req.accessTypes.indexOf('full-access') !== -1;
+    const { query, filterArray } = await aggregationQuery({
+      taskColumn,
+      isForDownload: true,
+      requestedQuery: req.query,
+      isForRisk: false,
+      hasFullAccess: false,
+      userId: req.user.clientId,
+    });
+    const taskList = await Task.aggregate(query).allowDiskUse(true);
+    const tasks =
+      taskList && taskList[0] && taskList[0]['paginatedResult']
+        ? taskList[0]['paginatedResult']
+        : taskList;
+    const finalArray = [];
+    let data = {};
+    if (tasks && tasks.length > 20000) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'DOWNLOAD_LIMIT_EXCEED',
+        message:
+          'User cannot download more than 20000 applications at a time. Please apply filter to narrow down the list',
+      });
+    }
+    if (tasks.length !== 0) {
+      tasks.forEach((i) => {
+        data = {};
+        taskColumn.map((key) => {
+          if (key === 'entityId' || key === 'assigneeId') {
+            i[key] = i[key] && i[key]['name']?.[0] ? i[key]['name'][0] : '-';
+          }
+          if (key === 'createdById') {
+            i[key] = i[key]?.[0] || '-';
+          }
+          data[key] = i[key];
+        });
+        finalArray.push(data);
+      });
+    }
+    const excelData = await generateExcel({
+      data: finalArray,
+      reportFor: 'Task List',
+      headers: module.manageColumns,
+      filter: filterArray,
+    });
+    const fileName = 'task-list-' + new Date().getTime() + '.xlsx';
+    res.header(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader('Content-Disposition', 'attachment; filename=' + fileName);
+    res.status(200).send(excelData);
+  } catch (e) {
+    Logger.log.error('Error occurred in download task list', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
  * Get Task List
  */
 router.get('/', async function (req, res) {
@@ -279,7 +360,7 @@ router.get('/', async function (req, res) {
       req.query.requestedEntityId = req.user.clientId;
     }*/
     taskColumn.columns.push('isCompleted');
-    const query = await aggregationQuery({
+    const { query } = await aggregationQuery({
       taskColumn: taskColumn.columns,
       requestedQuery: req.query,
       isForRisk: false,

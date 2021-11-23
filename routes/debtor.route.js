@@ -18,12 +18,13 @@ const StaticFile = require('./../static-files/moduleColumn');
 const StaticData = require('./../static-files/staticData.json');
 const {
   getClientDebtorDetails,
-  convertToCSV,
   getClientCreditLimit,
-  formatCSVList,
   downloadDecisionLetter,
 } = require('./../helper/client-debtor.helper');
-const { getDebtorFullAddress } = require('./../helper/debtor.helper');
+const {
+  getDebtorFullAddress,
+  getCurrentDebtorList,
+} = require('./../helper/debtor.helper');
 const { generateNewApplication } = require('./../helper/application.helper');
 const {
   getStakeholderList,
@@ -111,6 +112,11 @@ router.get('/column-name', async function (req, res) {
  * */
 router.get('/entity-list', async function (req, res) {
   try {
+    const debtors = await getCurrentDebtorList({
+      showCompleteList: false,
+      isForRisk: false,
+      userId: req.user.clientId,
+    });
     res.status(200).send({
       status: 'SUCCESS',
       data: {
@@ -119,6 +125,7 @@ router.get('/entity-list', async function (req, res) {
         entityType: StaticData.entityType,
         newZealandStates: StaticData.newZealandStates,
         countryList: StaticData.countryList,
+        debtors,
       },
     });
   } catch (e) {
