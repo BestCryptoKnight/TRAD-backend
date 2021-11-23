@@ -28,7 +28,7 @@ const getEndorsedLimit = async ({
       status: { $exists: true, $in: ['APPROVED'] },
     };
     if (startDate && endDate) {
-      query.updatedAt = {
+      query.approvalOrDecliningDate = {
         $gte: new Date(startDate),
         $lte: new Date(endDate),
       };
@@ -65,7 +65,7 @@ const getEndorsedLimit = async ({
   }
 };
 
-const getRESChecks = async ({
+const getCreditChecks = async ({
   clientId,
   startDate,
   endDate,
@@ -303,5 +303,5 @@ module.exports = {
   getApplicationStatus,
   getApprovedAmount,
   getApprovedApplication,
-  getRESChecks,
+  getCreditChecks,
 };

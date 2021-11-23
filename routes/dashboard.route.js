@@ -15,7 +15,7 @@ const {
   getApplicationStatus,
   getEndorsedLimit,
   getApprovedApplication,
-  getRESChecks,
+  getCreditChecks,
 } = require('./../helper/dashboard.helper');
 
 /**
@@ -50,7 +50,11 @@ router.get('/', async function (req, res) {
     ]);
     const response = {};
     response['discretionaryLimit'] =
-      ciPolicy && ciPolicy.discretionaryLimit ? ciPolicy.discretionaryLimit : 0;
+      ciPolicy && ciPolicy?.discretionaryLimit
+        ? ciPolicy.discretionaryLimit
+        : rmpPolicy && rmpPolicy?.discretionaryLimit
+        ? rmpPolicy.discretionaryLimit
+        : 0;
     let startDate;
     let endDate;
     if (ciPolicy || rmpPolicy) {
@@ -92,7 +96,7 @@ router.get('/', async function (req, res) {
         startDate,
         endDate,
       }),
-      getRESChecks({
+      getCreditChecks({
         clientId: req.user.clientId,
         startDate,
         endDate,
@@ -110,6 +114,7 @@ router.get('/', async function (req, res) {
         ? approvedApplication[0]
         : {};
     response['resChecksCount'] = resChecks;
+    response['showGraphs'] = !!rmpPolicy;
     res.status(200).send({ status: 'SUCCESS', data: response });
   } catch (e) {
     Logger.log.error('Error occurred in get dashboard data', e.message || e);
