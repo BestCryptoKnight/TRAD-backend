@@ -1292,6 +1292,7 @@ router.put('/credit-limit/:creditLimitId', async function (req, res) {
         createdByType: 'user',
         createdById: req.user._id,
         creditLimit: req.body.creditLimit,
+        applicationId: clientDebtor?.activeApplicationId,
       });
     } else {
       await ClientDebtor.updateOne(
@@ -1424,7 +1425,7 @@ router.put('/user/:clientUserId', async function (req, res) {
           mailFor: 'newClientUser',
         };
         //TODO uncomment to send mail on Portal-Access
-        /*promises.push(MailHelper.sendMail(mailObj));*/
+        promises.push(MailHelper.sendMail(mailObj));
         message = 'Login access sent successfully';
       } else {
         //TODO revert portal access

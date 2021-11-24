@@ -31,7 +31,10 @@ const {
   getStakeholderList,
   getStakeholderDetails,
 } = require('./../helper/stakeholder.helper');
-const { checkForEntityInProfile } = require('./../helper/alert.helper');
+const {
+  checkForEntityInProfile,
+  checkForActiveCreditLimit,
+} = require('./../helper/alert.helper');
 const { generateExcel } = require('./../helper/excel.helper');
 const { addAuditLog } = require('./../helper/audit-log.helper');
 
@@ -821,7 +824,7 @@ router.put('/credit-limit/:creditLimitId', async function (req, res) {
       message: 'Credit limit updated successfully',
     });
   } catch (e) {
-    Logger.log.error('Error occurred in update credit-limit', e.message || e);
+    Logger.log.error('Error occurred in update credit-limit', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

@@ -1378,7 +1378,21 @@ router.put('/:applicationId', async function (req, res) {
         req.body.status === 'WITHDRAWN'
       ) {
         applicationUpdate.approvalOrDecliningDate = new Date();
-        const debtorCreditLimit = await ClientDebtor.findOne({
+        if (req.body.status === 'DECLINED') {
+          applicationUpdate.acceptedAmount = 0;
+          await ClientDebtor.updateOne(
+            { _id: application.clientDebtorId },
+            {
+              isFromOldSystem: false,
+              creditLimit: 0,
+              status: 'DECLINED',
+              activeApplicationId: application._id,
+              isActive: true,
+            },
+          );
+        }
+        //TODO remove
+        /*const debtorCreditLimit = await ClientDebtor.findOne({
           _id: application?.clientDebtorId,
         }).lean();
         if (
@@ -1399,6 +1413,7 @@ router.put('/:applicationId', async function (req, res) {
             update.creditLimit = undefined;
             update.isActive = false;
           }
+          console.log('update', update);
           await ClientDebtor.updateOne(
             { _id: application.clientDebtorId },
             update,
@@ -1409,7 +1424,7 @@ router.put('/:applicationId', async function (req, res) {
             { _id: application.clientDebtorId },
             { isFromOldSystem: false },
           );
-        }
+        }*/
       }
       await Application.updateOne(
         { _id: req.params.applicationId },
@@ -1431,12 +1446,12 @@ router.put('/:applicationId', async function (req, res) {
         });
         if (application?.limitType === 'CREDIT_CHECK') {
           //TODO uncomment to send decision letter
-          /*sendDecisionLetter({
+          sendDecisionLetter({
             reason: req.body.comments || '',
             status,
             approvedAmount,
             applicationId: application._id,
-          });*/
+          });
         }
       }
       if (req.body.status === 'DECLINED') {

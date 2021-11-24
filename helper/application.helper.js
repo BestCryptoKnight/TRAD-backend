@@ -1155,7 +1155,7 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
         response = await insurerTrad({ application, type: type, policy });
       }
       blockers = blockers.concat(response);
-    } else {
+    } else if (continueWithAutomation) {
       continueWithAutomation = false;
       blockers.push('No Insurer found');
     }
@@ -1204,11 +1204,11 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
     await Application.updateOne({ _id: applicationId }, update);
     if (blockers.length === 0 && identifiedInsurer !== 'euler') {
       //TODO uncomment to send decision letter
-      /*sendDecisionLetter({
+      sendDecisionLetter({
         applicationId,
         status: 'APPROVED',
         approvedAmount: application.creditLimit,
-      });*/
+      });
     }
   } catch (e) {
     Logger.log.error('Error occurred in check for automation ', e);
@@ -1220,13 +1220,18 @@ const generateNewApplication = async ({
   createdByType,
   createdById,
   creditLimit,
+  applicationId,
 }) => {
   try {
-    const application = await Application.findOne({
-      clientDebtorId: clientDebtorId,
-      status: 'APPROVED',
-    })
+    const query = applicationId
+      ? { _id: applicationId }
+      : {
+          clientDebtorId: clientDebtorId,
+          status: { $in: ['APPROVED', 'DECLINED'] },
+        };
+    const application = await Application.findOne(query)
       .populate('clientId debtorId')
+      .sort({ updatedAt: -1 })
       .lean();
     if (application) {
       const organization = await Organization.findOne({ isDeleted: false })

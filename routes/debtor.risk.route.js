@@ -1192,6 +1192,7 @@ router.put('/credit-limit/:debtorId', async function (req, res) {
         createdByType: 'user',
         createdById: req.user._id,
         creditLimit: req.body.creditLimit,
+        applicationId: clientDebtor?.activeApplicationId,
       });
     } else {
       await ClientDebtor.updateOne(
