@@ -28,7 +28,7 @@ const scheduler = async () => {
       '0 0 * * *',
       async () => {
         Logger.log.trace(
-          'Updating application count according at 12 AM acc. to Australia/Sydney timezone ',
+          'Updating application count according at 12 AM acc. to Australia/Melbourne timezone ',
           new Date(),
         );
         const start = new Date();
@@ -77,7 +77,7 @@ const scheduler = async () => {
       },
       {
         scheduled: true,
-        timezone: 'Australia/Sydney',
+        timezone: config.organization.timeZone,
       },
     );
 
@@ -88,14 +88,14 @@ const scheduler = async () => {
       '0 0 * * 0',
       async () => {
         Logger.log.trace(
-          'Remove token from database at 12 AM every sunday acc. to Australia/Sydney timezone',
+          'Remove token from database at 12 AM every sunday acc. to Australia/Melbourne timezone',
           new Date(),
         );
         await Promise.all([removeUserToken(), removeClientUserToken()]);
       },
       {
         scheduled: true,
-        timezone: 'Australia/Sydney',
+        timezone: config.organization.timeZone,
       },
     );
 
@@ -107,7 +107,7 @@ const scheduler = async () => {
       config.illion.cronString,
       async () => {
         Logger.log.trace(
-          'Retrieve alert list at 1 AM acc. to Australia/Sydney timezone',
+          'Retrieve alert list at 1 AM acc. to Australia/Melbourne timezone',
           new Date(),
         );
         let end = new Date();
@@ -132,7 +132,7 @@ const scheduler = async () => {
       },
       {
         scheduled: true,
-        timezone: 'Australia/Sydney',
+        timezone: config.organization.timeZone,
       },
     );
   } catch (e) {

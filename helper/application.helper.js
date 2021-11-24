@@ -1155,7 +1155,7 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
         response = await insurerTrad({ application, type: type, policy });
       }
       blockers = blockers.concat(response);
-    } else {
+    } else if (continueWithAutomation) {
       continueWithAutomation = false;
       blockers.push('No Insurer found');
     }
