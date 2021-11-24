@@ -575,7 +575,6 @@
         "entityName",
         "activeApplicationId",
         "creditLimit",
-        "isEndorsedLimit",
         "expiryDate",
         "createdAt"
       ]
@@ -901,11 +900,6 @@
         },
         { "name": "creditLimit", "label": "Credit Limit", "type": "amount" },
         {
-          "name": "isEndorsedLimit",
-          "label": "Credit Checks",
-          "type": "string"
-        },
-        {
           "name": "limitType",
           "label": "Limit Type",
           "type": "string"
@@ -925,7 +919,6 @@
         "name",
         "activeApplicationId",
         "creditLimit",
-        "isEndorsedLimit",
         "expiryDate",
         "createdAt"
       ]
