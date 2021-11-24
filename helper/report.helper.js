@@ -1628,6 +1628,7 @@ const getUsagePerClientReport = async ({
       reportColumn.includes('clientReference') ||
       reportColumn.includes('limitType')
     ) {
+      reportColumn.push('activeApplicationId');
       query.push({
         $lookup: {
           from: 'applications',
@@ -1788,7 +1789,8 @@ const getUsagePerClientReport = async ({
           limit?.activeApplicationId[0]?.creditLimit || '';
       }
       if (limit?.activeApplicationId?.[0]?.status) {
-        limit.status = limit?.activeApplicationId[0]?.status || '';
+        limit.status =
+          formatString(limit?.activeApplicationId[0]?.status) || '';
       }
       if (limit?.activeApplicationId?.[0]?.acceptedAmount) {
         limit.acceptedAmount =
