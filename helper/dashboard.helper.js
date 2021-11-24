@@ -229,7 +229,7 @@ const getApprovedApplication = async ({
     const query = {
       clientId: mongoose.Types.ObjectId(clientId),
       status: {
-        $in: ['APPROVED', 'DECLINED', 'CANCELLED'],
+        $in: ['APPROVED', 'DECLINED'],
       },
     };
     if (startDate && endDate) {

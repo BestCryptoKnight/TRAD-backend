@@ -1220,13 +1220,18 @@ const generateNewApplication = async ({
   createdByType,
   createdById,
   creditLimit,
+  applicationId,
 }) => {
   try {
-    const application = await Application.findOne({
-      clientDebtorId: clientDebtorId,
-      status: 'APPROVED',
-    })
+    const query = applicationId
+      ? { _id: applicationId }
+      : {
+          clientDebtorId: clientDebtorId,
+          status: { $in: ['APPROVED', 'DECLINED'] },
+        };
+    const application = await Application.findOne(query)
       .populate('clientId debtorId')
+      .sort({ updatedAt: -1 })
       .lean();
     if (application) {
       const organization = await Organization.findOne({ isDeleted: false })
