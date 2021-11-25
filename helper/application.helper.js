@@ -16,6 +16,7 @@ const ClientUser = mongoose.model('client-user');
  * Local Imports
  * */
 const Logger = require('./../services/logger');
+const config = require('./../config');
 const { createDebtor } = require('./debtor.helper');
 const {
   checkEntityType,
@@ -1204,11 +1205,13 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
     await Application.updateOne({ _id: applicationId }, update);
     if (blockers.length === 0 && identifiedInsurer !== 'euler') {
       //TODO uncomment to send decision letter
-      sendDecisionLetter({
-        applicationId,
-        status: 'APPROVED',
-        approvedAmount: application.creditLimit,
-      });
+      if (config.mailer.isForProduction === 'true') {
+        sendDecisionLetter({
+          applicationId,
+          status: 'APPROVED',
+          approvedAmount: application.creditLimit,
+        });
+      }
     }
   } catch (e) {
     Logger.log.error('Error occurred in check for automation ', e);

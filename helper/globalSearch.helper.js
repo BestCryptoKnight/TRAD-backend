@@ -109,7 +109,7 @@ const getClientList = async ({
     return clients;
   } catch (e) {
     Logger.log.error(
-      'Error occurred while search in user module',
+      'Error occurred while search in client module',
       e.message || e,
     );
   }
@@ -144,7 +144,7 @@ const getInsurerList = async ({ searchString }) => {
     return response;
   } catch (e) {
     Logger.log.error(
-      'Error occurred while search in user module',
+      'Error occurred while search in insurer module',
       e.message || e,
     );
   }
@@ -273,7 +273,7 @@ const getDebtorList = async ({
     return debtors;
   } catch (e) {
     Logger.log.error(
-      'Error occurred while search in user module',
+      'Error occurred while search in debtor module',
       e.message || e,
     );
   }
@@ -318,7 +318,7 @@ const getTaskList = async ({
     return tasks;
   } catch (e) {
     Logger.log.error(
-      'Error occurred while search in user module',
+      'Error occurred while search in task module',
       e.message || e,
     );
   }
@@ -372,7 +372,7 @@ const getApplicationList = async ({
     return applications;
   } catch (e) {
     Logger.log.error(
-      'Error occurred while search in user module',
+      'Error occurred while search in application module',
       e.message || e,
     );
   }
@@ -492,7 +492,7 @@ const getClientDebtorList = async ({ searchString, clientId }) => {
     return debtors;
   } catch (e) {
     Logger.log.error(
-      'Error occurred while search in user module',
+      'Error occurred while search in client-debtor module',
       e.message || e,
     );
   }
