@@ -487,6 +487,7 @@ router.put('/list', async function (req, res) {
         requestBody: req.body,
         userId: req.user._id,
         userName: req.user.name,
+        userType: 'user',
       });
       if (response && response.status && response.status === 'ERROR') {
         return res.status(400).send(response);

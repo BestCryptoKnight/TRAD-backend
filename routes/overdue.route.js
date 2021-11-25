@@ -375,6 +375,8 @@ router.put('/list', async function (req, res) {
         isForRisk: false,
         requestBody: req.body,
         clientId: req.user.clientId,
+        userType: 'client-user',
+        userId: req.user._id,
       });
     } else {
       if (req.body.list.length !== 0 || !req.body.month || !req.body.year) {

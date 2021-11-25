@@ -53,6 +53,8 @@ const overdueSchema = new Schema(
     outstandingAmount: { type: Schema.Types.Number },
     isDeleted: { type: Schema.Types.Boolean, default: false },
     nilOverdue: { type: Schema.Types.Boolean, default: false },
+    createdByType: { type: Schema.Types.String, enum: ['client-user', 'user'] },
+    createdById: { type: Schema.Types.ObjectId },
   },
   { timestamps: true },
 );
