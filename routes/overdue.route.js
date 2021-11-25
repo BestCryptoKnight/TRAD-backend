@@ -399,6 +399,8 @@ router.put('/list', async function (req, res) {
           year: req.body.year,
           nilOverdue: req.body.nilOverdue,
           list: [],
+          createdById: req.user._id,
+          createdByType: 'client-user',
         },
         {
           upsert: true,

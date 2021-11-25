@@ -520,6 +520,8 @@ router.put('/list', async function (req, res) {
           nilOverdue: req.body.nilOverdue,
           list: [],
           status: 'REPORTED_TO_INSURER',
+          createdById: req.user._id,
+          createdByType: 'user',
         },
         {
           upsert: true,

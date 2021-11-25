@@ -458,6 +458,18 @@ const getAuditLogList = async ({
                 null,
               ],
             },
+            overdueClientUserId: {
+              $cond: [
+                {
+                  $and: [
+                    { $ne: ['$entityType', 'overdue'] },
+                    { $eq: ['$userType', 'client-user'] },
+                  ],
+                },
+                '$userRefId',
+                null,
+              ],
+            },
             userId: {
               $cond: [{ $eq: ['$userType', 'user'] }, '$userRefId', null],
             },
@@ -480,17 +492,47 @@ const getAuditLogList = async ({
           },
         },
         {
+          $lookup: {
+            from: 'client-users',
+            localField: 'overdueClientUserId',
+            foreignField: '_id',
+            as: 'overdueClientUserId',
+          },
+        },
+        {
+          $lookup: {
+            from: 'clients',
+            localField: 'overdueClientUserId.clientId',
+            foreignField: '_id',
+            as: 'overdueClientId',
+          },
+        },
+        {
           $addFields: {
             userRefId: {
               $cond: [
-                { $eq: ['$userType', 'client-user'] },
                 {
-                  name: '$clientUserId.name',
-                  _id: '$clientUserId._id',
+                  $and: [
+                    { $ne: ['$entityType', 'overdue'] },
+                    { $eq: ['$userType', 'client-user'] },
+                  ],
                 },
                 {
-                  name: '$userId.name',
-                  _id: '$userId._id',
+                  name: '$overdueClientId.name',
+                  _id: '$overdueClientId._id',
+                },
+                {
+                  $cond: [
+                    { $eq: ['$userType', 'client-user'] },
+                    {
+                      name: '$clientUserId.name',
+                      _id: '$clientUserId._id',
+                    },
+                    {
+                      name: '$userId.name',
+                      _id: '$userId._id',
+                    },
+                  ],
                 },
               ],
             },
@@ -550,6 +592,7 @@ const getAuditLogList = async ({
     }
     if (auditLogs && auditLogs.length !== 0) {
       auditLogs[0].paginatedResult.forEach((log) => {
+        console.log(log);
         if (auditLogColumn.includes('entityRefId')) {
           log.entityRefId =
             log?.entityRefId?.[0] && log.entityRefId?.[1]
