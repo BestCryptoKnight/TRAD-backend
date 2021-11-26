@@ -453,7 +453,12 @@ const getAuditLogList = async ({
           $addFields: {
             clientUserId: {
               $cond: [
-                { $eq: ['$userType', 'client-user'] },
+                {
+                  $and: [
+                    { $ne: ['$entityType', 'overdue'] },
+                    { $eq: ['$userType', 'client-user'] },
+                  ],
+                },
                 '$userRefId',
                 null,
               ],
@@ -462,7 +467,7 @@ const getAuditLogList = async ({
               $cond: [
                 {
                   $and: [
-                    { $ne: ['$entityType', 'overdue'] },
+                    { $eq: ['$entityType', 'overdue'] },
                     { $eq: ['$userType', 'client-user'] },
                   ],
                 },
@@ -513,7 +518,7 @@ const getAuditLogList = async ({
               $cond: [
                 {
                   $and: [
-                    { $ne: ['$entityType', 'overdue'] },
+                    { $eq: ['$entityType', 'overdue'] },
                     { $eq: ['$userType', 'client-user'] },
                   ],
                 },
@@ -592,7 +597,6 @@ const getAuditLogList = async ({
     }
     if (auditLogs && auditLogs.length !== 0) {
       auditLogs[0].paginatedResult.forEach((log) => {
-        console.log(log);
         if (auditLogColumn.includes('entityRefId')) {
           log.entityRefId =
             log?.entityRefId?.[0] && log.entityRefId?.[1]
