@@ -508,7 +508,6 @@ const getOverdueList = async ({
       overdueList[0]['totalCount'].length !== 0
         ? overdueList[0]['totalCount'][0]['count']
         : 0;
-    console.log('overdueList', JSON.stringify(overdueList, null, 2));
     return { overdueList, total, headers };
   } catch (e) {
     Logger.log.error('Error occurred in get overdue list');

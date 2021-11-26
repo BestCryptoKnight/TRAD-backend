@@ -1448,8 +1448,6 @@ router.put('/:applicationId', async function (req, res) {
         if (application?.limitType === 'CREDIT_CHECK') {
           //TODO uncomment to send decision letter
           if (config.mailer.isForProduction === 'true') {
-            console.log(config.mailer.isForProduction);
-            console.log(typeof config.mailer.isForProduction);
             sendDecisionLetter({
               reason: req.body.comments || '',
               status,
