@@ -1136,7 +1136,9 @@ const processAndValidateApplications = async (importId) => {
                       (!importApplicationDump.applications[i].stakeholders[j]
                         ?.company?.abn &&
                         !importApplicationDump.applications[i].stakeholders[j]
-                          ?.company?.acn)
+                          ?.company?.acn &&
+                        !importApplicationDump.applications[i].stakeholders[j]
+                          ?.company?.companyRegistrationNumber)
                     ) {
                       unProcessedApplications.push({
                         ...importApplicationDump.applications[i],
@@ -1476,6 +1478,10 @@ const generateApplications = async (importId, userId) => {
         promiseArr.push(clientDebtor.save());
         // If the Debtor's Entity Type is Sole Trader, Partnership or Trust, then validate stakeholders
         if (importApplicationDump.applications[i].stakeholders) {
+          console.log(
+            'Inside if for stakeholder..........................',
+            debtor.entityType,
+          );
           switch (debtor.entityType) {
             case 'PARTNERSHIP':
             case 'TRUST':
@@ -1610,6 +1616,9 @@ const generateApplications = async (importId, userId) => {
                       ].company.companyRegistrationNumber;
                   }
                 }
+                console.log(
+                  '=======================HERE======================',
+                );
                 promiseArr.push(debtorDirector.save());
                 // await debtorDirector.save();
               }
