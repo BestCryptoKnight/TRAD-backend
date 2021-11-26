@@ -606,7 +606,8 @@ const storeCompanyDetails = async ({
         !entityData.response ||
         !(
           entityData.response.businessEntity202001 ||
-          entityData.response.businessEntity201408
+          entityData.response.businessEntity201408 ||
+          requestBody.acn
         )
       ) {
         return {
