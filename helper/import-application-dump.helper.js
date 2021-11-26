@@ -785,7 +785,6 @@ const processAndValidateApplications = async (importId) => {
       });
       const debtor = await Debtor.findOne({
         [searchParam]: searchValue,
-        isActive: true,
       });
       if (!client) {
         unProcessedApplications.push({
@@ -903,7 +902,10 @@ const processAndValidateApplications = async (importId) => {
             importApplicationDump.applications[i],
           );
           // If the Debtor's Entity Type is Sole Trader, Partnership or Trust, then validate stakeholders
-          switch (entityResponse.entityType.value) {
+          switch (
+            entityResponse?.entityType?.value ||
+            importApplicationDump.applications[i].entityType
+          ) {
             case 'PARTNERSHIP':
               if (
                 !importApplicationDump.applications[i].stakeholders ||
@@ -994,11 +996,11 @@ const processAndValidateApplications = async (importId) => {
                             .countryCode,
                       ) ||
                       (!importApplicationDump.applications[i].stakeholders[j]
-                        .abn &&
+                        ?.company?.abn &&
                         !importApplicationDump.applications[i].stakeholders[j]
-                          .acn &&
+                          ?.company?.acn &&
                         !importApplicationDump.applications[i].stakeholders[j]
-                          .companyRegistrationNumber)
+                          ?.company?.companyRegistrationNumber)
                     ) {
                       unProcessedApplications.push({
                         ...importApplicationDump.applications[i],
@@ -1024,7 +1026,8 @@ const processAndValidateApplications = async (importId) => {
                     }
                     console.log(
                       'Getting Business details for person::',
-                      importApplicationDump.applications[i].stakeholders[j].abn,
+                      importApplicationDump.applications[i].stakeholders[j]
+                        ?.company?.abn,
                       importApplicationDump.applications[i].stakeholders[j]
                         .countryCode,
                     );
@@ -1043,9 +1046,9 @@ const processAndValidateApplications = async (importId) => {
                                 .stakeholders[j].countryCode,
                             searchString:
                               importApplicationDump.applications[i]
-                                .stakeholders[j].abn ||
+                                .stakeholders[j]?.company?.abn ||
                               importApplicationDump.applications[i]
-                                .stakeholders[j].acn,
+                                .stakeholders[j]?.company?.acn,
                             step: 'person',
                           },
                         );
@@ -1131,9 +1134,11 @@ const processAndValidateApplications = async (importId) => {
                       !importApplicationDump.applications[i].stakeholders[j]
                         .countryCode ||
                       (!importApplicationDump.applications[i].stakeholders[j]
-                        .abn &&
+                        ?.company?.abn &&
                         !importApplicationDump.applications[i].stakeholders[j]
-                          .acn)
+                          ?.company?.acn &&
+                        !importApplicationDump.applications[i].stakeholders[j]
+                          ?.company?.companyRegistrationNumber)
                     ) {
                       unProcessedApplications.push({
                         ...importApplicationDump.applications[i],
@@ -1143,7 +1148,8 @@ const processAndValidateApplications = async (importId) => {
                     }
                     console.log(
                       'Getting Business details for person::',
-                      importApplicationDump.applications[i].stakeholders[j].abn,
+                      importApplicationDump.applications[i].stakeholders[j]
+                        ?.company?.abn,
                       importApplicationDump.applications[i].stakeholders[j]
                         .countryCode,
                     );
@@ -1158,10 +1164,10 @@ const processAndValidateApplications = async (importId) => {
                           searchString:
                             importApplicationDump.applications[i].stakeholders[
                               j
-                            ].abn ||
+                            ]?.company?.abn ||
                             importApplicationDump.applications[i].stakeholders[
                               j
-                            ].acn,
+                            ]?.company?.acn,
                           step: 'person',
                         },
                       );
@@ -1471,7 +1477,11 @@ const generateApplications = async (importId, userId) => {
         // await clientDebtor.save();
         promiseArr.push(clientDebtor.save());
         // If the Debtor's Entity Type is Sole Trader, Partnership or Trust, then validate stakeholders
-        if (importApplicationDump.applications[i].address.stakeholders) {
+        if (importApplicationDump.applications[i].stakeholders) {
+          console.log(
+            'Inside if for stakeholder..........................',
+            debtor.entityType,
+          );
           switch (debtor.entityType) {
             case 'PARTNERSHIP':
             case 'TRUST':
@@ -1606,6 +1616,9 @@ const generateApplications = async (importId, userId) => {
                       ].company.companyRegistrationNumber;
                   }
                 }
+                console.log(
+                  '=======================HERE======================',
+                );
                 promiseArr.push(debtorDirector.save());
                 // await debtorDirector.save();
               }

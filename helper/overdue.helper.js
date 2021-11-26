@@ -3,7 +3,6 @@
  * */
 const mongoose = require('mongoose');
 const Client = mongoose.model('client');
-const ClientDebtor = mongoose.model('client-debtor');
 const Overdue = mongoose.model('overdue');
 
 /*
@@ -180,6 +179,11 @@ const getOverdueList = async ({
         debtorId: mongoose.Types.ObjectId(requestedQuery.debtorId),
       });
     }
+    if (requestedQuery.clientId && isForRisk) {
+      queryFilter.push({
+        clientId: mongoose.Types.ObjectId(requestedQuery.clientId),
+      });
+    }
     if (requestedQuery.minOutstandingAmount) {
       queryFilter.push({
         outstandingAmount: {
@@ -254,12 +258,62 @@ const getOverdueList = async ({
         },
       },
       { $sort: { statusNumber: 1 } },
+      {
+        $addFields: {
+          clientUserId: {
+            $cond: [
+              { $eq: ['$createdByType', 'client-user'] },
+              '$createdById',
+              null,
+            ],
+          },
+          userId: {
+            $cond: [{ $eq: ['$createdByType', 'user'] }, '$createdById', null],
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'userId',
+        },
+      },
+      {
+        $lookup: {
+          from: 'client-users',
+          localField: 'clientUserId',
+          foreignField: '_id',
+          as: 'clientUserId',
+        },
+      },
+      {
+        $lookup: {
+          from: 'clients',
+          localField: 'clientUserId.clientId',
+          foreignField: '_id',
+          as: 'createdByClientId',
+        },
+      },
+      {
+        $addFields: {
+          createdById: {
+            $cond: [
+              { $eq: ['$createdByType', 'client-user'] },
+              '$createdByClientId.name',
+              '$userId.name',
+            ],
+          },
+        },
+      },
     ];
     const groupBy = {
       month: '$month',
       year: '$year',
     };
     const project = {
+      createdById: 1,
       monthString: { $concat: ['$month', ' ', '$_id.year'] },
       debtorCount: 1,
       amounts: 1,
@@ -299,6 +353,8 @@ const getOverdueList = async ({
               status: '$status',
               amount: '$outstandingAmount',
               nilOverdue: '$nilOverdue',
+              createdById: '$createdById',
+              overdueAction: '$overdueAction',
             },
           },
           submitted: {
@@ -409,6 +465,10 @@ const getOverdueList = async ({
             ? 'Nil Overdue'
             : formatString(j.overdueType);
           j.status = formatString(j.status);
+          j.createdById = j?.createdById?.[0] || '';
+          j.overdueAction = j?.overdueAction
+            ? formatString(j.overdueAction)
+            : '';
         });
       }
     });
@@ -448,6 +508,7 @@ const getOverdueList = async ({
       overdueList[0]['totalCount'].length !== 0
         ? overdueList[0]['totalCount'][0]['count']
         : 0;
+    console.log('overdueList', JSON.stringify(overdueList, null, 2));
     return { overdueList, total, headers };
   } catch (e) {
     Logger.log.error('Error occurred in get overdue list');
@@ -496,6 +557,7 @@ const updateList = async ({
   clientId,
   userId,
   userName = null,
+  userType,
 }) => {
   try {
     const promises = [];
@@ -595,6 +657,8 @@ const updateList = async ({
               'Overdue already exists, please create with another debtor',
           });
         }
+        update.createdByType = userType;
+        update.createdById = userId;
         newOverdues.push(Overdue.create(update));
       } else {
         const overdue = await Overdue.findOne({
@@ -612,27 +676,40 @@ const updateList = async ({
           });
         }
         if (!overdue) {
-          promises.push(Overdue.create(update));
+          update.createdByType = userType;
+          update.createdById = userId;
+          newOverdues.push(Overdue.create(update));
         } else {
           promises.push(
             Overdue.updateOne({ _id: requestBody.list[i]._id }, update, {
               upsert: true,
             }),
           );
-          overdueIds.push({ id: requestBody.list[i]._id, action: 'edit' });
+          overdueIds.push({
+            id: requestBody.list[i]._id,
+            action: 'edit',
+            overdueAction: requestBody.list[i].overdueAction,
+          });
         }
       }
     }
     if (newOverdues.length !== 0) {
       const response = await Promise.all(newOverdues);
-      response.map((i) => overdueIds.push({ id: i._id, action: 'add' }));
+      response.map((i) =>
+        overdueIds.push({
+          id: i._id,
+          action: 'add',
+          overdueAction: i.overdueAction,
+        }),
+      );
     }
     const response = await Promise.all(promises);
     addNotifications({
       overdueIds,
-      userId: isForRisk ? userId : clientId,
-      type: isForRisk ? 'user' : 'client-user',
+      userId: userId,
+      type: userType,
       userName,
+      sendNotifications: userType === 'client-user',
     });
     return response;
   } catch (e) {
@@ -641,20 +718,41 @@ const updateList = async ({
   }
 };
 
-const addNotifications = async ({ userId, overdueIds, type, userName }) => {
+const addNotifications = async ({
+  userId,
+  overdueIds,
+  type,
+  userName,
+  sendNotifications,
+}) => {
   try {
     for (let i = 0; i < overdueIds.length; i++) {
       const overdue = await Overdue.findOne({
         _id: overdueIds[i].id,
       })
-        .populate({ path: 'clientId debtorId', select: 'name entityName' })
+        .populate({
+          path: 'clientId debtorId',
+          select: 'name entityName riskAnalystId',
+        })
         .lean();
       if (overdue) {
         const description =
           overdueIds[i].action === 'add'
-            ? `A new overdue of ${overdue?.clientId?.name} and ${
+            ? overdueIds[i]?.overdueAction === 'MARK_AS_PAID'
+              ? `A new overdue of ${overdue?.clientId?.name} and ${
+                  overdue?.debtorId?.entityName || overdue?.acn
+                } is marked as paid by ${
+                  type === 'user' ? userName : overdue?.clientId?.name
+                }`
+              : `A new overdue of ${overdue?.clientId?.name} and ${
+                  overdue?.debtorId?.entityName || overdue?.acn
+                } is generated by ${
+                  type === 'user' ? userName : overdue?.clientId?.name
+                }`
+            : overdueIds[i]?.overdueAction === 'MARK_AS_PAID'
+            ? `An overdue of ${overdue?.clientId?.name} and ${
                 overdue?.debtorId?.entityName || overdue?.acn
-              } is generated by ${
+              } is marked as paid by ${
                 type === 'user' ? userName : overdue?.clientId?.name
               }`
             : `An overdue of ${overdue?.clientId?.name} and ${
@@ -670,22 +768,27 @@ const addNotifications = async ({ userId, overdueIds, type, userName }) => {
           userRefId: userId,
           logDescription: description,
         });
-        const notification = await addNotification({
-          userId: type === 'user' ? overdue?.clientId?._id : userId,
-          userType: type === 'user' ? 'client-user' : 'user',
-          description: description,
-          entityId: overdue._id,
-          entityType: 'overdue',
-        });
-        if (notification) {
-          sendNotification({
-            notificationObj: {
-              type: 'OVERDUE',
-              data: notification,
-            },
-            type: notification.userType,
-            userId: notification.userId,
+        if (sendNotifications) {
+          const notification = await addNotification({
+            userId:
+              type === 'user'
+                ? overdue?.clientId?._id
+                : overdue?.clientId?.riskAnalystId,
+            userType: type === 'user' ? 'client-user' : 'user',
+            description: description,
+            entityId: overdue._id,
+            entityType: 'overdue',
           });
+          if (notification) {
+            sendNotification({
+              notificationObj: {
+                type: 'OVERDUE',
+                data: notification,
+              },
+              type: notification.userType,
+              userId: notification.userId,
+            });
+          }
         }
       }
     }

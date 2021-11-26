@@ -39,6 +39,7 @@ module.exports = {
     replyTo: process.env.REPLY_TO_EMAIL_ADDRESS || 'no-reply@kevit.io',
     sendgridApiKey: process.env.SENDGRID_API_KEY,
     send: process.env.SEND_MAIL || true,
+    isForProduction: process.env.IS_FOR_PRODUCTION || true,
   },
   server: {
     backendServerUrl:

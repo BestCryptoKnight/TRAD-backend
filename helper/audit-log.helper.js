@@ -453,7 +453,24 @@ const getAuditLogList = async ({
           $addFields: {
             clientUserId: {
               $cond: [
-                { $eq: ['$userType', 'client-user'] },
+                {
+                  $and: [
+                    { $ne: ['$entityType', 'overdue'] },
+                    { $eq: ['$userType', 'client-user'] },
+                  ],
+                },
+                '$userRefId',
+                null,
+              ],
+            },
+            overdueClientUserId: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ['$entityType', 'overdue'] },
+                    { $eq: ['$userType', 'client-user'] },
+                  ],
+                },
                 '$userRefId',
                 null,
               ],
@@ -480,17 +497,47 @@ const getAuditLogList = async ({
           },
         },
         {
+          $lookup: {
+            from: 'client-users',
+            localField: 'overdueClientUserId',
+            foreignField: '_id',
+            as: 'overdueClientUserId',
+          },
+        },
+        {
+          $lookup: {
+            from: 'clients',
+            localField: 'overdueClientUserId.clientId',
+            foreignField: '_id',
+            as: 'overdueClientId',
+          },
+        },
+        {
           $addFields: {
             userRefId: {
               $cond: [
-                { $eq: ['$userType', 'client-user'] },
                 {
-                  name: '$clientUserId.name',
-                  _id: '$clientUserId._id',
+                  $and: [
+                    { $eq: ['$entityType', 'overdue'] },
+                    { $eq: ['$userType', 'client-user'] },
+                  ],
                 },
                 {
-                  name: '$userId.name',
-                  _id: '$userId._id',
+                  name: '$overdueClientId.name',
+                  _id: '$overdueClientId._id',
+                },
+                {
+                  $cond: [
+                    { $eq: ['$userType', 'client-user'] },
+                    {
+                      name: '$clientUserId.name',
+                      _id: '$clientUserId._id',
+                    },
+                    {
+                      name: '$userId.name',
+                      _id: '$userId._id',
+                    },
+                  ],
                 },
               ],
             },

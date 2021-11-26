@@ -375,6 +375,8 @@ router.put('/list', async function (req, res) {
         isForRisk: false,
         requestBody: req.body,
         clientId: req.user.clientId,
+        userType: 'client-user',
+        userId: req.user._id,
       });
     } else {
       if (req.body.list.length !== 0 || !req.body.month || !req.body.year) {
@@ -397,6 +399,8 @@ router.put('/list', async function (req, res) {
           year: req.body.year,
           nilOverdue: req.body.nilOverdue,
           list: [],
+          createdById: req.user._id,
+          createdByType: 'client-user',
         },
         {
           upsert: true,

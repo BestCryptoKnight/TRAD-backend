@@ -14,6 +14,7 @@ const ClientDebtor = mongoose.model('client-debtor');
  * Local Imports
  * */
 const Logger = require('./../services/logger');
+const config = require('./../config');
 const StaticFile = require('./../static-files/moduleColumn');
 const {
   getApplicationList,
@@ -1446,12 +1447,16 @@ router.put('/:applicationId', async function (req, res) {
         });
         if (application?.limitType === 'CREDIT_CHECK') {
           //TODO uncomment to send decision letter
-          sendDecisionLetter({
-            reason: req.body.comments || '',
-            status,
-            approvedAmount,
-            applicationId: application._id,
-          });
+          if (config.mailer.isForProduction === 'true') {
+            console.log(config.mailer.isForProduction);
+            console.log(typeof config.mailer.isForProduction);
+            sendDecisionLetter({
+              reason: req.body.comments || '',
+              status,
+              approvedAmount,
+              applicationId: application._id,
+            });
+          }
         }
       }
       if (req.body.status === 'DECLINED') {

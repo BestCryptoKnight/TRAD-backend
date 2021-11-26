@@ -198,7 +198,13 @@ const getEntityDetailsByNZBN = async ({ searchString }) => {
   }
 };
 
-const extractABRLookupData = async ({ entityData, country, step }) => {
+const extractABRLookupData = async ({
+  entityData,
+  country,
+  step,
+  isForACNOnly = false,
+  searchString,
+}) => {
   try {
     let response = {};
     if (entityData && entityData.response) {
@@ -303,11 +309,17 @@ const extractABRLookupData = async ({ entityData, country, step }) => {
           response.postCode =
             entityDetails.mainBusinessPhysicalAddress[0].postcode;
       } else {
-        return {
-          status: 'ERROR',
-          messageCode: 'NO_DATA_FOUND',
-          message: 'No data found',
-        };
+        if (isForACNOnly) {
+          response = {
+            acn: searchString,
+          };
+        } else {
+          return {
+            status: 'ERROR',
+            messageCode: 'NO_DATA_FOUND',
+            message: 'No data found',
+          };
+        }
       }
     } else {
       return {
@@ -600,7 +612,7 @@ const getEntityDetailsByBusinessNumber = async ({
     let responseData = {};
     let entityData;
     if (country === 'AUS') {
-      if (searchString.length < 10) {
+      if (searchString.toString().length < 10) {
         entityData = await getEntityDetailsByACN({
           searchString: searchString,
         });
@@ -608,6 +620,8 @@ const getEntityDetailsByBusinessNumber = async ({
           entityData,
           country,
           step,
+          isForACNOnly: true,
+          searchString,
         });
       } else {
         entityData = await getEntityDetailsByABN({
@@ -620,7 +634,7 @@ const getEntityDetailsByBusinessNumber = async ({
         });
       }
     } else if (country === 'NZL') {
-      if (searchString.length < 12) {
+      if (searchString.toString().length < 12) {
         entityData = await getEntityListByNameFromNZBN({
           searchString: searchString,
         });
