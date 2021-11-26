@@ -785,7 +785,6 @@ const processAndValidateApplications = async (importId) => {
       });
       const debtor = await Debtor.findOne({
         [searchParam]: searchValue,
-        isActive: true,
       });
       if (!client) {
         unProcessedApplications.push({
