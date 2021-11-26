@@ -354,6 +354,7 @@ const getOverdueList = async ({
               amount: '$outstandingAmount',
               nilOverdue: '$nilOverdue',
               createdById: '$createdById',
+              overdueAction: '$overdueAction',
             },
           },
           submitted: {
@@ -465,6 +466,9 @@ const getOverdueList = async ({
             : formatString(j.overdueType);
           j.status = formatString(j.status);
           j.createdById = j?.createdById?.[0] || '';
+          j.overdueAction = j?.overdueAction
+            ? formatString(j.overdueAction)
+            : '';
         });
       }
     });
