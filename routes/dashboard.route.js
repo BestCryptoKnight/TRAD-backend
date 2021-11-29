@@ -29,6 +29,7 @@ router.get('/', async function (req, res) {
         product: { $regex: '.*Credit Insurance.*' },
         inceptionDate: { $lte: new Date() },
         expiryDate: { $gt: new Date() },
+        isDeleted: false,
       })
         .select(
           'clientId product policyPeriod noOfResChecks discretionaryLimit aggregateOfCreditLimit inceptionDate expiryDate creditChecks',
@@ -42,6 +43,7 @@ router.get('/', async function (req, res) {
         ],
         inceptionDate: { $lte: new Date() },
         expiryDate: { $gt: new Date() },
+        isDeleted: false,
       })
         .select(
           'clientId product noOfResChecks policyPeriod discretionaryLimit inceptionDate expiryDate creditChecks',
