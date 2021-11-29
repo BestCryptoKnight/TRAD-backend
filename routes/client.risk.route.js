@@ -30,7 +30,10 @@ const {
   formatCSVList,
   downloadDecisionLetter,
 } = require('./../helper/client-debtor.helper');
-const { generateNewApplication } = require('./../helper/application.helper');
+const {
+  generateNewApplication,
+  checkForPendingApplication,
+} = require('./../helper/application.helper');
 const { getClientListWithDetails } = require('./../helper/client.helper');
 const {
   checkForEntityInProfile,
@@ -1277,6 +1280,17 @@ router.put('/credit-limit/:creditLimitId', async function (req, res) {
           status: 'ERROR',
           messageCode: 'REQUIRE_FIELD_MISSING',
           message: 'Require fields are missing',
+        });
+      }
+      const isPendingApplication = await checkForPendingApplication({
+        clientId: clientDebtor?.clientId?._id,
+        debtorId: clientDebtor?.debtorId?._id,
+      });
+      if (isPendingApplication) {
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'APPLICATION_ALREADY_EXISTS',
+          message: `Application already exists for the Client: ${clientDebtor?.clientId?.name} & Debtor: ${clientDebtor?.debtorId?.entityName}`,
         });
       }
       await addAuditLog({
