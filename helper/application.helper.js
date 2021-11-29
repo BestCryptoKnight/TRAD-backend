@@ -1556,7 +1556,10 @@ const sendDecisionLetter = async ({
       const mailObj = {
         toAddress: [],
         subject: `Decision Letter for ${response.debtorName}`,
-        text: `Decision Letter for ${response.debtorName}`,
+        text: {
+          clientName: client?.name || '-',
+          debtorName: response?.debtorName || '-',
+        },
         mailFor: 'decisionLetter',
         attachments: [],
       };
