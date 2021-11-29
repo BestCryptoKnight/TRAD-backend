@@ -65,6 +65,7 @@ const readExcelFile = async (fileBuffer) => {
       'Debtor Code': { columnName: null },
       'Debtor ABN': { columnName: null },
       'Debtor ACN': { columnName: null },
+      'Debtor Registration Number': { columnName: null },
       'Company Registration Number': { columnName: null },
       'Partner Type': { columnName: null },
       Title: { columnName: null },
@@ -155,6 +156,13 @@ const readExcelFile = async (fileBuffer) => {
             (c) =>
               c.address ===
               `${stakeHolderHeaders['Debtor ACN']['columnName']}${rowNumber}`,
+          )?.value,
+          debtorRegistrationNumber: stakeHolderWorksheet.model.rows[
+            i
+          ].cells.find(
+            (c) =>
+              c.address ===
+              `${stakeHolderHeaders['Debtor Registration Number']['columnName']}${rowNumber}`,
           )?.value,
           partnerType: stakeHolderWorksheet.model.rows[i].cells
             .find(
@@ -579,7 +587,9 @@ const readExcelFile = async (fileBuffer) => {
             (s) =>
               s.debtorCode === application.debtorCode ||
               s.debtorAbn === application.abn ||
-              s.debtorAcn === application.acn,
+              s.debtorAcn === application.acn ||
+              s.debtorRegistrationNumber ===
+                application.companyRegistrationNumber,
           );
           if (application.stakeholders.length < 2) {
             if (application.debtorCode) {
@@ -621,6 +631,19 @@ const readExcelFile = async (fileBuffer) => {
                 });
                 continue;
               }
+            } else if (application.companyRegistrationNumber) {
+              if (
+                (await checkDirectorsOfDebtor({
+                  parameter: 'registrationNumber',
+                  value: application.companyRegistrationNumber,
+                })) < 2
+              ) {
+                unProcessedApplications.push({
+                  ...application,
+                  reason: 'Partners not found.',
+                });
+                continue;
+              }
             }
           }
         } else if (
@@ -631,7 +654,9 @@ const readExcelFile = async (fileBuffer) => {
             (s) =>
               s.debtorCode === application.debtorCode ||
               s.debtorAbn === application.abn ||
-              s.debtorAcn === application.acn,
+              s.debtorAcn === application.acn ||
+              s.debtorRegistrationNumber ===
+                application.companyRegistrationNumber,
           );
           if (application.stakeholders.length < 1) {
             if (application.debtorCode) {
@@ -673,6 +698,19 @@ const readExcelFile = async (fileBuffer) => {
                 });
                 continue;
               }
+            } else if (application.companyRegistrationNumber) {
+              if (
+                (await checkDirectorsOfDebtor({
+                  parameter: 'registrationNumber',
+                  value: application.companyRegistrationNumber,
+                })) < 1
+              ) {
+                unProcessedApplications.push({
+                  ...application,
+                  reason: 'Trustee(s) not found.',
+                });
+                continue;
+              }
             }
           }
         } else if (
@@ -684,7 +722,10 @@ const readExcelFile = async (fileBuffer) => {
               (application.debtorCode &&
                 s.debtorCode === application.debtorCode) ||
               (application.abn && s.debtorAbn === application.abn) ||
-              (application.acn && s.debtorAcn === application.acn),
+              (application.acn && s.debtorAcn === application.acn) ||
+              (application.companyRegistrationNumber &&
+                s.debtorRegistrationNumber ===
+                  application.companyRegistrationNumber),
           );
           if (application.stakeholders.length !== 1) {
             if (application.debtorCode) {
@@ -718,6 +759,19 @@ const readExcelFile = async (fileBuffer) => {
                 (await checkDirectorsOfDebtor({
                   parameter: 'acn',
                   value: application.acn,
+                })) !== 1
+              ) {
+                unProcessedApplications.push({
+                  ...application,
+                  reason: 'Sole Trader not found.',
+                });
+                continue;
+              }
+            } else if (application.companyRegistrationNumber) {
+              if (
+                (await checkDirectorsOfDebtor({
+                  parameter: 'registrationNumber',
+                  value: application.companyRegistrationNumber,
                 })) !== 1
               ) {
                 unProcessedApplications.push({
@@ -778,6 +832,12 @@ const processAndValidateApplications = async (importId) => {
       } else if (importApplicationDump.applications[i].acn) {
         searchParam = 'acn';
         searchValue = importApplicationDump.applications[i].acn;
+      } else if (
+        importApplicationDump.applications[i].companyRegistrationNumber
+      ) {
+        searchParam = 'registrationNumber';
+        searchValue =
+          importApplicationDump.applications[i].companyRegistrationNumber;
       }
       const client = await Client.findOne({
         clientCode: importApplicationDump.applications[i].clientCode,
@@ -1163,7 +1223,7 @@ const processAndValidateApplications = async (importId) => {
                             ].countryCode,
                           searchString:
                             importApplicationDump.applications[i].stakeholders[
-                              j
+                              jCred
                             ]?.company?.abn ||
                             importApplicationDump.applications[i].stakeholders[
                               j
@@ -1178,6 +1238,10 @@ const processAndValidateApplications = async (importId) => {
                       );
                       continue applicationLoop;
                     }
+                    console.log(
+                      'stakeholderEntityResponse',
+                      stakeholderEntityResponse,
+                    );
                     if (
                       stakeholderEntityResponse &&
                       stakeholderEntityResponse.status &&
@@ -1578,7 +1642,8 @@ const generateApplications = async (importId, userId) => {
                   debtorDirector.allowToCheckCreditHistory =
                     importApplicationDump.applications[i].stakeholders[
                       j
-                    ].individual.allowToCheckCreditHistory;
+                    ].individual?.allowToCheckCreditHistory?.toLowerCase() ===
+                    'yes';
                 } else if (
                   importApplicationDump.applications[i].stakeholders[j]
                     .partnerType === 'COMPANY'
@@ -1592,7 +1657,7 @@ const generateApplications = async (importId, userId) => {
                     importApplicationDump.applications[i].stakeholders[j]
                       .company.tradingName ||
                     importApplicationDump.applications[i].stakeholders[j]
-                      .stakeholderEntityResponse.entityName;
+                      ?.stakeholderEntityResponse?.entityName;
                   debtorDirector.entityType =
                     importApplicationDump.applications[i].stakeholders[
                       j
