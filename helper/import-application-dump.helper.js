@@ -586,11 +586,15 @@ const readExcelFile = async (fileBuffer) => {
         ) {
           application.stakeholders = stakeHolders.filter(
             (s) =>
-              s.debtorCode === application.debtorCode ||
-              s.debtorAbn === application.abn ||
-              s.debtorAcn === application.acn ||
-              s.debtorRegistrationNumber ===
-                application.companyRegistrationNumber,
+              (application?.debtorCode &&
+                s?.debtorCode === application.debtorCode) ||
+              (application?.abn &&
+                s?.debtorAbn?.toString() === application.abn?.toString()) ||
+              (application?.acn &&
+                s?.debtorAcn?.toString() === application.acn?.toString()) ||
+              (application?.companyRegistrationNumber &&
+                s?.debtorRegistrationNumber?.toString() ===
+                  application.companyRegistrationNumber?.toString()),
           );
           if (application.stakeholders.length < 2) {
             if (application.debtorCode) {
@@ -653,11 +657,15 @@ const readExcelFile = async (fileBuffer) => {
         ) {
           application.stakeholders = stakeHolders.filter(
             (s) =>
-              s.debtorCode === application.debtorCode ||
-              s.debtorAbn === application.abn ||
-              s.debtorAcn === application.acn ||
-              s.debtorRegistrationNumber ===
-                application.companyRegistrationNumber,
+              (application?.debtorCode &&
+                s?.debtorCode === application.debtorCode) ||
+              (application?.abn &&
+                s?.debtorAbn?.toString() === application.abn?.toString()) ||
+              (application?.acn &&
+                s?.debtorAcn?.toString() === application.acn?.toString()) ||
+              (application?.companyRegistrationNumber &&
+                s?.debtorRegistrationNumber?.toString() ===
+                  application.companyRegistrationNumber?.toString()),
           );
           if (application.stakeholders.length < 1) {
             if (application.debtorCode) {
@@ -718,10 +726,6 @@ const readExcelFile = async (fileBuffer) => {
           application.entityType &&
           application.entityType === 'SOLE_TRADER'
         ) {
-          console.log(
-            'stakeHolders.....',
-            JSON.stringify(stakeHolders, null, 2),
-          );
           application.stakeholders = stakeHolders.filter(
             (s) =>
               (application.debtorCode &&
@@ -735,7 +739,6 @@ const readExcelFile = async (fileBuffer) => {
                   application.companyRegistrationNumber?.toString()),
           );
           if (application.stakeholders.length !== 1) {
-            console.log('application', JSON.stringify(application, null, 3));
             if (application.debtorCode) {
               if (
                 (await checkDirectorsOfDebtor({
@@ -990,45 +993,39 @@ const processAndValidateApplications = async (importId) => {
                   j < importApplicationDump.applications[i].stakeholders.length;
                   j++
                 ) {
-                  if (application.stakeholders) {
-                    for (let j = 0; j < application.stakeholders.length; j++) {
-                      if (
-                        !importApplicationDump.applications[i].stakeholders[j]
-                          .partnerType ||
-                        (importApplicationDump.applications[i].stakeholders[j]
-                          .partnerType !== 'INDIVIDUAL' &&
-                          importApplicationDump.applications[i].stakeholders[j]
-                            .partnerType !== 'COMPANY')
-                      ) {
-                        unProcessedApplications.push({
-                          ...importApplicationDump.applications[i],
-                          reason: `Invalid partner type for the Partner ${
-                            importApplicationDump.applications[i].stakeholders[
-                              j
-                            ].company &&
+                  if (
+                    !importApplicationDump.applications[i].stakeholders[j]
+                      .partnerType ||
+                    (importApplicationDump.applications[i].stakeholders[j]
+                      .partnerType !== 'INDIVIDUAL' &&
+                      importApplicationDump.applications[i].stakeholders[j]
+                        .partnerType !== 'COMPANY')
+                  ) {
+                    unProcessedApplications.push({
+                      ...importApplicationDump.applications[i],
+                      reason: `Invalid partner type for the Partner ${
+                        importApplicationDump.applications[i].stakeholders[j]
+                          .company &&
+                        importApplicationDump.applications[i].stakeholders[j]
+                          .company.abn
+                          ? 'ABN: ' +
                             importApplicationDump.applications[i].stakeholders[
                               j
                             ].company.abn
-                              ? 'ABN: ' +
-                                importApplicationDump.applications[i]
-                                  .stakeholders[j].company.abn
-                              : ''
-                          } ${
-                            importApplicationDump.applications[i].stakeholders[
-                              j
-                            ].individual &&
+                          : ''
+                      } ${
+                        importApplicationDump.applications[i].stakeholders[j]
+                          .individual &&
+                        importApplicationDump.applications[i].stakeholders[j]
+                          .individual.firstName
+                          ? 'First Name: ' +
                             importApplicationDump.applications[i].stakeholders[
                               j
                             ].individual.firstName
-                              ? 'First Name: ' +
-                                importApplicationDump.applications[i]
-                                  .stakeholders[j].individual.firstName
-                              : ''
-                          }`,
-                        });
-                        continue applicationLoop;
-                      }
-                    }
+                          : ''
+                      }`,
+                    });
+                    continue applicationLoop;
                   }
                   if (
                     importApplicationDump.applications[i].stakeholders[j]
@@ -1246,10 +1243,6 @@ const processAndValidateApplications = async (importId) => {
                       );
                       continue applicationLoop;
                     }
-                    console.log(
-                      'stakeholderEntityResponse',
-                      stakeholderEntityResponse,
-                    );
                     if (
                       stakeholderEntityResponse &&
                       stakeholderEntityResponse.status &&
@@ -1443,6 +1436,7 @@ const generateApplications = async (importId, userId) => {
           // await clientDebtor.save();
         }
       } else {
+        const date = new Date();
         debtor = new Debtor({
           debtorCode:
             'D' +
@@ -1529,6 +1523,7 @@ const generateApplications = async (importId, userId) => {
               ?.isActive === 'Active' ||
             importApplicationDump.applications[i].abrResponseForDebtor
               ?.isActive === true,
+          reviewDate: new Date(date.setMonth(date.getMonth() + 11)),
         });
         if (
           importApplicationDump.applications[i].address.countryCode === 'AUS' ||
@@ -1600,11 +1595,14 @@ const generateApplications = async (importId, userId) => {
                     importApplicationDump.applications[i].stakeholders[
                       j
                     ].individual.lastName;
-                  debtorDirector.dateOfBirth = new Date(
-                    importApplicationDump.applications[i].stakeholders[
-                      j
-                    ].individual.dateOfBirth,
-                  );
+                  debtorDirector.dateOfBirth =
+                    importApplicationDump.applications[i].stakeholders[j]
+                      .individual.dateOfBirth &&
+                    new Date(
+                      importApplicationDump.applications[i].stakeholders[
+                        j
+                      ].individual.dateOfBirth,
+                    );
                   debtorDirector.driverLicenceNumber =
                     importApplicationDump.applications[i].stakeholders[
                       j
@@ -1689,9 +1687,6 @@ const generateApplications = async (importId, userId) => {
                       ].company.companyRegistrationNumber;
                   }
                 }
-                console.log(
-                  '=======================HERE======================',
-                );
                 promiseArr.push(debtorDirector.save());
                 // await debtorDirector.save();
               }
