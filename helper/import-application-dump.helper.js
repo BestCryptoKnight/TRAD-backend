@@ -20,6 +20,7 @@ const {
   entityType,
   companyEntityType,
 } = require('./../static-files/staticData.json');
+const Logger = require('./../services/logger');
 
 const readExcelFile = async (fileBuffer) => {
   try {
@@ -717,17 +718,24 @@ const readExcelFile = async (fileBuffer) => {
           application.entityType &&
           application.entityType === 'SOLE_TRADER'
         ) {
+          console.log(
+            'stakeHolders.....',
+            JSON.stringify(stakeHolders, null, 2),
+          );
           application.stakeholders = stakeHolders.filter(
             (s) =>
               (application.debtorCode &&
                 s.debtorCode === application.debtorCode) ||
-              (application.abn && s.debtorAbn === application.abn) ||
-              (application.acn && s.debtorAcn === application.acn) ||
+              (application.abn &&
+                s.debtorAbn?.toString() === application.abn?.toString()) ||
+              (application.acn &&
+                s.debtorAcn?.toString() === application.acn?.toString()) ||
               (application.companyRegistrationNumber &&
-                s.debtorRegistrationNumber ===
-                  application.companyRegistrationNumber),
+                s.debtorRegistrationNumber?.toString() ===
+                  application.companyRegistrationNumber?.toString()),
           );
           if (application.stakeholders.length !== 1) {
+            console.log('application', JSON.stringify(application, null, 3));
             if (application.debtorCode) {
               if (
                 (await checkDirectorsOfDebtor({
@@ -1223,7 +1231,7 @@ const processAndValidateApplications = async (importId) => {
                             ].countryCode,
                           searchString:
                             importApplicationDump.applications[i].stakeholders[
-                              jCred
+                              j
                             ]?.company?.abn ||
                             importApplicationDump.applications[i].stakeholders[
                               j
