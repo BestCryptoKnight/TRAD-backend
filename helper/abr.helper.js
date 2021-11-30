@@ -290,7 +290,11 @@ const extractABRLookupData = async ({
             typeof tradingName.organisationName === 'string'
               ? tradingName.organisationName
               : tradingName[0].organisationName;
-        if (entityDetails.mainBusinessPhysicalAddress[0]) {
+        if (
+          entityDetails.mainBusinessPhysicalAddress[0] &&
+          typeof entityDetails.mainBusinessPhysicalAddress[0].stateCode ===
+            'string'
+        ) {
           const state = StaticData.australianStates.find((i) => {
             if (
               i._id === entityDetails.mainBusinessPhysicalAddress[0].stateCode
@@ -305,9 +309,14 @@ const extractABRLookupData = async ({
             value: entityDetails.mainBusinessPhysicalAddress[0].stateCode,
           };
         }
-        if (entityDetails.mainBusinessPhysicalAddress[0])
+        if (
+          entityDetails.mainBusinessPhysicalAddress[0] &&
+          typeof entityDetails.mainBusinessPhysicalAddress[0]?.postcode ===
+            'string'
+        ) {
           response.postCode =
             entityDetails.mainBusinessPhysicalAddress[0].postcode;
+        }
       } else {
         if (isForACNOnly) {
           response = {
