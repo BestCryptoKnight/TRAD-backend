@@ -21,31 +21,37 @@ The TRAD is a financial services company who provides credit assessments for lar
 
 ### 1 Backend Server
 
-### 1.1 Purpose of the module:
+### 1.1 Purpose of the module
 
-- This is the main core of the project. It connects Database, third party API services, Mailer service, etc.
+- This is the main core of the project. It connects Database, third party API services, Mailer service, AWS etc.
 - All the API calls from other two modules are pointed here.
 
-### 1.2 Features of the module:
+### 1.2 Module features
 
-- All modules are managed here like Dashboard, Users, Insurer, Clients, Debtors, Applications, Tasks, Overdues, Claims, Reports.
+- All modules are managed here like Dashboard, Users, Insurer, Clients, Debtors, Applications, Tasks, Overdue, Claims, Reports.
 - Access management is there for different modules and users.
 - Logging of all the activities is here.
 
-###3. Technical stack of module:
+### 1.3 Module technical stack
 
-- Back-end Framework: NodeJS
+- **Server runtime** : NodeJS v14.x
+- **Database** : MongoDB v5.x
+- **Mail service** : Sendgrid
 
 ###4. Configure Module:
 
-- Configure back-end point
-  - In **source/admin-panel/. env-cmdrc** (environment file) replace the ‘REACT_APP_BASE_URL’ with the generated Api URL pointing to your backend according to environments.
+- Configure SendGrid account
+  - Signup to [SendGrid](https://signup.sendgrid.com/) and fill the required information and proceed further.
+  - Login in to the account and goto _Settings_ => _[API Keys](https://app.sendgrid.com/settings/api_keys)_. Confirm on the prompted **Confirm Email Address** button. Click on the link received in the mail inbox to verify the email.
+  - Refresh the [API key page](https://app.sendgrid.com/settings/api_keys) and click on Create API key and paste it to the file `.env` in: `SENDGRID_API_KEY`
+  - For verification, follow the steps for Single Sender Verification from SendGrid [guide](https://sendgrid.com/docs/ui/sending-email/sender-verification)
+  - Paste sender email address to the file `.env` in: `FROM_EMAIL_ADDRESS`
 
-###5. Get up and running:
+### 1.5 Get up and running
 
-- Install Requirements
-- Go to source/admin-panel directory and open terminal for that directory
-  - Run **“npm I”** to install dependencies.
-  - Run **“npm run <environment name>”** to run project and admin-panel loads on port available with your system default is port: 3000, **ex: npm run dev**.
-  - Login into panel from browser at **“localhost:<port number>”** by providing credentials.
-  - Dashboard will load once authentication done.
+- Install requirements
+
+- Go to `source/backend` and open the terminal from that folder
+- Run `npm i` to install all the dependencies
+- Currently, the backend server will start on PORT 3200, which is configurable
+- Once done, run `npm start`, and the server starts running on port 3200 (specified in env file)
