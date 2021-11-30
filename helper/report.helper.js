@@ -2018,6 +2018,9 @@ const getLimitHistoryReport = async ({
       if (limit.status) {
         limit.status = formatString(limit.status);
       }
+      if (limit.limitType) {
+        limit.limitType = formatString(limit?.limitType) || '';
+      }
     });
     return { response, total };
   } catch (e) {

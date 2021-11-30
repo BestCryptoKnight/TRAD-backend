@@ -1556,7 +1556,10 @@ const sendDecisionLetter = async ({
       const mailObj = {
         toAddress: [],
         subject: `Decision Letter for ${response.debtorName}`,
-        text: `Decision Letter for ${response.debtorName}`,
+        text: {
+          clientName: client?.name || '-',
+          debtorName: response?.debtorName || '-',
+        },
         mailFor: 'decisionLetter',
         attachments: [],
       };
@@ -1592,6 +1595,28 @@ const sendDecisionLetter = async ({
   }
 };
 
+const checkForPendingApplication = async ({ clientId, debtorId }) => {
+  try {
+    const application = await Application.findOne({
+      debtorId: debtorId,
+      clientId: clientId,
+      status: {
+        $nin: [
+          'DECLINED',
+          'CANCELLED',
+          'WITHDRAWN',
+          'SURRENDERED',
+          'DRAFT',
+          'APPROVED',
+        ],
+      },
+    }).lean();
+    return !!application;
+  } catch (e) {
+    Logger.log.error('Error occurred in check for pending application', e);
+  }
+};
+
 module.exports = {
   getApplicationList,
   storeCompanyDetails,
@@ -1604,4 +1629,5 @@ module.exports = {
   sendNotificationsToUser,
   sendDecisionLetter,
   submitApplication,
+  checkForPendingApplication,
 };

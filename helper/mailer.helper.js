@@ -14,6 +14,7 @@ const forgotPasswordAdminTemplate = require('./../static-files/forgotPassword.ri
 const newAdminTemplate = require('./../static-files/newUser.risk.template');
 const newClientTemplate = require('./../static-files/newUser.client.template');
 const forgotPasswordClientTemplate = require('../static-files/forgotPassword.client.template.js');
+const decisionLetterClientTemplate = require('../static-files/decisionLetter.client.template');
 
 const transporter = nodemailer.createTransport({
   host: 'smtp.sendgrid.net',
@@ -96,6 +97,13 @@ const sendMail = ({ toAddress, subject, text, html, mailFor, attachments }) => {
         // });
         break;
       case 'decisionLetter':
+        mailBody.html = decisionLetterClientTemplate({
+          address: organization?.address || '-',
+          email: organization?.email || '-',
+          contactNumber: organization?.contactNumber || '-',
+          debtorName: text.debtorName,
+          website: organization?.website || '-',
+        });
         mailBody.attachments = attachments;
         break;
     }

@@ -20,6 +20,7 @@ const {
   entityType,
   companyEntityType,
 } = require('./../static-files/staticData.json');
+const Logger = require('./../services/logger');
 
 const readExcelFile = async (fileBuffer) => {
   try {
@@ -65,6 +66,7 @@ const readExcelFile = async (fileBuffer) => {
       'Debtor Code': { columnName: null },
       'Debtor ABN': { columnName: null },
       'Debtor ACN': { columnName: null },
+      'Debtor Registration Number': { columnName: null },
       'Company Registration Number': { columnName: null },
       'Partner Type': { columnName: null },
       Title: { columnName: null },
@@ -155,6 +157,13 @@ const readExcelFile = async (fileBuffer) => {
             (c) =>
               c.address ===
               `${stakeHolderHeaders['Debtor ACN']['columnName']}${rowNumber}`,
+          )?.value,
+          debtorRegistrationNumber: stakeHolderWorksheet.model.rows[
+            i
+          ].cells.find(
+            (c) =>
+              c.address ===
+              `${stakeHolderHeaders['Debtor Registration Number']['columnName']}${rowNumber}`,
           )?.value,
           partnerType: stakeHolderWorksheet.model.rows[i].cells
             .find(
@@ -577,9 +586,15 @@ const readExcelFile = async (fileBuffer) => {
         ) {
           application.stakeholders = stakeHolders.filter(
             (s) =>
-              s.debtorCode === application.debtorCode ||
-              s.debtorAbn === application.abn ||
-              s.debtorAcn === application.acn,
+              (application?.debtorCode &&
+                s?.debtorCode === application.debtorCode) ||
+              (application?.abn &&
+                s?.debtorAbn?.toString() === application.abn?.toString()) ||
+              (application?.acn &&
+                s?.debtorAcn?.toString() === application.acn?.toString()) ||
+              (application?.companyRegistrationNumber &&
+                s?.debtorRegistrationNumber?.toString() ===
+                  application.companyRegistrationNumber?.toString()),
           );
           if (application.stakeholders.length < 2) {
             if (application.debtorCode) {
@@ -621,6 +636,19 @@ const readExcelFile = async (fileBuffer) => {
                 });
                 continue;
               }
+            } else if (application.companyRegistrationNumber) {
+              if (
+                (await checkDirectorsOfDebtor({
+                  parameter: 'registrationNumber',
+                  value: application.companyRegistrationNumber,
+                })) < 2
+              ) {
+                unProcessedApplications.push({
+                  ...application,
+                  reason: 'Partners not found.',
+                });
+                continue;
+              }
             }
           }
         } else if (
@@ -629,9 +657,15 @@ const readExcelFile = async (fileBuffer) => {
         ) {
           application.stakeholders = stakeHolders.filter(
             (s) =>
-              s.debtorCode === application.debtorCode ||
-              s.debtorAbn === application.abn ||
-              s.debtorAcn === application.acn,
+              (application?.debtorCode &&
+                s?.debtorCode === application.debtorCode) ||
+              (application?.abn &&
+                s?.debtorAbn?.toString() === application.abn?.toString()) ||
+              (application?.acn &&
+                s?.debtorAcn?.toString() === application.acn?.toString()) ||
+              (application?.companyRegistrationNumber &&
+                s?.debtorRegistrationNumber?.toString() ===
+                  application.companyRegistrationNumber?.toString()),
           );
           if (application.stakeholders.length < 1) {
             if (application.debtorCode) {
@@ -673,6 +707,19 @@ const readExcelFile = async (fileBuffer) => {
                 });
                 continue;
               }
+            } else if (application.companyRegistrationNumber) {
+              if (
+                (await checkDirectorsOfDebtor({
+                  parameter: 'registrationNumber',
+                  value: application.companyRegistrationNumber,
+                })) < 1
+              ) {
+                unProcessedApplications.push({
+                  ...application,
+                  reason: 'Trustee(s) not found.',
+                });
+                continue;
+              }
             }
           }
         } else if (
@@ -683,8 +730,13 @@ const readExcelFile = async (fileBuffer) => {
             (s) =>
               (application.debtorCode &&
                 s.debtorCode === application.debtorCode) ||
-              (application.abn && s.debtorAbn === application.abn) ||
-              (application.acn && s.debtorAcn === application.acn),
+              (application.abn &&
+                s.debtorAbn?.toString() === application.abn?.toString()) ||
+              (application.acn &&
+                s.debtorAcn?.toString() === application.acn?.toString()) ||
+              (application.companyRegistrationNumber &&
+                s.debtorRegistrationNumber?.toString() ===
+                  application.companyRegistrationNumber?.toString()),
           );
           if (application.stakeholders.length !== 1) {
             if (application.debtorCode) {
@@ -718,6 +770,19 @@ const readExcelFile = async (fileBuffer) => {
                 (await checkDirectorsOfDebtor({
                   parameter: 'acn',
                   value: application.acn,
+                })) !== 1
+              ) {
+                unProcessedApplications.push({
+                  ...application,
+                  reason: 'Sole Trader not found.',
+                });
+                continue;
+              }
+            } else if (application.companyRegistrationNumber) {
+              if (
+                (await checkDirectorsOfDebtor({
+                  parameter: 'registrationNumber',
+                  value: application.companyRegistrationNumber,
                 })) !== 1
               ) {
                 unProcessedApplications.push({
@@ -778,6 +843,12 @@ const processAndValidateApplications = async (importId) => {
       } else if (importApplicationDump.applications[i].acn) {
         searchParam = 'acn';
         searchValue = importApplicationDump.applications[i].acn;
+      } else if (
+        importApplicationDump.applications[i].companyRegistrationNumber
+      ) {
+        searchParam = 'registrationNumber';
+        searchValue =
+          importApplicationDump.applications[i].companyRegistrationNumber;
       }
       const client = await Client.findOne({
         clientCode: importApplicationDump.applications[i].clientCode,
@@ -922,45 +993,39 @@ const processAndValidateApplications = async (importId) => {
                   j < importApplicationDump.applications[i].stakeholders.length;
                   j++
                 ) {
-                  if (application.stakeholders) {
-                    for (let j = 0; j < application.stakeholders.length; j++) {
-                      if (
-                        !importApplicationDump.applications[i].stakeholders[j]
-                          .partnerType ||
-                        (importApplicationDump.applications[i].stakeholders[j]
-                          .partnerType !== 'INDIVIDUAL' &&
-                          importApplicationDump.applications[i].stakeholders[j]
-                            .partnerType !== 'COMPANY')
-                      ) {
-                        unProcessedApplications.push({
-                          ...importApplicationDump.applications[i],
-                          reason: `Invalid partner type for the Partner ${
-                            importApplicationDump.applications[i].stakeholders[
-                              j
-                            ].company &&
+                  if (
+                    !importApplicationDump.applications[i].stakeholders[j]
+                      .partnerType ||
+                    (importApplicationDump.applications[i].stakeholders[j]
+                      .partnerType !== 'INDIVIDUAL' &&
+                      importApplicationDump.applications[i].stakeholders[j]
+                        .partnerType !== 'COMPANY')
+                  ) {
+                    unProcessedApplications.push({
+                      ...importApplicationDump.applications[i],
+                      reason: `Invalid partner type for the Partner ${
+                        importApplicationDump.applications[i].stakeholders[j]
+                          .company &&
+                        importApplicationDump.applications[i].stakeholders[j]
+                          .company.abn
+                          ? 'ABN: ' +
                             importApplicationDump.applications[i].stakeholders[
                               j
                             ].company.abn
-                              ? 'ABN: ' +
-                                importApplicationDump.applications[i]
-                                  .stakeholders[j].company.abn
-                              : ''
-                          } ${
-                            importApplicationDump.applications[i].stakeholders[
-                              j
-                            ].individual &&
+                          : ''
+                      } ${
+                        importApplicationDump.applications[i].stakeholders[j]
+                          .individual &&
+                        importApplicationDump.applications[i].stakeholders[j]
+                          .individual.firstName
+                          ? 'First Name: ' +
                             importApplicationDump.applications[i].stakeholders[
                               j
                             ].individual.firstName
-                              ? 'First Name: ' +
-                                importApplicationDump.applications[i]
-                                  .stakeholders[j].individual.firstName
-                              : ''
-                          }`,
-                        });
-                        continue applicationLoop;
-                      }
-                    }
+                          : ''
+                      }`,
+                    });
+                    continue applicationLoop;
                   }
                   if (
                     importApplicationDump.applications[i].stakeholders[j]
@@ -1371,6 +1436,7 @@ const generateApplications = async (importId, userId) => {
           // await clientDebtor.save();
         }
       } else {
+        const date = new Date();
         debtor = new Debtor({
           debtorCode:
             'D' +
@@ -1457,6 +1523,7 @@ const generateApplications = async (importId, userId) => {
               ?.isActive === 'Active' ||
             importApplicationDump.applications[i].abrResponseForDebtor
               ?.isActive === true,
+          reviewDate: new Date(date.setMonth(date.getMonth() + 11)),
         });
         if (
           importApplicationDump.applications[i].address.countryCode === 'AUS' ||
@@ -1528,11 +1595,14 @@ const generateApplications = async (importId, userId) => {
                     importApplicationDump.applications[i].stakeholders[
                       j
                     ].individual.lastName;
-                  debtorDirector.dateOfBirth = new Date(
-                    importApplicationDump.applications[i].stakeholders[
-                      j
-                    ].individual.dateOfBirth,
-                  );
+                  debtorDirector.dateOfBirth =
+                    importApplicationDump.applications[i].stakeholders[j]
+                      .individual.dateOfBirth &&
+                    new Date(
+                      importApplicationDump.applications[i].stakeholders[
+                        j
+                      ].individual.dateOfBirth,
+                    );
                   debtorDirector.driverLicenceNumber =
                     importApplicationDump.applications[i].stakeholders[
                       j
@@ -1578,7 +1648,8 @@ const generateApplications = async (importId, userId) => {
                   debtorDirector.allowToCheckCreditHistory =
                     importApplicationDump.applications[i].stakeholders[
                       j
-                    ].individual.allowToCheckCreditHistory;
+                    ].individual?.allowToCheckCreditHistory?.toLowerCase() ===
+                    'yes';
                 } else if (
                   importApplicationDump.applications[i].stakeholders[j]
                     .partnerType === 'COMPANY'
@@ -1592,7 +1663,7 @@ const generateApplications = async (importId, userId) => {
                     importApplicationDump.applications[i].stakeholders[j]
                       .company.tradingName ||
                     importApplicationDump.applications[i].stakeholders[j]
-                      .stakeholderEntityResponse.entityName;
+                      ?.stakeholderEntityResponse?.entityName;
                   debtorDirector.entityType =
                     importApplicationDump.applications[i].stakeholders[
                       j
@@ -1616,9 +1687,6 @@ const generateApplications = async (importId, userId) => {
                       ].company.companyRegistrationNumber;
                   }
                 }
-                console.log(
-                  '=======================HERE======================',
-                );
                 promiseArr.push(debtorDirector.save());
                 // await debtorDirector.save();
               }
