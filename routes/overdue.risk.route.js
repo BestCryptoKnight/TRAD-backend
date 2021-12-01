@@ -163,6 +163,7 @@ router.get('/list', async function (req, res) {
         isNilOverdue: false,
       };
       if (overdue && overdue.length !== 0) {
+        const docs = [];
         /*overdue.forEach((i) => {
           i.isExistingData = true;
           i.month = req.query.month;
@@ -193,10 +194,7 @@ router.get('/list', async function (req, res) {
             response.isNilOverdue = true;
             break;
           } else {
-            if (overdue[i].overdueAction === 'MARK_AS_PAID') {
-              overdue.splice(i, 1);
-              break;
-            } else {
+            if (overdue[i].overdueAction !== 'MARK_AS_PAID') {
               overdue[i].isExistingData = true;
               overdue[i].month = req.query.month;
               overdue[i].year = req.query.year;
@@ -220,13 +218,15 @@ router.get('/list', async function (req, res) {
                 value: 'SUBMITTED',
                 label: 'Submitted',
               };
+              delete overdue[i].overdueAction;
+              docs.push(overdue[i]);
             }
           }
-          delete overdue[i].overdueAction;
         }
         if (response.isNilOverdue) {
           response.docs = [];
         } else {
+          response.docs = docs;
           response.previousEntries = getMonthString(lastMonth) + ' ' + lastYear;
         }
       }
