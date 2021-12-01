@@ -152,7 +152,7 @@ router.get('/list', async function (req, res) {
         data: { docs: isNilOverdue ? [] : overdue, client, isNilOverdue },
       });
     } else {
-      query.overdueAction = { $ne: 'MARK_AS_PAID' };
+      // query.overdueAction = { $ne: 'MARK_AS_PAID' };
       let { overdue, lastMonth, lastYear } = await getLastOverdueList({
         query,
         date: new Date(query?.year, query?.month, 1, 0, 0, 0),
@@ -193,30 +193,36 @@ router.get('/list', async function (req, res) {
             response.isNilOverdue = true;
             break;
           } else {
-            overdue[i].isExistingData = true;
-            overdue[i].month = req.query.month;
-            overdue[i].year = req.query.year;
-            if (overdue[i].debtorId && overdue[i].debtorId.entityName) {
-              overdue[i].debtorId = {
-                label: overdue[i].debtorId.entityName,
-                value: overdue[i].debtorId._id,
+            if (overdue[i].overdueAction === 'MARK_AS_PAID') {
+              overdue.splice(i, 1);
+              break;
+            } else {
+              overdue[i].isExistingData = true;
+              overdue[i].month = req.query.month;
+              overdue[i].year = req.query.year;
+              if (overdue[i].debtorId && overdue[i].debtorId.entityName) {
+                overdue[i].debtorId = {
+                  label: overdue[i].debtorId.entityName,
+                  value: overdue[i].debtorId._id,
+                };
+              }
+              if (overdue[i].insurerId && overdue[i].insurerId.name) {
+                overdue[i].insurerId = {
+                  label: overdue[i].insurerId.name,
+                  value: overdue[i].insurerId._id,
+                };
+              }
+              overdue[i].overdueType = {
+                value: overdue[i].overdueType,
+                label: formatString(overdue[i].overdueType),
+              };
+              overdue[i].status = {
+                value: 'SUBMITTED',
+                label: 'Submitted',
               };
             }
-            if (overdue[i].insurerId && overdue[i].insurerId.name) {
-              overdue[i].insurerId = {
-                label: overdue[i].insurerId.name,
-                value: overdue[i].insurerId._id,
-              };
-            }
-            overdue[i].overdueType = {
-              value: overdue[i].overdueType,
-              label: formatString(overdue[i].overdueType),
-            };
-            overdue[i].status = {
-              value: 'SUBMITTED',
-              label: 'Submitted',
-            };
           }
+          delete overdue[i].overdueAction;
         }
         if (response.isNilOverdue) {
           response.docs = [];

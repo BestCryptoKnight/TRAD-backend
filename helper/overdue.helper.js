@@ -32,7 +32,6 @@ const getLastOverdueList = async ({ date, query, counter = 0 }) => {
         createdAt: 0,
         updatedAt: 0,
         __v: 0,
-        overdueAction: 0,
       })
       .lean();
     if (overdue && overdue.length !== 0) {
