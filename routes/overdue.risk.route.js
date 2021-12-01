@@ -448,7 +448,10 @@ router.post('/', async function (req, res) {
  * Save overdue list
  */
 router.put('/list', async function (req, res) {
-  if (!req.body.hasOwnProperty('nilOverdue')) {
+  if (
+    !req.body.hasOwnProperty('nilOverdue') ||
+    !req.body.hasOwnProperty('oldNilOverdue')
+  ) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -456,6 +459,13 @@ router.put('/list', async function (req, res) {
     });
   }
   try {
+    if (req.body.nilOverdue !== req.body.oldNilOverdue) {
+      await Overdue.deleteMany({
+        clientId: req.body.clientId,
+        month: req.body.month,
+        year: req.body.year,
+      });
+    }
     if (!req.body.nilOverdue) {
       if (!req.body.list || req.body.list.length === 0) {
         return res.status(400).send({

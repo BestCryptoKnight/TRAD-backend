@@ -206,38 +206,46 @@ router.get('/:userId', async function (req, res) {
         maxCreditLimit: 1,
       })
       .lean();
-    const query =
-      userData.role === 'riskAnalyst'
-        ? { riskAnalystId: req.params.userId }
-        : { serviceManagerId: req.params.userId };
-    const clientIds = await Client.find(query)
-      .select({ name: 1, _id: 1 })
-      .lean();
-    const moduleNames = userData.moduleAccess.map((i) => i.name);
-    let modules = {};
-    systemModules.modules.forEach((i) => {
-      modules[i.name] = i;
-      if (!moduleNames.includes(i.name)) {
-        userData.moduleAccess.push({ name: i.name, accessTypes: [] });
-      }
-    });
-    userData.moduleAccess.forEach((i) => {
-      if (modules[i.name]) {
-        i.isDefault = modules[i.name]['isDefault'];
-        i.label = modules[i.name]['label'];
-      }
-    });
-    userData.clientIds = clientIds;
-    userData.clientIds.forEach((i) => {
-      i.value = i._id;
-      i.label = i.name;
-      delete i._id;
-      delete i.name;
-    });
-    userData.status = userData.signUpToken ? 'Pending' : 'Active';
-    delete userData.signUpToken;
-    Logger.log.info('Fetched details of user successfully.');
-    res.status(200).send({ status: 'SUCCESS', data: userData });
+    if (userData) {
+      const query =
+        userData.role === 'riskAnalyst'
+          ? { riskAnalystId: req.params.userId }
+          : { serviceManagerId: req.params.userId };
+      const clientIds = await Client.find(query)
+        .select({ name: 1, _id: 1 })
+        .lean();
+      const moduleNames = userData.moduleAccess.map((i) => i.name);
+      let modules = {};
+      systemModules.modules.forEach((i) => {
+        modules[i.name] = i;
+        if (!moduleNames.includes(i.name)) {
+          userData.moduleAccess.push({ name: i.name, accessTypes: [] });
+        }
+      });
+      userData.moduleAccess.forEach((i) => {
+        if (modules[i.name]) {
+          i.isDefault = modules[i.name]['isDefault'];
+          i.label = modules[i.name]['label'];
+        }
+      });
+      userData.clientIds = clientIds;
+      userData.clientIds.forEach((i) => {
+        i.value = i._id;
+        i.label = i.name;
+        delete i._id;
+        delete i.name;
+      });
+      userData.status = userData.signUpToken ? 'Pending' : 'Active';
+      delete userData.signUpToken;
+      Logger.log.info('Fetched details of user successfully.');
+      res.status(200).send({ status: 'SUCCESS', data: userData });
+    } else {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'NO_USER_FOUND',
+        message: 'No user found',
+      });
+    }
   } catch (e) {
     Logger.log.error('Error occurred.', e);
     res.status(500).send({
