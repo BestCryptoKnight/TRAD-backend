@@ -218,6 +218,7 @@ router.get('/list', async function (req, res) {
                 value: 'SUBMITTED',
                 label: 'Submitted',
               };
+              delete overdue[i]._id;
               delete overdue[i].overdueAction;
               docs.push(overdue[i]);
             }
