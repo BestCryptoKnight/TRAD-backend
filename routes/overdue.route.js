@@ -174,6 +174,8 @@ router.get('/list', async function (req, res) {
             value: overdue[i].status,
             label: formatString(overdue[i].status),
           };
+          overdue[i].index =
+            req.user.clientId + overdue[i]?.debtorId?._id + overdue[i].acn + i;
         }
       }
       return res.status(200).send({
@@ -249,6 +251,11 @@ router.get('/list', async function (req, res) {
               };
               delete overdue[i]._id;
               delete overdue[i].overdueAction;
+              overdue[i].index =
+                req.user.clientId +
+                overdue[i]?.debtorId?._id +
+                overdue[i]?.acn +
+                i;
               docs.push(overdue[i]);
             }
           }
