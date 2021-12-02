@@ -254,6 +254,7 @@ router.get('/list', async function (req, res) {
         }
         if (response.isNilOverdue) {
           response.docs = [];
+          response.previousEntries = getMonthString(lastMonth) + ' ' + lastYear;
         } else {
           response.docs = docs;
           if (docs.length !== 0) {
