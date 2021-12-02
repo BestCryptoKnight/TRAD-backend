@@ -227,7 +227,10 @@ router.get('/list', async function (req, res) {
           response.docs = [];
         } else {
           response.docs = docs;
-          response.previousEntries = getMonthString(lastMonth) + ' ' + lastYear;
+          if (docs.length !== 0) {
+            response.previousEntries =
+              getMonthString(lastMonth) + ' ' + lastYear;
+          }
         }
       }
       return res.status(200).send({
