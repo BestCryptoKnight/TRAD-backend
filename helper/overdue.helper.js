@@ -32,7 +32,6 @@ const getLastOverdueList = async ({ date, query, counter = 0 }) => {
         createdAt: 0,
         updatedAt: 0,
         __v: 0,
-        overdueAction: 0,
       })
       .lean();
     if (overdue && overdue.length !== 0) {
@@ -674,22 +673,22 @@ const updateList = async ({
               'Overdue already exists, please create with another debtor',
           });
         }
-        if (!overdue) {
-          update.createdByType = userType;
-          update.createdById = userId;
-          newOverdues.push(Overdue.create(update));
-        } else {
-          promises.push(
-            Overdue.updateOne({ _id: requestBody.list[i]._id }, update, {
-              upsert: true,
-            }),
-          );
-          overdueIds.push({
-            id: requestBody.list[i]._id,
-            action: 'edit',
-            overdueAction: requestBody.list[i].overdueAction,
-          });
-        }
+        // if (!overdue) {
+        //   update.createdByType = userType;
+        //   update.createdById = userId;
+        //   newOverdues.push(Overdue.create(update));
+        // } else {
+        promises.push(
+          Overdue.updateOne({ _id: requestBody.list[i]._id }, update, {
+            upsert: true,
+          }),
+        );
+        overdueIds.push({
+          id: requestBody.list[i]._id,
+          action: 'edit',
+          overdueAction: requestBody.list[i].overdueAction,
+        });
+        // }
       }
     }
     if (newOverdues.length !== 0) {

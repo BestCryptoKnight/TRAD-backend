@@ -26,7 +26,11 @@ router.get('/', async function (req, res) {
     });
   }
   try {
-    req.query.isForRisk = req.query.isForRisk || false;
+    req.query.isForRisk = req.query.isForRisk
+      ? typeof req.query.isForRisk === 'string'
+        ? req.query.isForRisk === 'true'
+        : req.query.isForRisk
+      : false;
     let response = [];
     if (req.query.searchString) {
       switch (req.query.entityType) {

@@ -663,6 +663,7 @@ const storeCompanyDetails = async ({
       userId: createdBy,
       userName: createdByName,
       clientId,
+      userType: createdByType,
     });
     const applicationDetails = {
       clientId: clientId,

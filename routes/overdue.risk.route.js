@@ -145,6 +145,11 @@ router.get('/list', async function (req, res) {
             value: overdue[i].status,
             label: formatString(overdue[i].status),
           };
+          overdue[i].index =
+            req.query.clientId +
+            (overdue[i]?.debtorId?._id ? overdue[i].debtorId._id : '') +
+            (overdue[i]?.acn ? overdue[i].acn : '') +
+            i;
         }
       }
       return res.status(200).send({
@@ -152,7 +157,7 @@ router.get('/list', async function (req, res) {
         data: { docs: isNilOverdue ? [] : overdue, client, isNilOverdue },
       });
     } else {
-      query.overdueAction = { $ne: 'MARK_AS_PAID' };
+      // query.overdueAction = { $ne: 'MARK_AS_PAID' };
       let { overdue, lastMonth, lastYear } = await getLastOverdueList({
         query,
         date: new Date(query?.year, query?.month, 1, 0, 0, 0),
@@ -163,6 +168,7 @@ router.get('/list', async function (req, res) {
         isNilOverdue: false,
       };
       if (overdue && overdue.length !== 0) {
+        const docs = [];
         /*overdue.forEach((i) => {
           i.isExistingData = true;
           i.month = req.query.month;
@@ -193,35 +199,50 @@ router.get('/list', async function (req, res) {
             response.isNilOverdue = true;
             break;
           } else {
-            overdue[i].isExistingData = true;
-            overdue[i].month = req.query.month;
-            overdue[i].year = req.query.year;
-            if (overdue[i].debtorId && overdue[i].debtorId.entityName) {
-              overdue[i].debtorId = {
-                label: overdue[i].debtorId.entityName,
-                value: overdue[i].debtorId._id,
+            if (overdue[i].overdueAction !== 'MARK_AS_PAID') {
+              overdue[i].isExistingData = true;
+              overdue[i].month = req.query.month;
+              overdue[i].year = req.query.year;
+              if (overdue[i].debtorId && overdue[i].debtorId.entityName) {
+                overdue[i].debtorId = {
+                  label: overdue[i].debtorId.entityName,
+                  value: overdue[i].debtorId._id,
+                };
+              }
+              if (overdue[i].insurerId && overdue[i].insurerId.name) {
+                overdue[i].insurerId = {
+                  label: overdue[i].insurerId.name,
+                  value: overdue[i].insurerId._id,
+                };
+              }
+              overdue[i].overdueType = {
+                value: overdue[i].overdueType,
+                label: formatString(overdue[i].overdueType),
               };
-            }
-            if (overdue[i].insurerId && overdue[i].insurerId.name) {
-              overdue[i].insurerId = {
-                label: overdue[i].insurerId.name,
-                value: overdue[i].insurerId._id,
+              overdue[i].status = {
+                value: 'SUBMITTED',
+                label: 'Submitted',
               };
+              delete overdue[i]._id;
+              delete overdue[i].overdueAction;
+              overdue[i].index =
+                req.query.clientId +
+                (overdue[i]?.debtorId?._id ? overdue[i].debtorId._id : '') +
+                (overdue[i]?.acn ? overdue[i].acn : '') +
+                i;
+              docs.push(overdue[i]);
             }
-            overdue[i].overdueType = {
-              value: overdue[i].overdueType,
-              label: formatString(overdue[i].overdueType),
-            };
-            overdue[i].status = {
-              value: 'SUBMITTED',
-              label: 'Submitted',
-            };
           }
         }
         if (response.isNilOverdue) {
           response.docs = [];
-        } else {
           response.previousEntries = getMonthString(lastMonth) + ' ' + lastYear;
+        } else {
+          response.docs = docs;
+          if (docs.length !== 0) {
+            response.previousEntries =
+              getMonthString(lastMonth) + ' ' + lastYear;
+          }
         }
       }
       return res.status(200).send({
@@ -448,7 +469,10 @@ router.post('/', async function (req, res) {
  * Save overdue list
  */
 router.put('/list', async function (req, res) {
-  if (!req.body.hasOwnProperty('nilOverdue')) {
+  if (
+    !req.body.hasOwnProperty('nilOverdue') ||
+    !req.body.hasOwnProperty('oldNilOverdue')
+  ) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -456,6 +480,13 @@ router.put('/list', async function (req, res) {
     });
   }
   try {
+    if (req.body.nilOverdue !== req.body.oldNilOverdue) {
+      await Overdue.deleteMany({
+        clientId: req.body.clientId,
+        month: req.body.month,
+        year: req.body.year,
+      });
+    }
     if (!req.body.nilOverdue) {
       if (!req.body.list || req.body.list.length === 0) {
         return res.status(400).send({

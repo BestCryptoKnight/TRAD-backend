@@ -133,6 +133,7 @@ const createDebtor = async ({
   userId,
   userName,
   clientId,
+  userType = 'user',
 }) => {
   try {
     let update = {};
@@ -234,7 +235,7 @@ const createDebtor = async ({
         entityType: 'debtor',
         entityRefId: debtor._id,
         actionType: 'add',
-        userType: 'user',
+        userType: userType,
         userRefId: userId,
         logDescription: `A debtor ${debtor.entityName} is successfully added by ${userName}`,
       });
