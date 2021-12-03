@@ -175,7 +175,10 @@ router.get('/list', async function (req, res) {
             label: formatString(overdue[i].status),
           };
           overdue[i].index =
-            req.user.clientId + overdue[i]?.debtorId?._id + overdue[i].acn + i;
+            req.user.clientId +
+            (overdue[i]?.debtorId?._id ? overdue[i].debtorId._id : '') +
+            (overdue[i]?.acn ? overdue[i].acn : '') +
+            i;
         }
       }
       return res.status(200).send({
@@ -253,8 +256,8 @@ router.get('/list', async function (req, res) {
               delete overdue[i].overdueAction;
               overdue[i].index =
                 req.user.clientId +
-                overdue[i]?.debtorId?._id +
-                overdue[i]?.acn +
+                (overdue[i]?.debtorId?._id ? overdue[i].debtorId._id : '') +
+                (overdue[i]?.acn ? overdue[i].acn : '') +
                 i;
               docs.push(overdue[i]);
             }

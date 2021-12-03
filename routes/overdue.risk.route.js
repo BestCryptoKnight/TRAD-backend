@@ -147,8 +147,8 @@ router.get('/list', async function (req, res) {
           };
           overdue[i].index =
             req.query.clientId +
-            overdue[i]?.debtorId?._id +
-            overdue[i]?.acn +
+            (overdue[i]?.debtorId?._id ? overdue[i].debtorId._id : '') +
+            (overdue[i]?.acn ? overdue[i].acn : '') +
             i;
         }
       }
@@ -227,8 +227,8 @@ router.get('/list', async function (req, res) {
               delete overdue[i].overdueAction;
               overdue[i].index =
                 req.query.clientId +
-                overdue[i]?.debtorId?._id +
-                overdue[i]?.acn +
+                (overdue[i]?.debtorId?._id ? overdue[i].debtorId._id : '') +
+                (overdue[i]?.acn ? overdue[i].acn : '') +
                 i;
               docs.push(overdue[i]);
             }
