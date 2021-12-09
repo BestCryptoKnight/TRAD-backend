@@ -1626,7 +1626,8 @@ const getUsagePerClientReport = async ({
       reportColumn.includes('expiryDate') ||
       reportColumn.includes('comments') ||
       reportColumn.includes('clientReference') ||
-      reportColumn.includes('limitType')
+      reportColumn.includes('limitType') ||
+      requestedQuery.limitType
     ) {
       reportColumn.push('activeApplicationId');
       query.push({
@@ -1635,6 +1636,14 @@ const getUsagePerClientReport = async ({
           localField: 'activeApplicationId',
           foreignField: '_id',
           as: 'activeApplicationId',
+        },
+      });
+    }
+
+    if (requestedQuery.limitType) {
+      query.push({
+        $match: {
+          'activeApplicationId.limitType': requestedQuery.limitType,
         },
       });
     }

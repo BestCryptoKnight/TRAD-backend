@@ -3240,5 +3240,23 @@
     "documentImagedDate": "date",
     "startAmt": "dollar",
     "amtOwing": "dollar"
-  }
+  },
+  "limitType": [
+    {
+      "_id": "Endorsed Limit",
+      "name": "ENDORSED"
+    },
+    {
+      "_id": "Credit Check",
+      "name": "CREDIT_CHECK"
+    },
+    {
+      "_id": "Health Check",
+      "name": "HEALTH_CHECK"
+    },
+    {
+      "_id": "24/7 Alerts",
+      "name": "247_ALERT"
+    }
+  ]
 }
