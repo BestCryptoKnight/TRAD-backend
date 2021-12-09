@@ -3243,20 +3243,20 @@
   },
   "limitType": [
     {
-      "_id": "Endorsed Limit",
-      "name": "ENDORSED"
+      "name": "Endorsed Limit",
+      "_id": "ENDORSED"
     },
     {
-      "_id": "Credit Check",
-      "name": "CREDIT_CHECK"
+      "name": "Credit Check",
+      "_id": "CREDIT_CHECK"
     },
     {
-      "_id": "Health Check",
-      "name": "HEALTH_CHECK"
+      "name": "Health Check",
+      "_id": "HEALTH_CHECK"
     },
     {
-      "_id": "24/7 Alerts",
-      "name": "247_ALERT"
+      "name": "24/7 Alerts",
+      "_id": "247_ALERT"
     }
   ]
 }
