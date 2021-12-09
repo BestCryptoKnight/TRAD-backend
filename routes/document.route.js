@@ -570,34 +570,42 @@ router.delete('/:documentId', async function (req, res) {
     const document = await Document.findOne({
       _id: req.params.documentId,
     }).lean();
-    await deleteFile({ filePath: document.keyPath });
-    await Document.updateOne(
-      { _id: req.params.documentId },
-      { isDeleted: true },
-    );
-    if (document.entityRefId && document.entityType) {
-      const [entityName, clientName] = await Promise.all([
-        getEntityName({
-          entityId: document.entityRefId,
-          entityType: document.entityType.toLowerCase(),
-        }),
-        getEntityName({
-          entityId: req.user.clientId,
-          entityType: 'client',
-        }),
-      ]);
-      await addAuditLog({
-        entityType: 'document',
-        entityRefId: document._id,
-        actionType: 'delete',
-        userType: 'client-user',
-        userRefId: req.user.clientId,
-        logDescription: `A document for ${entityName} is successfully deleted by ${clientName}`,
+    if (document?.uploadByType === 'client-user') {
+      await deleteFile({ filePath: document.keyPath });
+      await Document.updateOne(
+        { _id: req.params.documentId },
+        { isDeleted: true },
+      );
+      if (document.entityRefId && document.entityType) {
+        const [entityName, clientName] = await Promise.all([
+          getEntityName({
+            entityId: document.entityRefId,
+            entityType: document.entityType.toLowerCase(),
+          }),
+          getEntityName({
+            entityId: req.user.clientId,
+            entityType: 'client',
+          }),
+        ]);
+        await addAuditLog({
+          entityType: 'document',
+          entityRefId: document._id,
+          actionType: 'delete',
+          userType: 'client-user',
+          userRefId: req.user.clientId,
+          logDescription: `A document for ${entityName} is successfully deleted by ${clientName}`,
+        });
+      }
+      res
+        .status(200)
+        .send({ status: 'SUCCESS', message: 'Document deleted successfully' });
+    } else {
+      res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'INVALID_REQUEST',
+        message: 'Invalid request',
       });
     }
-    res
-      .status(200)
-      .send({ status: 'SUCCESS', message: 'Document deleted successfully' });
   } catch (e) {
     Logger.log.error('Error occurred in delete document ', e.message || e);
     res.status(500).send({
