@@ -20,6 +20,7 @@ const {
   getStateName,
   getDebtorFullAddress,
   getStreetTypeName,
+  getLimitType,
 } = require('./debtor.helper');
 
 /*
@@ -637,8 +638,7 @@ const getLimitListReport = async ({
           : '';
       }*/
       if (limit?.activeApplicationId?.[0]?.limitType) {
-        limit.limitType =
-          formatString(limit.activeApplicationId[0].limitType) || '';
+        limit.limitType = getLimitType(limit.activeApplicationId[0].limitType);
         limit.activeApplicationId[0].limitType === 'ENDORSED'
           ? endorsedLimits++
           : limit.activeApplicationId[0].limitType === 'CREDIT_CHECK'
@@ -1626,7 +1626,8 @@ const getUsagePerClientReport = async ({
       reportColumn.includes('expiryDate') ||
       reportColumn.includes('comments') ||
       reportColumn.includes('clientReference') ||
-      reportColumn.includes('limitType')
+      reportColumn.includes('limitType') ||
+      requestedQuery.limitType
     ) {
       reportColumn.push('activeApplicationId');
       query.push({
@@ -1635,6 +1636,14 @@ const getUsagePerClientReport = async ({
           localField: 'activeApplicationId',
           foreignField: '_id',
           as: 'activeApplicationId',
+        },
+      });
+    }
+
+    if (requestedQuery.limitType) {
+      query.push({
+        $match: {
+          'activeApplicationId.limitType': requestedQuery.limitType,
         },
       });
     }
@@ -1805,7 +1814,7 @@ const getUsagePerClientReport = async ({
       }
       if (limit?.activeApplicationId?.[0]?.limitType) {
         limit.limitType =
-          formatString(limit.activeApplicationId[0].limitType) || '';
+          getLimitType(limit.activeApplicationId[0].limitType) || '';
       }
       if (limit?.activeApplicationId?.[0]?.clientReference) {
         limit.clientReference =
@@ -2019,7 +2028,7 @@ const getLimitHistoryReport = async ({
         limit.status = formatString(limit.status);
       }
       if (limit.limitType) {
-        limit.limitType = formatString(limit?.limitType) || '';
+        limit.limitType = getLimitType(limit?.limitType) || '';
       }
     });
     return { response, total };

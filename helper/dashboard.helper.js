@@ -14,7 +14,7 @@ const getEndorsedLimit = async ({
   clientId,
   startDate = null,
   endDate = null,
-  aggregateOfCreditLimit,
+  aggregateOfCreditLimit = '0',
 }) => {
   try {
     const query = {
@@ -48,14 +48,11 @@ const getEndorsedLimit = async ({
         },
       },
     ]).allowDiskUse(true);
-    const response = {};
-    if (data && data.length !== 0) {
-      response.totalCount = parseInt(aggregateOfCreditLimit);
-      response.endorsedLimitCount = data[0]['endorsedLimit'];
-    } else {
-      response.totalCount = 0;
-      response.endorsedLimitCount = 0;
-    }
+    const response = {
+      totalCount: parseInt(aggregateOfCreditLimit) || 0,
+    };
+    response.endorsedLimitCount =
+      data && data?.[0]?.['endorsedLimit'] ? data[0]['endorsedLimit'] : 0;
     return response;
   } catch (e) {
     Logger.log.error(
@@ -69,7 +66,7 @@ const getCreditChecks = async ({
   clientId,
   startDate,
   endDate,
-  noOfCreditChecks,
+  noOfCreditChecks = '0',
 }) => {
   try {
     const query = {
@@ -96,14 +93,11 @@ const getCreditChecks = async ({
         },
       },
     ]).allowDiskUse(true);
-    const response = {};
-    if (data && data.length !== 0) {
-      response.totalCount = parseInt(noOfCreditChecks);
-      response.applicationCount = data[0]['count'];
-    } else {
-      response.totalCount = 0;
-      response.applicationCount = 0;
-    }
+    const response = {
+      totalCount: parseInt(noOfCreditChecks) || 0,
+    };
+    response.applicationCount =
+      data && data?.[0]?.['count'] ? data[0]['count'] : 0;
     return response;
   } catch (e) {
     Logger.log.error('Error occurred in get RES checks count', e.message || e);

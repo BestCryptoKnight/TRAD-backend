@@ -17,7 +17,7 @@ const ClientUser = mongoose.model('client-user');
  * */
 const Logger = require('./../services/logger');
 const config = require('./../config');
-const { createDebtor } = require('./debtor.helper');
+const { createDebtor, getLimitType } = require('./debtor.helper');
 const {
   checkEntityType,
   identifyInsurer,
@@ -468,7 +468,7 @@ const getApplicationList = async ({
             : 'No';
         }
         if (application?.limitType) {
-          application.limitType = formatString(application.limitType);
+          application.limitType = getLimitType(application.limitType);
         }
         delete application.clientDebtorId;
       });

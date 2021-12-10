@@ -773,6 +773,15 @@ const checkForRegistrationNumber = async () => {
   }
 };
 
+const getLimitType = (limitType) => {
+  try {
+    const response = StaticData.limitType.find((i) => i._id === limitType);
+    return response && response?.name ? response.name : limitType;
+  } catch (e) {
+    Logger.log.error('Error occurred get limit type', e);
+  }
+};
+
 module.exports = {
   createDebtor,
   getDebtorFullAddress,
@@ -785,4 +794,5 @@ module.exports = {
   updateEntitiesToAlertProfile,
   getCurrentDebtorList,
   checkForRegistrationNumber,
+  getLimitType,
 };

@@ -343,18 +343,18 @@ router.get('/:entityId', async function (req, res) {
         },
         {
           $lookup: {
-            from: 'client-users',
+            from: 'clients',
             localField: 'clientUserId',
             foreignField: '_id',
-            as: 'clientUserId',
+            as: 'clientId',
           },
         },
         {
           $addFields: {
             uploadById: {
               $cond: [
-                { $eq: ['$createdByType', 'client-user'] },
-                '$clientUserId.name',
+                { $eq: ['$uploadByType', 'client-user'] },
+                '$clientId.name',
                 '$userId.name',
               ],
             },

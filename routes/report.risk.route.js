@@ -143,6 +143,7 @@ router.get('/entity-list', async function (req, res) {
         riskAnalystId: riskAnalystList,
         serviceManagerId: serviceManagerList,
         entityType: StaticData.entityType,
+        limitType: StaticData.limitType,
       },
     });
   } catch (e) {
