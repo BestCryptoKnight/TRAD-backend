@@ -621,7 +621,10 @@ const getEntityDetailsByBusinessNumber = async ({
     let responseData = {};
     let entityData;
     if (country === 'AUS') {
-      if (searchString.toString().length < 10) {
+      if (
+        searchString.toString().length >= 9 &&
+        searchString.toString().length < 10
+      ) {
         entityData = await getEntityDetailsByACN({
           searchString: searchString,
         });
