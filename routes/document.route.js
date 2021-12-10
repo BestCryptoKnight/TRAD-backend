@@ -208,6 +208,7 @@ router.get('/:entityId', async function (req, res) {
     let documentColumn = req.user.manageColumns.find(
       (i) => i.moduleName === req.query.documentFor + '-document',
     );
+    documentColumn.columns.push('uploadByType');
     let query;
     let aggregationQuery = [];
     let sortingOptions = {};
