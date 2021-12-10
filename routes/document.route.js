@@ -208,7 +208,6 @@ router.get('/:entityId', async function (req, res) {
     let documentColumn = req.user.manageColumns.find(
       (i) => i.moduleName === req.query.documentFor + '-document',
     );
-    documentColumn.columns.push('uploadByType');
     let query;
     let aggregationQuery = [];
     let sortingOptions = {};
@@ -225,6 +224,7 @@ router.get('/:entityId', async function (req, res) {
         'description',
         'uploadById',
         'createdAt',
+        'uploadByType',
       ];
       const application = await Application.findOne({
         _id: req.params.entityId,
@@ -254,6 +254,7 @@ router.get('/:entityId', async function (req, res) {
         ],
       };
     } else if (req.query.documentFor === 'debtor') {
+      documentColumn.columns.push('uploadByType');
       const applications = await Application.find({
         debtorId: req.params.entityId,
       }).lean();
