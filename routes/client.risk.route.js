@@ -1134,7 +1134,11 @@ router.put('/user/sync-from-crm/:clientId', async function (req, res) {
       promiseArr.push(
         ClientUser.updateMany(
           { email: { $in: oldUsers } },
-          { isDeleted: true },
+          {
+            isDeleted: true,
+            sendDecisionLetter: false,
+            hasPortalAccess: false,
+          },
         ),
       );
     }

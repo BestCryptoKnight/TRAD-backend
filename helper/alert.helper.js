@@ -167,6 +167,7 @@ const listEntitySpecificAlerts = async ({
         return obj;
       }, {}),
     });
+    query.push({ $sort: { createdAt: -1 } });
     if (requestedQuery.page && requestedQuery.limit) {
       query.push({
         $facet: {
@@ -248,6 +249,10 @@ const getAlertDetail = async ({ alertId }) => {
     };
     if (alertDetails?.fieldName && alert[alertDetails.fieldName]) {
       for (let key of alertDetails.alertFields) {
+        const value =
+          key === 'defendantAddress'
+            ? alert[alertDetails.fieldName][key]?.['unformattedAddress']
+            : alert[alertDetails.fieldName][key];
         response.alertDetails.push({
           label:
             key.charAt(0).toUpperCase() +
@@ -255,7 +260,7 @@ const getAlertDetail = async ({ alertId }) => {
               .substr(1)
               .replace(/([A-Z])/g, ' $1')
               .trim(),
-          value: alert[alertDetails.fieldName][key],
+          value: value || '',
           type: StaticData.AlertFieldTypes[key] || 'string',
         });
       }
@@ -753,17 +758,12 @@ const mapEntityToAlert = async ({ alertList }) => {
     const promises = [];
     for (let i = 0; i < alertList.length; i++) {
       query = {};
-      query[
-        alertList[i].companyNumbers?.abn
-          ? 'abn'
-          : alertList[i].companyNumbers.acn
-          ? 'acn'
-          : 'abn'
-      ] = alertList[i].companyNumbers.abn
-        ? alertList[i].companyNumbers.abn
+      query[alertList[i].companyNumbers?.abn ? 'abn' : 'acn'] = alertList[i]
+        .companyNumbers.abn
+        ? alertList[i].companyNumbers.abn?.toString()
         : alertList[i].companyNumbers.acn
-        ? alertList[i].companyNumbers.acn
-        : alertList[i].companyNumbers.ncn;
+        ? alertList[i].companyNumbers.acn?.toString()
+        : alertList[i].companyNumbers.ncn?.toString();
       const [debtor, stakeholder] = await Promise.all([
         Debtor.findOne(query).select('_id').lean(),
         DebtorDirector.findOne(query).select('_id debtorId').lean(),
