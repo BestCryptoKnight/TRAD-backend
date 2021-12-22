@@ -167,6 +167,7 @@ const listEntitySpecificAlerts = async ({
         return obj;
       }, {}),
     });
+    query.push({ $sort: { createdAt: -1 } });
     if (requestedQuery.page && requestedQuery.limit) {
       query.push({
         $facet: {
