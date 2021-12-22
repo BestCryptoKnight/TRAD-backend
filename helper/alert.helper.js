@@ -757,17 +757,12 @@ const mapEntityToAlert = async ({ alertList }) => {
     const promises = [];
     for (let i = 0; i < alertList.length; i++) {
       query = {};
-      query[
-        alertList[i].companyNumbers?.abn
-          ? 'abn'
-          : alertList[i].companyNumbers.acn
-          ? 'acn'
-          : 'abn'
-      ] = alertList[i].companyNumbers.abn
-        ? alertList[i].companyNumbers.abn
+      query[alertList[i].companyNumbers?.abn ? 'abn' : 'acn'] = alertList[i]
+        .companyNumbers.abn
+        ? alertList[i].companyNumbers.abn?.toString()
         : alertList[i].companyNumbers.acn
-        ? alertList[i].companyNumbers.acn
-        : alertList[i].companyNumbers.ncn;
+        ? alertList[i].companyNumbers.acn?.toString()
+        : alertList[i].companyNumbers.ncn?.toString();
       const [debtor, stakeholder] = await Promise.all([
         Debtor.findOne(query).select('_id').lean(),
         DebtorDirector.findOne(query).select('_id debtorId').lean(),

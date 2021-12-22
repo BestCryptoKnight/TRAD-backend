@@ -1521,6 +1521,7 @@ const sendDecisionLetter = async ({
     const clientUsers = await ClientUser.find({
       clientId: application.clientId,
       sendDecisionLetter: true,
+      isDeleted: false,
     })
       .select('email')
       .lean();

@@ -99,7 +99,6 @@ const scheduler = async () => {
       },
     );
 
-    //TODO uncomment after to retrieve alert list
     /*
     Retrieve Alert List
      */
@@ -111,13 +110,12 @@ const scheduler = async () => {
           new Date(),
         );
         let end = new Date();
-        console.log(end);
         let start = new Date();
         start = new Date(start.setDate(start.getDate() - 1));
         start.setHours(0, 0, 0, 0);
-        console.log('start', start);
+        Logger.log.info('Alert start time..', start);
+        Logger.log.info('Alert end time..', end);
         // start = start.setDate(start.getDate() - 1)
-        console.log('end', end);
         // end.setHours(23, 59, 59, 999);
         /*start = new Date(
           start.toString().split('GMT')[0] + ' UTC',
