@@ -248,6 +248,10 @@ const getAlertDetail = async ({ alertId }) => {
     };
     if (alertDetails?.fieldName && alert[alertDetails.fieldName]) {
       for (let key of alertDetails.alertFields) {
+        const value =
+          key === 'defendantAddress'
+            ? alert[alertDetails.fieldName][key]?.['unformattedAddress']
+            : alert[alertDetails.fieldName][key];
         response.alertDetails.push({
           label:
             key.charAt(0).toUpperCase() +
@@ -255,7 +259,7 @@ const getAlertDetail = async ({ alertId }) => {
               .substr(1)
               .replace(/([A-Z])/g, ' $1')
               .trim(),
-          value: alert[alertDetails.fieldName][key],
+          value: value || '',
           type: StaticData.AlertFieldTypes[key] || 'string',
         });
       }

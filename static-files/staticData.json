@@ -3233,6 +3233,7 @@
   },
   "AlertFieldTypes": {
     "startDate": "date",
+    "dateLodged": "date",
     "changeDate": "date",
     "abnStatusFromDate": "date",
     "extractDate": "date",
