@@ -762,7 +762,9 @@ const mapEntityToAlert = async ({ alertList }) => {
         .companyNumbers.abn
         ? alertList[i].companyNumbers.abn?.toString()
         : alertList[i].companyNumbers.acn
-        ? alertList[i].companyNumbers.acn?.toString()
+        ? alertList[i].companyNumbers.acn?.toString()?.length !== 0
+          ? alertList[i].companyNumbers.acn?.toString().padStart(9, '0')
+          : alertList[i].companyNumbers.acn?.toString()
         : alertList[i].companyNumbers.ncn?.toString();
       const [debtor, stakeholder] = await Promise.all([
         Debtor.findOne(query).select('_id').lean(),
@@ -986,7 +988,8 @@ const checkForValidEntity = async ({ lookupValue, lookupMethod }) => {
     }
     return valid;
   } catch (e) {
-    console.log('Error occurred.........', e);
+    Logger.log.error('Error occurred in check for valid entity');
+    Logger.log.error(e);
   }
 };
 
