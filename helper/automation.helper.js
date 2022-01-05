@@ -1232,14 +1232,52 @@ const checkPriceRangeGuidelines = async ({
     }
     if (guidelines.delinquencyScore) {
       response = {};
-      if (reportData && reportData.DynamicDelinquencyScore) {
+      if (
+        reportData &&
+        reportData.DynamicDelinquencyScore &&
+        guidelines.delinquencyScore?.value
+      ) {
         response = await checkForRiskScore({
           dynamicDelinquencyScore: reportData.DynamicDelinquencyScore,
           value: guidelines.delinquencyScore.value,
         });
       }
       if (response.isBlocker) {
-        blockers.push('The D&B Dynamic Delinquency Score is lower than 386');
+        blockers.push(
+          `The D&B Dynamic Delinquency Score is lower than ${guidelines.delinquencyScore.value}`,
+        );
+      }
+    }
+    if (guidelines.delinquencyScoreForAUS) {
+      response = {};
+      if (
+        reportData &&
+        reportData.DynamicDelinquencyScore &&
+        guidelines.delinquencyScoreForAUS?.value
+      ) {
+        response = await checkForRiskScore({
+          dynamicDelinquencyScore: reportData.DynamicDelinquencyScore,
+          value: guidelines.delinquencyScoreForAUS.value,
+        });
+      }
+      if (response.isBlocker) {
+        blockers.push(
+          `The D&B Dynamic Delinquency Score is lower than ${guidelines.delinquencyScoreForAUS.value}`,
+        );
+      }
+    }
+    if (guidelines.delinquencyScoreForNZL) {
+      response = {};
+      if (reportData && reportData.DynamicDelinquencyScore) {
+        response = await checkForRiskScore({
+          dynamicDelinquencyScore: reportData.DynamicDelinquencyScore,
+          value: guidelines.delinquencyScoreForNZL.value,
+        });
+      }
+      if (response.isBlocker) {
+        blockers.push(
+          `The D&B Dynamic Delinquency Score is lower than ${guidelines.delinquencyScoreForAUS.value}`,
+        );
       }
     }
     if (guidelines.tradePaymentInfo) {
