@@ -17,6 +17,7 @@ const getEndorsedLimit = async ({
   aggregateOfCreditLimit = '0',
 }) => {
   try {
+    //TODO optimize query (add endorsed limit flag in query)
     const query = {
       clientId: mongoose.Types.ObjectId(clientId),
       // creditLimit: { $exists: true, $ne: null },
@@ -165,6 +166,7 @@ const getApprovedAmount = async ({
         $lte: new Date(endDate),
       };
     }
+    //TODO need to change query for isActive flag
     const response = await Application.aggregate([
       {
         $match: query,
