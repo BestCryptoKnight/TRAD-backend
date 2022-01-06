@@ -308,12 +308,6 @@ module.exports = ({
                                              src="${config.staticServing.bucketURL}static-files/mail-images/linkedin.png"/>
                                     </a>
                                 </td>
-                                <td>
-                                    <a style="text-decoration: none">
-                                        <img height="30" style="cursor:pointer;"
-                                             src="${config.staticServing.bucketURL}static-files/mail-images/twitter.png"/>
-                                    </a>
-                                </td>
                             </tr>
                         </table>
                     </td>
