@@ -50,16 +50,15 @@
   "priceRange": [
     {
       "lowerLimit": null,
-      "upperLimit": 100000,
+      "upperLimit": 50000,
       "australianIndividuals": {
-        "reports": ["Equifax Report: Commercial Apply (Individuals tab)"],
+        "reports": ["Illion Report: Individual Commercial Enquiry"],
         "isAutoApproval": true,
-        "reportFrom": "equifax",
+        "reportFrom": "illion",
         "guideLines": {}
       },
       "australianCompanies": {
         "reports": [
-          "Illion Report: HTML Commercial Bureau Enquiry without ASIC Docs OR",
           "Illion Report: HTML Commercial Bureau Enquiry w/ refresh ASIC w/o ASIC Docs"
         ],
         "isAutoApproval": true,
@@ -67,10 +66,129 @@
         "guideLines": {}
       },
       "newZealand": {
-        "reports": [],
+        "reports": ["Illion Report: HTML NZ Comm. Bureau Enq (AU Subs)"],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
         "guideLines": {}
       },
       "commonGuideLines": []
+    },
+    {
+      "lowerLimit": 50001,
+      "upperLimit": 75000,
+      "australianIndividuals": {
+        "reports": ["Illion Report: Individual Commercial Enquiry"],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
+        "guideLines": {
+          "paymentRiskLevel": {
+            "conditionString": "The Late Payment Risk Level indicated by D&B cannot be “High”, “Very High” or “Severe”",
+            "field": ["riskLevel"],
+            "value": ["High", "Very High", "Severe"]
+          },
+          "delinquencyScoreForAUS": {
+            "conditionString": "The D&B Dynamic Delinquency Score cannot be lower than 387 on Australian debtors",
+            "field": ["score"],
+            "value": 387
+          }
+        }
+      },
+      "australianCompanies": {
+        "reports": ["Illion Report: Risk of Late Payment Report (DDS)"],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
+        "guideLines": {
+          "paymentRiskLevel": {
+            "conditionString": "The Late Payment Risk Level indicated by D&B cannot be “High”, “Very High” or “Severe”",
+            "field": ["riskLevel"],
+            "value": ["High", "Very High", "Severe"]
+          },
+          "delinquencyScoreForAUS": {
+            "conditionString": "The D&B Dynamic Delinquency Score cannot be lower than 387 on Australian debtors",
+            "field": ["score"],
+            "value": 387
+          }
+        }
+      },
+      "newZealand": {
+        "reports": ["Illion NZ Report: Risk of Late Payment Report (DDS)"],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
+        "guideLines": {
+          "paymentRiskLevel": {
+            "conditionString": "The Late Payment Risk Level indicated by D&B cannot be “High”, “Very High” or “Severe”",
+            "field": ["riskLevel"],
+            "value": ["High", "Very High", "Severe"]
+          },
+          "delinquencyScoreForNZL": {
+            "conditionString": "The D&B Dynamic Delinquency Score cannot be lower than 441 for NZ debtors",
+            "field": ["score"],
+            "value": 441
+          }
+        }
+      },
+      "commonGuideLines": [
+        "The Late Payment Risk Level indicated by D&B cannot be “High”, “Very High” or “Severe”",
+        "The D&B Dynamic Delinquency Score cannot be lower than 387 on Australian debtors and cannot be lower than 441 for NZ debtors"
+      ]
+    },
+    {
+      "lowerLimit": 75001,
+      "upperLimit": 100000,
+      "australianIndividuals": {
+        "reports": ["Illion Report: Individual Commercial Enquiry"],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
+        "guideLines": {
+          "paymentRiskLevel": {
+            "conditionString": "The Late Payment Risk Level indicated by D&B cannot be “Moderate”, “High”, “Very High” or “Severe”",
+            "field": ["riskLevel"],
+            "value": ["Moderate", "High", "Very High", "Severe"]
+          },
+          "delinquencyScoreForAUS": {
+            "conditionString": "The D&B Dynamic Delinquency Score cannot be lower than 422 on Australian debtors",
+            "field": ["score"],
+            "value": 422
+          }
+        }
+      },
+      "australianCompanies": {
+        "reports": ["Illion Report: Risk of Late Payment Report (DDS)"],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
+        "guideLines": {
+          "paymentRiskLevel": {
+            "conditionString": "The Late Payment Risk Level indicated by D&B cannot be “Moderate”, “High”, “Very High” or “Severe”",
+            "field": ["riskLevel"],
+            "value": ["Moderate", "High", "Very High", "Severe"]
+          },
+          "delinquencyScoreForAUS": {
+            "conditionString": "The D&B Dynamic Delinquency Score cannot be lower than 422 on Australian debtors",
+            "field": ["score"],
+            "value": 422
+          }
+        }
+      },
+      "newZealand": {
+        "reports": ["Illion NZ Report: Risk of Late Payment Report (DDS)"],
+        "isAutoApproval": true,
+        "guideLines": {
+          "paymentRiskLevel": {
+            "conditionString": "The Late Payment Risk Level indicated by D&B cannot be “Moderate”, “High”, “Very High” or “Severe”",
+            "field": ["riskLevel"],
+            "value": ["Moderate", "High", "Very High", "Severe"]
+          },
+          "delinquencyScoreForNZL": {
+            "conditionString": "The D&B Dynamic Delinquency Score cannot be lower than 492 for NZ debtors",
+            "field": ["score"],
+            "value": 492
+          }
+        }
+      },
+      "commonGuideLines": [
+        "The Late Payment Risk Level indicated by D&B cannot be “Moderate”, “High”, “Very High” or “Severe”",
+        "The D&B Dynamic Delinquency Score cannot be lower than 422 on Australian debtors and cannot be lower than 492 for NZ debtors"
+      ]
     }
   ]
 }

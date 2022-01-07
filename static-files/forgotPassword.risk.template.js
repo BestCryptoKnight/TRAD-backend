@@ -159,21 +159,15 @@ module.exports = ({ name, otp, expireTime, email, contactNumber, address }) => {
                         <table>
                             <tr>
                                 <td>
-                                    <a style="text-decoration: none">
+                                    <a style="text-decoration: none" href="https://www.facebook.com/tradecreditrisk/">
                                         <img height="30" style="cursor:pointer;"
                                              src="${config.staticServing.bucketURL}static-files/mail-images/facebook.png"/>
                                     </a>
                                 </td>
                                 <td>
-                                    <a style="text-decoration: none">
+                                    <a style="text-decoration: none" href="https://au.linkedin.com/company/trade-credit-risk-pty-ltd">
                                         <img height="30" style="cursor:pointer;"
                                              src="${config.staticServing.bucketURL}static-files/mail-images/linkedin.png"/>
-                                    </a>
-                                </td>
-                                <td>
-                                    <a style="text-decoration: none">
-                                        <img height="30" style="cursor:pointer;"
-                                             src="${config.staticServing.bucketURL}static-files/mail-images/twitter.png"/>
                                     </a>
                                 </td>
                             </tr>
