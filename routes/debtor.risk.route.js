@@ -647,10 +647,10 @@ router.get('/details/:debtorId', async function (req, res) {
     }
     if (
       application &&
-      ((application.status !== 'APPROVED' && application.status !== 'DRAFT') ||
-        (application.status !== 'APPROVED' &&
-          application.status !== 'DRAFT' &&
-          anotherApplication))
+      ((!anotherApplication &&
+        application.status !== 'APPROVED' &&
+        application.status !== 'DRAFT') ||
+        (anotherApplication && application.status !== 'APPROVED'))
     ) {
       Logger.log.info('Application already exists..');
       return res.status(400).send({
