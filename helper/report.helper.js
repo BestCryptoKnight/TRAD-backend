@@ -774,6 +774,11 @@ const getPendingApplicationReport = async ({
     }
     if (requestedQuery.limitType) {
       queryFilter.limitType = { $in: requestedQuery.limitType.split(',') };
+      filterArray.push({
+        label: 'Limit Type',
+        value: requestedQuery.limitType.split(',')?.map((i) => getLimitType(i)),
+        type: 'string',
+      });
     }
     if (
       reportColumn.includes('clientId') ||
