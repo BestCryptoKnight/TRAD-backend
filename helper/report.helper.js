@@ -424,6 +424,33 @@ const getLimitListReport = async ({
     }
 
     if (
+      reportColumn.includes('applicationId') ||
+      reportColumn.includes('creditLimit') ||
+      reportColumn.includes('acceptedAmount') ||
+      reportColumn.includes('approvalOrDecliningDate') ||
+      reportColumn.includes('comments') ||
+      reportColumn.includes('clientReference') ||
+      reportColumn.includes('limitType')
+    ) {
+      query.push({
+        $lookup: {
+          from: 'applications',
+          localField: 'activeApplicationId',
+          foreignField: '_id',
+          as: 'activeApplicationId',
+        },
+      });
+    }
+    if (requestedQuery.limitType) {
+      query.push({
+        $match: {
+          'activeApplicationId.limitType': {
+            $in: requestedQuery.limitType.split(','),
+          },
+        },
+      });
+    }
+    if (
       reportColumn.includes('clientId') ||
       reportColumn.includes('insurerId')
     ) {
@@ -459,24 +486,6 @@ const getLimitListReport = async ({
           localField: 'debtorId',
           foreignField: '_id',
           as: 'debtorId',
-        },
-      });
-    }
-    if (
-      reportColumn.includes('applicationId') ||
-      reportColumn.includes('creditLimit') ||
-      reportColumn.includes('acceptedAmount') ||
-      reportColumn.includes('approvalOrDecliningDate') ||
-      reportColumn.includes('comments') ||
-      reportColumn.includes('clientReference') ||
-      reportColumn.includes('limitType')
-    ) {
-      query.push({
-        $lookup: {
-          from: 'applications',
-          localField: 'activeApplicationId',
-          foreignField: '_id',
-          as: 'activeApplicationId',
         },
       });
     }
@@ -763,6 +772,9 @@ const getPendingApplicationReport = async ({
       }
       queryFilter.requestDate = dateQuery;
     }
+    if (requestedQuery.limitType) {
+      queryFilter.limitType = { $in: requestedQuery.limitType.split(',') };
+    }
     if (
       reportColumn.includes('clientId') ||
       reportColumn.includes('insurerId')
@@ -881,16 +893,9 @@ const getPendingApplicationReport = async ({
           ? formatString(application.debtorId[0]['entityType'])
           : '';
       }
-      /*if (
-        application.debtorId &&
-        application.debtorId[0] &&
-        application.debtorId[0].entityName
-      ) {
-        application.debtorId = application.debtorId[0]['entityName']
-          ? application.debtorId[0]['entityName']
-          : '';
-      }*/
-
+      if (application?.limitType) {
+        application.limitType = getLimitType(application.limitType);
+      }
       application.debtorId =
         application.debtorId &&
         application.debtorId[0] &&
@@ -1643,7 +1648,9 @@ const getUsagePerClientReport = async ({
     if (requestedQuery.limitType) {
       query.push({
         $match: {
-          'activeApplicationId.limitType': requestedQuery.limitType,
+          'activeApplicationId.limitType': {
+            $in: requestedQuery.limitType.split(','),
+          },
         },
       });
     }
@@ -1786,8 +1793,8 @@ const getUsagePerClientReport = async ({
           ? limit.debtorId[0]['entityName']
           : '';
       }
-      if (limit.hasOwnProperty('isActive')) {
-        limit.isActive = limit.isActive ? 'Yes' : 'No';
+      if (limit.hasOwnProperty('status')) {
+        limit.status = limit.status === 'APPROVED' ? 'Yes' : 'No';
       }
       if (limit?.activeApplicationId?.[0]?.applicationId) {
         limit.applicationId =
@@ -1862,6 +1869,9 @@ const getLimitHistoryReport = async ({
         .lean();
       const clientIds = clients.map((i) => i._id);
       queryFilter.clientId = { $in: clientIds };
+    }
+    if (requestedQuery.limitType) {
+      queryFilter.limitType = { $in: requestedQuery.limitType.split(',') };
     }
     if (requestedQuery.debtorId) {
       queryFilter.debtorId = mongoose.Types.ObjectId(requestedQuery.debtorId);

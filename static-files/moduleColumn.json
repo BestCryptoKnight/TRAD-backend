@@ -1158,6 +1158,11 @@
           "label": "Requested Amount",
           "type": "amount"
         },
+        {
+          "name": "limitType",
+          "label": "Limit Type",
+          "type": "string"
+        },
         { "name": "requestDate", "label": "Applied Date", "type": "date" }
       ],
       "defaultColumns": [
