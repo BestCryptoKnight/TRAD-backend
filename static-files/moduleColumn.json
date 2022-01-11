@@ -1285,7 +1285,7 @@
         },
         { "name": "country", "label": "Debtor Country", "type": "string" },
         {
-          "name": "isActive",
+          "name": "creditLimitStatus",
           "label": "Current Status of Credit Limit",
           "type": "string"
         },
@@ -1340,7 +1340,7 @@
         "entityType",
         "abn",
         "registrationNumber",
-        "isActive",
+        "creditLimitStatus",
         "creditLimit"
       ]
     },

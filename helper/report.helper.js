@@ -1566,7 +1566,9 @@ const getUsagePerClientReport = async ({
   requestedQuery,
 }) => {
   try {
-    const queryFilter = {};
+    const queryFilter = {
+      status: { $exists: true, $in: ['APPROVED', 'DECLINED'] },
+    };
     const query = [];
     if (requestedQuery.clientIds) {
       const clientIds = requestedQuery.clientIds
@@ -1799,7 +1801,8 @@ const getUsagePerClientReport = async ({
           : '';
       }
       if (limit.hasOwnProperty('status')) {
-        limit.status = limit.status === 'APPROVED' ? 'Yes' : 'No';
+        limit.creditLimitStatus =
+          limit.status === 'APPROVED' ? 'Active' : 'Inactive';
       }
       if (limit?.activeApplicationId?.[0]?.applicationId) {
         limit.applicationId =
