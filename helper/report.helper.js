@@ -363,7 +363,7 @@ const getLimitListReport = async ({
       status: { $exists: true, $in: ['APPROVED', 'DECLINED'] },
       // creditLimit: { $exists: true, $ne: null },
     };
-    const query = [];
+    let query = [];
     let aggregationQuery = [];
     const filterArray = [];
 
@@ -430,25 +430,31 @@ const getLimitListReport = async ({
       reportColumn.includes('approvalOrDecliningDate') ||
       reportColumn.includes('comments') ||
       reportColumn.includes('clientReference') ||
-      reportColumn.includes('limitType')
+      reportColumn.includes('limitType') ||
+      requestedQuery.limitType
     ) {
-      query.push({
-        $lookup: {
-          from: 'applications',
-          localField: 'activeApplicationId',
-          foreignField: '_id',
-          as: 'activeApplicationId',
-        },
-      });
-    }
-    if (requestedQuery.limitType) {
-      query.push({
-        $match: {
-          'activeApplicationId.limitType': {
-            $in: requestedQuery.limitType.split(','),
+      const conditions = [
+        {
+          $lookup: {
+            from: 'applications',
+            localField: 'activeApplicationId',
+            foreignField: '_id',
+            as: 'activeApplicationId',
           },
         },
-      });
+      ];
+      if (requestedQuery.limitType) {
+        aggregationQuery = [...aggregationQuery, ...conditions];
+        aggregationQuery.push({
+          $match: {
+            'activeApplicationId.limitType': {
+              $in: requestedQuery.limitType.split(','),
+            },
+          },
+        });
+      } else {
+        query = [...query, ...conditions];
+      }
     }
     if (
       reportColumn.includes('clientId') ||
@@ -545,6 +551,7 @@ const getLimitListReport = async ({
     }
     aggregationQuery.unshift({ $match: queryFilter });
 
+    console.log(JSON.stringify(aggregationQuery, null, 2));
     const clientDebtors = await ClientDebtor.aggregate(
       aggregationQuery,
     ).allowDiskUse(true);
