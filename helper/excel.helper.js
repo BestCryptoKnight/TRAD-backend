@@ -208,10 +208,10 @@ const addColumnsForPendingApplicationList = async ({
   filter,
 }) => {
   try {
-    worksheet.mergeCells('A1:H1');
+    worksheet.mergeCells('A1:I1');
     for (let i = 0; i <= filter.length; i++) {
       if (filter[i]) {
-        worksheet.mergeCells(`A${i + 2}:H${i + 2}`);
+        worksheet.mergeCells(`A${i + 2}:I${i + 2}`);
       }
     }
     worksheet.getColumn(1).width = 40;
@@ -222,9 +222,10 @@ const addColumnsForPendingApplicationList = async ({
     worksheet.getColumn(6).width = 30;
     worksheet.getColumn(7).width = 20;
     worksheet.getColumn(8).width = 20;
+    worksheet.getColumn(9).width = 20;
     worksheet.addRow();
     worksheet.mergeCells(
-      `A${worksheet.lastRow.number}:H${worksheet.lastRow.number}`,
+      `A${worksheet.lastRow.number}:I${worksheet.lastRow.number}`,
     );
     await addDataForTable({ data, headers, worksheet });
   } catch (e) {
