@@ -342,6 +342,7 @@ router.get('/download', async function (req, res) {
           'applicationId',
           'status',
           'creditLimit',
+          'limitType',
           'requestDate',
         ];
         reportFor = 'Pending Application';
@@ -443,7 +444,7 @@ router.get('/download', async function (req, res) {
       filter: response.filterArray,
       title: 'Report for',
     });
-    const fileName = new Date().getTime() + '.xlsx';
+    const fileName = report + '-' + new Date().getTime() + '.xlsx';
     res.header(
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
