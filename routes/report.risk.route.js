@@ -342,6 +342,7 @@ router.get('/download', async function (req, res) {
           'applicationId',
           'status',
           'creditLimit',
+          'limitType',
           'requestDate',
         ];
         reportFor = 'Pending Application';
