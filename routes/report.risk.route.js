@@ -388,8 +388,8 @@ router.get('/download', async function (req, res) {
         reportColumn = [
           'name',
           'insurerId',
-          'noOfResChecks',
-          'noOfResChecksUsed',
+          'creditChecks',
+          'noOfCreditChecksUsed',
           'policyNumber',
           'inceptionDate',
           'expiryDate',

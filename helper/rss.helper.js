@@ -314,12 +314,15 @@ const getPolicyById = async ({ policyId }) => {
 /*
 Get Client Contacts by Client CRMId
  */
-const getClientContacts = async ({ clientId }) => {
+const getClientContacts = async ({ clientId, contacts = [], page, limit }) => {
   try {
     const url =
       'https://apiv4.reallysimplesystems.com/accounts/' +
       clientId +
-      '/contacts';
+      '/contacts?limit=' +
+      limit +
+      '&page=' +
+      page;
     const organization = await Organization.findOne({
       isDeleted: false,
     })
@@ -333,7 +336,6 @@ const getClientContacts = async ({ clientId }) => {
       },
     };
     const { data } = await axios(options);
-    let contacts = [];
     data.list.forEach((crmContact) => {
       const contact = {
         name: crmContact.record['first'] + ' ' + crmContact.record['last'],
@@ -360,6 +362,15 @@ const getClientContacts = async ({ clientId }) => {
       };
       contacts.push(contact);
     });
+    console.log(data.metadata);
+    if (data.metadata['has_more']) {
+      await getClientContacts({
+        clientId,
+        page: page + 1,
+        limit,
+        contacts,
+      });
+    }
     Logger.log.info('Successfully retrieved contacts from RSS');
     return contacts;
   } catch (err) {

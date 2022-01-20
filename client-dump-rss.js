@@ -136,6 +136,8 @@ let main = async () => {
     client.insurerId = insurer && insurer._id ? insurer._id : null;
     const contactsFromCrm = await RssHelper.getClientContacts({
       clientId: clientData[i].crmClientId,
+      page: 1,
+      limit: 50,
     });
     contactsFromCrm.forEach((crmContact) => {
       let clientUser = new ClientUser(crmContact);

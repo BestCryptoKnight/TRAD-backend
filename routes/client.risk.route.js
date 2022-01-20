@@ -945,6 +945,8 @@ router.post('/', async function (req, res) {
       client.insurerId = insurer && insurer._id ? insurer._id : null;
       const contactsFromCrm = await RssHelper.getClientContacts({
         clientId: clientData[i].crmClientId,
+        limit: 50,
+        page: 1,
       });
       contactsFromCrm.forEach((crmContact) => {
         let clientUser = new ClientUser(crmContact);
@@ -1071,6 +1073,8 @@ router.put('/user/sync-from-crm/:clientId', async function (req, res) {
     const newUsers = [];
     let contactsFromCrm = await RssHelper.getClientContacts({
       clientId: client.crmClientId,
+      page: 1,
+      limit: 50,
     });
     contactsFromCrm.forEach((i) => {
       if (oldUsers.includes(i.email.toLowerCase())) {
