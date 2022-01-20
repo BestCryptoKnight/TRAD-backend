@@ -240,10 +240,10 @@ const addColumnsForUsageReport = async ({
   filter,
 }) => {
   try {
-    worksheet.mergeCells('A1:J1');
+    worksheet.mergeCells('A1:I1');
     for (let i = 0; i <= filter.length; i++) {
       if (filter[i]) {
-        worksheet.mergeCells(`A${i + 2}:J${i + 2}`);
+        worksheet.mergeCells(`A${i + 2}:I${i + 2}`);
       }
     }
     worksheet.getColumn(1).width = 40;
@@ -253,12 +253,11 @@ const addColumnsForUsageReport = async ({
     worksheet.getColumn(5).width = 30;
     worksheet.getColumn(6).width = 30;
     worksheet.getColumn(7).width = 20;
-    worksheet.getColumn(8).width = 20;
+    worksheet.getColumn(8).width = 25;
     worksheet.getColumn(9).width = 25;
-    worksheet.getColumn(10).width = 25;
     worksheet.addRow();
     worksheet.mergeCells(
-      `A${worksheet.lastRow.number}:J${worksheet.lastRow.number}`,
+      `A${worksheet.lastRow.number}:I${worksheet.lastRow.number}`,
     );
     await addDataForTable({ data, headers, worksheet });
   } catch (e) {
