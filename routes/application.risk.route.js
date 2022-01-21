@@ -1301,6 +1301,10 @@ router.put('/:applicationId', async function (req, res) {
       if (req.body.expiryDate) {
         applicationUpdate.expiryDate = req.body.expiryDate;
       }
+      if (req.body.approvalOrDecliningDate) {
+        applicationUpdate.approvalOrDecliningDate =
+          req.body.approvalOrDecliningDate;
+      }
       if (req.body.limitType) {
         applicationUpdate.limitType = req.body.limitType;
       }
