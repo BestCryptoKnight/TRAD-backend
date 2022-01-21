@@ -1319,7 +1319,8 @@ const applicationDrawerDetails = async ({
       for (let i = 0; i < manageColumns.length; i++) {
         if (
           manageColumns[i].name === 'limitType' ||
-          manageColumns[i].name === 'expiryDate'
+          manageColumns[i].name === 'expiryDate' ||
+          manageColumns[i].name === 'approvalOrDecliningDate'
         ) {
           extractedObj = manageColumns.splice(i, 1)[0];
           extractedObj.type =

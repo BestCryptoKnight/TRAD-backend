@@ -405,6 +405,38 @@ router.get('/download', async function (req, res) {
           isForDownload: true,
         });
         break;
+      case 'usage-per-client-report':
+        reportColumn = [
+          'clientId',
+          'insurerId',
+          'debtorId',
+          'entityType',
+          'abn',
+          'acn',
+          'registrationNumber',
+          'country',
+          'creditLimitStatus',
+          'creditLimit',
+          'applicationCount',
+          'applicationId',
+          'status',
+          'requestedAmount',
+          'acceptedAmount',
+          'approvalOrDecliningDate',
+          'expiryDate',
+          'limitType',
+          'clientReference',
+          'comments',
+        ];
+        reportFor = 'Usage per Client Report';
+        response = await getUsagePerClientReport({
+          reportColumn,
+          hasFullAccess,
+          userId: req.user._id,
+          requestedQuery: req.query,
+          isForDownload: true,
+        });
+        break;
       default:
         return res.status(400).send({
           status: 'ERROR',

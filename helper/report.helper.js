@@ -1571,17 +1571,32 @@ const getUsagePerClientReport = async ({
   userId,
   reportColumn,
   requestedQuery,
+  isForDownload = false,
 }) => {
   try {
     const queryFilter = {
       status: { $exists: true, $in: ['APPROVED', 'DECLINED'] },
     };
     const query = [];
+    const filterArray = [];
     if (requestedQuery.clientIds) {
       const clientIds = requestedQuery.clientIds
         .split(',')
         .map((id) => mongoose.Types.ObjectId(id));
       queryFilter.clientId = { $in: clientIds };
+      if (isForDownload) {
+        const clients = await Client.find({ _id: { $in: clientIds } })
+          .select('name')
+          .lean();
+        filterArray.push({
+          label: 'Client',
+          value: clients
+            .map((i) => i.name)
+            .toString()
+            .replace(/,/g, ', '),
+          type: 'string',
+        });
+      }
     } else if (!hasFullAccess) {
       const clients = await Client.find({
         isDeleted: false,
@@ -1667,6 +1682,13 @@ const getUsagePerClientReport = async ({
           },
         },
       });
+      if (isForDownload) {
+        filterArray.push({
+          label: 'Limit Type',
+          value: requestedQuery.limitType,
+          type: 'string',
+        });
+      }
     }
 
     const fields = reportColumn.map((i) => {
@@ -1854,7 +1876,7 @@ const getUsagePerClientReport = async ({
           : 0;
       }
     });
-    return { response, total };
+    return { response, total, filterArray };
   } catch (e) {
     Logger.log.error('Error occurred in get limit list report');
     Logger.log.error(e);
