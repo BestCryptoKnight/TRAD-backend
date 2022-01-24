@@ -1302,6 +1302,17 @@ router.put('/:applicationId', async function (req, res) {
         applicationUpdate.expiryDate = req.body.expiryDate;
       }
       if (req.body.approvalOrDecliningDate) {
+        if (
+          application.expiryDate &&
+          new Date(req.body.approvalOrDecliningDate) >
+            new Date(application.expiryDate)
+        ) {
+          return res.status(400).send({
+            status: 'ERROR',
+            messageCode: 'INVALID_REQUEST',
+            message: 'Approval date should not be grater than expiry date',
+          });
+        }
         applicationUpdate.approvalOrDecliningDate =
           req.body.approvalOrDecliningDate;
       }
