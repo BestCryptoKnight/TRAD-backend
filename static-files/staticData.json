@@ -1,0 +1,3263 @@
+{
+  "streetType": [
+    {
+      "_id": "ACCS",
+      "name": "Access"
+    },
+    {
+      "_id": "ALLY",
+      "name": "Alley"
+    },
+    {
+      "_id": "ALWY",
+      "name": "Alleyway"
+    },
+    {
+      "_id": "AMBL",
+      "name": "Amble"
+    },
+    {
+      "_id": "ANCG",
+      "name": "Anchorage"
+    },
+    {
+      "_id": "APP",
+      "name": "Approach"
+    },
+    {
+      "_id": "ARC",
+      "name": "Arcade"
+    },
+    {
+      "_id": "ART",
+      "name": "Artery"
+    },
+    {
+      "_id": "AVE",
+      "name": "Avenue"
+    },
+    {
+      "_id": "BASN",
+      "name": "Basin"
+    },
+    {
+      "_id": "BCH",
+      "name": "Beach"
+    },
+    {
+      "_id": "BEND",
+      "name": "Bend"
+    },
+    {
+      "_id": "BLK",
+      "name": "Block"
+    },
+    {
+      "_id": "BVD",
+      "name": "Boulevard"
+    },
+    {
+      "_id": "BRCE",
+      "name": "Brace"
+    },
+    {
+      "_id": "BRAE",
+      "name": "Brae"
+    },
+    {
+      "_id": "BRK",
+      "name": "Break"
+    },
+    {
+      "_id": "BDGE",
+      "name": "Bridge"
+    },
+    {
+      "_id": "BDWY",
+      "name": "Broadway"
+    },
+    {
+      "_id": "BROW",
+      "name": "Brow"
+    },
+    {
+      "_id": "BYPA",
+      "name": "Bypass"
+    },
+    {
+      "_id": "BYWY",
+      "name": "Byway"
+    },
+    {
+      "_id": "CAUS",
+      "name": "Causeway"
+    },
+    {
+      "_id": "CTR",
+      "name": "Centre"
+    },
+    {
+      "_id": "CNWY",
+      "name": "Centreway"
+    },
+    {
+      "_id": "CH",
+      "name": "Chase"
+    },
+    {
+      "_id": "CIR",
+      "name": "Circle"
+    },
+    {
+      "_id": "CLT",
+      "name": "Circlet"
+    },
+    {
+      "_id": "CCT",
+      "name": "Circuit"
+    },
+    {
+      "_id": "CRCS",
+      "name": "Circus"
+    },
+    {
+      "_id": "CL",
+      "name": "Close"
+    },
+    {
+      "_id": "CLDE",
+      "name": "Colonnade"
+    },
+    {
+      "_id": "CMMN",
+      "name": "Common"
+    },
+    {
+      "_id": "CON",
+      "name": "Concourse"
+    },
+    {
+      "_id": "CPS",
+      "name": "Copse"
+    },
+    {
+      "_id": "CNR",
+      "name": "Corner"
+    },
+    {
+      "_id": "CSO",
+      "name": "Corso"
+    },
+    {
+      "_id": "CT",
+      "name": "Court"
+    },
+    {
+      "_id": "CTYD",
+      "name": "Courtyard"
+    },
+    {
+      "_id": "COVE",
+      "name": "Cove"
+    },
+    {
+      "_id": "CRES",
+      "name": "Crescent"
+    },
+    {
+      "_id": "CRST",
+      "name": "Crest"
+    },
+    {
+      "_id": "CRSS",
+      "name": "Cross"
+    },
+    {
+      "_id": "CRSG",
+      "name": "Crossing"
+    },
+    {
+      "_id": "CRD",
+      "name": "Crossroad"
+    },
+    {
+      "_id": "COWY",
+      "name": "Crossway"
+    },
+    {
+      "_id": "CUWY",
+      "name": "Cruiseway"
+    },
+    {
+      "_id": "CDS",
+      "name": "Cul-de-sac"
+    },
+    {
+      "_id": "CTTG",
+      "name": "Cutting"
+    },
+    {
+      "_id": "DALE",
+      "name": "Dale"
+    },
+    {
+      "_id": "DELL",
+      "name": "Dell"
+    },
+    {
+      "_id": "DEVN",
+      "name": "Deviation"
+    },
+    {
+      "_id": "DIP",
+      "name": "Dip"
+    },
+    {
+      "_id": "DSTR",
+      "name": "Distributor"
+    },
+    {
+      "_id": "DR",
+      "name": "Drive"
+    },
+    {
+      "_id": "DRWY",
+      "name": "Driveway"
+    },
+    {
+      "_id": "EDGE",
+      "name": "Edge"
+    },
+    {
+      "_id": "ELB",
+      "name": "Elbow"
+    },
+    {
+      "_id": "END",
+      "name": "End"
+    },
+    {
+      "_id": "ENT",
+      "name": "Entrance"
+    },
+    {
+      "_id": "ESP",
+      "name": "Esplanade"
+    },
+    {
+      "_id": "EST",
+      "name": "Estate"
+    },
+    {
+      "_id": "EXP",
+      "name": "Expressway"
+    },
+    {
+      "_id": "EXTN",
+      "name": "Extension"
+    },
+    {
+      "_id": "FAWY",
+      "name": "Fairway"
+    },
+    {
+      "_id": "FTRK",
+      "name": "Fire Track"
+    },
+    {
+      "_id": "FITR",
+      "name": "Firetrail"
+    },
+    {
+      "_id": "FLAT",
+      "name": "Flat"
+    },
+    {
+      "_id": "FOLW",
+      "name": "Follow"
+    },
+    {
+      "_id": "FTWY",
+      "name": "Footway"
+    },
+    {
+      "_id": "FSHR",
+      "name": "Foreshore"
+    },
+    {
+      "_id": "FORM",
+      "name": "Formation"
+    },
+    {
+      "_id": "FWY",
+      "name": "Freeway"
+    },
+    {
+      "_id": "FRNT",
+      "name": "Front"
+    },
+    {
+      "_id": "FRTG",
+      "name": "Frontage"
+    },
+    {
+      "_id": "GAP",
+      "name": "Gap"
+    },
+    {
+      "_id": "GDN",
+      "name": "Garden"
+    },
+    {
+      "_id": "GDNS",
+      "name": "Gardens"
+    },
+    {
+      "_id": "GTE",
+      "name": "Gate"
+    },
+    {
+      "_id": "GTES",
+      "name": "Gates"
+    },
+    {
+      "_id": "GLD",
+      "name": "Glade"
+    },
+    {
+      "_id": "GLEN",
+      "name": "Glen"
+    },
+    {
+      "_id": "GRA",
+      "name": "Grange"
+    },
+    {
+      "_id": "GRN",
+      "name": "Green"
+    },
+    {
+      "_id": "GRND",
+      "name": "Ground"
+    },
+    {
+      "_id": "GR",
+      "name": "Grove"
+    },
+    {
+      "_id": "GLY",
+      "name": "GullyHRD Highroad"
+    },
+    {
+      "_id": "HTS",
+      "name": "Heights"
+    },
+    {
+      "_id": "HRD",
+      "name": "Highroad"
+    },
+    {
+      "_id": "HWY",
+      "name": "Highway"
+    },
+    {
+      "_id": "HILL",
+      "name": "Hill"
+    },
+    {
+      "_id": "INTG",
+      "name": "Interchange"
+    },
+    {
+      "_id": "INTN",
+      "name": "Intersection"
+    },
+    {
+      "_id": "JNC",
+      "name": "Junction"
+    },
+    {
+      "_id": "KEY",
+      "name": "Key"
+    },
+    {
+      "_id": "LDG",
+      "name": "Landing"
+    },
+    {
+      "_id": "LANE",
+      "name": "Lane"
+    },
+    {
+      "_id": "LNWY",
+      "name": "Laneway"
+    },
+    {
+      "_id": "LEES",
+      "name": "Lees"
+    },
+    {
+      "_id": "LNE",
+      "name": "Line"
+    },
+    {
+      "_id": "LINK",
+      "name": "Link"
+    },
+    {
+      "_id": "LT",
+      "name": "Little"
+    },
+    {
+      "_id": "LKT",
+      "name": "Lookout"
+    },
+    {
+      "_id": "LOOP",
+      "name": "Loop"
+    },
+    {
+      "_id": "LWR",
+      "name": "Lower"
+    },
+    {
+      "_id": "MALL",
+      "name": "Mall"
+    },
+    {
+      "_id": "MNDR",
+      "name": "Meander"
+    },
+    {
+      "_id": "MEW",
+      "name": "Mew"
+    },
+    {
+      "_id": "MEWS",
+      "name": "Mews"
+    },
+    {
+      "_id": "MWY",
+      "name": "Motorway"
+    },
+    {
+      "_id": "MT",
+      "name": "Mount"
+    },
+    {
+      "_id": "NOOK",
+      "name": "Nook"
+    },
+    {
+      "_id": "OTLK",
+      "name": "Outlook"
+    },
+    {
+      "_id": "PDE",
+      "name": "Parade"
+    },
+    {
+      "_id": "PARK",
+      "name": "Park"
+    },
+    {
+      "_id": "PKLD",
+      "name": "Parklands"
+    },
+    {
+      "_id": "PKWY",
+      "name": "Parkway"
+    },
+    {
+      "_id": "PART",
+      "name": "Part"
+    },
+    {
+      "_id": "PASS",
+      "name": "Pass"
+    },
+    {
+      "_id": "PATH",
+      "name": "Path"
+    },
+    {
+      "_id": "PHWY",
+      "name": "Pathway"
+    },
+    {
+      "_id": "PIAZ",
+      "name": "Piazza"
+    },
+    {
+      "_id": "PL",
+      "name": "Place"
+    },
+    {
+      "_id": "PLAT",
+      "name": "Plateau"
+    },
+    {
+      "_id": "PLZA",
+      "name": "Plaza"
+    },
+    {
+      "_id": "PKT",
+      "name": "Pocket"
+    },
+    {
+      "_id": "PNT",
+      "name": "Point"
+    },
+    {
+      "_id": "PORT",
+      "name": "Port"
+    },
+    {
+      "_id": "PROM",
+      "name": "Promenade"
+    },
+    {
+      "_id": "QDGL",
+      "name": "Quadrangle"
+    },
+    {
+      "_id": "QDRT",
+      "name": "Quadrant"
+    },
+    {
+      "_id": "QUAD",
+      "name": "Quad"
+    },
+    {
+      "_id": "QY",
+      "name": "Quay"
+    },
+    {
+      "_id": "QYS",
+      "name": "Quays"
+    },
+    {
+      "_id": "RMBL",
+      "name": "Ramble"
+    },
+    {
+      "_id": "RAMP",
+      "name": "Ramp"
+    },
+    {
+      "_id": "RNGE",
+      "name": "Range"
+    },
+    {
+      "_id": "RCH",
+      "name": "Reach"
+    },
+    {
+      "_id": "RES",
+      "name": "Reserve"
+    },
+    {
+      "_id": "REST",
+      "name": "Rest"
+    },
+    {
+      "_id": "RTT",
+      "name": "Retreat"
+    },
+    {
+      "_id": "RIDE",
+      "name": "Ride"
+    },
+    {
+      "_id": "RDGE",
+      "name": "Ridge"
+    },
+    {
+      "_id": "RGWY",
+      "name": "Ridgeway"
+    },
+    {
+      "_id": "ROWY",
+      "name": "Right of Way"
+    },
+    {
+      "_id": "RING",
+      "name": "Ring"
+    },
+    {
+      "_id": "RISE",
+      "name": "Rise"
+    },
+    {
+      "_id": "RVR",
+      "name": "River"
+    },
+    {
+      "_id": "RVWY",
+      "name": "Riverway"
+    },
+    {
+      "_id": "RVRA",
+      "name": "Riviera"
+    },
+    {
+      "_id": "RD",
+      "name": "Road"
+    },
+    {
+      "_id": "RDS",
+      "name": "Roads"
+    },
+    {
+      "_id": "RDSD",
+      "name": "Roadside"
+    },
+    {
+      "_id": "RDWY",
+      "name": "Roadway"
+    },
+    {
+      "_id": "RNDE",
+      "name": "Ronde"
+    },
+    {
+      "_id": "RSBL",
+      "name": "Rosebowl"
+    },
+    {
+      "_id": "RTY",
+      "name": "Rotary"
+    },
+    {
+      "_id": "RND",
+      "name": "Round"
+    },
+    {
+      "_id": "RTE",
+      "name": "Route"
+    },
+    {
+      "_id": "ROW",
+      "name": "Row"
+    },
+    {
+      "_id": "RUE",
+      "name": "Rue"
+    },
+    {
+      "_id": "RUN",
+      "name": "Run"
+    },
+    {
+      "_id": "SWY",
+      "name": "Service Way"
+    },
+    {
+      "_id": "SDNG",
+      "name": "Siding"
+    },
+    {
+      "_id": "SLPE",
+      "name": "Slope"
+    },
+    {
+      "_id": "SND",
+      "name": "Sound"
+    },
+    {
+      "_id": "SPUR",
+      "name": "Spur"
+    },
+    {
+      "_id": "SQ",
+      "name": "Square"
+    },
+    {
+      "_id": "STRS",
+      "name": "Stairs"
+    },
+    {
+      "_id": "SHWY",
+      "name": "State Highway"
+    },
+    {
+      "_id": "STPS",
+      "name": "Steps"
+    },
+    {
+      "_id": "STRA",
+      "name": "Strand"
+    },
+    {
+      "_id": "ST",
+      "name": "Street"
+    },
+    {
+      "_id": "STRP",
+      "name": "Strip"
+    },
+    {
+      "_id": "SBWY",
+      "name": "Subway"
+    },
+    {
+      "_id": "TARN",
+      "name": "Tarn"
+    },
+    {
+      "_id": "TCE",
+      "name": "Terrace"
+    },
+    {
+      "_id": "THOR",
+      "name": "Thoroughfare"
+    },
+    {
+      "_id": "TLWY",
+      "name": "Tollway"
+    },
+    {
+      "_id": "TOP",
+      "name": "Top"
+    },
+    {
+      "_id": "TOR",
+      "name": "Tor"
+    },
+    {
+      "_id": "TWRS",
+      "name": "Towers"
+    },
+    {
+      "_id": "TRK",
+      "name": "Track"
+    },
+    {
+      "_id": "TRL",
+      "name": "Trail"
+    },
+    {
+      "_id": "TRLR",
+      "name": "Trailer"
+    },
+    {
+      "_id": "TRI",
+      "name": "Triangle"
+    },
+    {
+      "_id": "TKY",
+      "name": "Trunkway"
+    },
+    {
+      "_id": "TURN",
+      "name": "TURN"
+    },
+    {
+      "_id": "UPAS",
+      "name": "Underpass"
+    },
+    {
+      "_id": "UPR",
+      "name": "Upper"
+    },
+    {
+      "_id": "VALE",
+      "name": "Vale"
+    },
+    {
+      "_id": "VDCT",
+      "name": "Viaduct"
+    },
+    {
+      "_id": "VIEW",
+      "name": "View"
+    },
+    {
+      "_id": "VLLS",
+      "name": "Villas"
+    },
+    {
+      "_id": "VSTA",
+      "name": "Vista"
+    },
+    {
+      "_id": "WADE",
+      "name": "Wade"
+    },
+    {
+      "_id": "WALK",
+      "name": "Walk"
+    },
+    {
+      "_id": "WKWY",
+      "name": "Walkway"
+    },
+    {
+      "_id": "WAY",
+      "name": "Way"
+    },
+    {
+      "_id": "WHRF",
+      "name": "Wharf"
+    },
+    {
+      "_id": "WYND",
+      "name": "Wynd"
+    },
+    {
+      "_id": "YARD",
+      "name": "Yard"
+    }
+  ],
+  "australianStates": [
+    {
+      "_id": "NSW",
+      "name": "New South Wales"
+    },
+    {
+      "_id": "VIC",
+      "name": "Victoria"
+    },
+    {
+      "_id": "TAS",
+      "name": "Tasmania"
+    },
+    {
+      "_id": "WA",
+      "name": "Western Australia"
+    },
+    {
+      "_id": "SA",
+      "name": "South Australia"
+    },
+    {
+      "_id": "ACT",
+      "name": "Australian Capital Territory"
+    },
+    {
+      "_id": "NT",
+      "name": "Northern Territory"
+    },
+    {
+      "_id": "QLD",
+      "name": "Queensland"
+    }
+  ],
+  "newZealandStates": [
+    {
+      "_id": "AUK",
+      "name": "Auckland"
+    },
+    {
+      "_id": "BOP",
+      "name": "Bay of Plenty"
+    },
+    {
+      "_id": "CAN",
+      "name": "Canterbury"
+    },
+    {
+      "_id": "GIS",
+      "name": "Gisborne"
+    },
+    {
+      "_id": "HKB",
+      "name": "Hawke's Bay"
+    },
+    {
+      "_id": "MWT",
+      "name": "Manawatu-Wanganui"
+    },
+    {
+      "_id": "MBH",
+      "name": "Marlborough"
+    },
+    {
+      "_id": "NSN",
+      "name": "Nelson"
+    },
+    {
+      "_id": "NTL",
+      "name": "Northland"
+    },
+    {
+      "_id": "OTA",
+      "name": "Otago"
+    },
+    {
+      "_id": "STL",
+      "name": "Southland"
+    },
+    {
+      "_id": "TAS",
+      "name": "Tasman"
+    },
+    {
+      "_id": "TKI",
+      "name": "Taranaki"
+    },
+    {
+      "_id": "WKO",
+      "name": "Waikato"
+    },
+    {
+      "_id": "WGN",
+      "name": "Wellington"
+    },
+    {
+      "_id": "WTC",
+      "name": "West Coast"
+    }
+  ],
+  "entityType": [
+    {
+      "_id": "PROPRIETARY_LIMITED",
+      "name": "Proprietary Limited"
+    },
+    {
+      "_id": "LIMITED",
+      "name": "Limited"
+    },
+    {
+      "_id": "PARTNERSHIP",
+      "name": "Partnership"
+    },
+    {
+      "_id": "SOLE_TRADER",
+      "name": "Sole Trader"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Trust"
+    },
+    {
+      "_id": "BUSINESS",
+      "name": "Business"
+    },
+    {
+      "_id": "CORPORATION",
+      "name": "Corporation"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Government"
+    },
+    {
+      "_id": "INCORPORATED",
+      "name": "Incorporated"
+    },
+    {
+      "_id": "NO_LIABILITY",
+      "name": "No Liability"
+    },
+    {
+      "_id": "PROPRIETARY",
+      "name": "Proprietary"
+    },
+    {
+      "_id": "REGISTERED_BODY",
+      "name": "Registered Body"
+    }
+  ],
+  "companyEntityType": [
+    {
+      "_id": "PROPRIETARY_LIMITED",
+      "name": "Proprietary Limited"
+    },
+    {
+      "_id": "LIMITED",
+      "name": "Limited"
+    },
+    {
+      "_id": "CORPORATION",
+      "name": "Corporation"
+    },
+    {
+      "_id": "INCORPORATED",
+      "name": "Incorporated"
+    },
+    {
+      "_id": "NO_LIABILITY",
+      "name": "No Liability"
+    },
+    {
+      "_id": "PROPRIETARY",
+      "name": "Proprietary"
+    },
+    {
+      "_id": "REGISTERED_BODY",
+      "name": "Registered Body"
+    }
+  ],
+  "applicationStatus": [
+    {
+      "value": "DRAFT",
+      "label": "Draft"
+    },
+    {
+      "value": "SENT_TO_INSURER",
+      "label": "Sent To Insurer"
+    },
+    {
+      "value": "REVIEW_APPLICATION",
+      "label": "Review Application"
+    },
+    {
+      "value": "PENDING_INSURER_REVIEW",
+      "label": "Pending Insurer Review"
+    },
+    {
+      "value": "APPROVED",
+      "label": "Approved"
+    },
+    {
+      "value": "DECLINED",
+      "label": "Declined"
+    },
+    {
+      "value": "CANCELLED",
+      "label": "Cancelled"
+    },
+    {
+      "value": "WITHDRAWN",
+      "label": "Withdrawn"
+    },
+    {
+      "value": "UNDER_REVIEW",
+      "label": "Under Review"
+    },
+    {
+      "value": "AWAITING_INFORMATION",
+      "label": "Awaiting Information"
+    }
+  ],
+  "countryList": [
+    {
+      "name": "Afghanistan",
+      "_id": "AFG"
+    },
+    {
+      "name": "Albania",
+      "_id": "ALB"
+    },
+    {
+      "name": "Algeria",
+      "_id": "DZA"
+    },
+    {
+      "name": "American Samoa",
+      "_id": "ASM"
+    },
+    {
+      "name": "Andorra",
+      "_id": "AND"
+    },
+    {
+      "name": "Angola",
+      "_id": "AGO"
+    },
+    {
+      "name": "Anguilla",
+      "_id": "AIA"
+    },
+    {
+      "name": "Antarctica",
+      "_id": "ATA"
+    },
+    {
+      "name": "Antigua and Barbuda",
+      "_id": "ATG"
+    },
+    {
+      "name": "Argentina",
+      "_id": "ARG"
+    },
+    {
+      "name": "Armenia",
+      "_id": "ARM"
+    },
+    {
+      "name": "Aruba",
+      "_id": "ABW"
+    },
+    {
+      "name": "Australia",
+      "_id": "AUS"
+    },
+    {
+      "name": "Austria",
+      "_id": "AUT"
+    },
+    {
+      "name": "Azerbaijan",
+      "_id": "AZE"
+    },
+    {
+      "name": "Bahamas",
+      "_id": "BHS"
+    },
+    {
+      "name": "Bahrain",
+      "_id": "BHR"
+    },
+    {
+      "name": "Bangladesh",
+      "_id": "BGD"
+    },
+    {
+      "name": "Barbados",
+      "_id": "BRB"
+    },
+    {
+      "name": "Belarus",
+      "_id": "BLR"
+    },
+    {
+      "name": "Belgium",
+      "_id": "BEL"
+    },
+    {
+      "name": "Belize",
+      "_id": "BLZ"
+    },
+    {
+      "name": "Benin",
+      "_id": "BEN"
+    },
+    {
+      "name": "Bermuda",
+      "_id": "BMU"
+    },
+    {
+      "name": "Bhutan",
+      "_id": "BTN"
+    },
+    {
+      "name": "Bolivia",
+      "_id": "BOL"
+    },
+    {
+      "name": "Bosnia and Herzegovina",
+      "_id": "BIH"
+    },
+    {
+      "name": "Botswana",
+      "_id": "BWA"
+    },
+    {
+      "name": "Brazil",
+      "_id": "BRA"
+    },
+    {
+      "name": "British Indian Ocean Territory",
+      "_id": "IOT"
+    },
+    {
+      "name": "British Virgin Islands",
+      "_id": "VGB"
+    },
+    {
+      "name": "Brunei",
+      "_id": "BRN"
+    },
+    {
+      "name": "Bulgaria",
+      "_id": "BGR"
+    },
+    {
+      "name": "Burkina Faso",
+      "_id": "BFA"
+    },
+    {
+      "name": "Burundi",
+      "_id": "BDI"
+    },
+    {
+      "name": "Cambodia",
+      "_id": "KHM"
+    },
+    {
+      "name": "Cameroon",
+      "_id": "CMR"
+    },
+    {
+      "name": "Canada",
+      "_id": "CAN"
+    },
+    {
+      "name": "Cape Verde",
+      "_id": "CPV"
+    },
+    {
+      "name": "Cayman Islands",
+      "_id": "CYM"
+    },
+    {
+      "name": "Central African Republic",
+      "_id": "CAF"
+    },
+    {
+      "name": "Chad",
+      "_id": "TCD"
+    },
+    {
+      "name": "Chile",
+      "_id": "CHL"
+    },
+    {
+      "name": "China",
+      "_id": "CHN"
+    },
+    {
+      "name": "Christmas Island",
+      "_id": "CXR"
+    },
+    {
+      "name": "Cocos Islands",
+      "_id": "CCK"
+    },
+    {
+      "name": "Colombia",
+      "_id": "COL"
+    },
+    {
+      "name": "Comoros",
+      "_id": "COM"
+    },
+    {
+      "name": "Cook Islands",
+      "_id": "COK"
+    },
+    {
+      "name": "Costa Rica",
+      "_id": "CRI"
+    },
+    {
+      "name": "Croatia",
+      "_id": "HRV"
+    },
+    {
+      "name": "Cuba",
+      "_id": "CUB"
+    },
+    {
+      "name": "Curacao",
+      "_id": "CUW"
+    },
+    {
+      "name": "Cyprus",
+      "_id": "CYP"
+    },
+    {
+      "name": "Czech Republic",
+      "_id": "CZE"
+    },
+    {
+      "name": "Democratic Republic of the Congo",
+      "_id": "COD"
+    },
+    {
+      "name": "Denmark",
+      "_id": "DNK"
+    },
+    {
+      "name": "Djibouti",
+      "_id": "DJI"
+    },
+    {
+      "name": "Dominica",
+      "_id": "DMA"
+    },
+    {
+      "name": "Dominican Republic",
+      "_id": "DOM"
+    },
+    {
+      "name": "East Timor",
+      "_id": "TLS"
+    },
+    {
+      "name": "Ecuador",
+      "_id": "ECU"
+    },
+    {
+      "name": "Egypt",
+      "_id": "EGY"
+    },
+    {
+      "name": "El Salvador",
+      "_id": "SLV"
+    },
+    {
+      "name": "Equatorial Guinea",
+      "_id": "GNQ"
+    },
+    {
+      "name": "Eritrea",
+      "_id": "ERI"
+    },
+    {
+      "name": "Estonia",
+      "_id": "EST"
+    },
+    {
+      "name": "Ethiopia",
+      "_id": "ETH"
+    },
+    {
+      "name": "Falkland Islands",
+      "_id": "FLK"
+    },
+    {
+      "name": "Faroe Islands",
+      "_id": "FRO"
+    },
+    {
+      "name": "Fiji",
+      "_id": "FJI"
+    },
+    {
+      "name": "Finland",
+      "_id": "FIN"
+    },
+    {
+      "name": "France",
+      "_id": "FRA"
+    },
+    {
+      "name": "French Polynesia",
+      "_id": "PYF"
+    },
+    {
+      "name": "Gabon",
+      "_id": "GAB"
+    },
+    {
+      "name": "Gambia",
+      "_id": "GMB"
+    },
+    {
+      "name": "Georgia",
+      "_id": "GEO"
+    },
+    {
+      "name": "Germany",
+      "_id": "DEU"
+    },
+    {
+      "name": "Ghana",
+      "_id": "GHA"
+    },
+    {
+      "name": "Gibraltar",
+      "_id": "GIB"
+    },
+    {
+      "name": "Greece",
+      "_id": "GRC"
+    },
+    {
+      "name": "Greenland",
+      "_id": "GRL"
+    },
+    {
+      "name": "Grenada",
+      "_id": "GRD"
+    },
+    {
+      "name": "Guam",
+      "_id": "GUM"
+    },
+    {
+      "name": "Guatemala",
+      "_id": "GTM"
+    },
+    {
+      "name": "Guernsey",
+      "_id": "GGY"
+    },
+    {
+      "name": "Guinea",
+      "_id": "GIN"
+    },
+    {
+      "name": "Guinea-Bissau",
+      "_id": "GNB"
+    },
+    {
+      "name": "Guyana",
+      "_id": "GUY"
+    },
+    {
+      "name": "Haiti",
+      "_id": "HTI"
+    },
+    {
+      "name": "Honduras",
+      "_id": "HND"
+    },
+    {
+      "name": "Hong Kong",
+      "_id": "HKG"
+    },
+    {
+      "name": "Hungary",
+      "_id": "HUN"
+    },
+    {
+      "name": "Iceland",
+      "_id": "ISL"
+    },
+    {
+      "name": "India",
+      "_id": "IND"
+    },
+    {
+      "name": "Indonesia",
+      "_id": "IDN"
+    },
+    {
+      "name": "Iran",
+      "_id": "IRN"
+    },
+    {
+      "name": "Iraq",
+      "_id": "IRQ"
+    },
+    {
+      "name": "Ireland",
+      "_id": "IRL"
+    },
+    {
+      "name": "Isle of Man",
+      "_id": "IMN"
+    },
+    {
+      "name": "Israel",
+      "_id": "ISR"
+    },
+    {
+      "name": "Italy",
+      "_id": "ITA"
+    },
+    {
+      "name": "Ivory Coast",
+      "_id": "CIV"
+    },
+    {
+      "name": "Jamaica",
+      "_id": "JAM"
+    },
+    {
+      "name": "Japan",
+      "_id": "JPN"
+    },
+    {
+      "name": "Jersey",
+      "_id": "JEY"
+    },
+    {
+      "name": "Jordan",
+      "_id": "JOR"
+    },
+    {
+      "name": "Kazakhstan",
+      "_id": "KAZ"
+    },
+    {
+      "name": "Kenya",
+      "_id": "KEN"
+    },
+    {
+      "name": "Kiribati",
+      "_id": "KIR"
+    },
+    {
+      "name": "Kosovo",
+      "_id": "XKX"
+    },
+    {
+      "name": "Kuwait",
+      "_id": "KWT"
+    },
+    {
+      "name": "Kyrgyzstan",
+      "_id": "KGZ"
+    },
+    {
+      "name": "Laos",
+      "_id": "LAO"
+    },
+    {
+      "name": "Latvia",
+      "_id": "LVA"
+    },
+    {
+      "name": "Lebanon",
+      "_id": "LBN"
+    },
+    {
+      "name": "Lesotho",
+      "_id": "LSO"
+    },
+    {
+      "name": "Liberia",
+      "_id": "LBR"
+    },
+    {
+      "name": "Libya",
+      "_id": "LBY"
+    },
+    {
+      "name": "Liechtenstein",
+      "_id": "LIE"
+    },
+    {
+      "name": "Lithuania",
+      "_id": "LTU"
+    },
+    {
+      "name": "Luxembourg",
+      "_id": "LUX"
+    },
+    {
+      "name": "Macau",
+      "_id": "MAC"
+    },
+    {
+      "name": "Macedonia",
+      "_id": "MKD"
+    },
+    {
+      "name": "Madagascar",
+      "_id": "MDG"
+    },
+    {
+      "name": "Malawi",
+      "_id": "MWI"
+    },
+    {
+      "name": "Malaysia",
+      "_id": "MYS"
+    },
+    {
+      "name": "Maldives",
+      "_id": "MDV"
+    },
+    {
+      "name": "Mali",
+      "_id": "MLI"
+    },
+    {
+      "name": "Malta",
+      "_id": "MLT"
+    },
+    {
+      "name": "Marshall Islands",
+      "_id": "MHL"
+    },
+    {
+      "name": "Mauritania",
+      "_id": "MRT"
+    },
+    {
+      "name": "Mauritius",
+      "_id": "MUS"
+    },
+    {
+      "name": "Mayotte",
+      "_id": "MYT"
+    },
+    {
+      "name": "Mexico",
+      "_id": "MEX"
+    },
+    {
+      "name": "Micronesia",
+      "_id": "FSM"
+    },
+    {
+      "name": "Moldova",
+      "_id": "MDA"
+    },
+    {
+      "name": "Monaco",
+      "_id": "MCO"
+    },
+    {
+      "name": "Mongolia",
+      "_id": "MNG"
+    },
+    {
+      "name": "Montenegro",
+      "_id": "MNE"
+    },
+    {
+      "name": "Montserrat",
+      "_id": "MSR"
+    },
+    {
+      "name": "Morocco",
+      "_id": "MAR"
+    },
+    {
+      "name": "Mozambique",
+      "_id": "MOZ"
+    },
+    {
+      "name": "Myanmar",
+      "_id": "MMR"
+    },
+    {
+      "name": "Namibia",
+      "_id": "NAM"
+    },
+    {
+      "name": "Nauru",
+      "_id": "NRU"
+    },
+    {
+      "name": "Nepal",
+      "_id": "NPL"
+    },
+    {
+      "name": "Netherlands",
+      "_id": "NLD"
+    },
+    {
+      "name": "Netherlands Antilles",
+      "_id": "ANT"
+    },
+    {
+      "name": "New Caledonia",
+      "_id": "NCL"
+    },
+    {
+      "name": "New Zealand",
+      "_id": "NZL"
+    },
+    {
+      "name": "Nicaragua",
+      "_id": "NIC"
+    },
+    {
+      "name": "Niger",
+      "_id": "NER"
+    },
+    {
+      "name": "Nigeria",
+      "_id": "NGA"
+    },
+    {
+      "name": "Niue",
+      "_id": "NIU"
+    },
+    {
+      "name": "North Korea",
+      "_id": "PRK"
+    },
+    {
+      "name": "Northern Mariana Islands",
+      "_id": "MNP"
+    },
+    {
+      "name": "Norway",
+      "_id": "NOR"
+    },
+    {
+      "name": "Oman",
+      "_id": "OMN"
+    },
+    {
+      "name": "Pakistan",
+      "_id": "PAK"
+    },
+    {
+      "name": "Palau",
+      "_id": "PLW"
+    },
+    {
+      "name": "Palestine",
+      "_id": "PSE"
+    },
+    {
+      "name": "Panama",
+      "_id": "PAN"
+    },
+    {
+      "name": "Papua New Guinea",
+      "_id": "PNG"
+    },
+    {
+      "name": "Paraguay",
+      "_id": "PRY"
+    },
+    {
+      "name": "Peru",
+      "_id": "PER"
+    },
+    {
+      "name": "Philippines",
+      "_id": "PHL"
+    },
+    {
+      "name": "Pitcairn",
+      "_id": "PCN"
+    },
+    {
+      "name": "Poland",
+      "_id": "POL"
+    },
+    {
+      "name": "Portugal",
+      "_id": "PRT"
+    },
+    {
+      "name": "Puerto Rico",
+      "_id": "PRI"
+    },
+    {
+      "name": "Qatar",
+      "_id": "QAT"
+    },
+    {
+      "name": "Republic of the Congo",
+      "_id": "COG"
+    },
+    {
+      "name": "Reunion",
+      "_id": "REU"
+    },
+    {
+      "name": "Romania",
+      "_id": "ROU"
+    },
+    {
+      "name": "Russia",
+      "_id": "RUS"
+    },
+    {
+      "name": "Rwanda",
+      "_id": "RWA"
+    },
+    {
+      "name": "Saint Barthelemy",
+      "_id": "BLM"
+    },
+    {
+      "name": "Saint Helena",
+      "_id": "SHN"
+    },
+    {
+      "name": "Saint Kitts and Nevis",
+      "_id": "KNA"
+    },
+    {
+      "name": "Saint Lucia",
+      "_id": "LCA"
+    },
+    {
+      "name": "Saint Martin",
+      "_id": "MAF"
+    },
+    {
+      "name": "Saint Pierre and Miquelon",
+      "_id": "SPM"
+    },
+    {
+      "name": "Saint Vincent and the Grenadines",
+      "_id": "VCT"
+    },
+    {
+      "name": "Samoa",
+      "_id": "WSM"
+    },
+    {
+      "name": "San Marino",
+      "_id": "SMR"
+    },
+    {
+      "name": "Sao Tome and Principe",
+      "_id": "STP"
+    },
+    {
+      "name": "Saudi Arabia",
+      "_id": "SAU"
+    },
+    {
+      "name": "Senegal",
+      "_id": "SEN"
+    },
+    {
+      "name": "Serbia",
+      "_id": "SRB"
+    },
+    {
+      "name": "Seychelles",
+      "_id": "SYC"
+    },
+    {
+      "name": "Sierra Leone",
+      "_id": "SLE"
+    },
+    {
+      "name": "Singapore",
+      "_id": "SGP"
+    },
+    {
+      "name": "Sint Maarten",
+      "_id": "SXM"
+    },
+    {
+      "name": "Slovakia",
+      "_id": "SVK"
+    },
+    {
+      "name": "Slovenia",
+      "_id": "SVN"
+    },
+    {
+      "name": "Solomon Islands",
+      "_id": "SLB"
+    },
+    {
+      "name": "Somalia",
+      "_id": "SOM"
+    },
+    {
+      "name": "South Africa",
+      "_id": "ZAF"
+    },
+    {
+      "name": "South Korea",
+      "_id": "KOR"
+    },
+    {
+      "name": "South Sudan",
+      "_id": "SSD"
+    },
+    {
+      "name": "Spain",
+      "_id": "ESP"
+    },
+    {
+      "name": "Sri Lanka",
+      "_id": "LKA"
+    },
+    {
+      "name": "Sudan",
+      "_id": "SDN"
+    },
+    {
+      "name": "Suriname",
+      "_id": "SUR"
+    },
+    {
+      "name": "Svalbard and Jan Mayen",
+      "_id": "SJM"
+    },
+    {
+      "name": "Swaziland",
+      "_id": "SWZ"
+    },
+    {
+      "name": "Sweden",
+      "_id": "SWE"
+    },
+    {
+      "name": "Switzerland",
+      "_id": "CHE"
+    },
+    {
+      "name": "Syria",
+      "_id": "SYR"
+    },
+    {
+      "name": "Taiwan",
+      "_id": "TWN"
+    },
+    {
+      "name": "Tajikistan",
+      "_id": "TJK"
+    },
+    {
+      "name": "Tanzania",
+      "_id": "TZA"
+    },
+    {
+      "name": "Thailand",
+      "_id": "THA"
+    },
+    {
+      "name": "Togo",
+      "_id": "TGO"
+    },
+    {
+      "name": "Tokelau",
+      "_id": "TKL"
+    },
+    {
+      "name": "Tonga",
+      "_id": "TON"
+    },
+    {
+      "name": "Trinidad and Tobago",
+      "_id": "TTO"
+    },
+    {
+      "name": "Tunisia",
+      "_id": "TUN"
+    },
+    {
+      "name": "Turkey",
+      "_id": "TUR"
+    },
+    {
+      "name": "Turkmenistan",
+      "_id": "TKM"
+    },
+    {
+      "name": "Turks and Caicos Islands",
+      "_id": "TCA"
+    },
+    {
+      "name": "Tuvalu",
+      "_id": "TUV"
+    },
+    {
+      "name": "U.S. Virgin Islands",
+      "_id": "VIR"
+    },
+    {
+      "name": "Uganda",
+      "_id": "UGA"
+    },
+    {
+      "name": "Ukraine",
+      "_id": "UKR"
+    },
+    {
+      "name": "United Arab Emirates",
+      "_id": "ARE"
+    },
+    {
+      "name": "United Kingdom",
+      "_id": "GBR"
+    },
+    {
+      "name": "United States",
+      "_id": "USA"
+    },
+    {
+      "name": "Uruguay",
+      "_id": "URY"
+    },
+    {
+      "name": "Uzbekistan",
+      "_id": "UZB"
+    },
+    {
+      "name": "Vanuatu",
+      "_id": "VUT"
+    },
+    {
+      "name": "Vatican",
+      "_id": "VAT"
+    },
+    {
+      "name": "Venezuela",
+      "_id": "VEN"
+    },
+    {
+      "name": "Vietnam",
+      "_id": "VNM"
+    },
+    {
+      "name": "Wallis and Futuna",
+      "_id": "WLF"
+    },
+    {
+      "name": "Western Sahara",
+      "_id": "ESH"
+    },
+    {
+      "name": "Yemen",
+      "_id": "YEM"
+    },
+    {
+      "name": "Zambia",
+      "_id": "ZMB"
+    },
+    {
+      "name": "Zimbabwe",
+      "_id": "ZWE"
+    }
+  ],
+  "ABREntityType": [
+    {
+      "_id": "BUSINESS",
+      "name": "Approved Deposit Fund"
+    },
+    {
+      "_id": "BUSINESS",
+      "name": "APRA Regulated Fund (Fund Type Unknown)"
+    },
+    {
+      "_id": "BUSINESS",
+      "name": "APRA Regulated Non-Public Offer Fund"
+    },
+    {
+      "_id": "BUSINESS",
+      "name": "APRA Regulated Public Offer Fund"
+    },
+    {
+      "_id": "PROPRIETARY_LIMITED",
+      "name": "Australian Private Company"
+    },
+    {
+      "_id": "LIMITED",
+      "name": "Australian Public Company"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Cash Management Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Commonwealth Government APRA Regulated Public Sector Fund"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Commonwealth Government APRA Regulated Public Sector Scheme"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Commonwealth Government Cash Management Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Commonwealth Government Company"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Commonwealth Government Co-operative"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Commonwealth Government Corporate Unit Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Commonwealth Government Discretionary Investment Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Commonwealth Government Discretionary Services Management Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Commonwealth Government Discretionary Trading Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Commonwealth Government Entity"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Commonwealth Government Fixed Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Commonwealth Government Fixed Unit Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Commonwealth Government Hybrid Trust"
+    },
+    {
+      "_id": "PARTNERSHIP",
+      "name": "Commonwealth Government Limited Partnership"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Commonwealth Government Listed Public Unit Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Commonwealth Government Non-Regulated Super Fund"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Commonwealth Government Other Incorporated Entity"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Commonwealth Government Other Unincorporated Entity"
+    },
+    {
+      "_id": "PARTNERSHIP",
+      "name": "Commonwealth Government Partnership"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Commonwealth Government Pooled Development Fund"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Commonwealth Government Private Company"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Commonwealth Government Public Company"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Commonwealth Government Public Trading Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Commonwealth Government Statutory Authority"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Commonwealth Government Strata Title"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Commonwealth Government Super Fund"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Commonwealth Government Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Commonwealth Government Unlisted Public Unit Trust"
+    },
+    {
+      "_id": "BUSINESS",
+      "name": "Co-operative"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Corporate Unit Trust"
+    },
+    {
+      "_id": "BUSINESS",
+      "name": "Deceased Estate"
+    },
+    {
+      "_id": "BUSINESS",
+      "name": "Diplomatic/Consulate Body or High Commission"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Discretionary Investment Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Discretionary Services Management Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Discretionary Trading Trust"
+    },
+    {
+      "_id": "PARTNERSHIP",
+      "name": "Family Partnership"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Fixed Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Fixed Unit Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "First Home Saver Accounts Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Hybrid Trust"
+    },
+    {
+      "_id": "SOLE_TRADER",
+      "name": "Individual/Sole Trader"
+    },
+    {
+      "_id": "PARTNERSHIP",
+      "name": "Limited Partnership"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Listed Public Unit Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Local Government APRA Regulated Public Sector Fund"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Local Government APRA Regulated Public Sector Scheme"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Local Government Cash Management Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Local Government Company"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Local Government Co-operative"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Local Government Corporate Unit Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Local Government Discretionary Investment Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Local Government Discretionary Services Management Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Local Government Discretionary Trading Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Local Government Entity"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Local Government Fixed Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Local Government Fixed Unit Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Local Government Hybrid Trust"
+    },
+    {
+      "_id": "PARTNERSHIP",
+      "name": "Local Government Limited Partnership"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Local Government Listed Public Unit Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Local Government Non-Regulated Super Fund"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Local Government Other Incorporated Entity"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Local Government Other Unincorporated Entity"
+    },
+    {
+      "_id": "PARTNERSHIP",
+      "name": "Local Government Partnership"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Local Government Pooled Development Fund"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Local Government Private Company"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Local Government Public Company"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Local Government Public Trading Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Local Government Statutory Authority"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Local Government Strata Title"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Local Government Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Local Government Unlisted Public Unit Trust"
+    },
+    {
+      "_id": "BUSINESS",
+      "name": "Non-Regulated Superannuation Fund"
+    },
+    {
+      "_id": "INCORPORATED",
+      "name": "Other Incorporated Entity"
+    },
+    {
+      "_id": "PARTNERSHIP",
+      "name": "Other Partnership"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Other Trust"
+    },
+    {
+      "_id": "BUSINESS",
+      "name": "Other Unincorporated Entity"
+    },
+    {
+      "_id": "BUSINESS",
+      "name": "Pooled Development Fund"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Pooled Superannuation Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Public Trading Trust"
+    },
+    {
+      "_id": "BUSINESS",
+      "name": "Regulated Self-Managed Superannuation Fund"
+    },
+    {
+      "_id": "BUSINESS",
+      "name": "Small APRA Regulated Fund"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "State Government APRA Regulated Public Sector Fund"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "State Government APRA Regulated Public Sector Scheme"
+    },
+    {
+      "_id": "TRUST",
+      "name": "State Government Cash Management Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "State Government Company"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "State Government Co-operative"
+    },
+    {
+      "_id": "TRUST",
+      "name": "State Government Corporate Unit Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "State Government Discretionary Investment Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "State Government Discretionary Services Management Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "State Government Discretionary Trading Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "State Government Entity"
+    },
+    {
+      "_id": "TRUST",
+      "name": "State Government Fixed Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "State Government Fixed Unit Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "State Government Hybrid Trust"
+    },
+    {
+      "_id": "PARTNERSHIP",
+      "name": "State Government Limited Partnership"
+    },
+    {
+      "_id": "TRUST",
+      "name": "State Government Listed Public Unit Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "State Government Non-Regulated Super Fund"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "State Government Other Incorporated Entity"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "State Government Other Unincorporated Entity"
+    },
+    {
+      "_id": "PARTNERSHIP",
+      "name": "State Government Partnership"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "State Government Pooled Development Fund"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "State Government Private Company"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "State Government Public Company"
+    },
+    {
+      "_id": "TRUST",
+      "name": "State Government Public Trading Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "State Government Statutory Authority"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "State Government Strata Title"
+    },
+    {
+      "_id": "TRUST",
+      "name": "State Government Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "State Government Unlisted Public Unit Trust"
+    },
+    {
+      "_id": "BUSINESS",
+      "name": "Strata-title"
+    },
+    {
+      "_id": "BUSINESS",
+      "name": "Super Fund"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Territory Government APRA Regulated Public Sector Fund"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Territory Government APRA Regulated Public Sector Scheme"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Territory Government Cash Management Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Territory Government Co-operative"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Territory Government Corporate Unit Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Territory Government Discretionary Investment Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Territory Government Discretionary Services Management Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Territory Government Discretionary Trading Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Territory Government Entity"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Territory Government Fixed Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Territory Government Fixed Unit Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Territory Government Hybrid Trust"
+    },
+    {
+      "_id": "PARTNERSHIP",
+      "name": "Territory Government Limited Partnership"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Territory Government Listed Public Unit Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Territory Government Non-Regulated Super Fund"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Territory Government Other Incorporated Entity"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Territory Government Other Unincorporated Entity"
+    },
+    {
+      "_id": "PARTNERSHIP",
+      "name": "Territory Government Partnership"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Territory Government Pooled Development Fund"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Territory Government Private Company"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Territory Government Public Company"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Territory Government Public Trading Trust"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Territory Government Statutory Authority"
+    },
+    {
+      "_id": "GOVERNMENT",
+      "name": "Territory Government Strata Title"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Territory Government Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Territory Government Unlisted Public Unit Trust"
+    },
+    {
+      "_id": "TRUST",
+      "name": "Unlisted Public Unit Trust"
+    }
+  ],
+  "NZEntityType": [
+    {
+      "name": "LTD",
+      "_id": "LIMITED"
+    },
+    {
+      "name": "ULTD",
+      "_id": "LIMITED"
+    },
+    {
+      "name": "UNLTD1",
+      "_id": "LIMITED"
+    },
+    {
+      "name": "COOP",
+      "_id": "BUSINESS"
+    },
+    {
+      "name": "NZCompany",
+      "_id": "BUSINESS"
+    },
+    {
+      "name": "ASIC",
+      "_id": "BUSINESS"
+    },
+    {
+      "name": "NON_ASIC",
+      "_id": "BUSINESS"
+    },
+    {
+      "name": "OverseasCompany",
+      "_id": "BUSINESS"
+    },
+    {
+      "name": "Sole_Trader",
+      "_id": "SOLE_TRADER"
+    },
+    {
+      "_id": "PARTNERSHIP",
+      "name": "Partnership"
+    },
+    {
+      "name": "Trading_Trust",
+      "_id": "TRUST"
+    },
+    {
+      "name": "T",
+      "_id": "TRUST"
+    },
+    {
+      "name": "B",
+      "_id": "BUSINESS"
+    },
+    {
+      "name": "D",
+      "_id": "BUSINESS"
+    },
+    {
+      "name": "F",
+      "_id": "BUSINESS"
+    },
+    {
+      "name": "I",
+      "_id": "BUSINESS"
+    },
+    {
+      "name": "N",
+      "_id": "BUSINESS"
+    },
+    {
+      "name": "Y",
+      "_id": "PARTNERSHIP"
+    },
+    {
+      "name": "Z",
+      "_id": "PARTNERSHIP"
+    },
+    {
+      "name": "S",
+      "_id": "BUSINESS"
+    },
+    {
+      "name": "GovtCentral",
+      "_id": "GOVERNMENT"
+    },
+    {
+      "name": "GovtLocal",
+      "_id": "GOVERNMENT"
+    },
+    {
+      "name": "GovtEdu",
+      "_id": "GOVERNMENT"
+    },
+    {
+      "name": "GovtOther",
+      "_id": "GOVERNMENT"
+    }
+  ],
+  "AlertList": {
+    "1": {
+      "alertTypeId": "1",
+      "alertCode": "CourtAction",
+      "description": "Court Action",
+      "category": "Court Action Events Alerts",
+      "fieldName": "courtDetailsChange",
+      "alertFields": [
+        "plaintiffName",
+        "fileNum",
+        "causeOfAction",
+        "defendantReference",
+        "defendant",
+        "defendantAddress",
+        "amt",
+        "currency",
+        "comments",
+        "dateLodged",
+        "changeDate"
+      ]
+    },
+    "3": {
+      "alertTypeId": "3",
+      "alertCode": "CommercialDefaults",
+      "description": "Commercail Defaults",
+      "category": "New Default Records Alerts",
+      "fieldName": "commercialDefaultChange",
+      "alertFields": [
+        "creditorName",
+        "accountType",
+        "reasonToReport",
+        "defaultDate",
+        "status",
+        "lastStatusDate",
+        "lastStatusDate",
+        "defaultingEntity",
+        "startAmt",
+        "amtOwing"
+      ]
+    },
+    "4": {
+      "alertTypeId": "4",
+      "alertCode": "Collections",
+      "description": "Collections",
+      "category": "New Collections Records Alerts",
+      "fieldName": "collectionChange",
+      "alertFields": [
+        "startDate",
+        "creditor",
+        "debtor",
+        "startAmt",
+        "amtOwing",
+        "comments",
+        "status",
+        "changeDate"
+      ]
+    },
+    "5": {
+      "alertTypeId": "5",
+      "alertCode": "304",
+      "description": "Notification Of Change To Officeholders Of Australian Company",
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
+    },
+    "6": {
+      "alertTypeId": "6",
+      "alertCode": "304A",
+      "description": "Notification Of Change To Officeholders Of Australian Company",
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
+    },
+    "7": {
+      "alertTypeId": "7",
+      "alertCode": "304B",
+      "description": "Notification Of Change To Officeholders Of Registered Body",
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
+    },
+    "8": {
+      "alertTypeId": "8",
+      "alertCode": "304C",
+      "description": "Notification Of Change Of Name Or Address Of Officeholder",
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
+    },
+    "9": {
+      "alertTypeId": "9",
+      "alertCode": "304D",
+      "description": "Notification Of Change Of Name Or Address Of Officeholder",
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
+    },
+    "10": {
+      "alertTypeId": "10",
+      "alertCode": "304E",
+      "description": "Notification Of Change To Alternate Director Of Australian Company",
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
+    },
+    "11": {
+      "alertTypeId": "11",
+      "alertCode": "304F",
+      "description": "Notification Of Change Of Name Or Address Date Of Alternate Director",
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
+    },
+    "12": {
+      "alertTypeId": "12",
+      "alertCode": "370",
+      "description": "Notification By Officeholder Of Resignation Or Retirement",
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
+    },
+    "13": {
+      "alertTypeId": "13",
+      "alertCode": "484A",
+      "description": "Change Of Officeholder/Member Name Or Address",
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
+    },
+    "14": {
+      "alertTypeId": "14",
+      "alertCode": "484A1",
+      "description": "Change Officeholder Name Or Address",
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
+    },
+    "15": {
+      "alertTypeId": "15",
+      "alertCode": "484E",
+      "description": "Appointment Or Cessation Of A Company Officeholder",
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
+    },
+    "16": {
+      "alertTypeId": "16",
+      "alertCode": "484V",
+      "description": "Appoint / Cease Alternate Director",
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
+    },
+    "17": {
+      "alertTypeId": "17",
+      "alertCode": "484W",
+      "description": "Notice Of Change Of Name/Address Or Date Of Alternate Dir",
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
+    },
+    "18": {
+      "alertTypeId": "18",
+      "alertCode": "490",
+      "description": "Notification Of Change To Directors Of A Registered Body",
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
+    },
+    "19": {
+      "alertTypeId": "19",
+      "alertCode": "490A",
+      "description": "Appoint/Cease Directors - Registered Body",
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
+    },
+    "20": {
+      "alertTypeId": "20",
+      "alertCode": "490B",
+      "description": "Change Name Or Address Of Officeholder - Registered Body",
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
+    },
+    "21": {
+      "alertTypeId": "21",
+      "alertCode": "490C",
+      "description": "Change Name Or Address Of Officeholders - Registered Body",
+      "category": "ASIC Director Changes Alerts",
+      "fieldName": "directorChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
+    },
+    "47": {
+      "alertTypeId": "47",
+      "alertCode": "ASICCompanyStatus",
+      "description": "ASIC Company Status",
+      "category": "Change in Company Registered Status Alerts",
+      "fieldName": "statusChange",
+      "alertFields": [
+        "previousStatus",
+        "previousStatusDescription",
+        "status",
+        "statusDescription",
+        "entityType",
+        "changeDate"
+      ]
+    },
+    "48": {
+      "alertTypeId": "48",
+      "alertCode": "NZCOCompanyStatus",
+      "description": "NZCO Company Status",
+      "category": "Change in Company Registered Status Alerts",
+      "fieldName": "statusChange",
+      "alertFields": [
+        "previousStatus",
+        "previousStatusDescription",
+        "status",
+        "statusDescription",
+        "entityType",
+        "changeDate"
+      ]
+    },
+    "49": {
+      "alertTypeId": "49",
+      "alertCode": "ABNStatus",
+      "description": "ABN Status",
+      "category": "Change in Company/Business ABN Status Alerts",
+      "fieldName": "abnStatusChange",
+      "alertFields": [
+        "previousStatus",
+        "previousStatusDescription",
+        "status",
+        "statusDescription",
+        "abnStatusFromDate",
+        "entityType",
+        "changeDate"
+      ]
+    },
+    "121": {
+      "alertTypeId": "121",
+      "alertCode": "578",
+      "description": "Deregistration Request (Liquidator Not Acting Or Affairs Wound Up)",
+      "category": "Deregistration Alerts",
+      "fieldName": "deRegistrationChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
+    },
+    "122": {
+      "alertTypeId": "122",
+      "alertCode": "6010",
+      "description": "Application For Voluntary Deregistration Of A Company",
+      "category": "Deregistration Alerts",
+      "fieldName": "deRegistrationChange",
+      "alertFields": [
+        "extractDate",
+        "documentNumber",
+        "formCode",
+        "formCodeDescription",
+        "subFormCode",
+        "subFormCodeDescription",
+        "processingStatus",
+        "documentReceivedDate",
+        "documentImagedDate"
+      ]
+    },
+    "276": {
+      "alertTypeId": "276",
+      "alertCode": "FR_Downgrade_High",
+      "description": "Failure Risk Score Downgrade to High",
+      "category": "Failure Risk Score Moves to a Higher Risk (Lower Score) Band Alerts",
+      "fieldName": "scoreChange",
+      "alertFields": [
+        "type",
+        "score",
+        "previousScore",
+        "percentile",
+        "previousPercentile",
+        "scoreBand",
+        "previousScoreBand",
+        "changeDate",
+        "probability",
+        "previousProbability",
+        "sequence"
+      ]
+    },
+    "277": {
+      "alertTypeId": "277",
+      "alertCode": "FR_Downgrade_VeryHigh",
+      "description": "Failure Risk Score Downgrade to VeryHigh",
+      "category": "Failure Risk Score Moves to a Higher Risk (Lower Score) Band Alerts",
+      "fieldName": "scoreChange",
+      "alertFields": [
+        "type",
+        "score",
+        "previousScore",
+        "percentile",
+        "previousPercentile",
+        "scoreBand",
+        "previousScoreBand",
+        "changeDate",
+        "probability",
+        "previousProbability",
+        "sequence"
+      ]
+    },
+    "278": {
+      "alertTypeId": "278",
+      "alertCode": "FR_Downgrade_Severe",
+      "description": "Failure Risk Score Downgrade to Severe",
+      "category": "Failure Risk Score Moves to a Higher Risk (Lower Score) Band Alerts",
+      "fieldName": "scoreChange",
+      "alertFields": [
+        "type",
+        "score",
+        "previousScore",
+        "percentile",
+        "previousPercentile",
+        "scoreBand",
+        "previousScoreBand",
+        "changeDate",
+        "probability",
+        "previousProbability",
+        "sequence"
+      ]
+    },
+    "292": {
+      "alertTypeId": "292",
+      "alertCode": "LPR_Downgrade_High",
+      "description": "Late Payment Risk Score Downgrade to High",
+      "category": "Late Payment Risk Score Moves to a Higher Risk (Lower Score) Band Alerts",
+      "fieldName": "scoreChange",
+      "alertFields": [
+        "type",
+        "score",
+        "previousScore",
+        "percentile",
+        "previousPercentile",
+        "scoreBand",
+        "previousScoreBand",
+        "changeDate",
+        "probability",
+        "previousProbability",
+        "sequence"
+      ]
+    },
+    "293": {
+      "alertTypeId": "293",
+      "alertCode": "LPR_Downgrade_VeryHigh",
+      "description": "Late Payment Risk Score Downgrade to VeryHigh",
+      "category": "Late Payment Risk Score Moves to a Higher Risk (Lower Score) Band Alerts",
+      "fieldName": "scoreChange",
+      "alertFields": [
+        "type",
+        "score",
+        "previousScore",
+        "percentile",
+        "previousPercentile",
+        "scoreBand",
+        "previousScoreBand",
+        "changeDate",
+        "probability",
+        "previousProbability",
+        "sequence"
+      ]
+    },
+    "294": {
+      "alertTypeId": "294",
+      "alertCode": "LPR_Downgrade_Severe",
+      "description": "Late Payment Risk Score Downgrade to Severe",
+      "category": "Late Payment Risk Score Moves to a Higher Risk (Lower Score) Band Alerts",
+      "fieldName": "scoreChange",
+      "alertFields": [
+        "type",
+        "score",
+        "previousScore",
+        "percentile",
+        "previousPercentile",
+        "scoreBand",
+        "previousScoreBand",
+        "changeDate",
+        "probability",
+        "previousProbability",
+        "sequence"
+      ]
+    }
+  },
+  "AlertFieldTypes": {
+    "startDate": "date",
+    "dateLodged": "date",
+    "changeDate": "date",
+    "abnStatusFromDate": "date",
+    "extractDate": "date",
+    "documentReceivedDate": "date",
+    "documentImagedDate": "date",
+    "startAmt": "dollar",
+    "amtOwing": "dollar"
+  },
+  "limitType": [
+    {
+      "name": "Endorsed Limit",
+      "_id": "ENDORSED"
+    },
+    {
+      "name": "Credit Check",
+      "_id": "CREDIT_CHECK"
+    },
+    {
+      "name": "Health Check",
+      "_id": "HEALTH_CHECK"
+    },
+    {
+      "name": "24/7 Alerts",
+      "_id": "247_ALERT"
+    }
+  ]
+}

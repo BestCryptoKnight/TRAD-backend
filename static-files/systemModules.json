@@ -1,0 +1,112 @@
+{
+  "modules": [
+    {
+      "name": "application",
+      "label": "Application",
+      "isDefault": false,
+      "accessTypes": ["read", "write", "full-access"]
+    },
+    {
+      "name": "claim",
+      "label": "Claim",
+      "isDefault": false,
+      "accessTypes": ["read", "write", "full-access"]
+    },
+    {
+      "name": "client",
+      "label": "Client",
+      "isDefault": false,
+      "accessTypes": ["read", "write", "full-access"]
+    },
+    {
+      "name": "credit-report",
+      "label": "Credit Report",
+      "isDefault": false,
+      "accessTypes": ["read", "write", "full-access"]
+    },
+    {
+      "name": "dashboard",
+      "label": "Dashboard",
+      "isDefault": true,
+      "accessTypes": ["read", "write", "full-access"]
+    },
+    {
+      "name": "debtor",
+      "label": "Debtor",
+      "isDefault": false,
+      "accessTypes": ["read", "write", "full-access"]
+    },
+    {
+      "name": "document",
+      "label": "Document",
+      "isDefault": false,
+      "accessTypes": ["read", "write", "full-access"]
+    },
+    {
+      "name": "import-application-dump",
+      "label": "Import Application",
+      "isDefault": false,
+      "accessTypes": ["read", "write", "full-access"]
+    },
+    {
+      "name": "insurer",
+      "label": "Insurer",
+      "isDefault": false,
+      "accessTypes": ["read", "write"]
+    },
+    {
+      "name": "note",
+      "label": "Note",
+      "isDefault": false,
+      "accessTypes": ["read", "write", "full-access"]
+    },
+    {
+      "name": "notification",
+      "label": "Notification",
+      "isDefault": true,
+      "accessTypes": ["read", "write", "full-access"]
+    },
+    {
+      "name": "organization",
+      "label": "Organization",
+      "isDefault": true,
+      "accessTypes": ["read"]
+    },
+    {
+      "name": "overdue",
+      "label": "Overdue",
+      "isDefault": false,
+      "accessTypes": ["read", "write", "full-access"]
+    },
+    {
+      "name": "policy",
+      "label": "Policy",
+      "isDefault": false,
+      "accessTypes": ["read", "write", "full-access"]
+    },
+    {
+      "name": "settings",
+      "label": "Settings",
+      "isDefault": false,
+      "accessTypes": ["read", "write", "full-access"]
+    },
+    {
+      "name": "task",
+      "label": "Task",
+      "isDefault": false,
+      "accessTypes": ["read", "write", "full-access"]
+    },
+    {
+      "name": "report",
+      "label": "Report",
+      "isDefault": false,
+      "accessTypes": ["read", "write", "full-access"]
+    },
+    {
+      "name": "user",
+      "label": "User",
+      "isDefault": false,
+      "accessTypes": ["read", "write", "full-access"]
+    }
+  ]
+}

@@ -1,0 +1,299 @@
+{
+  "generalTerms": {
+    "isEntityRegistered": {
+      "conditionString": "Confirm the correct legal entity and company status (Must be registered)- Check ASIC",
+      "field": ["entityName", "companyStatus"],
+      "value": true
+    },
+    "noNilCreditLimitIssued": {
+      "conditionString": "No Nil credit limits issued by other insurers in our database - TCR Portal",
+      "field": ["creditLimit"],
+      "value": true
+    },
+    "checkForGSTRegistration": {
+      "conditionString": "ABR check to confirm GST registration - ABN Lookup",
+      "field": ["gstStatus"],
+      "value": true
+    },
+    "entityIncorporated": {
+      "conditionString": "Make sure the company has been incorporated for at least 12 months - ASIC",
+      "field": ["incorporationDate"],
+      "value": 12
+    },
+    "courtCharges": {
+      "conditionString": "No court actions or legal or collection activity present above a maximum of $5,000",
+      "field": [],
+      "value": 5000
+    },
+    "noAdverse": {
+      "conditionString": "No adverse against director/s, owner/s or Shareholders",
+      "field": [],
+      "value": true
+    },
+    "noRegisteredCharges": {
+      "conditionString": "No related party registered charges",
+      "field": [],
+      "value": true
+    },
+    "soleTraderNotRegistered": {
+      "conditionString": "Sole Traders not registered for GST can be approved for $20K if they have been operating for longer than 2 years",
+      "field": [],
+      "value": 20000,
+      "minValue": 2
+    }
+  },
+  "priceRange": [
+    {
+      "lowerLimit": null,
+      "upperLimit": 75000,
+      "australianIndividuals": {
+        "reports": ["Equifax Report: Commercial Apply (Individuals tab)"],
+        "isAutoApproval": true,
+        "reportFrom": "equifax",
+        "guideLines": {
+          "approvedOrDeclines": {
+            "conditionString": "Approved or Declined",
+            "field": [],
+            "value": true
+          }
+        }
+      },
+      "australianCompanies": {
+        "reports": [
+          "Illion Report: HTML Commercial Bureau Enquiry without ASIC Docs OR",
+          "Illion Report: HTML Commercial Bureau Enquiry w/ refresh ASIC w/o ASIC Docs"
+        ],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
+        "guideLines": {
+          "approvedOrDeclines": {
+            "conditionString": "Approved or Declined",
+            "field": [],
+            "value": true
+          }
+        }
+      },
+      "newZealand": {
+        "reports": ["Illion Report: HTML NZ Comm. Bureau Enq (AU Subs)"],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
+        "guideLines": {
+          "approvedOrDeclines": {
+            "conditionString": "Approved or Declined",
+            "field": [],
+            "value": true
+          }
+        }
+      },
+      "commonGuideLines": ["Approved or Declined"]
+    },
+    {
+      "lowerLimit": 75001,
+      "upperLimit": 100000,
+      "australianIndividuals": {
+        "reports": [
+          "Illion Report: HTML Payment Analysis & ASIC Current Extract"
+        ],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
+        "guideLines": {
+          "approvedOrDeclines": {
+            "conditionString": "Approved or Declined",
+            "field": [],
+            "value": true
+          }
+        }
+      },
+      "australianCompanies": {
+        "reports": [
+          "Illion Report: HTML Payment Analysis & ASIC Current Extract"
+        ],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
+        "guideLines": {
+          "approvedOrDeclines": {
+            "conditionString": "Approved or Declined",
+            "field": [],
+            "value": true
+          }
+        }
+      },
+      "newZealand": {
+        "reports": ["Illion Report: HTML Payment Analysis with refreshed NZCO"],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
+        "guideLines": {
+          "approvedOrDeclines": {
+            "conditionString": "Approved or Declined",
+            "field": [],
+            "value": true
+          }
+        }
+      },
+      "commonGuideLines": ["Approved or Declined"]
+    },
+    {
+      "lowerLimit": 100001,
+      "upperLimit": 200000,
+      "australianIndividuals": {
+        "reports": [
+          "Illion Report: HTML Payment Analysis & ASIC Current Extract"
+        ],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
+        "guideLines": {
+          "tradePaymentInfo": {
+            "conditionString": "Trade Payment info must be included in the mercantile report",
+            "field": [],
+            "value": true
+          },
+          "enquireUnderwriter": {
+            "conditionString": "Enquire Underwriter",
+            "field": [],
+            "value": true
+          },
+          "recommendation": {
+            "conditionString": "Recommendation",
+            "field": [],
+            "value": true
+          }
+        }
+      },
+      "australianCompanies": {
+        "reports": [
+          "Illion Report: HTML Payment Analysis & ASIC Current Extract"
+        ],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
+        "guideLines": {
+          "tradePaymentInfo": {
+            "conditionString": "Trade Payment info must be included in the mercantile report",
+            "field": [],
+            "value": true
+          },
+          "enquireUnderwriter": {
+            "conditionString": "Enquire Underwriter",
+            "field": [],
+            "value": true
+          },
+          "recommendation": {
+            "conditionString": "Recommendation",
+            "field": [],
+            "value": true
+          }
+        }
+      },
+      "newZealand": {
+        "reports": ["Illion Report: HTML Payment Analysis with refreshed NZCO"],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
+        "guideLines": {
+          "tradePaymentInfo": {
+            "conditionString": "Trade Payment info must be included in the mercantile report",
+            "field": [],
+            "value": true
+          },
+          "enquireUnderwriter": {
+            "conditionString": "Enquire Underwriter",
+            "field": [],
+            "value": true
+          },
+          "recommendation": {
+            "conditionString": "Recommendation",
+            "field": [],
+            "value": true
+          }
+        }
+      },
+      "commonGuideLines": [
+        "Trade Payment info must be included in the mercantile report",
+        "Enquire Underwriter",
+        "Recommendation"
+      ]
+    },
+    {
+      "lowerLimit": 200001,
+      "upperLimit": null,
+      "australianIndividuals": {
+        "reports": [
+          "Illion Report: HTML Payment Analysis & ASIC Current Extract",
+          "Illion Report: Company Financials"
+        ],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
+        "guideLines": {
+          "tradePaymentInfo": {
+            "conditionString": "Trade Payment info must be included in the mercantile report",
+            "field": [],
+            "value": true
+          },
+          "enquireUnderwriter": {
+            "conditionString": "Enquire Underwriter",
+            "field": [],
+            "value": true
+          },
+          "noRecommendation": {
+            "conditionString": "If financials cannot be obtained, no recommendation above $200k will be offered",
+            "field": [],
+            "value": true
+          }
+        }
+      },
+      "australianCompanies": {
+        "reports": [
+          "Illion Report: HTML Payment Analysis & ASIC Current Extract",
+          "Illion Report: Company Financials"
+        ],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
+        "guideLines": {
+          "tradePaymentInfo": {
+            "conditionString": "Trade Payment info must be included in the mercantile report",
+            "field": [],
+            "value": true
+          },
+          "enquireUnderwriter": {
+            "conditionString": "Enquire Underwriter",
+            "field": [],
+            "value": true
+          },
+          "noRecommendation": {
+            "conditionString": "If financials cannot be obtained, no recommendation above $200k will be offered",
+            "field": [],
+            "value": true
+          }
+        }
+      },
+      "newZealand": {
+        "reports": [
+          "Illion Report: HTML Payment Analysis with refreshed NZCO",
+          "Illion Report: Company Financials"
+        ],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
+        "guideLines": {
+          "tradePaymentInfo": {
+            "conditionString": "Trade Payment info must be included in the mercantile report",
+            "field": [],
+            "value": true
+          },
+          "enquireUnderwriter": {
+            "conditionString": "Enquire Underwriter",
+            "field": [],
+            "value": true
+          },
+          "noRecommendation": {
+            "conditionString": "If financials cannot be obtained, no recommendation above $200k will be offered",
+            "field": [],
+            "value": true
+          }
+        }
+      },
+      "commonGuideLines": [
+        "Trade Payment info must be included in the mercantile report",
+        "Enquire Underwriter",
+        "If financials cannot be obtained, no recommendation above $200k will be offered."
+      ]
+    }
+  ]
+}

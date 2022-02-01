@@ -1,0 +1,74 @@
+{
+  "generalTerms": {
+    "checkCreditLimit": {
+      "conditionString": "Limit must be within the Excess and Discretionary Limit - Check our CRM Database to confirm",
+      "field": ["creditLimit", "excessLimit", "discretionaryLimit"],
+      "value": true
+    },
+    "isEntityRegistered": {
+      "conditionString": "Confirm the correct legal entity and company status (Must be registered)- Check ASIC",
+      "field": ["entityName", "companyStatus"],
+      "value": true
+    },
+    "noNilCreditLimitIssued": {
+      "conditionString": "No Nil credit limits issued by other insurers in our database - TCR Portal",
+      "field": ["creditLimit"],
+      "value": true
+    },
+    "checkForGSTRegistration": {
+      "conditionString": "ABR check to confirm GST registration - ABN Lookup",
+      "field": ["gstStatus"],
+      "value": true
+    },
+    "entityIncorporated": {
+      "conditionString": "Make sure the company has been incorporated for at least 12 months - ASIC",
+      "field": ["incorporationDate"],
+      "value": 12
+    },
+    "courtCharges": {
+      "conditionString": "No court actions or legal or collection activity present",
+      "field": [],
+      "value": true
+    },
+    "noAdverse": {
+      "conditionString": "No adverse against director/s, owner/s or Shareholders",
+      "field": [],
+      "value": true
+    },
+    "noRegisteredCharges": {
+      "conditionString": "No related party registered charges",
+      "field": [],
+      "value": true
+    },
+    "soleTraderRegisteredForGST": {
+      "conditionString": "Sole Traders must be registered for GST - Check ASIC or ABN Lookup",
+      "field": ["gstStatus"],
+      "value": true
+    }
+  },
+  "priceRange": [
+    {
+      "lowerLimit": null,
+      "upperLimit": 100000,
+      "australianIndividuals": {
+        "reports": ["Equifax Report: Commercial Apply (Individuals tab)"],
+        "isAutoApproval": true,
+        "reportFrom": "equifax",
+        "guideLines": {}
+      },
+      "australianCompanies": {
+        "reports": [
+          "Illion Report: HTML Payment Analysis & ASIC Current Extract (minimum of 3 trade references)"
+        ],
+        "isAutoApproval": true,
+        "reportFrom": "illion",
+        "guideLines": {}
+      },
+      "newZealand": {
+        "reports": [],
+        "guideLines": {}
+      },
+      "commonGuideLines": []
+    }
+  ]
+}
