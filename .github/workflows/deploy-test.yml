@@ -22,6 +22,7 @@ jobs:
           username: ${{ secrets.TEST_SSH_USERNAME }}
           password: ${{ secrets.TEST_AUTH_PASS }}
           port: ${{ secrets.TEST_SSH_PORT }}
+          fingerprint: ${{ secrets.TEST_KNOWN_HOSTS }}
       - name: Cache node modules
         id: cache-node-modules
         uses: actions/cache@v2
