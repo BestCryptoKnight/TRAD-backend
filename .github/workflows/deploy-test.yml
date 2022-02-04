@@ -31,7 +31,7 @@ jobs:
           key: node_modules-${{ hashFiles('package.json') }}
       - name: project update on server
         run: |
-          sshpass -p ${{ env.TEST_AUTH_PASS }} ssh -tt ${{ env.TEST_SSH_USERNAME }}@${{ env.TEST_SSH_HOST }} -p ${{ env.TEST_SSH_PORT }} "cd ${{ env.TEST_PROJECT_PATH }}; git reset --hard; git pull; exit;"
+          ssh -tt ${{ env.TEST_SSH_USERNAME }}@${{ env.TEST_SSH_HOST }} -p ${{ env.TEST_SSH_PORT }} "cd ${{ env.TEST_PROJECT_PATH }}; git reset --hard; git pull; exit;"
         env:
           TEST_SSH_PORT: ${{ secrets.TEST_SSH_PORT}}
           TEST_SSH_USERNAME: ${{ secrets.TEST_SSH_USERNAME }}
