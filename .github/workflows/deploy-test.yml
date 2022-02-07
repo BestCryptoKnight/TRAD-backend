@@ -31,7 +31,7 @@ jobs:
             cd ${{ env.TEST_PROJECT_PATH }}
             git reset --hard
             git pull
-            rm -r node_modules/ package-lock.json
+            rm -rf node_modules/ package-lock.json
             bash -ic 'npm i --only=production; pm2 restart ecosystem.config.js --only trad-test;'
         env:
           TEST_PROJECT_PATH: ${{ secrets.TEST_PROJECT_PATH}}
