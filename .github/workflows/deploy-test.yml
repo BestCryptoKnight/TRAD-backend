@@ -24,39 +24,19 @@ jobs:
           port: ${{ secrets.TEST_SSH_PORT }}
           fingerprint: ${{ secrets.TEST_KNOWN_HOSTS }}
           script: |
-            whoami
             ls
+#            Update the Project code
+            cd ${{ env.TEST_PROJECT_PATH }}
+            git reset --hard
+            git pull
+#            Install the packages
+            rm -r node_modules/ package-lock.json
+            bash -ic 'npm i --only=production'
+#            Restart the Node Service
+            bash -ic 'pm2 restart ecosystem.config.js --only trad-test'
       - name: Cache node modules
         id: cache-node-modules
         uses: actions/cache@v2
         with:
           path: node_modules
           key: node_modules-${{ hashFiles('package.json') }}
-      - name: project update on server
-        run: |
-          sshpass -p ${{ env.TEST_AUTH_PASS }} ssh -tt ${{ env.TEST_SSH_USERNAME }}@${{ env.TEST_SSH_HOST }} -p ${{ env.TEST_SSH_PORT }} "cd ${{ env.TEST_PROJECT_PATH }}; git reset --hard; git pull; exit;"
-        env:
-          TEST_SSH_PORT: ${{ secrets.TEST_SSH_PORT}}
-          TEST_SSH_USERNAME: ${{ secrets.TEST_SSH_USERNAME }}
-          TEST_SSH_HOST: ${{ secrets.TEST_SSH_HOST }}
-          TEST_AUTH_PASS: ${{ secrets.TEST_AUTH_PASS }}
-          TEST_PROJECT_PATH: ${{ secrets.TEST_PROJECT_PATH }}
-      - name: NPM install on server
-        if: steps.cache-node-modules.outputs.cache-hit != 'true'
-        run: |
-          sshpass -p ${{ env.TEST_AUTH_PASS }} ssh -tt ${{ env.TEST_SSH_USERNAME }}@${{ env.TEST_SSH_HOST }} -p ${{ env.TEST_SSH_PORT }} "cd ${{ env.TEST_PROJECT_PATH }}; rm -r node_modules/; rm  package-lock.json;bash -ic 'npm i --only=production;'; exit;"
-        env:
-          TEST_SSH_PORT: ${{ secrets.TEST_SSH_PORT}}
-          TEST_SSH_USERNAME: ${{ secrets.TEST_SSH_USERNAME }}
-          TEST_SSH_HOST: ${{ secrets.TEST_SSH_HOST }}
-          TEST_AUTH_PASS: ${{ secrets.TEST_AUTH_PASS }}
-          TEST_PROJECT_PATH: ${{ secrets.TEST_PROJECT_PATH }}
-      - name: Restart server processes
-        run: |
-          sshpass -p ${{ env.TEST_AUTH_PASS }} ssh -tt ${{ env.TEST_SSH_USERNAME }}@${{ env.TEST_SSH_HOST }} -p ${{ env.TEST_SSH_PORT }} "cd ${{ env.TEST_PROJECT_PATH }}; bash -ic 'pm2 restart ecosystem.config.js --only trad-test;'; exit;"
-        env:
-          TEST_SSH_PORT: ${{ secrets.TEST_SSH_PORT}}
-          TEST_SSH_USERNAME: ${{ secrets.TEST_SSH_USERNAME }}
-          TEST_SSH_HOST: ${{ secrets.TEST_SSH_HOST }}
-          TEST_AUTH_PASS: ${{ secrets.TEST_AUTH_PASS }}
-          TEST_PROJECT_PATH: ${{ secrets.TEST_PROJECT_PATH }}
