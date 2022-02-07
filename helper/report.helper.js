@@ -1712,6 +1712,9 @@ const getUsagePerClientReport = async ({
       if (i === 'applicationCount') {
         i = '_id';
       }
+      if (i === 'creditLimitStatus') {
+        i = 'status';
+      }
       return [i, 1];
     });
     query.push({
@@ -1875,10 +1878,11 @@ const getUsagePerClientReport = async ({
           ? applicationCounts[limit._id]
           : 0;
       }
+      delete limit.activeApplicationId;
     });
     return { response, total, filterArray };
   } catch (e) {
-    Logger.log.error('Error occurred in get limit list report');
+    Logger.log.error('Error occurred in get usage per client report');
     Logger.log.error(e);
   }
 };
@@ -1888,15 +1892,30 @@ const getLimitHistoryReport = async ({
   userId,
   reportColumn,
   requestedQuery,
+  isForDownload = false,
 }) => {
   try {
     const queryFilter = {};
     const query = [];
+    const filterArray = [];
     if (requestedQuery.clientIds) {
       const clientIds = requestedQuery.clientIds
         .split(',')
         .map((id) => mongoose.Types.ObjectId(id));
       queryFilter.clientId = { $in: clientIds };
+      if (isForDownload) {
+        const clients = await Client.find({ _id: { $in: clientIds } })
+          .select('name')
+          .lean();
+        filterArray.push({
+          label: 'Client',
+          value: clients
+            .map((i) => i.name)
+            .toString()
+            .replace(/,/g, ', '),
+          type: 'string',
+        });
+      }
     } else if (!hasFullAccess) {
       const clients = await Client.find({
         isDeleted: false,
@@ -1909,9 +1928,26 @@ const getLimitHistoryReport = async ({
     }
     if (requestedQuery.limitType) {
       queryFilter.limitType = { $in: requestedQuery.limitType.split(',') };
+      if (isForDownload) {
+        filterArray.push({
+          label: 'Limit Type',
+          value: requestedQuery.limitType.split(','),
+          type: 'string',
+        });
+      }
     }
     if (requestedQuery.debtorId) {
       queryFilter.debtorId = mongoose.Types.ObjectId(requestedQuery.debtorId);
+      if (isForDownload) {
+        const debtor = await Debtor.findOne({ _id: requestedQuery.debtorId })
+          .select('entityName')
+          .lean();
+        filterArray.push({
+          label: 'Debtor',
+          value: debtor && debtor?.entityName ? debtor.entityName : '',
+          type: 'string',
+        });
+      }
     }
     if (requestedQuery.startDate || requestedQuery.endDate) {
       let dateQuery = {};
@@ -1919,11 +1955,25 @@ const getLimitHistoryReport = async ({
         dateQuery = {
           $gte: new Date(requestedQuery.startDate),
         };
+        if (isForDownload) {
+          filterArray.push({
+            label: 'Start Date',
+            value: requestedQuery.startDate,
+            type: 'date',
+          });
+        }
       }
       if (requestedQuery.endDate) {
         dateQuery = Object.assign({}, dateQuery, {
           $lte: new Date(requestedQuery.endDate),
         });
+        if (isForDownload) {
+          filterArray.push({
+            label: 'End Date',
+            value: requestedQuery.endDate,
+            type: 'date',
+          });
+        }
       }
       queryFilter.expiryDate = dateQuery;
     }
@@ -2078,9 +2128,9 @@ const getLimitHistoryReport = async ({
         limit.limitType = getLimitType(limit?.limitType) || '';
       }
     });
-    return { response, total };
+    return { response, total, filterArray };
   } catch (e) {
-    Logger.log.error('Error occurred in get limit list report');
+    Logger.log.error('Error occurred in get limit history report');
     Logger.log.error(e.message || e);
   }
 };
@@ -2143,7 +2193,7 @@ const getClaimsReport = async ({
 
     return { response: claimsList, total: totalCount };
   } catch (e) {
-    Logger.log.error('Error occurred in get limit list report');
+    Logger.log.error('Error occurred in get claim report');
     Logger.log.error(e.message || e);
   }
 };
