@@ -437,6 +437,35 @@ router.get('/download', async function (req, res) {
           isForDownload: true,
         });
         break;
+      case 'limit-history-report':
+        reportColumn = [
+          'applicationId',
+          'status',
+          'clientId',
+          'debtorId',
+          'entityType',
+          'abn',
+          'acn',
+          'registrationNumber',
+          'country',
+          'insurerId',
+          'creditLimit',
+          'acceptedAmount',
+          'approvalOrDecliningDate',
+          'expiryDate',
+          'limitType',
+          'clientReference',
+          'comments',
+        ];
+        reportFor = 'Limit History Report';
+        response = await getLimitHistoryReport({
+          reportColumn,
+          hasFullAccess,
+          userId: req.user._id,
+          requestedQuery: req.query,
+          isForDownload: true,
+        });
+        break;
       default:
         return res.status(400).send({
           status: 'ERROR',
