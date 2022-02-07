@@ -18,10 +18,8 @@ let uploadLocations = {
 };
 
 let frontendUrls = {
-  adminPanelBase:
-    process.env.FRONTEND_ADMIN_URL || 'http://192.168.1.202:4600/',
-  clientPanelBase:
-    process.env.FRONTEND_CLIENT_URL || 'http://192.168.1.202:4600/',
+  adminPanelBase: process.env.FRONTEND_ADMIN_URL,
+  clientPanelBase: process.env.FRONTEND_CLIENT_URL,
   setPasswordPage: 'set-password/',
   resetPasswordPage: 'reset/',
   forgotPasswordPage: 'forgot/',
@@ -29,27 +27,25 @@ let frontendUrls = {
 
 module.exports = {
   jwt: {
-    secret: process.env.JWT_SECRET || 'SimpleJWT',
+    secret: process.env.JWT_SECRET,
     expireTime: process.env.JWT_EXPIRE_TIME || '2', //in hrs
     linkExpireTime: process.env.JWT_LINK_EXPIRE_TIME || '12', //in hrs
   },
   uploadLocations: uploadLocations,
   mailer: {
-    fromAddress: process.env.FROM_EMAIL_ADDRESS || 'no-reply@kevit.io',
-    replyTo: process.env.REPLY_TO_EMAIL_ADDRESS || 'no-reply@kevit.io',
+    fromAddress: process.env.FROM_EMAIL_ADDRESS,
+    replyTo: process.env.REPLY_TO_EMAIL_ADDRESS,
     sendgridApiKey: process.env.SENDGRID_API_KEY,
     send: process.env.SEND_MAIL || true,
     isForProduction: process.env.IS_FOR_PRODUCTION || true,
   },
   server: {
-    backendServerUrl:
-      process.env.BACKEND_SERVER_URL || 'http://localhost:3000/',
+    backendServerUrl: process.env.BACKEND_SERVER_URL,
     frontendUrls: frontendUrls,
     port: process.env.PORT || 3000,
     logLevel: process.env.LOG_LEVEL || 'all',
     alertLogLevel: process.env.ALERT_LOG_LEVEL || 'all',
-    mongoDBConnectionUrl:
-      process.env.MONGODB_URL || 'mongodb://127.0.0.1:27017/EXPRESS-JUMPSTART',
+    mongoDBConnectionUrl: process.env.MONGODB_URL,
     webhookUrl: process.env.WEBHOOK_URL,
   },
   superAdmin: {
