@@ -31,6 +31,8 @@ jobs:
             rm -r node_modules/ package-lock.json
             bash -ic 'npm i --only=production'
             bash -ic 'pm2 restart ecosystem.config.js --only trad-test'
+        env:
+          TEST_PROJECT_PATH: ${{ secrets.TEST_PROJECT_PATH}}
       - name: Cache node modules
         id: cache-node-modules
         uses: actions/cache@v2
