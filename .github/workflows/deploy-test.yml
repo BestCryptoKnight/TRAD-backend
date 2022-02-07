@@ -28,12 +28,13 @@ jobs:
             echo $SHELL
             whoami
             echo "$USER"
-            nvm --version
             node --version
             npm --version
             cd ${{ env.TEST_PROJECT_PATH }}
+            git branch
             git reset --hard
             git pull
+            ls
             rm -rf node_modules/ package-lock.json
             bash -ic 'npm i --only=production; pm2 restart ecosystem.config.js --only trad-test;'
         env:
