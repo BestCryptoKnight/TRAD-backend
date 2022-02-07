@@ -1,0 +1,41 @@
+name: TRAD deploy-test
+on:
+  push:
+    branches:
+      - 'staging'
+
+jobs:
+  deploy-on-test:
+    name: 'Deploy on test'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Prepare Node Environment
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      - name: Logging into server, updating the project and restarting node process
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.TEST_SSH_HOST }}
+          username: ${{ secrets.TEST_SSH_USERNAME }}
+          password: ${{ secrets.TEST_AUTH_PASS }}
+          port: ${{ secrets.TEST_SSH_PORT }}
+          fingerprint: ${{ secrets.TEST_KNOWN_HOSTS }}
+          debug: true
+          script: |
+            cd ${{ env.TEST_PROJECT_PATH }}
+            git reset --hard
+            git pull
+            rm -rf node_modules/ package-lock.json
+            npm i --only=production
+            pm2 restart ecosystem.config.js --only trad-test
+        env:
+          TEST_PROJECT_PATH: ${{ secrets.TEST_PROJECT_PATH}}
+      - name: Cache node modules
+        id: cache-node-modules
+        uses: actions/cache@v2
+        with:
+          path: node_modules
+          key: node_modules-${{ hashFiles('package.json') }}
