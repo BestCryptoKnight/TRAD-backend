@@ -24,13 +24,13 @@ jobs:
           port: ${{ secrets.TEST_SSH_PORT }}
           fingerprint: ${{ secrets.TEST_KNOWN_HOSTS }}
           script: |
-            ls
+            whoami
+            echo "$USER"
             cd ${{ env.TEST_PROJECT_PATH }}
             git reset --hard
             git pull
             rm -r node_modules/ package-lock.json
-            npm i --only=production
-            pm2 restart ecosystem.config.js --only trad-test
+            bash -ic 'npm i --only=production; pm2 restart ecosystem.config.js --only trad-test;'
         env:
           TEST_PROJECT_PATH: ${{ secrets.TEST_PROJECT_PATH}}
       - name: Cache node modules
