@@ -25,6 +25,7 @@ jobs:
           fingerprint: ${{ secrets.TEST_KNOWN_HOSTS }}
           script: |
             echo $PATH
+            echo $SHELL
             whoami
             echo "$USER"
             cd ${{ env.TEST_PROJECT_PATH }}
