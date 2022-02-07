@@ -15,7 +15,7 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: '14'
-      - name: executing remote ssh commands using password
+      - name: Logging into server, updating the project and restarting node process
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.TEST_SSH_HOST }}
