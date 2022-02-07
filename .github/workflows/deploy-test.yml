@@ -25,14 +25,11 @@ jobs:
           fingerprint: ${{ secrets.TEST_KNOWN_HOSTS }}
           script: |
             ls
-#            Update the Project code
             cd ${{ env.TEST_PROJECT_PATH }}
             git reset --hard
             git pull
-#            Install the packages
             rm -r node_modules/ package-lock.json
             bash -ic 'npm i --only=production'
-#            Restart the Node Service
             bash -ic 'pm2 restart ecosystem.config.js --only trad-test'
       - name: Cache node modules
         id: cache-node-modules
