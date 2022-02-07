@@ -23,6 +23,7 @@ jobs:
           password: ${{ secrets.TEST_AUTH_PASS }}
           port: ${{ secrets.TEST_SSH_PORT }}
           fingerprint: ${{ secrets.TEST_KNOWN_HOSTS }}
+          debug: true
           script: |
             cd ${{ env.TEST_PROJECT_PATH }}
             git reset --hard
