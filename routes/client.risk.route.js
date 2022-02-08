@@ -1057,7 +1057,7 @@ router.put('/user/sync-from-crm/:clientId', async function (req, res) {
         message: 'Require fields are missing',
       });
     }
-    let client = await Client.findOne({ _id: req.params.clientId });
+    let client = await Client.findOne({ _id: req.params.clientId }).lean();
     if (!client) {
       return res
         .status(400)
@@ -1088,17 +1088,7 @@ router.put('/user/sync-from-crm/:clientId', async function (req, res) {
     for (let i = 0; i < contactsFromCrm.length; i++) {
       query = {
         isDeleted: false,
-        $or: [
-          { crmContactId: contactsFromCrm[i].crmContactId },
-          {
-            email: {
-              $regex: new RegExp(
-                '^' + contactsFromCrm[i].email.toLowerCase() + '$',
-                'i',
-              ),
-            },
-          },
-        ],
+        crmContactId: contactsFromCrm[i].crmContactId,
       };
       const clientUser = await ClientUser.findOne(query).lean();
       contactsFromCrm[i].clientId = req.params.clientId;
@@ -1113,7 +1103,7 @@ router.put('/user/sync-from-crm/:clientId', async function (req, res) {
           ? {
               _id: clientUser._id,
             }
-          : { crmContactId: contactsFromCrm[i].crmContactId };
+          : { crmContactId: contactsFromCrm[i].crmContactId, isDeleted: false };
       promiseArr.push(
         ClientUser.updateOne(query, contactsFromCrm[i], { upsert: true }),
       );
