@@ -1063,26 +1063,24 @@ router.put('/user/sync-from-crm/:clientId', async function (req, res) {
         .status(400)
         .send({ status: 'ERROR', message: 'Client not found' });
     }
-    /* const clientUsers = await ClientUser.find({
+    const clientUsers = await ClientUser.find({
       isDeleted: false,
       clientId: req.params.clientId,
     })
-      .select('email crmContactId')
+      .select('crmContactId')
       .lean();
-    const oldUsers = clientUsers.map((i) => i.email.toLowerCase());
-    const newUsers = [];*/
+    const oldUsers = clientUsers.map((i) => i.crmContactId.toString());
+    //const newUsers = [];
     let contactsFromCrm = await RssHelper.getClientContacts({
       clientId: client.crmClientId,
       page: 1,
       limit: 50,
     });
-    /* contactsFromCrm.forEach((i) => {
-      if (oldUsers.includes(i.email.toLowerCase())) {
-        oldUsers.splice(oldUsers.indexOf(i.email.toLowerCase()), 1);
-      } else {
-        newUsers.push(i.email);
+    contactsFromCrm.forEach((i) => {
+      if (oldUsers.includes(i.crmContactId.toString())) {
+        oldUsers.splice(oldUsers.indexOf(i.crmContactId.toString()), 1);
       }
-    });*/
+    });
     let promiseArr = [];
     let query = {};
     for (let i = 0; i < contactsFromCrm.length; i++) {
@@ -1120,10 +1118,10 @@ router.put('/user/sync-from-crm/:clientId', async function (req, res) {
         );
       }
     }
-    /*if (oldUsers?.length !== 0) {
+    if (oldUsers?.length !== 0) {
       promiseArr.push(
         ClientUser.updateMany(
-          { email: { $in: oldUsers } },
+          { crmContactId: { $in: oldUsers } },
           {
             isDeleted: true,
             sendDecisionLetter: false,
@@ -1131,7 +1129,7 @@ router.put('/user/sync-from-crm/:clientId', async function (req, res) {
           },
         ),
       );
-    }*/
+    }
     await Promise.all(promiseArr);
     /* if (newUsers?.length !== 0) {
       const clientUsers = await ClientUser.find({
