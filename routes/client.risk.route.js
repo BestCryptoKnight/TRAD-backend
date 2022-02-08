@@ -1063,31 +1063,31 @@ router.put('/user/sync-from-crm/:clientId', async function (req, res) {
         .status(400)
         .send({ status: 'ERROR', message: 'Client not found' });
     }
-    const clientUsers = await ClientUser.find({
+    /* const clientUsers = await ClientUser.find({
       isDeleted: false,
       clientId: req.params.clientId,
     })
       .select('email crmContactId')
       .lean();
     const oldUsers = clientUsers.map((i) => i.email.toLowerCase());
-    const newUsers = [];
+    const newUsers = [];*/
     let contactsFromCrm = await RssHelper.getClientContacts({
       clientId: client.crmClientId,
       page: 1,
       limit: 50,
     });
-    contactsFromCrm.forEach((i) => {
+    /* contactsFromCrm.forEach((i) => {
       if (oldUsers.includes(i.email.toLowerCase())) {
         oldUsers.splice(oldUsers.indexOf(i.email.toLowerCase()), 1);
       } else {
         newUsers.push(i.email);
       }
-    });
+    });*/
     let promiseArr = [];
     let query = {};
     for (let i = 0; i < contactsFromCrm.length; i++) {
       query = {
-        // isDeleted: false,
+        isDeleted: false,
         $or: [
           { crmContactId: contactsFromCrm[i].crmContactId },
           {
@@ -1117,11 +1117,7 @@ router.put('/user/sync-from-crm/:clientId', async function (req, res) {
       promiseArr.push(
         ClientUser.updateOne(query, contactsFromCrm[i], { upsert: true }),
       );
-      if (
-        clientUser &&
-        clientUser._id &&
-        !newUsers.includes(contactsFromCrm[i].email.toLowerCase())
-      ) {
+      if (clientUser && clientUser._id) {
         promiseArr.push(
           addAuditLog({
             entityType: 'client-user',
@@ -1134,7 +1130,7 @@ router.put('/user/sync-from-crm/:clientId', async function (req, res) {
         );
       }
     }
-    if (oldUsers?.length !== 0) {
+    /*if (oldUsers?.length !== 0) {
       promiseArr.push(
         ClientUser.updateMany(
           { email: { $in: oldUsers } },
@@ -1145,9 +1141,9 @@ router.put('/user/sync-from-crm/:clientId', async function (req, res) {
           },
         ),
       );
-    }
+    }*/
     await Promise.all(promiseArr);
-    if (newUsers?.length !== 0) {
+    /* if (newUsers?.length !== 0) {
       const clientUsers = await ClientUser.find({
         crmContactId: { $in: newUsers },
       })
@@ -1163,7 +1159,7 @@ router.put('/user/sync-from-crm/:clientId', async function (req, res) {
           logDescription: `Client contact ${i.name} added by ${req.user.name}`,
         });
       });
-    }
+    }*/
     res.status(200).send({
       status: 'SUCCESS',
       message: 'Client Contacts synced successfully',
