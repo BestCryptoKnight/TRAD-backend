@@ -1578,6 +1578,7 @@ const getUsagePerClientReport = async ({
       status: { $exists: true, $in: ['APPROVED', 'DECLINED'] },
     };
     const query = [];
+    const facetQuery = [];
     const filterArray = [];
     if (requestedQuery.clientIds) {
       const clientIds = requestedQuery.clientIds
@@ -1614,7 +1615,7 @@ const getUsagePerClientReport = async ({
       reportColumn.includes('clientId') ||
       reportColumn.includes('insurerId')
     ) {
-      query.push({
+      facetQuery.push({
         $lookup: {
           from: 'clients',
           localField: 'clientId',
@@ -1624,7 +1625,7 @@ const getUsagePerClientReport = async ({
       });
     }
     if (reportColumn.includes('insurerId')) {
-      query.push({
+      facetQuery.push({
         $lookup: {
           from: 'insurers',
           localField: 'clientId.insurerId',
@@ -1641,7 +1642,7 @@ const getUsagePerClientReport = async ({
       reportColumn.includes('entityType') ||
       reportColumn.includes('country')
     ) {
-      query.push({
+      facetQuery.push({
         $lookup: {
           from: 'debtors',
           localField: 'debtorId',
@@ -1664,7 +1665,7 @@ const getUsagePerClientReport = async ({
       requestedQuery.limitType
     ) {
       reportColumn.push('activeApplicationId');
-      query.push({
+      facetQuery.push({
         $lookup: {
           from: 'applications',
           localField: 'activeApplicationId',
@@ -1717,7 +1718,7 @@ const getUsagePerClientReport = async ({
       }
       return [i, 1];
     });
-    query.push({
+    facetQuery.push({
       $project: fields.reduce((obj, [key, val]) => {
         obj[key] = val;
         return obj;
@@ -1733,6 +1734,7 @@ const getUsagePerClientReport = async ({
                 parseInt(requestedQuery.limit),
             },
             { $limit: parseInt(requestedQuery.limit) },
+            ...facetQuery,
           ],
           totalCount: [
             {
@@ -1897,6 +1899,7 @@ const getLimitHistoryReport = async ({
   try {
     const queryFilter = {};
     const query = [];
+    const facetQuery = [];
     const filterArray = [];
     if (requestedQuery.clientIds) {
       const clientIds = requestedQuery.clientIds
@@ -1981,7 +1984,7 @@ const getLimitHistoryReport = async ({
       reportColumn.includes('clientId') ||
       reportColumn.includes('insurerId')
     ) {
-      query.push({
+      facetQuery.push({
         $lookup: {
           from: 'clients',
           localField: 'clientId',
@@ -1992,7 +1995,7 @@ const getLimitHistoryReport = async ({
     }
 
     if (reportColumn.includes('insurerId')) {
-      query.push({
+      facetQuery.push({
         $lookup: {
           from: 'insurers',
           localField: 'clientId.insurerId',
@@ -2010,7 +2013,7 @@ const getLimitHistoryReport = async ({
       reportColumn.includes('registrationNumber') ||
       reportColumn.includes('country')
     ) {
-      query.push({
+      facetQuery.push({
         $lookup: {
           from: 'debtors',
           localField: 'debtorId',
@@ -2040,7 +2043,7 @@ const getLimitHistoryReport = async ({
       }
       return [i, 1];
     });
-    query.push({
+    facetQuery.push({
       $project: fields.reduce((obj, [key, val]) => {
         obj[key] = val;
         return obj;
@@ -2056,6 +2059,7 @@ const getLimitHistoryReport = async ({
                 parseInt(requestedQuery.limit),
             },
             { $limit: parseInt(requestedQuery.limit) },
+            ...facetQuery,
           ],
           totalCount: [
             {
