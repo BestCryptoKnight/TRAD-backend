@@ -1,8 +1,5 @@
 name: deploy-prod
-on:
-  push:
-    branches:
-      - 'master'
+on: workflow_dispatch
 
 jobs:
   deploy-on-dev:
@@ -35,7 +32,7 @@ jobs:
           PROD_SSH_USERNAME: ${{ secrets.PROD_SSH_USERNAME }}
           PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
           PROD_PROJECT_PATH: ${{ secrets.PROD_PROJECT_PATH }}
-      - name: NPM install on server
+      - name: Install node modules on server
         if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: |
           ssh -tt ${{ env.PROD_SSH_USERNAME }}@${{ env.PROD_SSH_HOST }} -p ${{ env.PROD_SSH_PORT }} "cd ${{ env.PROD_PROJECT_PATH }}; rm -r node_modules/; rm  package-lock.json;bash -ic 'npm i --only=production;'; exit;"

@@ -44,10 +44,9 @@ Get Audit Logs Entity Specific
  */
 const getAuditLogs = async ({ entityId }) => {
   try {
-    const logs = await AuditLog.find({ entityRefId: entityId })
+    return await AuditLog.find({ entityRefId: entityId })
       .select('_id logDescription createdAt')
       .lean();
-    return logs;
   } catch (e) {
     Logger.log.error('Error occurred in get audit log list ', e.message || e);
   }

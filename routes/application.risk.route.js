@@ -787,16 +787,19 @@ router.get('/modules/:applicationId', async function (req, res) {
         message: 'No application found',
       });
     }
-    const response = {};
-    response.documents = await getSpecificEntityDocumentList({
-      entityId: application._id,
-      userId: req.user._id,
-      clientId: application.clientId,
-    });
-    response.logs = await getAuditLogs({ entityId: application._id });
+    const promiseArr = [];
+    promiseArr.push(
+      getSpecificEntityDocumentList({
+        entityId: application._id,
+        userId: req.user._id,
+        clientId: application.clientId,
+      }),
+    );
+    promiseArr.push(getAuditLogs({ entityId: application._id }));
+    const [documents, logs] = await Promise.all(promiseArr);
     res.status(200).send({
       status: 'SUCCESS',
-      data: response,
+      data: { documents, logs },
     });
   } catch (e) {
     Logger.log.error(
