@@ -415,7 +415,7 @@ router.put('/generate', async function (req, res) {
             if (pdfData && pdfData.Base64EncodedData) {
               storePDFCreditReport({
                 reportId: reportDetails._id,
-                productCode,
+                productCode: req.body.productCode,
                 pdfBase64: pdfData.Base64EncodedData,
               });
             }
