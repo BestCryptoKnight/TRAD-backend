@@ -267,7 +267,14 @@ const getReportData = async ({
         }
         console.log('lookupNumber :: ', lookupNumber);
         if (!reportData && lookupNumber) {
-          reportData = await fetchCreditReport({
+          // TODO Query PDF API instead of XML API
+          // reportData = await fetchCreditReport({
+          //   productCode: reportCode,
+          //   searchField: lookupMethod,
+          //   searchValue: lookupNumber,
+          // });
+          reportData = await fetchCreditReportInPDFFormat({
+            countryCode: debtor.address.country.code,
             productCode: reportCode,
             searchField: lookupMethod,
             searchValue: lookupNumber,
@@ -275,26 +282,24 @@ const getReportData = async ({
           console.log('Report DATA', JSON.stringify(reportData, null, 3));
           if (
             reportData &&
-            reportData.Envelope.Body.Response &&
-            reportData.Envelope.Body.Response.Messages.ErrorCount &&
-            parseInt(reportData.Envelope.Body.Response.Messages.ErrorCount) ===
-              0
+            reportData.Response &&
+            reportData.Response.Messages.hasOwnProperty('ErrorCount') &&
+            parseInt(reportData.Response.Messages.ErrorCount) === 0
           ) {
             await storeReportData({
               debtorId: debtorId,
               productCode: reportCode,
               reportFrom: 'illion',
-              reportName: reportData.Envelope.Body.Response.Header.ProductName,
-              reportData: reportData.Envelope.Body.Response,
+              reportName: reportData.Response.Header.ProductName,
+              reportData: reportData,
               entityType: reportEntityType,
               clientDebtorId: clientDebtorId,
               countryCode: debtor.address.country.code,
               searchField: lookupMethod,
               searchValue: lookupNumber,
             });
-            reportData = reportData.Envelope.Body.Response;
+            reportData = reportData.Response;
             if (
-              reportData.DynamicDelinquencyScore &&
               reportData.DynamicDelinquencyScore &&
               reportData.DynamicDelinquencyScore.Score
             ) {
@@ -305,20 +310,19 @@ const getReportData = async ({
             }
           } else if (
             reportData &&
-            reportData.Envelope.Body.Response &&
-            reportData.Envelope.Body.Response.Messages.ErrorCount &&
-            parseInt(reportData.Envelope.Body.Response.Messages.ErrorCount) !==
-              0
+            reportData.Response &&
+            reportData.Response.Messages.hasOwnProperty('ErrorCount') &&
+            parseInt(reportData.Response.Messages.ErrorCount) !== 0
           ) {
             errorMessage =
-              reportData.Envelope.Body.Response.Messages.Error &&
-              reportData.Envelope.Body.Response.Messages.Error.Desc &&
-              reportData.Envelope.Body.Response.Messages.Error.Num
+              reportData.Response.Messages.Error &&
+              reportData.Response.Messages.Error.Desc &&
+              reportData.Response.Messages.Error.Num
                 ? 'Error Code: ' +
-                  reportData.Envelope.Body.Response.Messages.Error.Num +
+                  reportData.Response.Messages.Error.Num +
                   ' ' +
                   'Error Message: ' +
-                  reportData.Envelope.Body.Response.Messages.Error.Desc
+                  reportData.Response.Messages.Error.Desc
                 : errorMessage;
             reportData = null;
           }
@@ -1311,9 +1315,6 @@ const storeReportData = async ({
   reportData,
   entityType,
   clientDebtorId,
-  countryCode,
-  searchField,
-  searchValue,
 }) => {
   try {
     const date = new Date();
@@ -1326,59 +1327,46 @@ const storeReportData = async ({
       productCode,
       name: reportName,
       expiryDate,
-      creditReport: reportData,
+      creditReport: reportData.Response,
     });
     await ClientDebtor.updateOne(
       { _id: clientDebtorId },
       { currentReportId: reportData._id },
     );
-    storePDFCreditReport({
-      searchField,
-      searchValue,
-      reportId: response._id,
-      countryCode,
-      productCode,
-    });
+    if (reportData.ReportsData && reportData.ReportsData.length) {
+      pdfData = reportData.ReportsData.find(
+        (element) => element.ReportFormat === 2 && element.Base64EncodedData,
+      );
+      if (pdfData && pdfData.Base64EncodedData) {
+        storePDFCreditReport({
+          reportId: response._id,
+          productCode,
+          pdfBase64: pdfData.Base64EncodedData,
+        });
+      }
+    }
   } catch (e) {
     Logger.log.error('Error occurred in store report data ', e);
   }
 };
 
-const storePDFCreditReport = async ({
-  searchField,
-  searchValue,
-  reportId,
-  countryCode,
-  productCode,
-}) => {
+const storePDFCreditReport = async ({ reportId, productCode, pdfBase64 }) => {
   try {
-    const reportResponse = await fetchCreditReportInPDFFormat({
-      countryCode,
-      productCode,
-      searchField,
-      searchValue,
+    const buffer = Buffer.from(pdfBase64, 'base64');
+    const fileName = productCode + '-' + Date.now() + '.pdf';
+    const s3Response = await uploadFile({
+      file: buffer,
+      filePath: 'credit-reports/' + fileName,
+      fileType: 'application/pdf',
+      isPublicFile: false,
     });
-    if (reportResponse && reportResponse?.ReportsData?.[0]?.Base64EncodedData) {
-      const buffer = Buffer.from(
-        reportResponse.ReportsData[0].Base64EncodedData,
-        'base64',
-      );
-      const fileName = productCode + '-' + Date.now() + '.pdf';
-      const s3Response = await uploadFile({
-        file: buffer,
-        filePath: 'credit-reports/' + fileName,
-        fileType: 'application/pdf',
-        isPublicFile: false,
-      });
-      await CreditReport.updateOne(
-        { _id: reportId },
-        {
-          keyPath: s3Response.key || s3Response.Key,
-          originalFileName: fileName,
-        },
-      );
-    }
-    return reportResponse;
+    await CreditReport.updateOne(
+      { _id: reportId },
+      {
+        keyPath: s3Response.key || s3Response.Key,
+        originalFileName: fileName,
+      },
+    );
   } catch (e) {
     Logger.log.error('Error occurred in store pdf report data ', e);
   }

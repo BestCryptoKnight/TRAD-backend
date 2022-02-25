@@ -86,12 +86,26 @@ let processObj = (obj) => {
     if (processedKey.includes(':')) {
       processedKey = processedKey.split(':')[1];
     }
-    if (typeof obj[key] === 'object' && obj[key].length === undefined) {
+    if (
+      obj[key] &&
+      typeof obj[key] === 'object' &&
+      obj[key].length === undefined
+    ) {
       processedObject[processedKey] = processObj(obj[key]);
-      if (obj[key].hasOwnProperty('Year')) {
+      if (
+        obj[key].hasOwnProperty('Year') &&
+        (obj[key].hasOwnProperty('Month') ||
+          obj[key].hasOwnProperty('MonthSpecified')) &&
+        (obj[key].hasOwnProperty('Day') ||
+          obj[key].hasOwnProperty('DaySpecified'))
+      ) {
         processedObject[processedKey + 'Str'] = processDate(obj[key]);
       }
-    } else if (typeof obj[key] === 'object' && obj[key].length > 0) {
+    } else if (
+      obj[key] &&
+      typeof obj[key] === 'object' &&
+      obj[key].length > 0
+    ) {
       processedObject[processedKey] = [];
       obj[key].forEach((subObj) => {
         if (typeof subObj === 'object' && subObj.length === undefined) {
@@ -106,7 +120,11 @@ let processObj = (obj) => {
 };
 
 let processDate = (obj) => {
-  let dt = new Date(obj['Year'], parseInt(obj['Month']) - 1, obj['Day']);
+  let dt = new Date(
+    obj['Year'],
+    obj['Month'] ? parseInt(obj['Month']) - 1 : 0,
+    obj['Day'] ? obj['Day'] : 1,
+  );
   if (
     obj.hasOwnProperty('Hour') &&
     obj.hasOwnProperty('Minute') &&
@@ -127,8 +145,10 @@ let processIllionReport = (report) => {
       processedReport[processedKey] = processObj(report[key]);
       if (
         report[key].hasOwnProperty('Year') &&
-        report[key].hasOwnProperty('Month') &&
-        report[key].hasOwnProperty('Day')
+        (report[key].hasOwnProperty('Month') ||
+          report[key].hasOwnProperty('MonthSpecified')) &&
+        (report[key].hasOwnProperty('Day') ||
+          report[key].hasOwnProperty('DaySpecified'))
       ) {
         processedReport[processedKey + 'Str'] = processDate(report[key]);
       }
@@ -199,7 +219,7 @@ const fetchCreditReportInPDFFormat = ({
       Logger.log.info('Making a request to illion at', new Date());
       const { data } = await axios(options);
       Logger.log.info('PDF Report fetched at', new Date());
-      return resolve(data);
+      return resolve(processIllionReport(data));
     } catch (e) {
       Logger.log.error('Error occurred in fetch PDF report', e);
       return reject(e.message || e);
@@ -585,5 +605,5 @@ module.exports = {
   addEntitiesToProfile,
   getMonitoredEntities,
   removeEntitiesFromProfile,
-  fetchCreditReportInPDFFormat,
+  fetchCreditReportInPDFFormat: fetchCreditReportInPDFFormat,
 };
