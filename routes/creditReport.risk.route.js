@@ -372,6 +372,16 @@ router.put('/generate', async function (req, res) {
           message:
             'Your download request is in progress, you will be get notification for the download result',
         });
+        const notificationBody = {
+          notificationObj: {
+            type: 'REPORT_NOTIFICATION',
+            fetchStatus: '',
+            message: '',
+            debtorId: req.body.debtorId,
+          },
+          type: 'user',
+          userId: req.user._id,
+        };
         const reportData = await fetchCreditReportInPDFFormat({
           searchField,
           searchValue,
@@ -422,16 +432,9 @@ router.put('/generate', async function (req, res) {
               },
             );
           }
-          sendNotification({
-            notificationObj: {
-              type: 'REPORT_NOTIFICATION',
-              fetchStatus: 'SUCCESS',
-              message: 'Report generated successfully',
-              debtorId: req.body.debtorId,
-            },
-            type: 'user',
-            userId: req.user._id,
-          });
+          notificationBody.notificationObj.fetchStatus = 'SUCCESS';
+          notificationBody.notificationObj.message =
+            'Report generated successfully';
           await updateActiveReportInCreditLimit({
             reportDetails,
             debtorId: req.body.debtorId,
@@ -445,17 +448,10 @@ router.put('/generate', async function (req, res) {
                 ' - ' +
                 reportData.Response.Messages.Error.Desc
               : 'Unable to fetch report';
-          sendNotification({
-            notificationObj: {
-              type: 'REPORT_NOTIFICATION',
-              fetchStatus: 'ERROR',
-              message: message,
-              debtorId: req.body.debtorId,
-            },
-            type: 'user',
-            userId: req.user._id,
-          });
+          notificationBody.notificationObj.fetchStatus = 'ERROR';
+          notificationBody.notificationObj.message = message;
         }
+        sendNotification(notificationBody);
       } else {
         return res.status(400).send({
           status: 'ERROR',
