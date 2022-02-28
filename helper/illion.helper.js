@@ -594,7 +594,6 @@ const retrieveDetailedAlertList = async ({
 };
 
 module.exports = {
-  fetchCreditReport,
   createProfile,
   updateProfile,
   retrieveAlertList,
@@ -605,5 +604,5 @@ module.exports = {
   addEntitiesToProfile,
   getMonitoredEntities,
   removeEntitiesFromProfile,
-  fetchCreditReportInPDFFormat: fetchCreditReportInPDFFormat,
+  fetchCreditReportInPDFFormat,
 };

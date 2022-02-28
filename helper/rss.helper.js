@@ -234,6 +234,10 @@ const getClientById = async ({ clientId }) => {
   } catch (err) {
     Logger.log.error('Error in getting client from RSS');
     Logger.log.error(err.message || err);
+    return Promise.reject({
+      status: 'ERROR',
+      message: err.message || err,
+    });
   }
 };
 
@@ -921,7 +925,7 @@ const downloadDocument = async ({ documentId }) => {
 module.exports = {
   getClients,
   getInsurers,
-  getClientById,
+  getClientById: getClientById,
   getPolicyById,
   getClientContacts,
   getClientPolicies,

@@ -20,7 +20,7 @@ const {
   getEntityDetailsByABN,
   getEntityDetailsByNZBN,
 } = require('./../helper/abr.helper');
-const { fetchCreditReport } = require('./../helper/illion.helper');
+const { fetchCreditReportInPDFFormat } = require('./../helper/illion.helper');
 const {
   addAuditLog,
   getRegexForSearch,
@@ -401,10 +401,11 @@ router.get('/test-credentials', async function (req, res) {
         });
         break;
       case 'illion':
-        response = await fetchCreditReport({
+        response = await fetchCreditReportInPDFFormat({
           productCode: 'HXBCA',
           searchValue: 51069691676,
           searchField: 'ABN',
+          countryCode: 'AUS',
         });
         break;
       default:
@@ -413,9 +414,6 @@ router.get('/test-credentials', async function (req, res) {
           messageCode: 'BAD_REQUEST',
           message: 'Please pass correct fields',
         });
-    }
-    if (response && response.status === 'ERROR') {
-      res.status(400).send(response);
     }
     if (response) {
       res.status(200).send({
@@ -426,10 +424,13 @@ router.get('/test-credentials', async function (req, res) {
       res.status(400).send({ status: 'SUCCESS', message: 'Wrong credentials' });
     }
   } catch (e) {
-    Logger.log.error('Error occurred in test rss token', e.message || e);
+    Logger.log.error(
+      `Error occurred in testing ${req.query.apiName} credentials`,
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
+      message: e.message || 'Wrong credentials.',
     });
   }
 });
