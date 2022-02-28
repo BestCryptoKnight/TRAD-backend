@@ -12,10 +12,7 @@ const ClientDebtor = mongoose.model('client-debtor');
  * Local Imports
  * */
 const Logger = require('./../services/logger');
-const {
-  fetchCreditReport,
-  fetchCreditReportInPDFFormat,
-} = require('./illion.helper');
+const { fetchCreditReportInPDFFormat } = require('./illion.helper');
 const {
   getEntityDetailsByABN,
   resolveEntityType,

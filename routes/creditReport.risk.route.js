@@ -13,10 +13,7 @@ const DebtorDirector = mongoose.model('debtor-director');
  * Local Imports
  * */
 const Logger = require('./../services/logger');
-const {
-  fetchCreditReport,
-  fetchCreditReportInPDFFormat,
-} = require('./../helper/illion.helper');
+const { fetchCreditReportInPDFFormat } = require('./../helper/illion.helper');
 const StaticFile = require('./../static-files/moduleColumn');
 const {
   uploadFile,
