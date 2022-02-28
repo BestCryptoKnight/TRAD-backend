@@ -172,7 +172,7 @@ clientUserSchema.methods.comparePassword = function (
   return new Promise((resolve, reject) => {
     bcrypt.compare(oldPassword, encryptedPassword, function (err, isMatch) {
       if (err) {
-        console.log('err:: ', err);
+        Logger.log.error('Error in decrypting password', err.message || err);
         return reject(err);
       }
       return resolve(isMatch);

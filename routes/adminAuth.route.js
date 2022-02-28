@@ -433,7 +433,6 @@ router.post('/set-password', async (req, res) => {
       });
     } else {
       try {
-        console.log('decoded', decoded);
         let user = await User.findById(decoded._id);
         if (!user) {
           return res.status(400).send({

@@ -72,8 +72,8 @@ const fetchCreditReport = ({ productCode, searchField, searchValue }) => {
       const processedReport = processIllionReport(jsonData);
       return resolve(processedReport);
     } catch (e) {
-      console.log('Error in getting entity details from lookup');
-      console.log(e.message || e);
+      Logger.log.error('Error in getting entity details from lookup');
+      Logger.log.error(e.message || e);
       return reject(e);
     }
   });

@@ -147,7 +147,6 @@ const checkForIllionProfile = async () => {
           alertIds,
           profileName: organization.name,
         });
-        console.log('illion profile', response);
         if (response && response.profile) {
           await Organization.updateOne(
             { isDeleted: false },

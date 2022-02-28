@@ -466,7 +466,6 @@ router.get('/', async function (req, res) {
         ? tasks[0]['paginatedResult']
         : tasks;
       response.forEach((task) => {
-        console.log('task', task);
         if (task.entityType) {
           task.entityType =
             task.entityType.charAt(0).toUpperCase() + task.entityType.slice(1);

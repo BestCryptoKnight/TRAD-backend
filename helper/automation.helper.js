@@ -126,7 +126,6 @@ const identifyReport = async ({ matrix, creditLimit, reportType, country }) => {
         break;
       }
     }
-    console.log('identifiedPriceRange', identifiedPriceRange);
     const identifiedReportDetails =
       reportType === 'individual'
         ? identifiedPriceRange.australianIndividuals
@@ -170,7 +169,6 @@ const getReportData = async ({
     let reportEntityType = 'debtor';
     let isForeignCountry = false;
     let errorMessage = 'Unable to generate a report';
-    console.log('reportCode', reportCode);
     if (type === 'individual') {
       //TODO add for euifax
     } else if (type === 'company' && reportCode) {
@@ -262,7 +260,6 @@ const getReportData = async ({
               ? reportData.creditReport
               : null;
         }
-        console.log('lookupNumber :: ', lookupNumber);
         if (!reportData && lookupNumber) {
           // TODO Query PDF API instead of XML API
           // reportData = await fetchCreditReport({
@@ -276,7 +273,6 @@ const getReportData = async ({
             searchField: lookupMethod,
             searchValue: lookupNumber,
           });
-          console.log('Report DATA', JSON.stringify(reportData, null, 3));
           if (
             reportData &&
             reportData.Response &&
@@ -336,8 +332,6 @@ const getReportData = async ({
 
 const getEntityData = async ({ country, businessNumber }) => {
   try {
-    console.log('businessNumber', businessNumber);
-    console.log('country', country);
     let response = {};
     if (country === 'AUS') {
       const entityData = await getEntityDetailsByABN({
@@ -356,7 +350,6 @@ const getEntityData = async ({ country, businessNumber }) => {
       const entityData = await getEntityDetailsByNZBN({
         searchString: businessNumber,
       });
-      console.log('entityData', entityData);
       if (entityData) {
         response['entityType'] = {
           entityTypeCode: entityData['entityTypeCode'],
@@ -378,7 +371,6 @@ const getEntityData = async ({ country, businessNumber }) => {
 
 const insurerQBE = async ({ application, type, policy }) => {
   try {
-    console.log('report for :', type);
     let blockers = [];
     const {
       identifiedReportDetails,
@@ -390,8 +382,6 @@ const insurerQBE = async ({ application, type, policy }) => {
       country: application.debtorId.address.country.code,
       reportType: type,
     });
-    console.log('report code ', reportCode);
-    console.log('identifiedReportDetails ', identifiedReportDetails);
     if (!reportCode) {
       blockers.push('Unable to get report code');
     }
@@ -414,9 +404,6 @@ const insurerQBE = async ({ application, type, policy }) => {
         blockers.push(response.errorMessage);
       }
     }
-    console.log('NEXT STEP ::::::::: ');
-    console.log('reportData', reportData);
-    console.log('entityData', JSON.stringify(entityData, null, 2));
     blockers = await checkGuidelines({
       guidelines: qbe.generalTerms,
       application,
@@ -431,7 +418,6 @@ const insurerQBE = async ({ application, type, policy }) => {
       reportData: reportData ? reportData : null,
       blockers,
     });
-    console.log('blockers', blockers);
     return blockers;
   } catch (e) {
     Logger.log.error('Error occurred in insurer QBE ', e);
@@ -440,7 +426,6 @@ const insurerQBE = async ({ application, type, policy }) => {
 
 const insurerBond = async ({ application, type, policy }) => {
   try {
-    console.log('report for :', type);
     let blockers = [];
     const {
       identifiedReportDetails,
@@ -452,8 +437,6 @@ const insurerBond = async ({ application, type, policy }) => {
       country: application.debtorId.address.country.code,
       reportType: type,
     });
-    console.log('report code ', reportCode);
-    console.log('identifiedReportDetails ', identifiedReportDetails);
     if (!reportCode) {
       blockers.push('Unable to get report code');
     }
@@ -476,9 +459,6 @@ const insurerBond = async ({ application, type, policy }) => {
         blockers.push(response.errorMessage);
       }
     }
-    console.log('NEXT STEP ::::::::: ');
-    console.log('reportData', reportData);
-    console.log('entityData', JSON.stringify(entityData, null, 2));
     blockers = await checkGuidelines({
       guidelines: qbe.generalTerms,
       application,
@@ -501,7 +481,6 @@ const insurerBond = async ({ application, type, policy }) => {
 
 const insurerAtradius = async ({ application, type, policy }) => {
   try {
-    console.log('report for :', type);
     let blockers = [];
     const {
       identifiedReportDetails,
@@ -513,8 +492,6 @@ const insurerAtradius = async ({ application, type, policy }) => {
       country: application.debtorId.address.country.code,
       reportType: type,
     });
-    console.log('report code ', reportCode);
-    console.log('identifiedReportDetails ', identifiedReportDetails);
     if (!reportCode) {
       blockers.push('Unable to get report code');
     }
@@ -537,9 +514,6 @@ const insurerAtradius = async ({ application, type, policy }) => {
         blockers.push(response.errorMessage);
       }
     }
-    console.log('NEXT STEP ::::::::: ');
-    console.log('reportData', reportData);
-    console.log('entityData', JSON.stringify(entityData, null, 2));
     blockers = await checkGuidelines({
       guidelines: qbe.generalTerms,
       application,
@@ -562,7 +536,6 @@ const insurerAtradius = async ({ application, type, policy }) => {
 
 const insurerCoface = async ({ application, type, policy }) => {
   try {
-    console.log('report for :', type);
     let blockers = [];
     const {
       identifiedReportDetails,
@@ -574,8 +547,6 @@ const insurerCoface = async ({ application, type, policy }) => {
       country: application.debtorId.address.country.code,
       reportType: type,
     });
-    console.log('report code ', reportCode);
-    console.log('identifiedReportDetails ', identifiedReportDetails);
     if (!reportCode) {
       blockers.push('Unable to get report code');
     }
@@ -598,9 +569,6 @@ const insurerCoface = async ({ application, type, policy }) => {
         blockers.push(response.errorMessage);
       }
     }
-    console.log('NEXT STEP ::::::::: ');
-    console.log('reportData', reportData);
-    console.log('entityData', JSON.stringify(entityData, null, 2));
     blockers = await checkGuidelines({
       guidelines: qbe.generalTerms,
       application,
@@ -623,7 +591,6 @@ const insurerCoface = async ({ application, type, policy }) => {
 
 const insurerEuler = async ({ application, type, policy }) => {
   try {
-    console.log('report for :', type);
     let blockers = [];
     const {
       identifiedReportDetails,
@@ -635,8 +602,6 @@ const insurerEuler = async ({ application, type, policy }) => {
       country: application.debtorId.address.country.code,
       reportType: type,
     });
-    console.log('report code ', reportCode);
-    console.log('identifiedReportDetails ', identifiedReportDetails);
     if (!reportCode) {
       blockers.push('Unable to get report code');
     }
@@ -659,9 +624,6 @@ const insurerEuler = async ({ application, type, policy }) => {
         blockers.push(response.errorMessage);
       }
     }
-    console.log('NEXT STEP ::::::::: ');
-    console.log('reportData', reportData);
-    console.log('entityData', JSON.stringify(entityData, null, 2));
     blockers = await checkGuidelines({
       guidelines: qbe.generalTerms,
       application,
@@ -684,7 +646,6 @@ const insurerEuler = async ({ application, type, policy }) => {
 
 const insurerTrad = async ({ application, type, policy }) => {
   try {
-    console.log('report for :', type);
     let blockers = [];
     const {
       identifiedReportDetails,
@@ -696,8 +657,6 @@ const insurerTrad = async ({ application, type, policy }) => {
       country: application.debtorId.address.country.code,
       reportType: type,
     });
-    console.log('report code ', reportCode);
-    console.log('identifiedReportDetails ', identifiedReportDetails);
     if (!reportCode) {
       blockers.push('Unable to get report code');
     }
@@ -720,9 +679,6 @@ const insurerTrad = async ({ application, type, policy }) => {
         blockers.push(response.errorMessage);
       }
     }
-    console.log('NEXT STEP ::::::::: ');
-    console.log('reportData', reportData);
-    console.log('entityData', JSON.stringify(entityData, null, 2));
     blockers = await checkGuidelines({
       guidelines: qbe.generalTerms,
       application,
@@ -791,7 +747,6 @@ const checkForEntityRegistration = async ({
             return i;
           }
         });
-        console.log('entityRegistration ', entityRegistration);
         if (!entityRegistration) {
           response.isBlocker = true;
         }
@@ -856,7 +811,6 @@ const checkForGSTRegistration = async ({ goodsAndServicesTax, country }) => {
             return i;
           }
         });
-        console.log('entityGSTRegistration ', entityGSTRegistration);
         if (!entityGSTRegistration) {
           response.isBlocker = true;
         }
@@ -892,7 +846,6 @@ const checkForEntityIncorporated = async ({ entityStatus, value, country }) => {
     let today = new Date();
     today = today.setMonth(today.getMonth() - value);
     const yearBefore = new Date(today);
-    console.log('yearBefore', yearBefore);
     if (country === 'AUS') {
       if (
         entityStatus &&
@@ -912,7 +865,6 @@ const checkForEntityIncorporated = async ({ entityStatus, value, country }) => {
             return i;
           }
         });
-        console.log('entityRegistration ', entityRegistration);
         if (
           new Date(entityRegistration.effectiveFrom) > yearBefore ||
           entityRegistration.entityStatusCode.toLowerCase() !== 'active'
@@ -922,8 +874,6 @@ const checkForEntityIncorporated = async ({ entityStatus, value, country }) => {
       }
     } else {
       if (entityStatus && entityStatus.registrationDate) {
-        console.log(entityStatus.registrationDate, 'registrationDate');
-        console.log(new Date(entityStatus.registrationDate) > yearBefore);
         if (new Date(entityStatus.registrationDate) > yearBefore) {
           response.isBlocker = true;
         }

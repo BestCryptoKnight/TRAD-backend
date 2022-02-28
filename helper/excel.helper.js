@@ -3,6 +3,7 @@ const ExcelJS = require('exceljs');
 const { numberWithCommas } = require('./report.helper');
 const config = require('./../config');
 const { getBase64 } = require('./pdf-generator.helper');
+const Logger = require('./../services/logger');
 
 const generateExcel = ({ data, reportFor, headers, filter, title }) => {
   return new Promise(async (resolve, reject) => {
@@ -180,7 +181,10 @@ const addColumnsForApplicationList = async ({
     );
     await addDataForTable({ data, headers, worksheet });
   } catch (e) {
-    console.log('Error occurred in add limit list data', e);
+    Logger.log.error(
+      'Error occurred in addColumnsForApplicationList',
+      e.message || e,
+    );
   }
 };
 
@@ -213,7 +217,7 @@ const addColumnsForLimitList = async ({ data, worksheet, headers, filter }) => {
     );
     await addDataForTable({ data, headers, worksheet });
   } catch (e) {
-    console.log('Error occurred in add limit list data', e);
+    Logger.log.error('Error occurred in add limit list data', e.message || e);
   }
 };
 
@@ -245,7 +249,7 @@ const addColumnsForPendingApplicationList = async ({
     );
     await addDataForTable({ data, headers, worksheet });
   } catch (e) {
-    console.log('Error occurred in add limit list data', e);
+    Logger.log.error('Error occurred in add limit list data', e.message || e);
   }
 };
 
@@ -277,7 +281,7 @@ const addColumnsForUsageReport = async ({
     );
     await addDataForTable({ data, headers, worksheet });
   } catch (e) {
-    console.log('Error occurred in add limit list data', e);
+    Logger.log.error('Error occurred in add limit list data', e.message || e);
   }
 };
 
@@ -318,7 +322,7 @@ const addColumnsForReviewReport = async ({
     );
     await addDataForTable({ data, headers, worksheet });
   } catch (e) {
-    console.log('Error occurred in add limit list data', e);
+    Logger.log.error('Error occurred in add limit list data', e.message || e);
   }
 };
 
@@ -361,7 +365,10 @@ const addColumnsForUsagePerClientReport = async ({
     );
     await addDataForTable({ data, headers, worksheet });
   } catch (e) {
-    console.log('Error occurred in add usage per client report data', e);
+    Logger.log.error(
+      'Error occurred in add usage per client report data',
+      e.message || e,
+    );
   }
 };
 
@@ -401,7 +408,10 @@ const addColumnsForLimitHistoryReport = async ({
     );
     await addDataForTable({ data, headers, worksheet });
   } catch (e) {
-    console.log('Error occurred in add usage per client report data', e);
+    Logger.log.error(
+      'Error occurred in add usage per client report data',
+      e.message || e,
+    );
   }
 };
 
@@ -438,7 +448,7 @@ const addColumnsForCreditLimitList = async ({
     );
     await addDataForTable({ data, headers, worksheet });
   } catch (e) {
-    console.log('Error occurred in add limit list data', e);
+    Logger.log.error('Error occurred in add limit list data', e.message || e);
   }
 };
 
@@ -467,7 +477,7 @@ const addColumnsForTaskList = async ({ data, worksheet, headers, filter }) => {
     );
     await addDataForTable({ data, headers, worksheet });
   } catch (e) {
-    console.log('Error occurred in add task list data', e);
+    Logger.log.error('Error occurred in add task list data', e.message || e);
   }
 };
 
@@ -558,7 +568,7 @@ const addDataForTable = ({ data, worksheet, headers }) => {
       });
     });*/
   } catch (e) {
-    console.log('Error occurred in add limit list data', e);
+    Logger.log.error('Error occurred in add limit list data', e.message || e);
   }
 };
 

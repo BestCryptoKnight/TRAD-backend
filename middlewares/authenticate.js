@@ -73,16 +73,13 @@ let checkModuleAccess = (req, res, next) => {
     let userModule = req.user.moduleAccess
       .filter((userModule) => userModule.name === moduleName)
       .shift();
-    console.log(userModule);
     if (
       (!userModule || userModule?.accessTypes?.length === 0) &&
       req.query.requestFrom
     ) {
-      console.log('request-from', req.query.requestFrom);
       userModule = req.user.moduleAccess
         .filter((userModule) => userModule.name === req.query.requestFrom)
         .shift();
-      console.log('userModule', userModule);
     }
     if (userModule) {
       req.accessTypes = userModule.accessTypes;

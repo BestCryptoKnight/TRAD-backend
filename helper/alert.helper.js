@@ -68,7 +68,10 @@ const retrieveAlertListFromIllion = async ({ startDate, endDate }) => {
           illionAlertProfile: organization.illionAlertProfile,
           integration: organization.integration,
         });
-        console.log('detailedResponse', detailedResponse);
+        Logger.log.info(
+          'Detailed Alert Response',
+          JSON.stringify(detailedResponse, null, 2),
+        );
         if (
           detailedResponse?.detailedAlerts &&
           detailedResponse.detailedAlerts.length !== 0
@@ -508,9 +511,7 @@ const addEntitiesToAlertProfile = async ({
         entityList,
         action,
       });
-      console.log('Awaiting........................');
       entityList = [];
-      console.log('Reset array.................');
       return responseData;
     } else {
       return clientDebtorId;
@@ -728,7 +729,6 @@ const checkForEntityInProfile = async ({
       }
     }
     if (entityList.length !== 0) {
-      console.log('entityList ::', entityList);
       updateEntitiesToAlertProfile({ entityList, action });
     }
   } catch (e) {
@@ -776,7 +776,10 @@ const mapEntityToAlert = async ({ alertList }) => {
       promises.push(Alert.create(alertList[i]));
     }
     const response = await Promise.all(promises);
-    console.log(JSON.stringify(response, null, 3));
+    Logger.log.info(
+      'Entity mapped to Alert Profile',
+      JSON.stringify(response, null, 2),
+    );
     return response;
   } catch (e) {
     Logger.log.error('Error occurred in map entity to alerts');
@@ -846,7 +849,6 @@ const createTaskOnAlert = async ({ alertList }) => {
         };
       },
     );
-    console.log(filteredData, 'filteredData');
     const date = new Date();
     for (let i = 0; i < filteredData.length; i++) {
       const data = {

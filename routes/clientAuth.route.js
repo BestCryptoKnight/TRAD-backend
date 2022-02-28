@@ -219,7 +219,7 @@ router.post('/forget-password', async (req, res) => {
         },
         mailFor: 'clientForgotPassword',
       };
-      console.log(mailObj);
+      Logger.log.info(mailObj);
       await MailHelper.sendMail(mailObj);
       res.status(200).send({
         status: 'SUCCESS',

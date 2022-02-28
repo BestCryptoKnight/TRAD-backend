@@ -551,7 +551,6 @@ const getLimitListReport = async ({
     }
     aggregationQuery.unshift({ $match: queryFilter });
 
-    console.log(JSON.stringify(aggregationQuery, null, 2));
     const clientDebtors = await ClientDebtor.aggregate(
       aggregationQuery,
     ).allowDiskUse(true);

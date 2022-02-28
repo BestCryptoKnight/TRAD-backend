@@ -137,7 +137,6 @@ const createDebtor = async ({
 }) => {
   try {
     let update = {};
-    console.log('isDebtorExists::', isDebtorExists);
     if (requestBody.address && Object.keys(requestBody.address).length !== 0) {
       update.address = {};
       update.address.property = requestBody.address.property
@@ -609,7 +608,6 @@ const checkForExpiringReports = async ({ startDate, endDate }) => {
           };
         },
       );
-      console.log(filteredData, 'filteredData');
       for (let i = 0; i < filteredData.length; i++) {
         const notification = await addNotification({
           userId: filteredData[i].riskAnalystId,
@@ -680,7 +678,6 @@ const checkForReviewDebtor = async ({ endDate }) => {
         };
       },
     );
-    console.log(filteredData, 'filteredData');
     for (let i = 0; i < filteredData.length; i++) {
       const notification = await addNotification({
         userId: filteredData[i].riskAnalystId,
@@ -723,7 +720,6 @@ const updateEntitiesToAlertProfile = async ({ entityList, action }) => {
       i.lookupMethod = lookupType[i.lookupMethod];
       i.profileId = organization.illionAlertProfile.profileId;
     });
-    console.log('entityList :: ', entityList);
     if (action === 'add') {
       return await addEntitiesToProfile({
         entities: entityList,
