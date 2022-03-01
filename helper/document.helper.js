@@ -51,7 +51,6 @@ const uploadDocument = ({
           'documents/' + entityType + '/' + Date.now() + '-' + originalFileName,
         fileType: mimeType,
       });
-      console.log('s3Response : ', s3Response);
       let document = await Document.create({
         keyPath: s3Response.key || s3Response.Key,
         documentTypeId,

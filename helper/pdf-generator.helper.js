@@ -11,6 +11,7 @@ const moment = require('moment-timezone');
  * Local Imports
  * */
 const config = require('../config');
+const Logger = require('./../services/logger');
 const { numberWithCommas } = require('./report.helper');
 
 const generateDecisionLetter = async ({
@@ -327,7 +328,7 @@ const getBase64 = async (url) => {
     let raw = Buffer.from(image.data).toString('base64');
     return 'data:' + image.headers['content-type'] + ';base64,' + raw;
   } catch (e) {
-    console.log('Error occurred in get base 64', e);
+    Logger.log.error('Error occurred in get base 64', e.message || e);
   }
 };
 

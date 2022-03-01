@@ -815,7 +815,6 @@ const downloadDecisionLetter = async ({ creditLimitId }) => {
       })
       .populate('activeApplicationId')
       .lean();
-    console.log(clientDebtor);
     let bufferData;
     if (!clientDebtor?.isFromOldSystem) {
       /* } else {*/
@@ -860,7 +859,6 @@ const downloadDecisionLetter = async ({ creditLimitId }) => {
         response.registrationNumber =
           clientDebtor?.debtorId?.registrationNumber;
       }
-      console.log('------------------------------', response);
       bufferData = await generateDecisionLetter(response);
     }
     return {
@@ -890,7 +888,6 @@ const downloadDecisionLetterFromApplication = async ({ applicationId }) => {
         select: 'entityName registrationNumber abn acn address tradingName',
       })
       .lean();
-    console.log(application);
     let bufferData;
     if (!application?.isApprovedFromOldSystem) {
       const response = {
@@ -928,7 +925,6 @@ const downloadDecisionLetterFromApplication = async ({ applicationId }) => {
       } else {
         response.registrationNumber = application?.debtorId?.registrationNumber;
       }
-      console.log('------------------------------', response);
       bufferData = await generateDecisionLetter(response);
     }
     return {
@@ -968,11 +964,6 @@ const updateActiveReportInCreditLimit = async ({ reportDetails, debtorId }) => {
           reportDetails.productCode,
         )
       ) {
-        console.log('reportDetails.productCode', reportDetails.productCode);
-        console.log(
-          'activeCreditLimit.currentReportId',
-          activeCreditLimit.currentReportId,
-        );
         await ClientDebtor.updateMany(
           {
             isActive: true,
