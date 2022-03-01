@@ -5,7 +5,6 @@ const express = require('express');
 const router = express.Router();
 let mongoose = require('mongoose');
 let Organization = mongoose.model('organization');
-const AuditLog = mongoose.model('audit-log');
 const DocumentType = mongoose.model('document-type');
 const User = mongoose.model('user');
 
@@ -15,7 +14,7 @@ const User = mongoose.model('user');
 const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
 const { getAccessBaseUserList } = require('./../helper/user.helper');
-const { getClientById } = require('./../helper/rss.helper');
+const { getClients } = require('./../helper/rss.helper');
 const {
   getEntityDetailsByABN,
   getEntityDetailsByNZBN,
@@ -388,17 +387,25 @@ router.get('/test-credentials', async function (req, res) {
   }
   try {
     let response;
+    let areCredentialsValid = false;
     switch (req.query.apiName) {
       case 'rss':
-        response = await getClientById({ clientId: 8869 });
+        response = await getClients({ searchKeyword: '' });
+        areCredentialsValid = response && Array.isArray(response);
         break;
       case 'abn':
         response = await getEntityDetailsByABN({ searchString: 51069691676 });
+        areCredentialsValid =
+          response &&
+          response.response &&
+          response.response.businessEntity202001 &&
+          !response.response.exception;
         break;
       case 'nzbn':
         response = await getEntityDetailsByNZBN({
           searchString: 9429040933108,
         });
+        areCredentialsValid = true;
         break;
       case 'illion':
         response = await fetchCreditReportInPDFFormat({
@@ -407,6 +414,8 @@ router.get('/test-credentials', async function (req, res) {
           searchField: 'ABN',
           countryCode: 'AUS',
         });
+        areCredentialsValid =
+          response?.Status && !response.Status.Error && response.Status.Success;
         break;
       default:
         return res.status(400).send({
@@ -415,7 +424,7 @@ router.get('/test-credentials', async function (req, res) {
           message: 'Please pass correct fields',
         });
     }
-    if (response) {
+    if (areCredentialsValid) {
       res.status(200).send({
         status: 'SUCCESS',
         message: 'Credentials tested successfully',
