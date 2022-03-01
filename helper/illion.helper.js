@@ -141,7 +141,11 @@ let processIllionReport = (report) => {
     if (processedKey.includes(':')) {
       processedKey = processedKey.split(':')[1];
     }
-    if (typeof report[key] === 'object' && report[key].length === undefined) {
+    if (
+      report[key] &&
+      typeof report[key] === 'object' &&
+      report[key].length === undefined
+    ) {
       processedReport[processedKey] = processObj(report[key]);
       if (
         report[key].hasOwnProperty('Year') &&
