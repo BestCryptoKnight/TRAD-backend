@@ -275,48 +275,41 @@ const getReportData = async ({
           });
           if (
             reportData &&
-            reportData.Response &&
-            reportData.Response.Messages.hasOwnProperty('ErrorCount') &&
-            parseInt(reportData.Response.Messages.ErrorCount) === 0
+            reportData.Status &&
+            reportData.Status.hasOwnProperty('Success') &&
+            reportData.Status.hasOwnProperty('Error')
           ) {
-            await storeReportData({
-              debtorId: debtorId,
-              productCode: reportCode,
-              reportFrom: 'illion',
-              reportName: reportData.Response.Header.ProductName,
-              reportData: reportData,
-              entityType: reportEntityType,
-              clientDebtorId: clientDebtorId,
-              countryCode: debtor.address.country.code,
-              searchField: lookupMethod,
-              searchValue: lookupNumber,
-            });
-            reportData = reportData.Response;
-            if (
-              reportData.DynamicDelinquencyScore &&
-              reportData.DynamicDelinquencyScore.Score
-            ) {
-              await Debtor.updateOne(
-                { _id: debtor._id },
-                { riskRating: reportData.DynamicDelinquencyScore.Score },
-              );
+            if (reportData.Status.Success && !reportData.Status.Error) {
+              await storeReportData({
+                debtorId: debtorId,
+                productCode: reportCode,
+                reportFrom: 'illion',
+                reportName: reportData.Response.Header.ProductName,
+                reportData: reportData,
+                entityType: reportEntityType,
+                clientDebtorId: clientDebtorId,
+                countryCode: debtor.address.country.code,
+                searchField: lookupMethod,
+                searchValue: lookupNumber,
+              });
+              reportData = reportData.Response;
+              if (
+                reportData.DynamicDelinquencyScore &&
+                reportData.DynamicDelinquencyScore.Score
+              ) {
+                await Debtor.updateOne(
+                  { _id: debtor._id },
+                  { riskRating: reportData.DynamicDelinquencyScore.Score },
+                );
+              }
+            } else if (!reportData.Status.Success && reportData.Status.Error) {
+              errorMessage =
+                reportData.Status.ErrorMessage ||
+                'Error in fetching Credit Report';
+              reportData = null;
             }
-          } else if (
-            reportData &&
-            reportData.Response &&
-            reportData.Response.Messages.hasOwnProperty('ErrorCount') &&
-            parseInt(reportData.Response.Messages.ErrorCount) !== 0
-          ) {
-            errorMessage =
-              reportData.Response.Messages.Error &&
-              reportData.Response.Messages.Error.Desc &&
-              reportData.Response.Messages.Error.Num
-                ? 'Error Code: ' +
-                  reportData.Response.Messages.Error.Num +
-                  ' ' +
-                  'Error Message: ' +
-                  reportData.Response.Messages.Error.Desc
-                : errorMessage;
+          } else {
+            errorMessage = 'Error in fetching Credit Report';
             reportData = null;
           }
         }
