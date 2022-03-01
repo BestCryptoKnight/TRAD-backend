@@ -421,7 +421,6 @@ const getApplicationList = async ({
 
     if (response && response.length !== 0) {
       response.forEach((application) => {
-        // console.log('application',application)
         if (applicationColumn.includes('entityType')) {
           application.entityType = formatString(
             application.debtorId.entityType,
@@ -1078,7 +1077,6 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
             : ciPolicy && ciPolicy.creditChecks
             ? ciPolicy.creditChecks
             : 0;
-        console.log(noOfCreditChecks, 'noOfCreditChecks');
         const count = await Application.countDocuments({
           clientId: application.clientId._id,
           status: {
@@ -1090,7 +1088,6 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
           },
           limitType: { $eq: 'CREDIT_CHECK' },
         }).exec();
-        console.log('count', count);
         if (count > parseInt(noOfCreditChecks)) {
           continueWithAutomation = false;
           blockers.push('Client has used all Credit checks');
@@ -1108,7 +1105,6 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
             : rmpPolicy.excess
             ? parseInt(rmpPolicy.excess)
             : '';
-          console.log('discretionaryLimit ', discretionaryLimit);
         }
         if (
           discretionaryLimit &&
@@ -1131,14 +1127,11 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
       blockers = response.blockers;
       type = response.type;
     }
-    console.log('continueWithAutomation', continueWithAutomation);
-    console.log('blockers', blockers);
     let identifiedInsurer;
     if (continueWithAutomation && application?.clientId?.insurerId?.name) {
       identifiedInsurer = await identifyInsurer({
         insurerName: application.clientId.insurerId.name,
       });
-      console.log('identifiedInsurer ', identifiedInsurer);
       let response;
       if (!identifiedInsurer) {
         blockers.push('No insurer found');
@@ -1579,7 +1572,6 @@ const sendDecisionLetter = async ({
       } else {
         response.approvalStatus = reason;
       }
-      console.log('response', response);
       const bufferData = await generateDecisionLetter(response);
       mailObj.attachments.push({
         content: bufferData,

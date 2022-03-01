@@ -13,10 +13,7 @@ const DebtorDirector = mongoose.model('debtor-director');
  * Local Imports
  * */
 const Logger = require('./../services/logger');
-const {
-  fetchCreditReport,
-  fetchCreditReportInPDFFormat,
-} = require('./../helper/illion.helper');
+const { fetchCreditReportInPDFFormat } = require('./../helper/illion.helper');
 const StaticFile = require('./../static-files/moduleColumn');
 const {
   uploadFile,
@@ -26,6 +23,7 @@ const { sendNotification } = require('./../helper/socket.helper');
 const {
   updateActiveReportInCreditLimit,
 } = require('./../helper/client-debtor.helper');
+const { storePDFCreditReport } = require('./../helper/automation.helper');
 
 /**
  * Get Column Names
@@ -371,24 +369,27 @@ router.put('/generate', async function (req, res) {
           message:
             'Your download request is in progress, you will be get notification for the download result',
         });
-        const [reportData, pdfReport] = await Promise.all([
-          fetchCreditReport({
-            productCode: req.body.productCode,
-            searchField,
-            searchValue,
-          }),
-          fetchCreditReportInPDFFormat({
-            searchField,
-            searchValue,
-            countryCode: debtor.address.country.code,
-            productCode: req.body.productCode,
-          }),
-        ]);
+        const notificationBody = {
+          notificationObj: {
+            type: 'REPORT_NOTIFICATION',
+            fetchStatus: '',
+            message: '',
+            debtorId: req.body.debtorId,
+          },
+          type: 'user',
+          userId: req.user._id,
+        };
+        const reportData = await fetchCreditReportInPDFFormat({
+          searchField,
+          searchValue,
+          countryCode: debtor.address.country.code,
+          productCode: req.body.productCode,
+        });
         if (
           reportData &&
-          reportData.Envelope.Body.Response &&
-          reportData.Envelope.Body.Response.Messages.ErrorCount &&
-          parseInt(reportData.Envelope.Body.Response.Messages.ErrorCount) === 0
+          reportData.Response &&
+          reportData.Response.Messages.hasOwnProperty('ErrorCount') &&
+          parseInt(reportData.Response.Messages.ErrorCount) === 0
         ) {
           const date = new Date();
           let expiryDate = new Date(date.setMonth(date.getMonth() + 12));
@@ -396,86 +397,58 @@ router.put('/generate', async function (req, res) {
           const response = {
             entityId: entityId,
             productCode: req.body.productCode,
-            creditReport: reportData.Envelope.Body.Response,
+            creditReport: reportData.Response,
             reportProvider: 'illion',
             entityType: entityType,
-            name: reportData.Envelope.Body.Response.Header.ProductName,
+            name: reportData.Response.Header.ProductName,
             expiryDate: expiryDate,
           };
-          if (pdfReport?.Status?.Success) {
-            const buffer = Buffer.from(
-              pdfReport?.ReportsData?.[0]?.Base64EncodedData,
-              'base64',
-            );
-            const fileName = req.body.productCode + '-' + Date.now() + '.pdf';
-            const s3Response = await uploadFile({
-              file: buffer,
-              filePath: 'credit-reports/' + fileName,
-              fileType: 'application/pdf',
-              isPublicFile: false,
-            });
-            response.keyPath = s3Response.key || s3Response.Key;
-            response.originalFileName = fileName;
-          }
           const reportDetails = await CreditReport.create(response);
-          //TODO update in client-debtor
+          if (reportData.ReportsData && reportData.ReportsData.length) {
+            pdfData = reportData.ReportsData.find(
+              (element) =>
+                element.ReportFormat === 2 && element.Base64EncodedData,
+            );
+            if (pdfData && pdfData.Base64EncodedData) {
+              storePDFCreditReport({
+                reportId: reportDetails._id,
+                productCode: req.body.productCode,
+                pdfBase64: pdfData.Base64EncodedData,
+              });
+            }
+          }
           if (
-            reportData.Envelope.Body.Response.DynamicDelinquencyScore &&
-            reportData.Envelope.Body.Response.DynamicDelinquencyScore &&
-            reportData.Envelope.Body.Response.DynamicDelinquencyScore.Score
+            reportData.Response.DynamicDelinquencyScore &&
+            reportData.Response.DynamicDelinquencyScore &&
+            reportData.Response.DynamicDelinquencyScore.Score
           ) {
             await Debtor.updateOne(
               { _id: debtor._id },
               {
-                riskRating:
-                  reportData.Envelope.Body.Response.DynamicDelinquencyScore
-                    .Score,
+                riskRating: reportData.Response.DynamicDelinquencyScore.Score,
               },
             );
           }
-          /* res.status(200).send({
-            status: 'SUCCESS',
-            data: 'Report generated successfully',
-          });*/
-          sendNotification({
-            notificationObj: {
-              type: 'REPORT_NOTIFICATION',
-              fetchStatus: 'SUCCESS',
-              message: 'Report generated successfully',
-              debtorId: req.body.debtorId,
-            },
-            type: 'user',
-            userId: req.user._id,
-          });
+          notificationBody.notificationObj.fetchStatus = 'SUCCESS';
+          notificationBody.notificationObj.message =
+            'Report generated successfully';
           await updateActiveReportInCreditLimit({
             reportDetails,
             debtorId: req.body.debtorId,
           });
         } else {
           const message =
-            reportData.Envelope.Body.Response.Messages.Error &&
-            reportData.Envelope.Body.Response.Messages.Error.Desc &&
-            reportData.Envelope.Body.Response.Messages.Error.Num
-              ? reportData.Envelope.Body.Response.Messages.Error.Num +
+            reportData.Response.Messages.Error &&
+            reportData.Response.Messages.Error.Desc &&
+            reportData.Response.Messages.Error.Num
+              ? reportData.Response.Messages.Error.Num +
                 ' - ' +
-                reportData.Envelope.Body.Response.Messages.Error.Desc
+                reportData.Response.Messages.Error.Desc
               : 'Unable to fetch report';
-          /*res.status(400).send({
-            status: 'ERROR',
-            messageCode: 'UNABLE_TO_FETCH_REPORT',
-            message: message,
-          });*/
-          sendNotification({
-            notificationObj: {
-              type: 'REPORT_NOTIFICATION',
-              fetchStatus: 'ERROR',
-              message: message,
-              debtorId: req.body.debtorId,
-            },
-            type: 'user',
-            userId: req.user._id,
-          });
+          notificationBody.notificationObj.fetchStatus = 'ERROR';
+          notificationBody.notificationObj.message = message;
         }
+        sendNotification(notificationBody);
       } else {
         return res.status(400).send({
           status: 'ERROR',

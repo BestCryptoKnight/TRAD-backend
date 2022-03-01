@@ -865,7 +865,6 @@ router.get('/search-entity', async function (req, res) {
             'Application already exists, please create with another debtor',
         });
       } else if (application && application.status === 'APPROVED') {
-        console.log('----------HERE--------------');
         responseData.message =
           'You already have one approved application, do you still want to create another one?';
         responseData.messageCode = 'APPROVED_APPLICATION_ALREADY_EXISTS';
@@ -1432,7 +1431,6 @@ router.put('/:applicationId', async function (req, res) {
             update.creditLimit = undefined;
             update.isActive = false;
           }
-          console.log('update', update);
           await ClientDebtor.updateOne(
             { _id: application.clientDebtorId },
             update,

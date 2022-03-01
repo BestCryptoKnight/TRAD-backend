@@ -209,7 +209,6 @@ const getDebtorList = async ({
         })
           .select('_id debtorId')
           .lean();
-        console.log('clientDebtor', clientDebtor.length);
         const debtorIds = clientDebtor.map((i) => i.debtorId);
         queryFilter = {
           _id: { $in: debtorIds },
