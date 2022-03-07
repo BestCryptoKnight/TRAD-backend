@@ -119,7 +119,10 @@ router.get('/', async function (req, res) {
     response['showGraphs'] = !!rmpPolicy;
     res.status(200).send({ status: 'SUCCESS', data: response });
   } catch (e) {
-    Logger.log.error('Error occurred in get dashboard data', e.message || e);
+    Logger.log.error(
+      'Error occurred in get client dashboard data',
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

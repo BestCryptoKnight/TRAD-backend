@@ -45,7 +45,7 @@ const {
  */
 router.get('/search-from-crm', async function (req, res) {
   if (!req.query.searchKeyword) {
-    Logger.log.error('No text passed to perform search.');
+    Logger.log.warn('No text passed to perform search.');
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -192,7 +192,7 @@ router.get('/credit-limit/column-name', async function (req, res) {
       .send({ status: 'SUCCESS', data: { defaultFields, customFields } });
   } catch (e) {
     Logger.log.error(
-      'Error occurred in get client-user column names',
+      'Error occurred in get credit-limit column names',
       e.message || e,
     );
     res.status(500).send({
@@ -246,7 +246,7 @@ router.get(
       });
     } catch (e) {
       Logger.log.error(
-        'Error occurred in get debtor modal details ',
+        'Error occurred in get credit-limit modal details ',
         e.message || e,
       );
       res.status(500).send({
@@ -477,7 +477,10 @@ router.get('/user-details/:clientUserId', async function (req, res) {
       data: { response, header: 'Contact Details' },
     });
   } catch (e) {
-    Logger.log.error('Error occurred in listing clients.', e.message || e);
+    Logger.log.error(
+      'Error occurred in getting Client Details for drawer.',
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -759,7 +762,7 @@ router.get(
         });
       }
     } catch (e) {
-      Logger.log.error('Error occurred in download in csv', e);
+      Logger.log.error('Error occurred in download Decision Letter', e);
       res.status(500).send({
         status: 'ERROR',
         message: e.message || 'Something went wrong, please try again later.',
@@ -823,7 +826,7 @@ router.get('/download/:clientId', async function (req, res) {
       });
     }
   } catch (e) {
-    Logger.log.error('Error occurred in download in csv', e);
+    Logger.log.error('Error occurred in download credit-limit in csv', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -871,7 +874,7 @@ router.get('/', async function (req, res) {
 router.get('/:clientId', async function (req, res) {
   try {
     if (!req.params.clientId) {
-      Logger.log.error('No clientId passed.');
+      Logger.log.warn('No clientId passed.');
       return res.status(400).send({
         status: 'ERROR',
         messageCode: 'REQUIRE_FIELD_MISSING',
@@ -890,7 +893,7 @@ router.get('/:clientId', async function (req, res) {
     client.serviceManagerList = serviceManagerList;
     res.status(200).send({ status: 'SUCCESS', data: client });
   } catch (e) {
-    Logger.log.error('Error occurred in listing clients.', e.message || e);
+    Logger.log.error('Error occurred in get client by id.', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -994,7 +997,7 @@ router.post('/', async function (req, res) {
 router.put('/sync-from-crm/:clientId', async function (req, res) {
   try {
     if (!req.params.clientId) {
-      Logger.log.error('No clientId passed.');
+      Logger.log.warn('No clientId passed.');
       return res.status(400).send({
         status: 'ERROR',
         messageCode: 'REQUIRE_FIELD_MISSING',
@@ -1003,7 +1006,10 @@ router.put('/sync-from-crm/:clientId', async function (req, res) {
     }
     let client = await Client.findOne({ _id: req.params.clientId });
     if (!client) {
-      Logger.log.error('No Client found', req.params.crmId);
+      Logger.log.error(
+        'No Client found by crmClientId to Sync from RSS',
+        req.params.crmId,
+      );
       return res.status(400).send({
         status: 'ERROR',
         messageCode: 'CLIENT_NOT_FOUND',
@@ -1034,7 +1040,7 @@ router.put('/sync-from-crm/:clientId', async function (req, res) {
       .send({ status: 'SUCCESS', message: 'Client synced successfully' });
   } catch (e) {
     Logger.log.error(
-      'Error occurred in getting client list for search.',
+      'Error occurred in syncing Clients from RSS.',
       e.message || e,
     );
     res.status(500).send({
@@ -1050,7 +1056,7 @@ router.put('/sync-from-crm/:clientId', async function (req, res) {
 router.put('/user/sync-from-crm/:clientId', async function (req, res) {
   try {
     if (!req.params.clientId) {
-      Logger.log.error('No clientId passed.');
+      Logger.log.warn('No clientId passed.');
       return res.status(400).send({
         status: 'ERROR',
         messageCode: 'REQUIRE_FIELD_MISSING',
@@ -1169,14 +1175,14 @@ router.put('/user/sync-from-crm/:clientId', async function (req, res) {
  */
 router.put('/user/column-name', async function (req, res) {
   if (!req.user || !req.user._id) {
-    Logger.log.error('User data not found in req');
+    Logger.log.warn('User data not found in req');
     return res.status(401).send({
       status: 'ERROR',
       message: 'Please first login to update the profile.',
     });
   }
   if (!req.body.hasOwnProperty('isReset') || !req.body.columns) {
-    Logger.log.error('Require fields are missing');
+    Logger.log.warn('Require fields are missing');
     return res.status(400).send({
       status: 'ERROR',
       message: 'Something went wrong, please try again.',
@@ -1198,7 +1204,10 @@ router.put('/user/column-name', async function (req, res) {
       .status(200)
       .send({ status: 'SUCCESS', message: 'Columns updated successfully' });
   } catch (e) {
-    Logger.log.error('Error occurred in update column names', e.message || e);
+    Logger.log.error(
+      'Error occurred in update user column names',
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -1211,7 +1220,7 @@ router.put('/user/column-name', async function (req, res) {
  */
 router.put('/credit-limit/column-name', async function (req, res) {
   if (!req.body.hasOwnProperty('isReset') || !req.body.columns) {
-    Logger.log.error('Require fields are missing');
+    Logger.log.warn('Require fields are missing');
     return res.status(400).send({
       status: 'ERROR',
       message: 'Something went wrong, please try again.',
@@ -1233,7 +1242,10 @@ router.put('/credit-limit/column-name', async function (req, res) {
       .status(200)
       .send({ status: 'SUCCESS', message: 'Columns updated successfully' });
   } catch (e) {
-    Logger.log.error('Error occurred in update column names', e.message || e);
+    Logger.log.error(
+      'Error occurred in update credit-limit column names',
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -1462,10 +1474,7 @@ router.put('/user/:clientUserId', async function (req, res) {
     await Promise.all(promises);
     res.status(200).send({ status: 'SUCCESS', message: message });
   } catch (e) {
-    Logger.log.error(
-      'Error occurred in getting client list for search.',
-      e.message || e,
-    );
+    Logger.log.error('Error occurred in updating Client User', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -1478,14 +1487,14 @@ router.put('/user/:clientUserId', async function (req, res) {
  */
 router.put('/column-name', async function (req, res) {
   if (!req.user || !req.user._id) {
-    Logger.log.error('User data not found in req');
+    Logger.log.warn('User data not found in req');
     return res.status(401).send({
       status: 'ERROR',
       message: 'Please first login to update the profile.',
     });
   }
   if (!req.body.hasOwnProperty('isReset') || !req.body.columns) {
-    Logger.log.error('Require fields are missing');
+    Logger.log.warn('Require fields are missing');
     return res.status(400).send({
       status: 'ERROR',
       message: 'Something went wrong, please try again.',
@@ -1507,7 +1516,10 @@ router.put('/column-name', async function (req, res) {
       .status(200)
       .send({ status: 'SUCCESS', message: 'Columns updated successfully' });
   } catch (e) {
-    Logger.log.error('Error occurred in update column names', e.message || e);
+    Logger.log.error(
+      'Error occurred in update client column names',
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -1521,7 +1533,7 @@ router.put('/column-name', async function (req, res) {
 router.put('/:clientId', async function (req, res) {
   try {
     if (!req.params.clientId) {
-      Logger.log.error('No clientId passed.');
+      Logger.log.warn('No clientId passed.');
       return res.status(400).send({
         status: 'ERROR',
         messageCode: 'REQUIRE_FIELD_MISSING',
@@ -1533,10 +1545,7 @@ router.put('/:clientId', async function (req, res) {
       .status(200)
       .send({ status: 'SUCCESS', message: 'Client updated successfully' });
   } catch (e) {
-    Logger.log.error(
-      'Error occurred in getting client list for search.',
-      e.message || e,
-    );
+    Logger.log.error('Error occurred in updating  client', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

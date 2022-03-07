@@ -31,7 +31,10 @@ router.get('/module-access', async function (req, res) {
     });
     res.status(200).send({ status: 'SUCCESS', data: userData });
   } catch (e) {
-    Logger.log.error('Error occurred.', e.message || e);
+    Logger.log.error(
+      'Error occurred in getting user module access',
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later',
@@ -247,7 +250,7 @@ router.get('/:userId', async function (req, res) {
       });
     }
   } catch (e) {
-    Logger.log.error('Error occurred.', e);
+    Logger.log.error('Error occurred in get user by id', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later',
@@ -328,7 +331,7 @@ router.get('/', async function (req, res) {
     }
     res.status(200).send({ status: 'SUCCESS', data: responseObj });
   } catch (e) {
-    Logger.log.error('Error occurred.', e.message || e);
+    Logger.log.error('Error occurred in list users', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later',
@@ -341,7 +344,7 @@ router.get('/', async function (req, res) {
  */
 router.post('/', async function (req, res) {
   if (!req.body.email) {
-    Logger.log.error('Email not present for new user');
+    Logger.log.warn('Email not present for new user');
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'EMAIL_NOT_FOUND',
@@ -430,7 +433,7 @@ router.post('/', async function (req, res) {
       Logger.log.info('Mail sent to new user successfully.');
     }
   } catch (e) {
-    Logger.log.error('Error occurred', e.message || e);
+    Logger.log.error('Error occurred in create user', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -482,7 +485,7 @@ router.put('/:userId', async function (req, res) {
     !req.params.userId ||
     !mongoose.Types.ObjectId.isValid(req.params.userId)
   ) {
-    Logger.log.error('User id not found in request query params.');
+    Logger.log.warn('User id not found in request query params.');
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -594,7 +597,7 @@ router.put('/:userId', async function (req, res) {
       .status(200)
       .send({ status: 'SUCCESS', message: 'User updated successfully.' });
   } catch (e) {
-    Logger.log.error('Error occurred.', e.message || e);
+    Logger.log.error('Error occurred in update user', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -610,7 +613,7 @@ router.delete('/:userId', async function (req, res) {
     !req.params.userId ||
     !mongoose.Types.ObjectId.isValid(req.params.userId)
   ) {
-    Logger.log.error('User id not found.');
+    Logger.log.warn('User id not found.');
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -657,7 +660,7 @@ router.delete('/:userId', async function (req, res) {
       .status(200)
       .send({ status: 'SUCCESS', message: 'User deleted successfully' });
   } catch (e) {
-    Logger.log.error('Error occurred.', e.message || e);
+    Logger.log.error('Error occurred in delete user by id', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

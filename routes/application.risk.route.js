@@ -984,7 +984,7 @@ router.get('/alert/:alertId', async function (req, res) {
       data: response,
     });
   } catch (e) {
-    Logger.log.error('Error occurred in get alert list', e);
+    Logger.log.error('Error occurred in get alert by id', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

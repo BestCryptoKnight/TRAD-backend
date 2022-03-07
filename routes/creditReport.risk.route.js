@@ -477,7 +477,7 @@ router.put('/generate', async function (req, res) {
  */
 router.put('/column-name', async function (req, res) {
   if (!req.body.hasOwnProperty('isReset') || !req.body.columns) {
-    Logger.log.error('Require fields are missing');
+    Logger.log.warn('Require fields are missing');
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',

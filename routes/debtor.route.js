@@ -565,7 +565,7 @@ router.get('/download', async function (req, res) {
       });
     }
   } catch (e) {
-    Logger.log.error('Error occurred in download in csv', e);
+    Logger.log.error('Error occurred in download credit-limit in csv', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -598,7 +598,7 @@ router.get(
         });
       }
     } catch (e) {
-      Logger.log.error('Error occurred in download in csv', e);
+      Logger.log.error('Error occurred in download decision letter in csv', e);
       res.status(500).send({
         status: 'ERROR',
         message: e.message || 'Something went wrong, please try again later.',

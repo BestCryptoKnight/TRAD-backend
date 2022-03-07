@@ -156,7 +156,7 @@ router.get('/list', async function (req, res) {
       data: notifications,
     });
   } catch (e) {
-    Logger.log.error('Error occurred in get notification list', e);
+    Logger.log.error('Error occurred in get unread notification list', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

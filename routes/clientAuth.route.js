@@ -26,7 +26,7 @@ const MailHelper = require('./../helper/mailer.helper');
  */
 router.post('/login', async function (req, res) {
   if (!req.body.userId) {
-    Logger.log.error('Email is not present');
+    Logger.log.warn('Email is not present');
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'EMAIL_NOT_FOUND',
@@ -34,7 +34,7 @@ router.post('/login', async function (req, res) {
     });
   }
   if (!req.body.password) {
-    Logger.log.error('Password not present');
+    Logger.log.warn('Password not present');
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'PASSWORD_NOT_FOUND',
@@ -74,7 +74,10 @@ router.post('/login', async function (req, res) {
         message: 'Incorrect email or password.',
       });
     } else {
-      Logger.log.error('error occurred.', e.message || e);
+      Logger.log.error(
+        'Error Occurred in Client Login API Call',
+        e.message || e,
+      );
       res.status(500).send({
         status: 'ERROR',
         message: e.message || 'Something went wrong, please try again later.',
@@ -88,7 +91,7 @@ router.post('/login', async function (req, res) {
  */
 router.put('/change-password', authenticate, async (req, res) => {
   if (!req.body.oldPassword) {
-    Logger.log.error('Old or new password not present');
+    Logger.log.warn('Old or new password not present');
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'OLD_PASSWORD_NOT_FOUND',
@@ -96,7 +99,7 @@ router.put('/change-password', authenticate, async (req, res) => {
     });
   }
   if (!req.body.newPassword) {
-    Logger.log.error('New password not present');
+    Logger.log.warn('New password not present');
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'NEW_PASSWORD_NOT_FOUND',
@@ -138,7 +141,10 @@ router.put('/change-password', authenticate, async (req, res) => {
       });
     }
   } catch (e) {
-    Logger.log.error('error occurred.', e.message || e);
+    Logger.log.error(
+      'Error Occurred in Client Change Password API Call',
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -227,7 +233,10 @@ router.post('/forget-password', async (req, res) => {
       });
     }
   } catch (e) {
-    Logger.log.error('error occurred.', e.message || e);
+    Logger.log.error(
+      'Error Occurred in Client Forget Password API Call',
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -282,7 +291,10 @@ router.post('/resend-otp', async (req, res) => {
       });
     }
   } catch (e) {
-    Logger.log.error('error occurred.', e.message || e);
+    Logger.log.error(
+      'Error Occurred in Client Resend OTP API Call',
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -408,7 +420,10 @@ router.post('/reset-password', async (req, res) => {
             });
           }
         } catch (e) {
-          Logger.log.error('error occurred.', e.message || e);
+          Logger.log.error(
+            'Error Occurred in Client Reset Password API Call',
+            e.message || e,
+          );
           res.status(500).send({
             status: 'ERROR',
             message:
@@ -476,7 +491,10 @@ router.post('/set-password', async (req, res) => {
           });
         }
       } catch (e) {
-        Logger.log.error('error occurred.', e.message || e);
+        Logger.log.error(
+          'Error Occurred in Client Set Password API Call',
+          e.message || e,
+        );
         res.status(500).send({
           status: 'ERROR',
           message: e.message || 'Something went wrong, please try again later.',
@@ -503,7 +521,7 @@ router.delete('/logout', async (req, res) => {
       message: 'User logout successfully',
     });
   } catch (e) {
-    Logger.log.error('Error in logout API call ', e.message || e);
+    Logger.log.error('Error in Client logout API call ', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

@@ -93,7 +93,10 @@ userSchema.statics.findByCredentials = async function (email, password) {
       });
     });
   } catch (e) {
-    Logger.log.error('Error occurred.', e.message || e);
+    Logger.log.error(
+      'Error occurred in find user by credentials',
+      e.message || e,
+    );
     return Promise.reject(e);
   }
 };
