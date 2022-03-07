@@ -80,7 +80,10 @@ router.get('/', async function (req, res) {
     ]);
     res.status(200).send({ status: 'SUCCESS', data: { applications, tasks } });
   } catch (e) {
-    Logger.log.error('Error occurred in get dashboard data', e.message || e);
+    Logger.log.error(
+      'Error occurred in get risk dashboard data',
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

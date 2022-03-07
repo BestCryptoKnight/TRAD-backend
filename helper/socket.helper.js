@@ -16,15 +16,15 @@ let socketUser = {};
 const Logger = require('./../services/logger');
 
 io.on('connection', async function (socket) {
-  Logger.log.info('New user connected:', socket.id);
   socketUser[socket.id] = socket;
   let userToken = socket.handshake.query.token;
   const type = socket.handshake.query.type;
+  Logger.log.info('New socket user connected:', socket.id, type);
   if (userToken && type) {
     await addSocketIdToUser(userToken, socket.id, type);
   }
   socket.on('disconnect', async () => {
-    Logger.log.info('User disconnected:', socket.id);
+    Logger.log.info('Socket User disconnected:', socket.id);
     await removeSocketIdFromUser(socket.id);
     // socketUser = socketUser.filter(user => user.id !== socket.id);
     for (let key in socketUser) {
@@ -71,7 +71,7 @@ let addSocketIdToUser = (token, socketId, type) => {
       await user.save();
       return resolve();
     } catch (err) {
-      Logger.log.error('Error in adding socketId to user', err);
+      Logger.log.warn('Error in adding socketId to user', err);
       return reject(err);
     }
   });

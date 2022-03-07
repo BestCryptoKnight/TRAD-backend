@@ -99,7 +99,10 @@ router.get('/client-list/:insurerId', async function (req, res) {
     const clients = await Client.find(query).select({ _id: 1, name: 1 }).lean();
     res.status(200).send({ status: 'SUCCESS', data: clients });
   } catch (e) {
-    Logger.log.error('Error occurred in get client list ', e.message || e);
+    Logger.log.error(
+      'Error occurred in get client list by insurerId',
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -217,7 +220,7 @@ router.get('/user/column-name', async function (req, res) {
       .send({ status: 'SUCCESS', data: { defaultFields, customFields } });
   } catch (e) {
     Logger.log.error(
-      'Error occurred in get insurer contacts columns ',
+      'Error occurred in get insurer-user column names ',
       e.message || e,
     );
     res.status(500).send({
@@ -675,7 +678,7 @@ router.get('/:insurerId', async function (req, res) {
     !req.params.insurerId ||
     !mongoose.Types.ObjectId.isValid(req.params.insurerId)
   ) {
-    Logger.log.error('Insurer id not found in params.');
+    Logger.log.warn('Insurer id not found in params.');
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -686,7 +689,10 @@ router.get('/:insurerId', async function (req, res) {
     const insurer = await Insurer.findOne({ _id: req.params.insurerId }).lean();
     res.status(200).send({ status: 'SUCCESS', data: insurer });
   } catch (e) {
-    Logger.log.error('Error occurred in get insurer details ', e.message || e);
+    Logger.log.error(
+      'Error occurred in get insurer details by insurerId',
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -839,7 +845,7 @@ router.put('/user/column-name', async function (req, res) {
     });
   }
   if (!req.body.hasOwnProperty('isReset') || !req.body.columns) {
-    Logger.log.error('Require fields are missing');
+    Logger.log.warn('Require fields are missing');
     return res.status(400).send({
       status: 'ERROR',
       message: 'Something went wrong, please try again.',
@@ -877,7 +883,7 @@ router.put('/user/column-name', async function (req, res) {
  */
 router.put('/column-name', async function (req, res) {
   if (!req.body.hasOwnProperty('isReset') || !req.body.columns) {
-    Logger.log.error('Require fields are missing');
+    Logger.log.warn('Require fields are missing');
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -925,7 +931,7 @@ router.put('/user/sync-from-crm/:insurerId', async function (req, res) {
   try {
     const insurer = await Insurer.findOne({ _id: req.params.insurerId }).lean();
     if (!insurer) {
-      Logger.log.error('No Insurer found', req.params.crmId);
+      Logger.log.warn('No Insurer found', req.params.crmId);
       return res.status(400).send({
         status: 'ERROR',
         messageCode: 'INSURER_NOT_FOUND',
