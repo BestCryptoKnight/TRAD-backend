@@ -118,7 +118,7 @@ router.get('/module', async function (req, res) {
 router.get('/', async function (req, res) {
   Logger.log.info('In get organization details call');
   if (!req.user.organizationId) {
-    Logger.log.error('Organization id not found.');
+    Logger.log.warn('Organization id not found.');
     return res
       .status(400)
       .send({ status: 'ERROR', message: 'Organization id not found.' });

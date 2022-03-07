@@ -5,7 +5,6 @@ const express = require('express');
 const router = express.Router();
 let mongoose = require('mongoose');
 let Organization = mongoose.model('organization');
-const AuditLog = mongoose.model('audit-log');
 const DocumentType = mongoose.model('document-type');
 const User = mongoose.model('user');
 
@@ -15,12 +14,12 @@ const User = mongoose.model('user');
 const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
 const { getAccessBaseUserList } = require('./../helper/user.helper');
-const { getClientById } = require('./../helper/rss.helper');
+const { getClients } = require('./../helper/rss.helper');
 const {
   getEntityDetailsByABN,
   getEntityDetailsByNZBN,
 } = require('./../helper/abr.helper');
-const { fetchCreditReport } = require('./../helper/illion.helper');
+const { fetchCreditReportInPDFFormat } = require('./../helper/illion.helper');
 const {
   addAuditLog,
   getRegexForSearch,
@@ -277,7 +276,10 @@ router.get('/document-type-list', async function (req, res) {
       .lean();
     res.status(200).send({ status: 'SUCCESS', data: documentTypes });
   } catch (e) {
-    Logger.log.error('Error occurred in get document types ', e.message || e);
+    Logger.log.error(
+      'Error occurred in get document types list',
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -388,24 +390,35 @@ router.get('/test-credentials', async function (req, res) {
   }
   try {
     let response;
+    let areCredentialsValid = false;
     switch (req.query.apiName) {
       case 'rss':
-        response = await getClientById({ clientId: 8869 });
+        response = await getClients({ searchKeyword: '' });
+        areCredentialsValid = response && Array.isArray(response);
         break;
       case 'abn':
         response = await getEntityDetailsByABN({ searchString: 51069691676 });
+        areCredentialsValid =
+          response &&
+          response.response &&
+          response.response.businessEntity202001 &&
+          !response.response.exception;
         break;
       case 'nzbn':
         response = await getEntityDetailsByNZBN({
           searchString: 9429040933108,
         });
+        areCredentialsValid = true;
         break;
       case 'illion':
-        response = await fetchCreditReport({
+        response = await fetchCreditReportInPDFFormat({
           productCode: 'HXBCA',
           searchValue: 51069691676,
           searchField: 'ABN',
+          countryCode: 'AUS',
         });
+        areCredentialsValid =
+          response?.Status && !response.Status.Error && response.Status.Success;
         break;
       default:
         return res.status(400).send({
@@ -414,10 +427,7 @@ router.get('/test-credentials', async function (req, res) {
           message: 'Please pass correct fields',
         });
     }
-    if (response && response.status === 'ERROR') {
-      res.status(400).send(response);
-    }
-    if (response) {
+    if (areCredentialsValid) {
       res.status(200).send({
         status: 'SUCCESS',
         message: 'Credentials tested successfully',
@@ -426,10 +436,13 @@ router.get('/test-credentials', async function (req, res) {
       res.status(400).send({ status: 'SUCCESS', message: 'Wrong credentials' });
     }
   } catch (e) {
-    Logger.log.error('Error occurred in test rss token', e.message || e);
+    Logger.log.error(
+      `Error occurred in testing ${req.query.apiName} credentials`,
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
+      message: e.message || 'Wrong credentials.',
     });
   }
 });
@@ -487,7 +500,7 @@ router.post('/document-type', async function (req, res) {
  */
 router.put('/column-name', async function (req, res) {
   if (!req.body.hasOwnProperty('isReset') || !req.body.columns) {
-    Logger.log.error('Require fields are missing');
+    Logger.log.warn('Require fields are missing');
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',

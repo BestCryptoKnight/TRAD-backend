@@ -21,7 +21,6 @@ let authMiddleWare = async (req, res, next) => {
       if (user) {
         req.user = user;
         req.token = token;
-        Logger.log.info('AUTH - user id:' + user._id);
         next();
       } else {
         return res.status(401).send({
@@ -31,7 +30,7 @@ let authMiddleWare = async (req, res, next) => {
         });
       }
     } catch (e) {
-      Logger.log.error('Error occurred.', e.message || e);
+      Logger.log.warn('Error occurred.', e.message || e);
       return res.status(401).send({
         status: 'ERROR',
         messageCode: 'UNAUTHORIZED',
@@ -73,16 +72,13 @@ let checkModuleAccess = (req, res, next) => {
     let userModule = req.user.moduleAccess
       .filter((userModule) => userModule.name === moduleName)
       .shift();
-    console.log(userModule);
     if (
       (!userModule || userModule?.accessTypes?.length === 0) &&
       req.query.requestFrom
     ) {
-      console.log('request-from', req.query.requestFrom);
       userModule = req.user.moduleAccess
         .filter((userModule) => userModule.name === req.query.requestFrom)
         .shift();
-      console.log('userModule', userModule);
     }
     if (userModule) {
       req.accessTypes = userModule.accessTypes;
@@ -153,7 +149,6 @@ const clientAuthMiddleWare = async (req, res, next) => {
       if (user) {
         req.user = user;
         req.token = token;
-        Logger.log.info('AUTH - user id:' + user._id);
         next();
       } else {
         res.status(401).send({
@@ -163,7 +158,7 @@ const clientAuthMiddleWare = async (req, res, next) => {
         });
       }
     } catch (e) {
-      Logger.log.error('Error occurred.', e.message || e);
+      Logger.log.warn('Error occurred.', e.message || e);
       res.status(401).send({
         status: 'ERROR',
         messageCode: 'UNAUTHORIZED',

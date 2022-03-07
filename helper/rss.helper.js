@@ -234,6 +234,10 @@ const getClientById = async ({ clientId }) => {
   } catch (err) {
     Logger.log.error('Error in getting client from RSS');
     Logger.log.error(err.message || err);
+    return Promise.reject({
+      status: 'ERROR',
+      message: err.message || err,
+    });
   }
 };
 
@@ -362,7 +366,6 @@ const getClientContacts = async ({ clientId, contacts = [], page, limit }) => {
       };
       contacts.push(contact);
     });
-    console.log(data.metadata);
     if (data.metadata['has_more']) {
       await getClientContacts({
         clientId,
@@ -887,7 +890,6 @@ const uploadDocument = async ({ formData }) => {
       data: formData,
     };
     const { data } = await axios(options);
-    console.log('file uploaded successfully::', data);
     return data;
   } catch (e) {
     Logger.log.error('Error occurred in upload document in RSS');
@@ -921,7 +923,7 @@ const downloadDocument = async ({ documentId }) => {
 module.exports = {
   getClients,
   getInsurers,
-  getClientById,
+  getClientById: getClientById,
   getPolicyById,
   getClientContacts,
   getClientPolicies,

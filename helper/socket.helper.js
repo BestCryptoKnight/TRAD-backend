@@ -16,17 +16,15 @@ let socketUser = {};
 const Logger = require('./../services/logger');
 
 io.on('connection', async function (socket) {
-  console.log('New user connected:', socket.id);
   socketUser[socket.id] = socket;
   let userToken = socket.handshake.query.token;
   const type = socket.handshake.query.type;
+  Logger.log.info('New socket user connected:', socket.id, type);
   if (userToken && type) {
-    console.log('Type::', type);
     await addSocketIdToUser(userToken, socket.id, type);
   }
   socket.on('disconnect', async () => {
-    console.log('User disconnected:', socket.id);
-    console.log('type', type);
+    Logger.log.info('Socket User disconnected:', socket.id);
     await removeSocketIdFromUser(socket.id);
     // socketUser = socketUser.filter(user => user.id !== socket.id);
     for (let key in socketUser) {
@@ -43,15 +41,12 @@ socketApi.sendNotification = async function ({
   userId = null,
   type,
 }) {
-  // let rnd = Math.floor(Math.random() * 2);
-  // console.log('Event emitting to .', users[rnd].id, notificationObj,);
   if (userId && socketIds.length === 0) {
     socketIds = await getSocketIdFromUser(userId, type);
   }
   if (socketIds && socketIds.length !== 0) {
     socketIds.forEach((socketId) => {
       if (socketUser[socketId]) {
-        console.log('Event for...', socketId);
         socketUser[socketId].emit('FromAPI', notificationObj);
       }
     });
@@ -76,7 +71,7 @@ let addSocketIdToUser = (token, socketId, type) => {
       await user.save();
       return resolve();
     } catch (err) {
-      Logger.log.error('Error in adding socketId to user', err);
+      Logger.log.warn('Error in adding socketId to user', err);
       return reject(err);
     }
   });

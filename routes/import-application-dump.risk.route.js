@@ -61,7 +61,10 @@ router.post('/', upload.single('dump-file'), async function (req, res) {
       });
     }
   } catch (e) {
-    Logger.log.error('Error occurred in search', e.message || e);
+    Logger.log.error(
+      'Error occurred in upload new import applications file',
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -133,7 +136,10 @@ router.put('/:importId', async function (req, res) {
       data: responseBody,
     });
   } catch (e) {
-    Logger.log.error('Error occurred in search', e.message || e);
+    Logger.log.error(
+      'Error occurred in update import file module',
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -159,7 +165,7 @@ router.delete('/:importId', async function (req, res) {
       message: 'Import dump deleted successfully.',
     });
   } catch (e) {
-    Logger.log.error('Error occurred in search', e.message || e);
+    Logger.log.error('Error occurred in delete file module', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -168,22 +174,23 @@ router.delete('/:importId', async function (req, res) {
 });
 
 /*
- * Delete import file
+ * Get Sample Excel File from S3
  * */
 router.get('/sample-file', async function (req, res) {
   try {
     const fileBuffer = await StaticFileHelper.downloadDocument({
       filePath: 'static-files/application-dump/Import_Applications.xlsx',
     });
-    console.log('Buffer received');
-    // res.setHeader('Content-Type', 'application/xlsx');
     res.setHeader(
       'Content-Disposition',
       'attachment; filename=' + 'Import_Applications.xlsx',
     );
     return fileBuffer.pipe(res);
   } catch (e) {
-    Logger.log.error('Error occurred in search', e.message || e);
+    Logger.log.error(
+      'Error occurred in get Sample Excel File from S3',
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

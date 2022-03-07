@@ -321,7 +321,6 @@ const readExcelFile = async (fileBuffer) => {
         applicationWorksheet.model.rows[i].cells.length !== 0
       ) {
         const rowNumber = applicationWorksheet.model.rows[i].number;
-        // console.log('applicationWorksheet.model.rows[i].cells::', applicationWorksheet.model.rows[i].cells);
         let application = {
           clientCode: applicationWorksheet.model.rows[i].cells.find(
             (c) =>
@@ -797,20 +796,13 @@ const readExcelFile = async (fileBuffer) => {
         applications.push(application);
       }
     }
-    console.log('data processed...');
-
-    // console.log('applications::', JSON.stringify(applications, null, 3));
-    // console.log(
-    //   'unProcessedApplications::',
-    //   JSON.stringify(unProcessedApplications, null, 3),
-    // );
     return {
       isImportCompleted: true,
       applications,
       unProcessedApplications,
     };
   } catch (e) {
-    console.log('Error occurred in add limit list data', e);
+    Logger.log.error('Error occurred in add limit list data', e);
   }
 };
 
@@ -897,10 +889,6 @@ const processAndValidateApplications = async (importId) => {
           debtorExists: true,
         });
       } else {
-        console.log(
-          'debtor not found...',
-          importApplicationDump.applications[i],
-        );
         if (importApplicationDump.applications[i].debtorCode) {
           unProcessedApplications.push({
             ...importApplicationDump.applications[i],
@@ -917,12 +905,6 @@ const processAndValidateApplications = async (importId) => {
             debtorExists: false,
           });
         } else {
-          console.log(
-            'Getting Business details for company::',
-            importApplicationDump.applications[i].abn ||
-              importApplicationDump.applications[i].acn,
-            importApplicationDump.applications[i].address.countryCode,
-          );
           let entityResponse;
           let stakeholderEntityResponse;
           try {
@@ -968,10 +950,6 @@ const processAndValidateApplications = async (importId) => {
             }
             continue;
           }
-          console.log(
-            'entityResponse not found for::',
-            importApplicationDump.applications[i],
-          );
           // If the Debtor's Entity Type is Sole Trader, Partnership or Trust, then validate stakeholders
           switch (
             entityResponse?.entityType?.value ||
@@ -1089,13 +1067,6 @@ const processAndValidateApplications = async (importId) => {
                       });
                       continue applicationLoop;
                     }
-                    console.log(
-                      'Getting Business details for person::',
-                      importApplicationDump.applications[i].stakeholders[j]
-                        ?.company?.abn,
-                      importApplicationDump.applications[i].stakeholders[j]
-                        .countryCode,
-                    );
                     let stakeholderEntityResponse;
                     try {
                       if (
@@ -1211,13 +1182,6 @@ const processAndValidateApplications = async (importId) => {
                       });
                       continue applicationLoop;
                     }
-                    console.log(
-                      'Getting Business details for person::',
-                      importApplicationDump.applications[i].stakeholders[j]
-                        ?.company?.abn,
-                      importApplicationDump.applications[i].stakeholders[j]
-                        .countryCode,
-                    );
                     let stakeholderEntityResponse;
                     try {
                       stakeholderEntityResponse = await getEntityDetailsByBusinessNumber(
@@ -1284,19 +1248,11 @@ const processAndValidateApplications = async (importId) => {
                 });
                 continue;
               } else {
-                console.log(
-                  'Stake holders::',
-                  importApplicationDump.applications[i].stakeholders,
-                );
                 for (
                   let j = 0;
                   j < importApplicationDump.applications[i].stakeholders.length;
                   j++
                 ) {
-                  console.log(
-                    'Stake holder::',
-                    importApplicationDump.applications[i].stakeholders[j],
-                  );
                   if (
                     importApplicationDump.applications[i].stakeholders[j]
                       .partnerType === 'INDIVIDUAL'
@@ -1318,7 +1274,6 @@ const processAndValidateApplications = async (importId) => {
                       continue applicationLoop;
                     }
                   } else {
-                    console.log('In main else');
                     unProcessedApplications.push({
                       ...importApplicationDump.applications[i],
                       reason: `Invalid partner type for the sole trader ${importApplicationDump.applications[i].stakeholders[j].individual.firstName}.`,
@@ -1342,7 +1297,7 @@ const processAndValidateApplications = async (importId) => {
       unProcessedApplications,
     };
   } catch (e) {
-    console.log('Error occurred in add limit list data', e);
+    Logger.log.error('Error occurred in add limit list data', e);
   }
 };
 
@@ -1545,10 +1500,6 @@ const generateApplications = async (importId, userId) => {
         promiseArr.push(clientDebtor.save());
         // If the Debtor's Entity Type is Sole Trader, Partnership or Trust, then validate stakeholders
         if (importApplicationDump.applications[i].stakeholders) {
-          console.log(
-            'Inside if for stakeholder..........................',
-            debtor.entityType,
-          );
           switch (debtor.entityType) {
             case 'PARTNERSHIP':
             case 'TRUST':
@@ -1772,7 +1723,7 @@ const generateApplications = async (importId, userId) => {
       unProcessedApplications: unProcessedApplications,
     };
   } catch (e) {
-    console.log('Error occurred in add limit list data', e);
+    Logger.log.error('Error occurred in add limit list data', e);
     return Promise.reject(e);
   }
 };

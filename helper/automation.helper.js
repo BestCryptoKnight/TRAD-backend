@@ -12,10 +12,7 @@ const ClientDebtor = mongoose.model('client-debtor');
  * Local Imports
  * */
 const Logger = require('./../services/logger');
-const {
-  fetchCreditReport,
-  fetchCreditReportInPDFFormat,
-} = require('./illion.helper');
+const { fetchCreditReportInPDFFormat } = require('./illion.helper');
 const {
   getEntityDetailsByABN,
   resolveEntityType,
@@ -129,7 +126,6 @@ const identifyReport = async ({ matrix, creditLimit, reportType, country }) => {
         break;
       }
     }
-    console.log('identifiedPriceRange', identifiedPriceRange);
     const identifiedReportDetails =
       reportType === 'individual'
         ? identifiedPriceRange.australianIndividuals
@@ -173,7 +169,6 @@ const getReportData = async ({
     let reportEntityType = 'debtor';
     let isForeignCountry = false;
     let errorMessage = 'Unable to generate a report';
-    console.log('reportCode', reportCode);
     if (type === 'individual') {
       //TODO add for euifax
     } else if (type === 'company' && reportCode) {
@@ -265,61 +260,71 @@ const getReportData = async ({
               ? reportData.creditReport
               : null;
         }
-        console.log('lookupNumber :: ', lookupNumber);
         if (!reportData && lookupNumber) {
-          reportData = await fetchCreditReport({
+          // TODO Query PDF API instead of XML API
+          // reportData = await fetchCreditReport({
+          //   productCode: reportCode,
+          //   searchField: lookupMethod,
+          //   searchValue: lookupNumber,
+          // });
+          reportData = await fetchCreditReportInPDFFormat({
+            countryCode: debtor.address.country.code,
             productCode: reportCode,
             searchField: lookupMethod,
             searchValue: lookupNumber,
           });
-          console.log('Report DATA', JSON.stringify(reportData, null, 3));
           if (
             reportData &&
-            reportData.Envelope.Body.Response &&
-            reportData.Envelope.Body.Response.Messages.ErrorCount &&
-            parseInt(reportData.Envelope.Body.Response.Messages.ErrorCount) ===
-              0
+            reportData.Status &&
+            reportData.Status.hasOwnProperty('Success') &&
+            reportData.Status.hasOwnProperty('Error')
           ) {
-            await storeReportData({
-              debtorId: debtorId,
-              productCode: reportCode,
-              reportFrom: 'illion',
-              reportName: reportData.Envelope.Body.Response.Header.ProductName,
-              reportData: reportData.Envelope.Body.Response,
-              entityType: reportEntityType,
-              clientDebtorId: clientDebtorId,
-              countryCode: debtor.address.country.code,
-              searchField: lookupMethod,
-              searchValue: lookupNumber,
-            });
-            reportData = reportData.Envelope.Body.Response;
-            if (
-              reportData.DynamicDelinquencyScore &&
-              reportData.DynamicDelinquencyScore &&
-              reportData.DynamicDelinquencyScore.Score
-            ) {
-              await Debtor.updateOne(
-                { _id: debtor._id },
-                { riskRating: reportData.DynamicDelinquencyScore.Score },
-              );
+            if (reportData.Status.Success && !reportData.Status.Error) {
+              if (
+                reportData.Response &&
+                reportData.Response.Messages.hasOwnProperty('ErrorCount') &&
+                reportData.Response.Messages.ErrorCount === 0
+              ) {
+                await storeReportData({
+                  debtorId: debtorId,
+                  productCode: reportCode,
+                  reportFrom: 'illion',
+                  reportName: reportData.Response.Header.ProductName,
+                  reportData: reportData,
+                  entityType: reportEntityType,
+                  clientDebtorId: clientDebtorId,
+                  countryCode: debtor.address.country.code,
+                  searchField: lookupMethod,
+                  searchValue: lookupNumber,
+                });
+                reportData = reportData.Response;
+                if (
+                  reportData.DynamicDelinquencyScore &&
+                  reportData.DynamicDelinquencyScore.Score
+                ) {
+                  await Debtor.updateOne(
+                    { _id: debtor._id },
+                    { riskRating: reportData.DynamicDelinquencyScore.Score },
+                  );
+                }
+              } else {
+                errorMessage =
+                  reportData.Response.Messages.Error.Desc &&
+                  reportData.Response.Messages.Error.Num
+                    ? reportData.Response.Messages.Error.Num +
+                      ' - ' +
+                      reportData.Response.Messages.Error.Desc
+                    : 'Unable to fetch report';
+                reportData = null;
+              }
+            } else if (!reportData.Status.Success && reportData.Status.Error) {
+              errorMessage =
+                reportData.Status.ErrorMessage ||
+                'Error in fetching Credit Report';
+              reportData = null;
             }
-          } else if (
-            reportData &&
-            reportData.Envelope.Body.Response &&
-            reportData.Envelope.Body.Response.Messages.ErrorCount &&
-            parseInt(reportData.Envelope.Body.Response.Messages.ErrorCount) !==
-              0
-          ) {
-            errorMessage =
-              reportData.Envelope.Body.Response.Messages.Error &&
-              reportData.Envelope.Body.Response.Messages.Error.Desc &&
-              reportData.Envelope.Body.Response.Messages.Error.Num
-                ? 'Error Code: ' +
-                  reportData.Envelope.Body.Response.Messages.Error.Num +
-                  ' ' +
-                  'Error Message: ' +
-                  reportData.Envelope.Body.Response.Messages.Error.Desc
-                : errorMessage;
+          } else {
+            errorMessage = 'Error in fetching Credit Report';
             reportData = null;
           }
         }
@@ -335,8 +340,6 @@ const getReportData = async ({
 
 const getEntityData = async ({ country, businessNumber }) => {
   try {
-    console.log('businessNumber', businessNumber);
-    console.log('country', country);
     let response = {};
     if (country === 'AUS') {
       const entityData = await getEntityDetailsByABN({
@@ -355,7 +358,6 @@ const getEntityData = async ({ country, businessNumber }) => {
       const entityData = await getEntityDetailsByNZBN({
         searchString: businessNumber,
       });
-      console.log('entityData', entityData);
       if (entityData) {
         response['entityType'] = {
           entityTypeCode: entityData['entityTypeCode'],
@@ -377,7 +379,6 @@ const getEntityData = async ({ country, businessNumber }) => {
 
 const insurerQBE = async ({ application, type, policy }) => {
   try {
-    console.log('report for :', type);
     let blockers = [];
     const {
       identifiedReportDetails,
@@ -389,8 +390,6 @@ const insurerQBE = async ({ application, type, policy }) => {
       country: application.debtorId.address.country.code,
       reportType: type,
     });
-    console.log('report code ', reportCode);
-    console.log('identifiedReportDetails ', identifiedReportDetails);
     if (!reportCode) {
       blockers.push('Unable to get report code');
     }
@@ -413,9 +412,6 @@ const insurerQBE = async ({ application, type, policy }) => {
         blockers.push(response.errorMessage);
       }
     }
-    console.log('NEXT STEP ::::::::: ');
-    console.log('reportData', reportData);
-    console.log('entityData', JSON.stringify(entityData, null, 2));
     blockers = await checkGuidelines({
       guidelines: qbe.generalTerms,
       application,
@@ -430,7 +426,6 @@ const insurerQBE = async ({ application, type, policy }) => {
       reportData: reportData ? reportData : null,
       blockers,
     });
-    console.log('blockers', blockers);
     return blockers;
   } catch (e) {
     Logger.log.error('Error occurred in insurer QBE ', e);
@@ -439,7 +434,6 @@ const insurerQBE = async ({ application, type, policy }) => {
 
 const insurerBond = async ({ application, type, policy }) => {
   try {
-    console.log('report for :', type);
     let blockers = [];
     const {
       identifiedReportDetails,
@@ -451,8 +445,6 @@ const insurerBond = async ({ application, type, policy }) => {
       country: application.debtorId.address.country.code,
       reportType: type,
     });
-    console.log('report code ', reportCode);
-    console.log('identifiedReportDetails ', identifiedReportDetails);
     if (!reportCode) {
       blockers.push('Unable to get report code');
     }
@@ -475,9 +467,6 @@ const insurerBond = async ({ application, type, policy }) => {
         blockers.push(response.errorMessage);
       }
     }
-    console.log('NEXT STEP ::::::::: ');
-    console.log('reportData', reportData);
-    console.log('entityData', JSON.stringify(entityData, null, 2));
     blockers = await checkGuidelines({
       guidelines: qbe.generalTerms,
       application,
@@ -500,7 +489,6 @@ const insurerBond = async ({ application, type, policy }) => {
 
 const insurerAtradius = async ({ application, type, policy }) => {
   try {
-    console.log('report for :', type);
     let blockers = [];
     const {
       identifiedReportDetails,
@@ -512,8 +500,6 @@ const insurerAtradius = async ({ application, type, policy }) => {
       country: application.debtorId.address.country.code,
       reportType: type,
     });
-    console.log('report code ', reportCode);
-    console.log('identifiedReportDetails ', identifiedReportDetails);
     if (!reportCode) {
       blockers.push('Unable to get report code');
     }
@@ -536,9 +522,6 @@ const insurerAtradius = async ({ application, type, policy }) => {
         blockers.push(response.errorMessage);
       }
     }
-    console.log('NEXT STEP ::::::::: ');
-    console.log('reportData', reportData);
-    console.log('entityData', JSON.stringify(entityData, null, 2));
     blockers = await checkGuidelines({
       guidelines: qbe.generalTerms,
       application,
@@ -561,7 +544,6 @@ const insurerAtradius = async ({ application, type, policy }) => {
 
 const insurerCoface = async ({ application, type, policy }) => {
   try {
-    console.log('report for :', type);
     let blockers = [];
     const {
       identifiedReportDetails,
@@ -573,8 +555,6 @@ const insurerCoface = async ({ application, type, policy }) => {
       country: application.debtorId.address.country.code,
       reportType: type,
     });
-    console.log('report code ', reportCode);
-    console.log('identifiedReportDetails ', identifiedReportDetails);
     if (!reportCode) {
       blockers.push('Unable to get report code');
     }
@@ -597,9 +577,6 @@ const insurerCoface = async ({ application, type, policy }) => {
         blockers.push(response.errorMessage);
       }
     }
-    console.log('NEXT STEP ::::::::: ');
-    console.log('reportData', reportData);
-    console.log('entityData', JSON.stringify(entityData, null, 2));
     blockers = await checkGuidelines({
       guidelines: qbe.generalTerms,
       application,
@@ -622,7 +599,6 @@ const insurerCoface = async ({ application, type, policy }) => {
 
 const insurerEuler = async ({ application, type, policy }) => {
   try {
-    console.log('report for :', type);
     let blockers = [];
     const {
       identifiedReportDetails,
@@ -634,8 +610,6 @@ const insurerEuler = async ({ application, type, policy }) => {
       country: application.debtorId.address.country.code,
       reportType: type,
     });
-    console.log('report code ', reportCode);
-    console.log('identifiedReportDetails ', identifiedReportDetails);
     if (!reportCode) {
       blockers.push('Unable to get report code');
     }
@@ -658,9 +632,6 @@ const insurerEuler = async ({ application, type, policy }) => {
         blockers.push(response.errorMessage);
       }
     }
-    console.log('NEXT STEP ::::::::: ');
-    console.log('reportData', reportData);
-    console.log('entityData', JSON.stringify(entityData, null, 2));
     blockers = await checkGuidelines({
       guidelines: qbe.generalTerms,
       application,
@@ -683,7 +654,6 @@ const insurerEuler = async ({ application, type, policy }) => {
 
 const insurerTrad = async ({ application, type, policy }) => {
   try {
-    console.log('report for :', type);
     let blockers = [];
     const {
       identifiedReportDetails,
@@ -695,8 +665,6 @@ const insurerTrad = async ({ application, type, policy }) => {
       country: application.debtorId.address.country.code,
       reportType: type,
     });
-    console.log('report code ', reportCode);
-    console.log('identifiedReportDetails ', identifiedReportDetails);
     if (!reportCode) {
       blockers.push('Unable to get report code');
     }
@@ -719,9 +687,6 @@ const insurerTrad = async ({ application, type, policy }) => {
         blockers.push(response.errorMessage);
       }
     }
-    console.log('NEXT STEP ::::::::: ');
-    console.log('reportData', reportData);
-    console.log('entityData', JSON.stringify(entityData, null, 2));
     blockers = await checkGuidelines({
       guidelines: qbe.generalTerms,
       application,
@@ -790,7 +755,6 @@ const checkForEntityRegistration = async ({
             return i;
           }
         });
-        console.log('entityRegistration ', entityRegistration);
         if (!entityRegistration) {
           response.isBlocker = true;
         }
@@ -855,7 +819,6 @@ const checkForGSTRegistration = async ({ goodsAndServicesTax, country }) => {
             return i;
           }
         });
-        console.log('entityGSTRegistration ', entityGSTRegistration);
         if (!entityGSTRegistration) {
           response.isBlocker = true;
         }
@@ -891,7 +854,6 @@ const checkForEntityIncorporated = async ({ entityStatus, value, country }) => {
     let today = new Date();
     today = today.setMonth(today.getMonth() - value);
     const yearBefore = new Date(today);
-    console.log('yearBefore', yearBefore);
     if (country === 'AUS') {
       if (
         entityStatus &&
@@ -911,7 +873,6 @@ const checkForEntityIncorporated = async ({ entityStatus, value, country }) => {
             return i;
           }
         });
-        console.log('entityRegistration ', entityRegistration);
         if (
           new Date(entityRegistration.effectiveFrom) > yearBefore ||
           entityRegistration.entityStatusCode.toLowerCase() !== 'active'
@@ -921,8 +882,6 @@ const checkForEntityIncorporated = async ({ entityStatus, value, country }) => {
       }
     } else {
       if (entityStatus && entityStatus.registrationDate) {
-        console.log(entityStatus.registrationDate, 'registrationDate');
-        console.log(new Date(entityStatus.registrationDate) > yearBefore);
         if (new Date(entityStatus.registrationDate) > yearBefore) {
           response.isBlocker = true;
         }
@@ -1311,9 +1270,6 @@ const storeReportData = async ({
   reportData,
   entityType,
   clientDebtorId,
-  countryCode,
-  searchField,
-  searchValue,
 }) => {
   try {
     const date = new Date();
@@ -1326,59 +1282,46 @@ const storeReportData = async ({
       productCode,
       name: reportName,
       expiryDate,
-      creditReport: reportData,
+      creditReport: reportData.Response,
     });
     await ClientDebtor.updateOne(
       { _id: clientDebtorId },
       { currentReportId: reportData._id },
     );
-    storePDFCreditReport({
-      searchField,
-      searchValue,
-      reportId: response._id,
-      countryCode,
-      productCode,
-    });
+    if (reportData.ReportsData && reportData.ReportsData.length) {
+      pdfData = reportData.ReportsData.find(
+        (element) => element.ReportFormat === 2 && element.Base64EncodedData,
+      );
+      if (pdfData && pdfData.Base64EncodedData) {
+        storePDFCreditReport({
+          reportId: response._id,
+          productCode,
+          pdfBase64: pdfData.Base64EncodedData,
+        });
+      }
+    }
   } catch (e) {
     Logger.log.error('Error occurred in store report data ', e);
   }
 };
 
-const storePDFCreditReport = async ({
-  searchField,
-  searchValue,
-  reportId,
-  countryCode,
-  productCode,
-}) => {
+const storePDFCreditReport = async ({ reportId, productCode, pdfBase64 }) => {
   try {
-    const reportResponse = await fetchCreditReportInPDFFormat({
-      countryCode,
-      productCode,
-      searchField,
-      searchValue,
+    const buffer = Buffer.from(pdfBase64, 'base64');
+    const fileName = productCode + '-' + Date.now() + '.pdf';
+    const s3Response = await uploadFile({
+      file: buffer,
+      filePath: 'credit-reports/' + fileName,
+      fileType: 'application/pdf',
+      isPublicFile: false,
     });
-    if (reportResponse && reportResponse?.ReportsData?.[0]?.Base64EncodedData) {
-      const buffer = Buffer.from(
-        reportResponse.ReportsData[0].Base64EncodedData,
-        'base64',
-      );
-      const fileName = productCode + '-' + Date.now() + '.pdf';
-      const s3Response = await uploadFile({
-        file: buffer,
-        filePath: 'credit-reports/' + fileName,
-        fileType: 'application/pdf',
-        isPublicFile: false,
-      });
-      await CreditReport.updateOne(
-        { _id: reportId },
-        {
-          keyPath: s3Response.key || s3Response.Key,
-          originalFileName: fileName,
-        },
-      );
-    }
-    return reportResponse;
+    await CreditReport.updateOne(
+      { _id: reportId },
+      {
+        keyPath: s3Response.key || s3Response.Key,
+        originalFileName: fileName,
+      },
+    );
   } catch (e) {
     Logger.log.error('Error occurred in store pdf report data ', e);
   }
