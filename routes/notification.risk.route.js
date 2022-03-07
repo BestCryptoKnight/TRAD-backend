@@ -102,6 +102,8 @@ router.get('/', async function (req, res) {
  */
 router.get('/list', async function (req, res) {
   try {
+    req.query.page = req.query.page ? parseInt(req.query.page, 10) : 1;
+    req.query.limit = req.query.limit ? parseInt(req.query.limit, 10) : 15;
     const query = [
       {
         $match: {
@@ -111,49 +113,90 @@ router.get('/list', async function (req, res) {
         },
       },
       {
-        $addFields: {
-          alertId: {
-            $cond: [{ $eq: ['$entityType', 'alert'] }, '$entityId', null],
-          },
+        $sort: {
+          createdAt: -1,
         },
       },
       {
-        $lookup: {
-          from: 'alerts',
-          localField: 'alertId',
-          foreignField: '_id',
-          as: 'alertId',
-        },
-      },
-      { $unwind: { path: '$alertId', preserveNullAndEmptyArrays: true } },
-      {
-        $addFields: {
-          entityId: {
-            $cond: [
-              { $eq: ['$entityType', 'alert'] },
-              {
-                priority: '$alertId.alertPriority',
-                _id: '$alertId._id',
+        $facet: {
+          paginatedResult: [
+            {
+              $skip: (req.query.page - 1) * req.query.limit,
+            },
+            {
+              $limit: req.query.limit,
+            },
+            {
+              $addFields: {
+                alertId: {
+                  $cond: [
+                    {
+                      $eq: ['$entityType', 'alert'],
+                    },
+                    '$entityId',
+                    null,
+                  ],
+                },
               },
-              '$entityId',
-            ],
-          },
-        },
-      },
-      {
-        $project: {
-          _id: 1,
-          description: 1,
-          createdAt: 1,
-          entityType: 1,
-          entityId: 1,
+            },
+            {
+              $lookup: {
+                from: 'alerts',
+                localField: 'alertId',
+                foreignField: '_id',
+                as: 'alertId',
+              },
+            },
+            {
+              $unwind: {
+                path: '$alertId',
+                preserveNullAndEmptyArrays: true,
+              },
+            },
+            {
+              $addFields: {
+                entityId: {
+                  $cond: [
+                    {
+                      $eq: ['$entityType', 'alert'],
+                    },
+                    {
+                      priority: '$alertId.alertPriority',
+                      _id: '$alertId._id',
+                    },
+                    '$entityId',
+                  ],
+                },
+              },
+            },
+            {
+              $project: {
+                _id: 1,
+                description: 1,
+                createdAt: 1,
+                entityType: 1,
+                entityId: 1,
+              },
+            },
+          ],
+          totalCount: [
+            {
+              $count: 'count',
+            },
+          ],
         },
       },
     ];
-    const { notifications } = await getNotificationList({ query });
+    const { notifications, total } = await getNotificationList({ query });
     res.status(200).send({
       status: 'SUCCESS',
-      data: notifications,
+      data: {
+        docs: notifications,
+        total,
+        page: req.query.page,
+        limit: req.query.limit,
+        pages: Math.ceil(total / req.query.limit),
+      },
     });
   } catch (e) {
     Logger.log.error('Error occurred in get unread notification list', e);

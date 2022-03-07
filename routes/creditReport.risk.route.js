@@ -387,66 +387,77 @@ router.put('/generate', async function (req, res) {
         });
         if (
           reportData &&
-          reportData.Response &&
-          reportData.Response.Messages.hasOwnProperty('ErrorCount') &&
-          parseInt(reportData.Response.Messages.ErrorCount) === 0
+          reportData.Status &&
+          reportData.Status.Success &&
+          !reportData.Status.Error
         ) {
-          const date = new Date();
-          let expiryDate = new Date(date.setMonth(date.getMonth() + 12));
-          expiryDate = new Date(expiryDate.setDate(expiryDate.getDate() - 1));
-          const response = {
-            entityId: entityId,
-            productCode: req.body.productCode,
-            creditReport: reportData.Response,
-            reportProvider: 'illion',
-            entityType: entityType,
-            name: reportData.Response.Header.ProductName,
-            expiryDate: expiryDate,
-          };
-          const reportDetails = await CreditReport.create(response);
-          if (reportData.ReportsData && reportData.ReportsData.length) {
-            pdfData = reportData.ReportsData.find(
-              (element) =>
-                element.ReportFormat === 2 && element.Base64EncodedData,
-            );
-            if (pdfData && pdfData.Base64EncodedData) {
-              storePDFCreditReport({
-                reportId: reportDetails._id,
-                productCode: req.body.productCode,
-                pdfBase64: pdfData.Base64EncodedData,
-              });
-            }
-          }
           if (
-            reportData.Response.DynamicDelinquencyScore &&
-            reportData.Response.DynamicDelinquencyScore &&
-            reportData.Response.DynamicDelinquencyScore.Score
+            reportData &&
+            reportData.Response &&
+            reportData.Response.Messages.hasOwnProperty('ErrorCount') &&
+            reportData.Response.Messages.ErrorCount === 0
           ) {
-            await Debtor.updateOne(
-              { _id: debtor._id },
-              {
-                riskRating: reportData.Response.DynamicDelinquencyScore.Score,
-              },
-            );
+            const date = new Date();
+            let expiryDate = new Date(date.setMonth(date.getMonth() + 12));
+            expiryDate = new Date(expiryDate.setDate(expiryDate.getDate() - 1));
+            const response = {
+              entityId: entityId,
+              productCode: req.body.productCode,
+              creditReport: reportData.Response,
+              reportProvider: 'illion',
+              entityType: entityType,
+              name: reportData.Response.Header.ProductName,
+              expiryDate: expiryDate,
+            };
+            const reportDetails = await CreditReport.create(response);
+            if (reportData.ReportsData && reportData.ReportsData.length) {
+              pdfData = reportData.ReportsData.find(
+                (element) =>
+                  element.ReportFormat === 2 && element.Base64EncodedData,
+              );
+              if (pdfData && pdfData.Base64EncodedData) {
+                storePDFCreditReport({
+                  reportId: reportDetails._id,
+                  productCode: req.body.productCode,
+                  pdfBase64: pdfData.Base64EncodedData,
+                });
+              }
+            }
+            if (
+              reportData.Response.DynamicDelinquencyScore &&
+              reportData.Response.DynamicDelinquencyScore &&
+              reportData.Response.DynamicDelinquencyScore.Score
+            ) {
+              await Debtor.updateOne(
+                { _id: debtor._id },
+                {
+                  riskRating: reportData.Response.DynamicDelinquencyScore.Score,
+                },
+              );
+            }
+            notificationBody.notificationObj.fetchStatus = 'SUCCESS';
+            notificationBody.notificationObj.message =
+              'Report generated successfully';
+            await updateActiveReportInCreditLimit({
+              reportDetails,
+              debtorId: req.body.debtorId,
+            });
+          } else {
+            const message =
+              reportData.Response.Messages.Error &&
+              reportData.Response.Messages.Error.Desc &&
+              reportData.Response.Messages.Error.Num
+                ? reportData.Response.Messages.Error.Num +
+                  ' - ' +
+                  reportData.Response.Messages.Error.Desc
+                : 'Unable to fetch report';
+            notificationBody.notificationObj.fetchStatus = 'ERROR';
+            notificationBody.notificationObj.message = message;
           }
-          notificationBody.notificationObj.fetchStatus = 'SUCCESS';
-          notificationBody.notificationObj.message =
-            'Report generated successfully';
-          await updateActiveReportInCreditLimit({
-            reportDetails,
-            debtorId: req.body.debtorId,
-          });
         } else {
-          const message =
-            reportData.Response.Messages.Error &&
-            reportData.Response.Messages.Error.Desc &&
-            reportData.Response.Messages.Error.Num
-              ? reportData.Response.Messages.Error.Num +
-                ' - ' +
-                reportData.Response.Messages.Error.Desc
-              : 'Unable to fetch report';
           notificationBody.notificationObj.fetchStatus = 'ERROR';
-          notificationBody.notificationObj.message = message;
+          notificationBody.notificationObj.message =
+            reportData.Status.ErrorMessage || 'Error in fetching Credit Report';
         }
         sendNotification(notificationBody);
       } else {

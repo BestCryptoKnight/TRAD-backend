@@ -280,27 +280,42 @@ const getReportData = async ({
             reportData.Status.hasOwnProperty('Error')
           ) {
             if (reportData.Status.Success && !reportData.Status.Error) {
-              await storeReportData({
-                debtorId: debtorId,
-                productCode: reportCode,
-                reportFrom: 'illion',
-                reportName: reportData.Response.Header.ProductName,
-                reportData: reportData,
-                entityType: reportEntityType,
-                clientDebtorId: clientDebtorId,
-                countryCode: debtor.address.country.code,
-                searchField: lookupMethod,
-                searchValue: lookupNumber,
-              });
-              reportData = reportData.Response;
               if (
-                reportData.DynamicDelinquencyScore &&
-                reportData.DynamicDelinquencyScore.Score
+                reportData.Response &&
+                reportData.Response.Messages.hasOwnProperty('ErrorCount') &&
+                reportData.Response.Messages.ErrorCount === 0
               ) {
-                await Debtor.updateOne(
-                  { _id: debtor._id },
-                  { riskRating: reportData.DynamicDelinquencyScore.Score },
-                );
+                await storeReportData({
+                  debtorId: debtorId,
+                  productCode: reportCode,
+                  reportFrom: 'illion',
+                  reportName: reportData.Response.Header.ProductName,
+                  reportData: reportData,
+                  entityType: reportEntityType,
+                  clientDebtorId: clientDebtorId,
+                  countryCode: debtor.address.country.code,
+                  searchField: lookupMethod,
+                  searchValue: lookupNumber,
+                });
+                reportData = reportData.Response;
+                if (
+                  reportData.DynamicDelinquencyScore &&
+                  reportData.DynamicDelinquencyScore.Score
+                ) {
+                  await Debtor.updateOne(
+                    { _id: debtor._id },
+                    { riskRating: reportData.DynamicDelinquencyScore.Score },
+                  );
+                }
+              } else {
+                errorMessage =
+                  reportData.Response.Messages.Error.Desc &&
+                  reportData.Response.Messages.Error.Num
+                    ? reportData.Response.Messages.Error.Num +
+                      ' - ' +
+                      reportData.Response.Messages.Error.Desc
+                    : 'Unable to fetch report';
+                reportData = null;
               }
             } else if (!reportData.Status.Success && reportData.Status.Error) {
               errorMessage =
