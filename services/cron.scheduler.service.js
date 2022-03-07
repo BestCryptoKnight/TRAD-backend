@@ -134,7 +134,7 @@ const scheduler = async () => {
       },
     );
   } catch (e) {
-    Logger.log.error('Error occurred in retrieve alert list', e.message || e);
+    Logger.log.error('Error occurred in Cron Scheduler', e.message || e);
   }
 };
 

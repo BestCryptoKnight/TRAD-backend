@@ -276,7 +276,10 @@ router.get('/document-type-list', async function (req, res) {
       .lean();
     res.status(200).send({ status: 'SUCCESS', data: documentTypes });
   } catch (e) {
-    Logger.log.error('Error occurred in get document types ', e.message || e);
+    Logger.log.error(
+      'Error occurred in get document types list',
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -497,7 +500,7 @@ router.post('/document-type', async function (req, res) {
  */
 router.put('/column-name', async function (req, res) {
   if (!req.body.hasOwnProperty('isReset') || !req.body.columns) {
-    Logger.log.error('Require fields are missing');
+    Logger.log.warn('Require fields are missing');
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',

@@ -335,7 +335,7 @@ router.get('/alert/:alertId', async function (req, res) {
       data: response,
     });
   } catch (e) {
-    Logger.log.error('Error occurred in get alert list', e);
+    Logger.log.error('Error occurred in get alert by id', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -969,7 +969,7 @@ router.get('/download/:debtorId', async function (req, res) {
       });
     }
   } catch (e) {
-    Logger.log.error('Error occurred in download in csv', e);
+    Logger.log.error('Error occurred in download credit-limit in csv', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -1382,7 +1382,7 @@ router.put('/stakeholder/:debtorId/:stakeholderId', async function (req, res) {
       }
     }
   } catch (e) {
-    Logger.log.error('Error occurred in add stakeholder ', e.message || e);
+    Logger.log.error('Error occurred in update stakeholder ', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -1586,7 +1586,7 @@ router.delete('/stakeholder', async function (req, res) {
     });
   } catch (e) {
     Logger.log.error(
-      'Error occurred in delete debtor-director ',
+      'Error occurred in delete debtor-directors ',
       e.message || e,
     );
     res.status(500).send({

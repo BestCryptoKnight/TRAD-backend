@@ -78,7 +78,10 @@ router.get('/', authenticate, async function (req, res) {
       data: response,
     });
   } catch (e) {
-    Logger.log.error('Error occurred in search', e.message || e);
+    Logger.log.error(
+      'Error occurred in global risk panel search',
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

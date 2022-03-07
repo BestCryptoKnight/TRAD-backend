@@ -265,7 +265,7 @@ router.get('/details/:noteId', async function (req, res) {
       .lean();
     res.status(200).send({ status: 'SUCCESS', data: note });
   } catch (e) {
-    Logger.log.error('Error occurred get task details ', e.message || e);
+    Logger.log.error('Error occurred get note by id ', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
