@@ -17,12 +17,6 @@ const { getNotificationList } = require('./../helper/notification.helper');
  */
 router.get('/', async function (req, res) {
   try {
-    const month = req.query.month
-      ? parseInt(req.query.month)
-      : new Date().getMonth() + 1;
-    const year = req.query.year
-      ? parseInt(req.query.year)
-      : new Date().getFullYear();
     req.query.page = req.query.page || 1;
     req.query.limit = 15;
     const query = [
@@ -43,7 +37,6 @@ router.get('/', async function (req, res) {
           entityType: '$entityType',
         },
       },
-      { $match: { month: month, year: year } },
       { $sort: { createdAt: -1 } },
       {
         $facet: {
