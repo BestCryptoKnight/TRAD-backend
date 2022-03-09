@@ -108,7 +108,11 @@ let processObj = (obj) => {
     ) {
       processedObject[processedKey] = [];
       obj[key].forEach((subObj) => {
-        if (typeof subObj === 'object' && subObj.length === undefined) {
+        if (
+          subObj &&
+          typeof subObj === 'object' &&
+          subObj.length === undefined
+        ) {
           processedObject[processedKey].push(processObj(subObj));
         }
       });
