@@ -17,12 +17,6 @@ const { getNotificationList } = require('./../helper/notification.helper');
  */
 router.get('/', async function (req, res) {
   try {
-    const month = req.query.month
-      ? parseInt(req.query.month)
-      : new Date().getMonth() + 1;
-    const year = req.query.year
-      ? parseInt(req.query.year)
-      : new Date().getFullYear();
     req.query.page = req.query.page || 1;
     req.query.limit = 15;
     const query = [
@@ -43,7 +37,6 @@ router.get('/', async function (req, res) {
           entityType: '$entityType',
         },
       },
-      { $match: { month: month, year: year } },
       { $sort: { createdAt: -1 } },
       {
         $facet: {
@@ -101,6 +94,8 @@ router.get('/', async function (req, res) {
  */
 router.get('/list', async function (req, res) {
   try {
+    req.query.page = req.query.page ? parseInt(req.query.page, 10) : 1;
+    req.query.limit = req.query.limit ? parseInt(req.query.limit, 10) : 15;
     const query = [
       {
         $match: {
@@ -110,19 +105,47 @@ router.get('/list', async function (req, res) {
         },
       },
       {
-        $project: {
-          _id: 1,
-          description: 1,
-          createdAt: 1,
-          entityType: 1,
-          entityId: 1,
+        $sort: {
+          createdAt: -1,
+        },
+      },
+      {
+        $facet: {
+          paginatedResult: [
+            {
+              $skip: (req.query.page - 1) * req.query.limit,
+            },
+            {
+              $limit: req.query.limit,
+            },
+            {
+              $project: {
+                _id: 1,
+                description: 1,
+                createdAt: 1,
+                entityType: 1,
+                entityId: 1,
+              },
+            },
+          ],
+          totalCount: [
+            {
+              $count: 'count',
+            },
+          ],
         },
       },
     ];
-    const { notifications } = await getNotificationList({ query });
+    const { notifications, total } = await getNotificationList({ query });
     res.status(200).send({
       status: 'SUCCESS',
-      data: notifications,
+      data: {
+        docs: notifications,
+        total,
+        page: req.query.page,
+        limit: req.query.limit,
+        pages: Math.ceil(total / req.query.limit),
+      },
     });
   } catch (e) {
     Logger.log.error('Error occurred in get notification list ', e);
