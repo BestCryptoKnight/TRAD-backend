@@ -1675,7 +1675,7 @@ const getUsagePerClientReport = async ({
     }
 
     if (requestedQuery.limitType) {
-      query.push({
+      facetQuery.push({
         $match: {
           'activeApplicationId.limitType': {
             $in: requestedQuery.limitType.split(','),
@@ -1746,23 +1746,17 @@ const getUsagePerClientReport = async ({
       query = query.concat(facetQuery);
     }
     query.unshift({ $match: queryFilter });
-    console.log('Querying........', new Date());
     const clientDebtors = await ClientDebtor.aggregate(query).allowDiskUse(
       true,
     );
-    console.log('Queried........', new Date());
     const response =
       clientDebtors && clientDebtors[0] && clientDebtors[0]['paginatedResult']
         ? clientDebtors[0]['paginatedResult']
         : clientDebtors;
     const applicationCounts = {};
     if (isApplicationCountSelected) {
-      console.log('Looking for application count........', new Date());
-      console.log('Response length', response.length);
       const promises = [];
       const clientDebtorIds = response.map((i) => i._id);
-      console.log('clientDebtorIds', clientDebtorIds.length);
-      // response.forEach((i) => {
       promises.push(
         Application.aggregate([
           {
@@ -1781,20 +1775,12 @@ const getUsagePerClientReport = async ({
           },
         ]).allowDiskUse(true),
       );
-      // });
-      console.log('Length of promises array.....', promises.length);
-      console.log('Querying another aggregation.....', new Date());
       const applications = await Promise.all(promises);
-      console.log(
-        'Queried another aggregation.....',
-        JSON.stringify(applications, null, 2),
-      );
       applications?.[0].forEach((i) => {
         // if (Array.isArray(i) && i[0]) {
         applicationCounts[i._id] = i.count;
         // }
       });
-      console.log('Formatted response...........', new Date());
     }
     const total =
       clientDebtors.length !== 0 &&
