@@ -1576,7 +1576,7 @@ const getUsagePerClientReport = async ({
     const queryFilter = {
       status: { $exists: true, $in: ['APPROVED', 'DECLINED'] },
     };
-    const query = [];
+    let query = [];
     const facetQuery = [];
     const filterArray = [];
     if (requestedQuery.clientIds) {
@@ -1742,44 +1742,59 @@ const getUsagePerClientReport = async ({
           ],
         },
       });
+    } else if (facetQuery.length !== 0) {
+      query = query.concat(facetQuery);
     }
     query.unshift({ $match: queryFilter });
+    console.log('Querying........', new Date());
     const clientDebtors = await ClientDebtor.aggregate(query).allowDiskUse(
       true,
     );
+    console.log('Queried........', new Date());
     const response =
       clientDebtors && clientDebtors[0] && clientDebtors[0]['paginatedResult']
         ? clientDebtors[0]['paginatedResult']
         : clientDebtors;
     const applicationCounts = {};
     if (isApplicationCountSelected) {
+      console.log('Looking for application count........', new Date());
+      console.log('Response length', response.length);
       const promises = [];
-      response.forEach((i) => {
-        promises.push(
-          Application.aggregate([
-            {
-              $match: {
-                clientDebtorId: i._id,
-                status: {
-                  $nin: ['DRAFT'],
-                },
+      const clientDebtorIds = response.map((i) => i._id);
+      console.log('clientDebtorIds', clientDebtorIds.length);
+      // response.forEach((i) => {
+      promises.push(
+        Application.aggregate([
+          {
+            $match: {
+              clientDebtorId: { $in: clientDebtorIds },
+              status: {
+                $nin: ['DRAFT'],
               },
             },
-            {
-              $group: {
-                _id: '$clientDebtorId',
-                count: { $sum: 1 },
-              },
+          },
+          {
+            $group: {
+              _id: '$clientDebtorId',
+              count: { $sum: 1 },
             },
-          ]).allowDiskUse(true),
-        );
-      });
+          },
+        ]).allowDiskUse(true),
+      );
+      // });
+      console.log('Length of promises array.....', promises.length);
+      console.log('Querying another aggregation.....', new Date());
       const applications = await Promise.all(promises);
-      applications.forEach((i) => {
-        if (Array.isArray(i) && i[0]) {
-          applicationCounts[i[0]._id] = i[0].count;
-        }
+      console.log(
+        'Queried another aggregation.....',
+        JSON.stringify(applications, null, 2),
+      );
+      applications?.[0].forEach((i) => {
+        // if (Array.isArray(i) && i[0]) {
+        applicationCounts[i._id] = i.count;
+        // }
       });
+      console.log('Formatted response...........', new Date());
     }
     const total =
       clientDebtors.length !== 0 &&
@@ -1897,7 +1912,7 @@ const getLimitHistoryReport = async ({
 }) => {
   try {
     const queryFilter = {};
-    const query = [];
+    let query = [];
     const facetQuery = [];
     const filterArray = [];
     if (requestedQuery.clientIds) {
@@ -2067,6 +2082,8 @@ const getLimitHistoryReport = async ({
           ],
         },
       });
+    } else if (facetQuery.length !== 0) {
+      query = query.concat(facetQuery);
     }
     query.unshift({ $match: queryFilter });
     const applications = await Application.aggregate(query).allowDiskUse(true);
