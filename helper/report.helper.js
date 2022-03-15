@@ -1576,7 +1576,7 @@ const getUsagePerClientReport = async ({
     const queryFilter = {
       status: { $exists: true, $in: ['APPROVED', 'DECLINED'] },
     };
-    const query = [];
+    let query = [];
     const facetQuery = [];
     const filterArray = [];
     if (requestedQuery.clientIds) {
@@ -1742,6 +1742,8 @@ const getUsagePerClientReport = async ({
           ],
         },
       });
+    } else if (isForDownload) {
+      query = query.concat(facetQuery);
     }
     query.unshift({ $match: queryFilter });
     console.log('Querying........', new Date());
