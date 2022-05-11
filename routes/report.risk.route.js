@@ -604,7 +604,7 @@ router.put('/column-name', async function (req, res) {
       case 'usage-per-client-report':
       case 'limit-history-report':
       case 'claims-report':
-      case 'alert':
+      case 'alert-report':
         if (req.body.isReset) {
           module = StaticFile.modules.find(
             (i) => i.name === req.body.columnFor,
