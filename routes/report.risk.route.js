@@ -166,7 +166,7 @@ router.get('/alert-entity-list', async function (req, res) {
     if (req.accessTypes && req.accessTypes.indexOf('full-access') === -1) {
       hasFullAccess = false;
     }
-    const [alertPriorities, alertTypes, clients] = await Promise.all([
+    const [alertPriority, alertType, clients] = await Promise.all([
       Alert.find().distinct('alertPriority'),
       Alert.find().distinct('alertType'),
       getClientList({
@@ -185,8 +185,8 @@ router.get('/alert-entity-list', async function (req, res) {
       status: 'SUCCESS',
       data: {
         clientIds: clients,
-        alertTypes,
-        alertPriorities,
+        alertType,
+        alertPriority,
       },
     });
   } catch (e) {
