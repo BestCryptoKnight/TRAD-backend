@@ -3259,5 +3259,6 @@
       "name": "24/7 Alerts",
       "_id": "247_ALERT"
     }
-  ]
+  ],
+  "AlertPriorities": ["Low", "Moderate", "High"]
 }

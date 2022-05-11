@@ -8,6 +8,7 @@ const Application = mongoose.model('application');
 const ClientDebtor = mongoose.model('client-debtor');
 const Debtor = mongoose.model('debtor');
 const Insurer = mongoose.model('insurer');
+const Alert = mongoose.model('alert');
 
 /*
  * Local Imports
@@ -22,6 +23,7 @@ const {
   getStreetTypeName,
   getLimitType,
 } = require('./debtor.helper');
+const StaticData = require('./../static-files/staticData.json');
 
 /*
 Get Client List Report
@@ -2204,6 +2206,242 @@ const getClaimsReport = async ({
   }
 };
 
+const getAlertReport = async ({
+  hasFullAccess = false,
+  userId,
+  reportColumn,
+  requestedQuery,
+}) => {
+  try {
+    const queryFilter = {};
+    let query = [];
+    const facetQuery = [];
+    let clients;
+    let creditLimits;
+    let debtorProject = {};
+    const clientRequestQuery = {
+      isDeleted: false,
+    };
+    reportColumn.push('alertId');
+    const isDescriptionFieldSelected = reportColumn.includes('description');
+    const isClientFieldSelected = reportColumn.includes('clientName');
+    const isABNFieldSelected = reportColumn.includes('abn');
+    const isACNFieldSelected = reportColumn.includes('acn');
+    const isDebtorFieldSelected = reportColumn.includes('debtorName');
+    /*if (requestedQuery.clientIds) {
+      const clientIds = requestedQuery.clientIds
+          .split(',')
+          .map((id) => mongoose.Types.ObjectId(id));
+      queryFilter.clientId = { $in: clientIds };
+
+    } else if (!hasFullAccess) {
+      const clients = await Client.find({
+        isDeleted: false,
+        $or: [{ riskAnalystId: userId }, { serviceManagerId: userId }],
+      })
+          .select('_id')
+          .lean();
+      const clientIds = clients.map((i) => i._id);
+      const creditLimits = await ClientDebtor.find({client:{$in:clientIds}}).select('debtorId entityType').lean();
+      const debtorIds = creditLimits.map(i => i.debtorId)
+      queryFilter.entityId = { $in: debtorIds };
+    }*/
+
+    if (
+      requestedQuery.clientIds ||
+      !hasFullAccess ||
+      reportColumn.includes('clientName')
+    ) {
+      let clientIds = [];
+      if (requestedQuery.clientIds) {
+        clientIds = requestedQuery.clientIds
+          .split(',')
+          .map((id) => mongoose.Types.ObjectId(id));
+        clientRequestQuery._id = { $in: clientIds };
+      } else {
+        const clientQuery = {
+          isDeleted: false,
+        };
+        if (!hasFullAccess) {
+          clientQuery['$or'] = [
+            { riskAnalystId: userId },
+            { serviceManagerId: userId },
+          ];
+        }
+        const clients = await Client.find(clientQuery).select('_id').lean();
+        clientIds = clients.map((i) => i._id);
+      }
+      creditLimits = await ClientDebtor.find({ clientId: { $in: clientIds } })
+        .select('debtorId entityType clientId')
+        .populate({ path: 'clientId', select: '_id name' })
+        .lean();
+      const debtorIds = creditLimits.map((i) => i.debtorId);
+      queryFilter.entityId = { $in: debtorIds };
+
+      clients = creditLimits.reduce(
+        (obj, item) => Object.assign(obj, { [item.debtorId]: item }),
+        {},
+      );
+    }
+
+    let dateQuery = {};
+    if (requestedQuery.startDate || requestedQuery.endDate) {
+      if (requestedQuery.startDate) {
+        dateQuery = {
+          $gte: new Date(requestedQuery.startDate),
+        };
+      }
+      if (requestedQuery.endDate) {
+        dateQuery = Object.assign({}, dateQuery, {
+          $lte: new Date(requestedQuery.endDate),
+        });
+      }
+      queryFilter.alertDate = dateQuery;
+    }
+
+    if (requestedQuery.alertPriority) {
+      queryFilter.alertPriority = requestedQuery.alertPriority;
+    }
+    if (requestedQuery.alertType) {
+      queryFilter.alertType = requestedQuery.alertType;
+    }
+
+    const fields = reportColumn.map((i) => {
+      /*if (i === 'debtorName') {
+        i = 'debtorDetails.entityName';
+      }
+      if (i === 'abn' || i === 'acn') {
+        i = 'debtorDetails.' + i;
+      }*/
+      return [i, 1];
+    });
+
+    if (
+      reportColumn.includes('debtorName') ||
+      reportColumn.includes('abn') ||
+      reportColumn.includes('acn')
+    ) {
+      facetQuery.push(
+        {
+          $lookup: {
+            from: 'debtors',
+            localField: 'entityId',
+            foreignField: '_id',
+            as: 'debtor',
+          },
+        },
+        {
+          $lookup: {
+            from: 'debtor-directors',
+            localField: 'entityId',
+            foreignField: '_id',
+            as: 'debtorDirector',
+          },
+        },
+        {
+          $lookup: {
+            from: 'debtors',
+            localField: 'debtorDirector.debtorId',
+            foreignField: '_id',
+            as: 'debtorOfDirector',
+          },
+        },
+        {
+          $unwind: {
+            path: '$debtor',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $unwind: {
+            path: '$debtorOfDirector',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+      );
+      /*fields.unshift({debtorDetails: {
+          $cond: { if: { $eq: [ "$entityType", 'debtor-director' ] }, then: "$debtorOfDirector", else: "$debtor" }
+
+        }})*/
+      debtorProject = {
+        debtorDetails: {
+          $cond: {
+            if: { $eq: ['$entityType', 'debtor-director'] },
+            then: '$debtorOfDirector',
+            else: '$debtor',
+          },
+        },
+      };
+      // fields.push(['debtorDetails._id',1])
+    }
+
+    const projectFields = fields.reduce((obj, [key, val]) => {
+      obj[key] = val;
+      return obj;
+    }, {});
+    facetQuery.push({
+      $project: { ...debtorProject, ...projectFields },
+    });
+
+    if (requestedQuery.page && requestedQuery.limit) {
+      query.push({
+        $facet: {
+          paginatedResult: [
+            {
+              $skip:
+                (parseInt(requestedQuery.page) - 1) *
+                parseInt(requestedQuery.limit),
+            },
+            { $limit: parseInt(requestedQuery.limit) },
+            ...facetQuery,
+          ],
+          totalCount: [
+            {
+              $count: 'count',
+            },
+          ],
+        },
+      });
+    }
+    query.unshift({ $match: queryFilter });
+    const alerts = await Alert.aggregate(query).allowDiskUse(true);
+    const response =
+      alerts && alerts[0] && alerts[0]['paginatedResult']
+        ? alerts[0]['paginatedResult']
+        : alerts;
+    const total =
+      alerts.length !== 0 &&
+      alerts[0]['totalCount'] &&
+      alerts[0]['totalCount'].length !== 0
+        ? alerts[0]['totalCount'][0]['count']
+        : 0;
+    response.forEach((alert) => {
+      if (isDescriptionFieldSelected) {
+        alert.description = StaticData.AlertList[alert.alertId].description;
+      }
+      if (isClientFieldSelected) {
+        alert.clientName =
+          clients[alert.debtorDetails?._id?.toString()]?.clientId?.name || '';
+      }
+      if (isABNFieldSelected) {
+        alert.abn = alert.debtorDetails?.abn;
+      }
+      if (isACNFieldSelected) {
+        alert.acn = alert.debtorDetails?.acn;
+      }
+      if (isDebtorFieldSelected) {
+        alert.debtorName = alert.debtorDetails?.entityName;
+      }
+      delete alert.alertId;
+      delete alert.debtorDetails;
+    });
+    return { response, total };
+  } catch (e) {
+    Logger.log.error('Error occurred in get alert report');
+    Logger.log.error(e.message || e);
+  }
+};
+
 const numberWithCommas = (number) => {
   return number?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 };
@@ -2218,4 +2456,5 @@ module.exports = {
   getLimitHistoryReport,
   getClaimsReport,
   numberWithCommas,
+  getAlertReport,
 };
