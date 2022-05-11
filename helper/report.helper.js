@@ -2401,7 +2401,6 @@ const getAlertReport = async ({
       });
     }
     query.unshift({ $match: queryFilter });
-    console.log('query', JSON.stringify(query, null, 3));
     const alerts = await Alert.aggregate(query).allowDiskUse(true);
     const response =
       alerts && alerts[0] && alerts[0]['paginatedResult']
@@ -2414,14 +2413,16 @@ const getAlertReport = async ({
         ? alerts[0]['totalCount'][0]['count']
         : 0;
     response.forEach((alert) => {
-      console.log(alert);
       if (isDescriptionFieldSelected) {
         alert.description = StaticData.AlertList[alert.alertId].description;
       }
       if (isClientFieldSelected) {
+        console.log(
+          'client name',
+          clients[alert.debtorDetails?.debtorId?.toString()],
+        );
         alert.clientName =
-          clients[alert.debtorDetails?.debtorId?.toString()]?.clientId?.name ||
-          '';
+          clients[alert.debtorDetails?._id?.toString()]?.clientId?.name || '';
       }
       if (isABNFieldSelected) {
         alert.abn = alert.debtorDetails?.abn;
