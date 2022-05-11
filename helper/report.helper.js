@@ -8,6 +8,7 @@ const Application = mongoose.model('application');
 const ClientDebtor = mongoose.model('client-debtor');
 const Debtor = mongoose.model('debtor');
 const Insurer = mongoose.model('insurer');
+const Alert = mongoose.model('alert');
 
 /*
  * Local Imports
@@ -22,6 +23,7 @@ const {
   getStreetTypeName,
   getLimitType,
 } = require('./debtor.helper');
+const StaticData = require('./../static-files/staticData.json');
 
 /*
 Get Client List Report
@@ -2204,6 +2206,157 @@ const getClaimsReport = async ({
   }
 };
 
+const getAlertReport = async ({
+  hasFullAccess = false,
+  userId,
+  reportColumn,
+  requestedQuery,
+}) => {
+  try {
+    const queryFilter = {};
+    let query = [];
+    const facetQuery = [];
+    let clients;
+    let creditLimits;
+    const clientRequestQuery = {
+      isDeleted: false,
+    };
+    reportColumn.push('alertId');
+    const isDescriptionFieldSelected = reportColumn.includes('description');
+    /*if (requestedQuery.clientIds) {
+      const clientIds = requestedQuery.clientIds
+          .split(',')
+          .map((id) => mongoose.Types.ObjectId(id));
+      queryFilter.clientId = { $in: clientIds };
+
+    } else if (!hasFullAccess) {
+      const clients = await Client.find({
+        isDeleted: false,
+        $or: [{ riskAnalystId: userId }, { serviceManagerId: userId }],
+      })
+          .select('_id')
+          .lean();
+      const clientIds = clients.map((i) => i._id);
+      const creditLimits = await ClientDebtor.find({client:{$in:clientIds}}).select('debtorId entityType').lean();
+      const debtorIds = creditLimits.map(i => i.debtorId)
+      queryFilter.entityId = { $in: debtorIds };
+    }*/
+
+    if (requestedQuery.clientIds || !hasFullAccess) {
+      let clientIds = [];
+      if (requestedQuery.clientIds) {
+        clientIds = requestedQuery.clientIds
+          .split(',')
+          .map((id) => mongoose.Types.ObjectId(id));
+      } else if (!hasFullAccess) {
+        const clients = await Client.find({
+          isDeleted: false,
+          $or: [{ riskAnalystId: userId }, { serviceManagerId: userId }],
+        })
+          .select('_id')
+          .lean();
+        clientIds = clients.map((i) => i._id);
+      }
+      creditLimits = await ClientDebtor.find({ client: { $in: clientIds } })
+        .select('debtorId entityType clientId')
+        .lean();
+      const debtorIds = creditLimits.map((i) => i.debtorId);
+      queryFilter.entityId = { $in: debtorIds };
+    }
+
+    let dateQuery = {};
+    if (requestedQuery.alertStartDate || requestedQuery.alertEndDate) {
+      if (requestedQuery.alertStartDate) {
+        dateQuery = {
+          $gte: new Date(requestedQuery.alertStartDate),
+        };
+      }
+      if (requestedQuery.alertEndDate) {
+        dateQuery = Object.assign({}, dateQuery, {
+          $lte: new Date(requestedQuery.alertEndDate),
+        });
+      }
+      queryFilter.alertDate = dateQuery;
+    }
+
+    if (requestedQuery.alertPriority) {
+      queryFilter.alertPriority = requestedQuery.alertPriority;
+    }
+    if (requestedQuery.alertType) {
+      queryFilter.alertType = requestedQuery.alertType;
+    }
+
+    if (reportColumn.includes('clientName')) {
+      clients = await Client.find(clientRequestQuery).select('_id name').lean();
+    }
+    if (reportColumn.includes('debtorName')) {
+      facetQuery.push({
+        $lookup: {
+          from: 'debtors',
+          localField: 'entityId',
+          foreignField: '_id',
+          as: 'debtor',
+        },
+      });
+    }
+
+    const fields = reportColumn.map((i) => {
+      if (i === 'debtorName') {
+        i = 'debtor.entityName';
+      }
+      return [i, 1];
+    });
+    facetQuery.push({
+      $project: fields.reduce((obj, [key, val]) => {
+        obj[key] = val;
+        return obj;
+      }, {}),
+    });
+
+    if (requestedQuery.page && requestedQuery.limit) {
+      query.push({
+        $facet: {
+          paginatedResult: [
+            {
+              $skip:
+                (parseInt(requestedQuery.page) - 1) *
+                parseInt(requestedQuery.limit),
+            },
+            { $limit: parseInt(requestedQuery.limit) },
+            ...facetQuery,
+          ],
+          totalCount: [
+            {
+              $count: 'count',
+            },
+          ],
+        },
+      });
+    }
+    query.unshift({ $match: queryFilter });
+    const alerts = await Alert.aggregate(query).allowDiskUse(true);
+    const response =
+      alerts && alerts[0] && alerts[0]['paginatedResult']
+        ? alerts[0]['paginatedResult']
+        : alerts;
+    const total =
+      alerts.length !== 0 &&
+      alerts[0]['totalCount'] &&
+      alerts[0]['totalCount'].length !== 0
+        ? alerts[0]['totalCount'][0]['count']
+        : 0;
+    response.forEach((alert) => {
+      if (isDescriptionFieldSelected) {
+        alert.description = StaticData.AlertList[alert.alertId].description;
+      }
+    });
+    return { response, total };
+  } catch (e) {
+    Logger.log.error('Error occurred in get alert report');
+    Logger.log.error(e.message || e);
+  }
+};
+
 const numberWithCommas = (number) => {
   return number?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 };
@@ -2218,4 +2371,5 @@ module.exports = {
   getLimitHistoryReport,
   getClaimsReport,
   numberWithCommas,
+  getAlertReport,
 };
