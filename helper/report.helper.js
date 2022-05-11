@@ -2259,14 +2259,16 @@ const getAlertReport = async ({
           .map((id) => mongoose.Types.ObjectId(id));
         clientRequestQuery._id = { $in: clientIds };
       } else {
-        const clients = await Client.find({
+        const clientQuery = {
           isDeleted: false,
-          $or: !hasFullAccess
-            ? [{ riskAnalystId: userId }, { serviceManagerId: userId }]
-            : [],
-        })
-          .select('_id')
-          .lean();
+        };
+        if (!hasFullAccess) {
+          clientQuery['$or'] = [
+            { riskAnalystId: userId },
+            { serviceManagerId: userId },
+          ];
+        }
+        const clients = await Client.find(clientQuery).select('_id').lean();
         clientIds = clients.map((i) => i._id);
       }
       creditLimits = await ClientDebtor.find({ clientId: { $in: clientIds } })
