@@ -2420,7 +2420,8 @@ const getAlertReport = async ({
       }
       if (isClientFieldSelected) {
         alert.clientName =
-          clients[alert.debtorDetails?.debtorId]?.clientId?.name || '';
+          clients[alert.debtorDetails?.debtorId?.toString()]?.clientId?.name ||
+          '';
       }
       if (isABNFieldSelected) {
         alert.abn = alert.debtorDetails?.abn;
