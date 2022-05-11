@@ -2258,10 +2258,12 @@ const getAlertReport = async ({
           .split(',')
           .map((id) => mongoose.Types.ObjectId(id));
         clientRequestQuery._id = { $in: clientIds };
-      } else if (!hasFullAccess) {
+      } else {
         const clients = await Client.find({
           isDeleted: false,
-          $or: [{ riskAnalystId: userId }, { serviceManagerId: userId }],
+          $or: !hasFullAccess
+            ? [{ riskAnalystId: userId }, { serviceManagerId: userId }]
+            : [],
         })
           .select('_id')
           .lean();
@@ -2279,7 +2281,6 @@ const getAlertReport = async ({
         {},
       );
     }
-    console.log('clients', clients);
 
     let dateQuery = {};
     if (requestedQuery.startDate || requestedQuery.endDate) {
@@ -2417,10 +2418,6 @@ const getAlertReport = async ({
         alert.description = StaticData.AlertList[alert.alertId].description;
       }
       if (isClientFieldSelected) {
-        console.log(
-          'client name',
-          clients[alert.debtorDetails?.debtorId?.toString()],
-        );
         alert.clientName =
           clients[alert.debtorDetails?._id?.toString()]?.clientId?.name || '';
       }
