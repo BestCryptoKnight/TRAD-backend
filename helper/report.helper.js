@@ -2216,36 +2216,19 @@ const getAlertReport = async ({
     const queryFilter = {};
     let query = [];
     const facetQuery = [];
-    let clients;
     let creditLimits;
     let debtorProject = {};
     const clientRequestQuery = {
       isDeleted: false,
     };
+    const mapClientNames = {};
+
     reportColumn.push('alertId');
     const isDescriptionFieldSelected = reportColumn.includes('description');
     const isClientFieldSelected = reportColumn.includes('clientName');
     const isABNFieldSelected = reportColumn.includes('abn');
     const isACNFieldSelected = reportColumn.includes('acn');
     const isDebtorFieldSelected = reportColumn.includes('debtorName');
-    /*if (requestedQuery.clientIds) {
-      const clientIds = requestedQuery.clientIds
-          .split(',')
-          .map((id) => mongoose.Types.ObjectId(id));
-      queryFilter.clientId = { $in: clientIds };
-
-    } else if (!hasFullAccess) {
-      const clients = await Client.find({
-        isDeleted: false,
-        $or: [{ riskAnalystId: userId }, { serviceManagerId: userId }],
-      })
-          .select('_id')
-          .lean();
-      const clientIds = clients.map((i) => i._id);
-      const creditLimits = await ClientDebtor.find({client:{$in:clientIds}}).select('debtorId entityType').lean();
-      const debtorIds = creditLimits.map(i => i.debtorId)
-      queryFilter.entityId = { $in: debtorIds };
-    }*/
 
     if (
       requestedQuery.clientIds ||
@@ -2278,10 +2261,12 @@ const getAlertReport = async ({
       const debtorIds = creditLimits.map((i) => i.debtorId);
       queryFilter.entityId = { $in: debtorIds };
 
-      clients = creditLimits.reduce(
-        (obj, item) => Object.assign(obj, { [item.debtorId]: item }),
-        {},
-      );
+      creditLimits.forEach((creditLimit) => {
+        if (!mapClientNames[creditLimit.debtorId]) {
+          mapClientNames[creditLimit.debtorId] = [];
+        }
+        mapClientNames[creditLimit.debtorId].push(creditLimit.clientId?.name);
+      });
     }
 
     let dateQuery = {};
@@ -2421,7 +2406,7 @@ const getAlertReport = async ({
       }
       if (isClientFieldSelected) {
         alert.clientName =
-          clients[alert.debtorDetails?._id?.toString()]?.clientId?.name || '';
+          mapClientNames[alert.debtorDetails?._id]?.toString() || '';
       }
       if (isABNFieldSelected) {
         alert.abn = alert.debtorDetails?.abn;
