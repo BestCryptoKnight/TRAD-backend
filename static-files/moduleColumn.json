@@ -1553,6 +1553,40 @@
       ]
     },
     {
+      "name": "alert-report",
+      "manageColumns": [
+        { "name": "clientName", "label": "Client Name", "type": "string" },
+        {
+          "name": "debtorName",
+          "label": "Debtor name",
+          "type": "string"
+        },
+        { "name": "abn", "label": "ABN/NZBN", "type": "string" },
+        { "name": "acn", "label": "ACN/NCN", "type": "string" },
+        {
+          "name": "alertCategory",
+          "label": "Alert Category",
+          "type": "string"
+        },
+        { "name": "alertType", "label": "Alert Type", "type": "string" },
+        { "name": "alertDate", "label": "Alert Date", "type": "date" },
+        {
+          "name": "alertPriority",
+          "label": "Alert Priority",
+          "type": "string"
+        },
+        { "name": "description", "label": "Description", "type": "string" }
+      ],
+      "defaultColumns": [
+        "clientName",
+        "debtorName",
+        "alertCategory",
+        "alertType",
+        "alertPriority",
+        "alertDate"
+      ]
+    },
+    {
       "name": "stakeholder",
       "manageColumns": [
         { "name": "title", "label": "Title", "type": "string" },
