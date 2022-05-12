@@ -5,6 +5,7 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const User = mongoose.model('user');
+const Alert = mongoose.model('alert');
 
 /*
  * Local Imports
@@ -21,6 +22,7 @@ const {
   getLimitHistoryReport,
   getClaimsReport,
   getReviewReport,
+  getAlertReport,
 } = require('./../helper/report.helper');
 const { getClientList } = require('./../helper/client.helper');
 const { insurerList } = require('./../helper/task.helper');
@@ -156,6 +158,50 @@ router.get('/entity-list', async function (req, res) {
 });
 
 /**
+ * Get Alert Entity List
+ */
+router.get('/alert-entity-list', async function (req, res) {
+  try {
+    let hasFullAccess = true;
+    if (req.accessTypes && req.accessTypes.indexOf('full-access') === -1) {
+      hasFullAccess = false;
+    }
+    const [alertPriority, alertType, clients] = await Promise.all([
+      Alert.find().distinct('alertPriority'),
+      Alert.find().distinct('alertType'),
+      getClientList({
+        hasFullAccess: hasFullAccess,
+        userId: req.user._id,
+        sendCRMIds: true,
+        page: req.query.page,
+        limit: req.query.limit,
+      }),
+    ]);
+    clients.map((i) => {
+      i.clientId = i.crmClientId;
+      delete i.crmClientId;
+    });
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: {
+        clientIds: clients,
+        alertType,
+        alertPriority,
+      },
+    });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in get entity list for alert report',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
  * Get Report List
  */
 router.get('/', async function (req, res) {
@@ -243,6 +289,14 @@ router.get('/', async function (req, res) {
         break;
       case 'claims-report':
         response = await getClaimsReport({
+          reportColumn: reportColumn.columns,
+          hasFullAccess,
+          userId: req.user._id,
+          requestedQuery: req.query,
+        });
+        break;
+      case 'alert-report':
+        response = await getAlertReport({
           reportColumn: reportColumn.columns,
           hasFullAccess,
           userId: req.user._id,
@@ -550,6 +604,7 @@ router.put('/column-name', async function (req, res) {
       case 'usage-per-client-report':
       case 'limit-history-report':
       case 'claims-report':
+      case 'alert-report':
         if (req.body.isReset) {
           module = StaticFile.modules.find(
             (i) => i.name === req.body.columnFor,
