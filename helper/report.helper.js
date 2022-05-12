@@ -2255,7 +2255,7 @@ const getAlertReport = async ({
         clientIds = clients.map((i) => i._id);
       }
       creditLimits = await ClientDebtor.find({ clientId: { $in: clientIds } })
-        .select('debtorId entityType clientId')
+        .select('debtorId clientId')
         .populate({ path: 'clientId', select: '_id name' })
         .lean();
       const debtorIds = creditLimits.map((i) => i.debtorId);
@@ -2304,7 +2304,8 @@ const getAlertReport = async ({
     if (
       reportColumn.includes('debtorName') ||
       reportColumn.includes('abn') ||
-      reportColumn.includes('acn')
+      reportColumn.includes('acn') ||
+      reportColumn.includes('clientName')
     ) {
       facetQuery.push(
         {
