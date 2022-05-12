@@ -2406,7 +2406,7 @@ const getAlertReport = async ({
       }
       if (isClientFieldSelected) {
         alert.clientName =
-          mapClientNames[alert.debtorDetails?._id]?.toString() || '';
+          mapClientNames[alert.debtorDetails?._id]?.join(', ') || '';
       }
       if (isABNFieldSelected) {
         alert.abn = alert.debtorDetails?.abn;
