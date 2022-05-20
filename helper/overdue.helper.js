@@ -514,6 +514,81 @@ const getOverdueList = async ({
   }
 };
 
+const downloadOverdueList = async ({ requestedQuery }) => {
+  try {
+    const query = [];
+    const queryFilter = [];
+    let array = [];
+
+    if (requestedQuery.startDate) {
+      array.push({
+        $gte: [
+          { $toInt: '$month' },
+          new Date(requestedQuery.startDate).getMonth() + 1,
+        ],
+      });
+      array.push({
+        $gte: [
+          { $toInt: '$year' },
+          new Date(requestedQuery.startDate).getFullYear(),
+        ],
+      });
+      queryFilter.push({ $expr: { $and: array } });
+    }
+    if (requestedQuery.endDate) {
+      array = [];
+      array.push({
+        $lte: [
+          { $toInt: '$month' },
+          new Date(requestedQuery.endDate).getMonth() + 1,
+        ],
+      });
+      array.push({
+        $lte: [
+          { $toInt: '$year' },
+          new Date(requestedQuery.endDate).getFullYear(),
+        ],
+      });
+      queryFilter.push({ $expr: { $and: array } });
+    }
+
+    query.push(
+      {
+        $lookup: {
+          from: 'clients',
+          localField: 'clientId',
+          foreignField: '_id',
+          as: 'clientId',
+        },
+      },
+      { $unwind: '$clientId' },
+      {
+        $group: {
+          _id: {
+            month: '$month',
+            year: '$year',
+            clientId: '$clientId._id',
+          },
+          clientName: { $first: '$clientId.name' },
+          nilOverdue: { $first: '$nilOverdue' },
+          debtorCount: {
+            $sum: 1,
+          },
+        },
+      },
+    );
+    if (queryFilter.length !== 0) {
+      query.unshift({ $match: { $and: queryFilter } });
+    }
+    console.log(JSON.stringify(query, null, 3));
+    const overdueList = await Overdue.aggregate(query).allowDiskUse(true);
+    return { overdueList };
+  } catch (e) {
+    Logger.log.error('Error occurred in download overdue list');
+    Logger.log.error(e.message || e);
+  }
+};
+
 const getMonthString = (month) => {
   try {
     month = parseInt(month);
@@ -796,6 +871,37 @@ const addNotifications = async ({
   }
 };
 
+const checkDateRange = async ({
+  startDate = new Date(),
+  endDate = new Date(),
+}) => {
+  try {
+    const startYear = new Date(startDate).getFullYear();
+    const endYear = new Date(endDate).getFullYear();
+    const startingMonth = new Date(startDate).getMonth();
+    const endingMonth = new Date(endDate).getMonth();
+
+    const dates = [];
+
+    for (let i = startYear; i <= endYear; i++) {
+      const endMonth = i !== endYear ? 11 : endingMonth - 1;
+      const startMonth = i === startYear ? startingMonth - 1 : 0;
+      for (
+        let j = startMonth;
+        j <= endMonth;
+        j = j > 12 ? j % 12 || 11 : j + 1
+      ) {
+        const month = (j + 1).padStart(2, '0');
+        dates.push(month + '-' + i);
+      }
+    }
+    return dates;
+  } catch (e) {
+    Logger.log.error('Error occurred in check for date range');
+    Logger.log.error(e);
+  }
+};
+
 module.exports = {
   getLastOverdueList,
   getDrawerDetails,
@@ -803,4 +909,5 @@ module.exports = {
   getMonthString,
   formatString,
   updateList,
+  downloadOverdueList,
 };

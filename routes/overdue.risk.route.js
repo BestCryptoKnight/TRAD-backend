@@ -18,6 +18,7 @@ const {
   getMonthString,
   formatString,
   updateList,
+  downloadOverdueList,
 } = require('./../helper/overdue.helper');
 const { insurerList } = require('./../helper/task.helper');
 const { getClientList } = require('./../helper/client.helper');
@@ -318,7 +319,33 @@ router.get('/', async function (req, res) {
       },
     });
   } catch (e) {
-    Logger.log.error('Error occurred in get application list ', e.message || e);
+    Logger.log.error('Error occurred in get overdue list ', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Download overdue list
+ */
+router.get('/download', async function (req, res) {
+  if (!req.query.startDate && !req.query.endDate) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require field is missing.',
+    });
+  }
+  try {
+    const data = await downloadOverdueList({ requestedQuery: req.query });
+    res.status(200).send({
+      status: 'SUCCESS',
+      data,
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in download overdue list', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
