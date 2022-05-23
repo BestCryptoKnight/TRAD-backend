@@ -136,6 +136,14 @@ const generateExcel = ({ data, reportFor, headers, filter, title }) => {
           filter,
         });
         break;
+      case 'Overdue Report':
+        addColumnsForOverdueList({
+          data,
+          worksheet,
+          headers,
+          filter,
+        });
+        break;
     }
     workbook.xlsx.writeBuffer().then((buffer) => {
       return resolve(buffer);
@@ -481,6 +489,34 @@ const addColumnsForTaskList = async ({ data, worksheet, headers, filter }) => {
   }
 };
 
+const addColumnsForOverdueList = async ({
+  data,
+  worksheet,
+  headers,
+  filter,
+}) => {
+  try {
+    const lastColumn = convertNumberToAlphabet(headers.length);
+    worksheet.mergeCells(`A1:${lastColumn}1`);
+    for (let i = 0; i <= filter.length; i++) {
+      if (filter[i]) {
+        worksheet.mergeCells(`A${i + 2}:${lastColumn}${i + 2}`);
+      }
+    }
+    for (let i = 1; i <= lastColumn; i++) {
+      worksheet.getColumn(i).width = 30;
+    }
+
+    worksheet.addRow();
+    worksheet.mergeCells(
+      `A${worksheet.lastRow.number}:${lastColumn}${worksheet.lastRow.number}`,
+    );
+    await addDataForTable({ data, headers, worksheet });
+  } catch (e) {
+    Logger.log.error('Error occurred in add overdue data', e.message || e);
+  }
+};
+
 const addDataForTable = ({ data, worksheet, headers }) => {
   try {
     const headerArray = headers.map((i) => i.label);
@@ -569,6 +605,17 @@ const addDataForTable = ({ data, worksheet, headers }) => {
     });*/
   } catch (e) {
     Logger.log.error('Error occurred in add limit list data', e.message || e);
+  }
+};
+
+const convertNumberToAlphabet = (number) => {
+  try {
+    return (number + 9).toString(36).toUpperCase();
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in convert number to alphabet',
+      e.message || e,
+    );
   }
 };
 
