@@ -23,6 +23,7 @@ const {
 const { insurerList } = require('./../helper/task.helper');
 const { getClientList } = require('./../helper/client.helper');
 const { getCurrentDebtorList } = require('./../helper/debtor.helper');
+const { generateExcel } = require('../helper/excel.helper');
 
 /**
  * Get Entity List
@@ -339,11 +340,49 @@ router.get('/download', async function (req, res) {
     });
   }
   try {
-    const data = await downloadOverdueList({ requestedQuery: req.query });
-    res.status(200).send({
-      status: 'SUCCESS',
-      data,
+    const { overdueList, headers } = await downloadOverdueList({
+      requestedQuery: req.query,
     });
+    const finalArray = [];
+    let data;
+    if (overdueList.length !== 0) {
+      overdueList.forEach((i) => {
+        data = {};
+        data['clientName'] = i['clientName'];
+        data = Object.assign(
+          data,
+          ...i.records.map((object) => ({
+            [object.month + '-' + object.year]: object.count,
+          })),
+        );
+        headers.map((key) => {
+          if (!data[key.name]) {
+            data[key.name] = '-';
+          }
+        });
+        console.log('=====================', data);
+        finalArray.push(data);
+      });
+    }
+    headers.unshift({
+      name: 'clientName',
+      label: 'Client Name',
+      type: 'string',
+    });
+    const excelData = await generateExcel({
+      data: finalArray,
+      reportFor: '',
+      headers,
+      filter: [],
+      title: 'Report for',
+    });
+    const fileName = report + '-' + new Date().getTime() + '.xlsx';
+    res.header(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader('Content-Disposition', 'attachment; filename=' + fileName);
+    res.status(200).send(excelData);
   } catch (e) {
     Logger.log.error('Error occurred in download overdue list', e.message || e);
     res.status(500).send({

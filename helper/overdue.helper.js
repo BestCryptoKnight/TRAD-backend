@@ -12,6 +12,20 @@ const Logger = require('./../services/logger');
 const { addAuditLog } = require('./audit-log.helper');
 const { addNotification } = require('./notification.helper');
 const { sendNotification } = require('./socket.helper');
+const monthString = {
+  1: 'Jan',
+  2: 'Feb',
+  3: 'Mar',
+  4: 'Apr',
+  5: 'May',
+  6: 'Jun',
+  7: 'Jul',
+  8: 'Aug',
+  9: 'Sep',
+  10: 'Oct',
+  11: 'Nov',
+  12: 'Dec',
+};
 
 const getLastOverdueList = async ({ date, query, counter = 0 }) => {
   try {
@@ -520,6 +534,20 @@ const downloadOverdueList = async ({ requestedQuery }) => {
     const queryFilter = [];
     let array = [];
 
+    const headers = await checkDateRange({
+      startDate: requestedQuery.startDate,
+      endDate: requestedQuery.endDate,
+    });
+
+    if (headers.length > 24) {
+      return Promise.reject({
+        status: 'ERROR',
+        messageCode: 'DOWNLOAD_LIMIT_EXCEED',
+        message:
+          'User cannot download report for more than 24 months at a time',
+      });
+    }
+
     if (requestedQuery.startDate) {
       array.push({
         $gte: [
@@ -576,13 +604,33 @@ const downloadOverdueList = async ({ requestedQuery }) => {
           },
         },
       },
+      {
+        $group: {
+          _id: '$_id.clientId',
+          clientName: { $first: '$clientName' },
+          records: {
+            $push: {
+              month: '$_id.month',
+              year: '$_id.year',
+              count: {
+                $cond: [{ $eq: ['$nilOverdue', true] }, 'Nil', '$debtorCount'],
+              },
+            },
+          },
+        },
+      },
     );
     if (queryFilter.length !== 0) {
       query.unshift({ $match: { $and: queryFilter } });
     }
-    console.log(JSON.stringify(query, null, 3));
     const overdueList = await Overdue.aggregate(query).allowDiskUse(true);
-    return { overdueList };
+    /* headers.unshift({
+      name: 'clientName',
+      label: 'Client Name',
+      type: 'string',
+    })*/
+
+    return { overdueList, headers };
   } catch (e) {
     Logger.log.error('Error occurred in download overdue list');
     Logger.log.error(e.message || e);
@@ -592,20 +640,6 @@ const downloadOverdueList = async ({ requestedQuery }) => {
 const getMonthString = (month) => {
   try {
     month = parseInt(month);
-    const monthString = {
-      1: 'Jan',
-      2: 'Feb',
-      3: 'Mar',
-      4: 'Apr',
-      5: 'May',
-      6: 'Jun',
-      7: 'Jul',
-      8: 'Aug',
-      9: 'Sep',
-      10: 'Oct',
-      11: 'Nov',
-      12: 'Dec',
-    };
     return monthString[month];
   } catch (e) {
     Logger.log.error('Error occurred in get month string');
@@ -876,12 +910,11 @@ const checkDateRange = async ({
   endDate = new Date(),
 }) => {
   try {
+    const headers = [];
     const startYear = new Date(startDate).getFullYear();
     const endYear = new Date(endDate).getFullYear();
     const startingMonth = new Date(startDate).getMonth();
     const endingMonth = new Date(endDate).getMonth();
-
-    const dates = [];
 
     for (let i = startYear; i <= endYear; i++) {
       const endMonth = i !== endYear ? 11 : endingMonth - 1;
@@ -891,11 +924,15 @@ const checkDateRange = async ({
         j <= endMonth;
         j = j > 12 ? j % 12 || 11 : j + 1
       ) {
-        const month = (j + 1).padStart(2, '0');
-        dates.push(month + '-' + i);
+        const month = (j + 1).toString().padStart(2, '0');
+        headers.push({
+          name: month + '-' + i,
+          label: getMonthString(month) + '-' + i,
+          type: 'string',
+        });
       }
     }
-    return dates;
+    return headers.reverse();
   } catch (e) {
     Logger.log.error('Error occurred in check for date range');
     Logger.log.error(e);
