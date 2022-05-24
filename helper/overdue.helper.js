@@ -535,8 +535,8 @@ const downloadOverdueList = async ({ requestedQuery }) => {
     let array = [];
 
     const { headers, filters } = await checkDateRange({
-      startDate: requestedQuery.startDate,
-      endDate: requestedQuery.endDate,
+      startDate: requestedQuery.startDate?.trim(),
+      endDate: requestedQuery.endDate?.trim(),
     });
 
     if (headers.length > 24) {
