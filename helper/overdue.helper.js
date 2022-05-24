@@ -535,8 +535,8 @@ const downloadOverdueList = async ({ requestedQuery }) => {
     let array = [];
 
     const { headers, filters } = await checkDateRange({
-      startDate: requestedQuery.startDate,
-      endDate: requestedQuery.endDate,
+      startDate: requestedQuery.startDate?.trim(),
+      endDate: requestedQuery.endDate?.trim(),
     });
 
     if (headers.length > 24) {
@@ -913,14 +913,12 @@ const checkDateRange = async ({
     const headers = [];
     const startYear = new Date(startDate).getFullYear();
     const endYear = new Date(endDate).getFullYear();
-    const startingMonth = new Date(startDate).getMonth();
-    const endingMonth = new Date(endDate).getMonth();
+    const startingMonth = new Date(startDate).getMonth() + 1;
+    const endingMonth = new Date(endDate).getMonth() + 1;
     const filters = [
       {
         label: 'Date',
-        value: `${monthString[startingMonth + 1]} ${startYear} to ${
-          monthString[endingMonth + 1]
-        } ${endYear}`,
+        value: `${monthString[startingMonth]} ${startYear} to ${monthString[endingMonth]} ${endYear}`,
         type: 'string',
       },
     ];
