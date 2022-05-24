@@ -368,8 +368,6 @@ router.get('/download', async function (req, res) {
       label: 'Client Name',
       type: 'string',
     });
-    // console.log('finalArray', finalArray);
-    console.log('finalArray', headers);
     const excelData = await generateExcel({
       data: finalArray,
       reportFor: 'Overdue Report',

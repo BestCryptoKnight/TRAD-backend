@@ -949,24 +949,84 @@ const getReviewReport = async ({
     const queryFilter = {};
     let dateQuery = {};
     const filterArray = [];
-    if (!hasFullAccess && userId) {
-      const clients = await Client.find({
-        isDeleted: false,
-        $or: [{ riskAnalystId: userId }, { serviceManagerId: userId }],
-      })
-        .select({ _id: 1 })
+    let clientNameMap = {};
+
+    let insurers = {};
+    let clientIds;
+    const clientQuery = {
+      isDeleted: false,
+    };
+    const isInsurerNameSelected = reportColumn.includes('insurerId');
+    const isClientNameSelected = reportColumn.includes('clientId');
+
+    if (isInsurerNameSelected) {
+      const insurerList = await Insurer.find({ isDeleted: false })
+        .select('_id name')
         .lean();
-      const clientIds = clients.map((i) => i._id);
+      insurerList.forEach((i) => (insurers[i._id] = i.name));
+    }
+
+    if (
+      (!hasFullAccess && userId) ||
+      isClientNameSelected ||
+      requestedQuery.clientIds
+    ) {
+      if (!hasFullAccess && userId) {
+        clientQuery['$or'] = [
+          { riskAnalystId: userId },
+          { serviceManagerId: userId },
+        ];
+      }
+
+      if (requestedQuery.clientIds) {
+        const clientIds = requestedQuery.clientIds
+          .split(',')
+          .map((id) => mongoose.Types.ObjectId(id));
+
+        clientQuery['_id'] = { $in: clientIds };
+        queryFilter['clientId'] = { $in: clientIds };
+
+        if (isForDownload) {
+          const clients = await Client.find({ _id: { $in: clientIds } })
+            .select('name')
+            .lean();
+          filterArray.push({
+            label: 'Client',
+            value: clients
+              .map((i) => i.name)
+              .toString()
+              .replace(/,/g, ', '),
+            type: 'string',
+          });
+        }
+      }
+
+      const clients = await Client.find(clientQuery).select('_id').lean();
+      clientIds = clients.map((i) => i._id);
+
       const clientDebtor = await ClientDebtor.find({
         clientId: { $in: clientIds },
       })
-        .select('debtorId')
+        .populate({ path: 'clientId', select: '_id name insurerId' })
+        .select('debtorId clientId')
         .lean();
-      const debtorIds = clientDebtor.map((i) =>
-        mongoose.Types.ObjectId(i.debtorId),
-      );
+      const debtorIds = [];
+
+      clientDebtor.forEach((i) => {
+        debtorIds.push(mongoose.Types.ObjectId(i.debtorId));
+        if (!clientNameMap[i.debtorId]) {
+          clientNameMap[i.debtorId] = {};
+          clientNameMap[i.debtorId]['insurerId'] = [];
+          clientNameMap[i.debtorId]['clientId'] = [];
+        }
+        clientNameMap[i.debtorId]['clientId'].push(i.clientId.name);
+        clientNameMap[i.debtorId]['insurerId'].push(
+          insurers[i.clientId.insurerId],
+        );
+      });
       queryFilter['_id'] = { $in: debtorIds };
     }
+
     if (requestedQuery.date) {
       requestedQuery.date = new Date(requestedQuery.date);
       if (isForDownload) {
@@ -1221,6 +1281,14 @@ const getReviewReport = async ({
       }
       if (debtor.entityType) {
         debtor.entityType = formatString(debtor.entityType);
+      }
+      if (isInsurerNameSelected) {
+        debtor.insurerId =
+          clientNameMap[debtor._id]['insurerId']?.join(', ') || '';
+      }
+      if (isClientNameSelected) {
+        debtor.clientId =
+          clientNameMap[debtor._id]['clientId']?.join(', ') || '';
       }
       delete debtor.address;
       delete debtor.id;

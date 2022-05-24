@@ -530,9 +530,20 @@ const getOverdueList = async ({
 
 const downloadOverdueList = async ({ requestedQuery }) => {
   try {
-    const query = [];
     const queryFilter = [];
-    let array = [];
+    const query = [
+      {
+        $addFields: {
+          monthInt: { $toInt: '$month' },
+          yearInt: { $toInt: '$year' },
+        },
+      },
+      {
+        $addFields: {
+          monthYear: { $add: [{ $multiply: ['$yearInt', 12] }, '$monthInt'] },
+        },
+      },
+    ];
 
     const { headers, filters } = await checkDateRange({
       startDate: requestedQuery.startDate?.trim(),
@@ -549,35 +560,41 @@ const downloadOverdueList = async ({ requestedQuery }) => {
     }
 
     if (requestedQuery.startDate) {
-      array.push({
-        $gte: [
-          { $toInt: '$month' },
-          new Date(requestedQuery.startDate).getMonth() + 1,
-        ],
+      query.push({
+        $addFields: {
+          startingDate: {
+            $add: [
+              {
+                $multiply: [
+                  new Date(requestedQuery.startDate).getFullYear(),
+                  12,
+                ],
+              },
+              new Date(requestedQuery.startDate).getMonth() + 1,
+            ],
+          },
+        },
       });
-      array.push({
-        $gte: [
-          { $toInt: '$year' },
-          new Date(requestedQuery.startDate).getFullYear(),
-        ],
-      });
-      queryFilter.push({ $expr: { $and: array } });
+      queryFilter.push({ $gte: ['$monthYear', '$startingDate'] });
     }
     if (requestedQuery.endDate) {
-      array = [];
-      array.push({
-        $lte: [
-          { $toInt: '$month' },
-          new Date(requestedQuery.endDate).getMonth() + 1,
-        ],
+      query.push({
+        $addFields: {
+          endingDate: {
+            $add: [
+              {
+                $multiply: [new Date(requestedQuery.endDate).getFullYear(), 12],
+              },
+              new Date(requestedQuery.endDate).getMonth() + 1,
+            ],
+          },
+        },
       });
-      array.push({
-        $lte: [
-          { $toInt: '$year' },
-          new Date(requestedQuery.endDate).getFullYear(),
-        ],
-      });
-      queryFilter.push({ $expr: { $and: array } });
+      queryFilter.push({ $lte: ['$monthYear', '$endingDate'] });
+    }
+
+    if (queryFilter.length !== 0) {
+      query.push({ $match: { $expr: { $and: queryFilter } } });
     }
 
     query.push(
@@ -620,20 +637,13 @@ const downloadOverdueList = async ({ requestedQuery }) => {
         },
       },
     );
-    if (queryFilter.length !== 0) {
-      query.unshift({ $match: { $and: queryFilter } });
-    }
+
     const overdueList = await Overdue.aggregate(query).allowDiskUse(true);
-    /* headers.unshift({
-      name: 'clientName',
-      label: 'Client Name',
-      type: 'string',
-    })*/
 
     return { overdueList, headers, filters };
   } catch (e) {
     Logger.log.error('Error occurred in download overdue list');
-    Logger.log.error(e.message || e);
+    Logger.log.error(e);
   }
 };
 
