@@ -340,7 +340,7 @@ router.get('/download', async function (req, res) {
     });
   }
   try {
-    const { overdueList, headers } = await downloadOverdueList({
+    const { overdueList, headers, filters } = await downloadOverdueList({
       requestedQuery: req.query,
     });
     const finalArray = [];
@@ -360,7 +360,6 @@ router.get('/download', async function (req, res) {
             data[key.name] = '-';
           }
         });
-        console.log('=====================', data);
         finalArray.push(data);
       });
     }
@@ -369,14 +368,16 @@ router.get('/download', async function (req, res) {
       label: 'Client Name',
       type: 'string',
     });
+    // console.log('finalArray', finalArray);
+    console.log('finalArray', headers);
     const excelData = await generateExcel({
       data: finalArray,
-      reportFor: '',
+      reportFor: 'Overdue Report',
       headers,
-      filter: [],
+      filter: filters,
       title: 'Report for',
     });
-    const fileName = report + '-' + new Date().getTime() + '.xlsx';
+    const fileName = 'overdue-report-' + new Date().getTime() + '.xlsx';
     res.header(
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

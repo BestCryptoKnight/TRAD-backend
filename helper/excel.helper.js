@@ -503,8 +503,8 @@ const addColumnsForOverdueList = async ({
         worksheet.mergeCells(`A${i + 2}:${lastColumn}${i + 2}`);
       }
     }
-    for (let i = 1; i <= lastColumn; i++) {
-      worksheet.getColumn(i).width = 30;
+    for (let i = 1; i <= headers.length; i++) {
+      worksheet.getColumn(i).width = i === 1 ? 45 : 20;
     }
 
     worksheet.addRow();
@@ -568,7 +568,7 @@ const addDataForTable = ({ data, worksheet, headers }) => {
           }
           getRowInsert.getCell(j + 1).value =
             data[i][headers[j]['name']] || '-';
-          if (!data[i][headers[j]['name']]) {
+          if (data[i][headers[j]['name']]) {
             getRowInsert.getCell(j + 1).alignment = {
               vertical: 'middle',
               horizontal: 'center',

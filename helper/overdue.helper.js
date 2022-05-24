@@ -534,7 +534,7 @@ const downloadOverdueList = async ({ requestedQuery }) => {
     const queryFilter = [];
     let array = [];
 
-    const headers = await checkDateRange({
+    const { headers, filters } = await checkDateRange({
       startDate: requestedQuery.startDate,
       endDate: requestedQuery.endDate,
     });
@@ -630,7 +630,7 @@ const downloadOverdueList = async ({ requestedQuery }) => {
       type: 'string',
     })*/
 
-    return { overdueList, headers };
+    return { overdueList, headers, filters };
   } catch (e) {
     Logger.log.error('Error occurred in download overdue list');
     Logger.log.error(e.message || e);
@@ -915,6 +915,15 @@ const checkDateRange = async ({
     const endYear = new Date(endDate).getFullYear();
     const startingMonth = new Date(startDate).getMonth();
     const endingMonth = new Date(endDate).getMonth();
+    const filters = [
+      {
+        label: 'Date',
+        value: `${monthString[startingMonth + 1]} ${startYear} to ${
+          monthString[endingMonth + 1]
+        } ${endYear}`,
+        type: 'string',
+      },
+    ];
 
     for (let i = startYear; i <= endYear; i++) {
       const endMonth = i !== endYear ? 11 : endingMonth - 1;
@@ -932,7 +941,7 @@ const checkDateRange = async ({
         });
       }
     }
-    return headers.reverse();
+    return { headers: headers.reverse(), filters };
   } catch (e) {
     Logger.log.error('Error occurred in check for date range');
     Logger.log.error(e);
