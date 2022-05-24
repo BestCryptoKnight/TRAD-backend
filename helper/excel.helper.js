@@ -571,7 +571,7 @@ const addDataForTable = ({ data, worksheet, headers }) => {
           if (data[i][headers[j]['name']]) {
             getRowInsert.getCell(j + 1).alignment = {
               vertical: 'middle',
-              horizontal: 'center',
+              horizontal: 'left',
             };
           }
         }

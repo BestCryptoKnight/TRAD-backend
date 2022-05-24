@@ -984,7 +984,6 @@ const getReviewReport = async ({
           .map((id) => mongoose.Types.ObjectId(id));
 
         clientQuery['_id'] = { $in: clientIds };
-        queryFilter['clientId'] = { $in: clientIds };
 
         if (isForDownload) {
           const clients = await Client.find({ _id: { $in: clientIds } })
@@ -1028,7 +1027,7 @@ const getReviewReport = async ({
     }
 
     if (requestedQuery.date) {
-      requestedQuery.date = new Date(requestedQuery.date);
+      requestedQuery.date = new Date(requestedQuery.date.trim());
       if (isForDownload) {
         filterArray.push({
           label: 'Month-Year',
@@ -1103,12 +1102,12 @@ const getReviewReport = async ({
       let dateFilter = {};
       if (requestedQuery.limitStartDate) {
         dateFilter = {
-          $gte: new Date(requestedQuery.limitStartDate),
+          $gte: new Date(requestedQuery.limitStartDate.trim()),
         };
       }
       if (requestedQuery.limitEndDate) {
         dateFilter = Object.assign({}, dateQuery, {
-          $lte: new Date(requestedQuery.limitEndDate),
+          $lte: new Date(requestedQuery.limitEndDate.trim()),
         });
       }
       queryFilter.expiryDate = dateFilter;
@@ -1127,12 +1126,12 @@ const getReviewReport = async ({
       let dateFilter = {};
       if (requestedQuery.reportStartDate) {
         dateFilter = {
-          $gte: new Date(requestedQuery.reportStartDate),
+          $gte: new Date(requestedQuery.reportStartDate.trim()),
         };
       }
       if (requestedQuery.reportEndDate) {
         dateFilter = Object.assign({}, dateQuery, {
-          $lte: new Date(requestedQuery.reportEndDate),
+          $lte: new Date(requestedQuery.reportEndDate.trim()),
         });
       }
       query.push({
