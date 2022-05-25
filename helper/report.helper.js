@@ -1005,6 +1005,7 @@ const getReviewReport = async ({
 
       const clientDebtor = await ClientDebtor.find({
         clientId: { $in: clientIds },
+        status: { $in: ['APPROVED', 'DECLINED'] },
       })
         .populate({ path: 'clientId', select: '_id name insurerId' })
         .select('debtorId clientId')

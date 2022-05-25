@@ -384,7 +384,7 @@ router.get('/download', async function (req, res) {
     res.status(200).send(excelData);
   } catch (e) {
     Logger.log.error('Error occurred in download overdue list', e.message || e);
-    res.status(500).send({
+    res.status(e.messageCode === 'DOWNLOAD_LIMIT_EXCEED' ? 400 : 500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
     });
