@@ -213,6 +213,7 @@ const getOverdueList = async ({
     }
     let array = [];
     if (requestedQuery.startDate) {
+      requestedQuery.startDate = new Date(requestedQuery.startDate.trim());
       array.push({
         $gte: [
           { $toInt: '$month' },
@@ -228,6 +229,7 @@ const getOverdueList = async ({
       queryFilter.push({ $expr: { $and: array } });
     }
     if (requestedQuery.endDate) {
+      requestedQuery.endDate = new Date(requestedQuery.endDate.trim());
       array = [];
       array.push({
         $lte: [
@@ -244,6 +246,17 @@ const getOverdueList = async ({
       queryFilter.push({ $expr: { $and: array } });
     }
     const query = [
+      {
+        $addFields: {
+          monthInt: { $toInt: '$month' },
+          yearInt: { $toInt: '$year' },
+        },
+      },
+      {
+        $addFields: {
+          monthYear: { $add: [{ $multiply: ['$yearInt', 12] }, '$monthInt'] },
+        },
+      },
       {
         $lookup: {
           from: 'debtors',
@@ -560,6 +573,7 @@ const downloadOverdueList = async ({ requestedQuery }) => {
     }
 
     if (requestedQuery.startDate) {
+      requestedQuery.startDate = new Date(requestedQuery.startDate.trim());
       query.push({
         $addFields: {
           startingDate: {
@@ -578,6 +592,7 @@ const downloadOverdueList = async ({ requestedQuery }) => {
       queryFilter.push({ $gte: ['$monthYear', '$startingDate'] });
     }
     if (requestedQuery.endDate) {
+      requestedQuery.endDate = new Date(requestedQuery.endDate.trim());
       query.push({
         $addFields: {
           endingDate: {
@@ -638,6 +653,7 @@ const downloadOverdueList = async ({ requestedQuery }) => {
       },
     );
 
+    console.log(JSON.stringify(query, null, 3));
     const overdueList = await Overdue.aggregate(query).allowDiskUse(true);
 
     return { overdueList, headers, filters };
