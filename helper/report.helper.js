@@ -969,6 +969,7 @@ const getReviewReport = async ({
     if (
       (!hasFullAccess && userId) ||
       isClientNameSelected ||
+      isInsurerNameSelected ||
       requestedQuery.clientIds
     ) {
       if (!hasFullAccess && userId) {
