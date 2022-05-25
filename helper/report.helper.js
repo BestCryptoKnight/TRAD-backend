@@ -1020,9 +1020,15 @@ const getReviewReport = async ({
           clientNameMap[i.debtorId]['clientId'] = [];
         }
         clientNameMap[i.debtorId]['clientId'].push(i.clientId.name);
-        clientNameMap[i.debtorId]['insurerId'].push(
-          insurers[i.clientId.insurerId],
-        );
+        if (
+          !clientNameMap[i.debtorId]['insurerId'].includes(
+            insurers[i.clientId.insurerId],
+          )
+        ) {
+          clientNameMap[i.debtorId]['insurerId'].push(
+            insurers[i.clientId.insurerId],
+          );
+        }
       });
       queryFilter['_id'] = { $in: debtorIds };
     }
