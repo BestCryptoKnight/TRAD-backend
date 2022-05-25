@@ -216,7 +216,7 @@ const getOverdueList = async ({
       array.push({
         $gte: [
           { $toInt: '$month' },
-          new Date(requestedQuery.startDate).getMonth() + 1,
+          { $sum: [new Date(requestedQuery.startDate).getMonth(), 1] },
         ],
       });
       array.push({
@@ -232,7 +232,7 @@ const getOverdueList = async ({
       array.push({
         $lte: [
           { $toInt: '$month' },
-          new Date(requestedQuery.endDate).getMonth() + 1,
+          { $sum: [new Date(requestedQuery.endDate).getMonth(), 1] },
         ],
       });
       array.push({
@@ -570,7 +570,7 @@ const downloadOverdueList = async ({ requestedQuery }) => {
                   12,
                 ],
               },
-              new Date(requestedQuery.startDate).getMonth() + 1,
+              { $sum: [new Date(requestedQuery.startDate).getMonth(), 1] },
             ],
           },
         },
@@ -585,7 +585,7 @@ const downloadOverdueList = async ({ requestedQuery }) => {
               {
                 $multiply: [new Date(requestedQuery.endDate).getFullYear(), 12],
               },
-              new Date(requestedQuery.endDate).getMonth() + 1,
+              { $sum: [new Date(requestedQuery.endDate).getMonth(), 1] },
             ],
           },
         },

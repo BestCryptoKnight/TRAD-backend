@@ -504,7 +504,7 @@ const addColumnsForOverdueList = async ({
       }
     }
     for (let i = 1; i <= headers.length; i++) {
-      worksheet.getColumn(i).width = i === 1 ? 35 : 25;
+      worksheet.getColumn(i).width = i === 1 ? 45 : 25;
     }
 
     worksheet.addRow();
