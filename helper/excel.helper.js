@@ -17,7 +17,9 @@ const generateExcel = ({ data, reportFor, headers, filter, title }) => {
       base64: base64Data,
       extension: 'png',
     });
-    worksheet.addImage(image, 'A1:A1');
+    worksheet.addImage(image, {
+      ext: { width: 170, height: 50 },
+    });
 
     const currentDate = new Date();
     filter.unshift({
@@ -504,7 +506,7 @@ const addColumnsForOverdueList = async ({
       }
     }
     for (let i = 1; i <= headers.length; i++) {
-      worksheet.getColumn(i).width = i === 1 ? 45 : 20;
+      worksheet.getColumn(i).width = i === 1 ? 45 : 30;
     }
 
     worksheet.addRow();
@@ -571,7 +573,7 @@ const addDataForTable = ({ data, worksheet, headers }) => {
           if (data[i][headers[j]['name']]) {
             getRowInsert.getCell(j + 1).alignment = {
               vertical: 'middle',
-              horizontal: 'center',
+              horizontal: 'left',
             };
           }
         }

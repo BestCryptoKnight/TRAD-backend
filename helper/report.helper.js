@@ -949,26 +949,93 @@ const getReviewReport = async ({
     const queryFilter = {};
     let dateQuery = {};
     const filterArray = [];
-    if (!hasFullAccess && userId) {
-      const clients = await Client.find({
-        isDeleted: false,
-        $or: [{ riskAnalystId: userId }, { serviceManagerId: userId }],
-      })
-        .select({ _id: 1 })
+    let clientNameMap = {};
+
+    let insurers = {};
+    let clientIds;
+    const clientQuery = {
+      isDeleted: false,
+    };
+    const isInsurerNameSelected = reportColumn.includes('insurerId');
+    const isClientNameSelected = reportColumn.includes('clientId');
+
+    if (isInsurerNameSelected) {
+      const insurerList = await Insurer.find({ isDeleted: false })
+        .select('_id name')
         .lean();
-      const clientIds = clients.map((i) => i._id);
+      insurerList.forEach((i) => (insurers[i._id] = i.name));
+    }
+
+    if (
+      (!hasFullAccess && userId) ||
+      isClientNameSelected ||
+      isInsurerNameSelected ||
+      requestedQuery.clientIds
+    ) {
+      if (!hasFullAccess && userId) {
+        clientQuery['$or'] = [
+          { riskAnalystId: userId },
+          { serviceManagerId: userId },
+        ];
+      }
+
+      if (requestedQuery.clientIds) {
+        const clientIds = requestedQuery.clientIds
+          .split(',')
+          .map((id) => mongoose.Types.ObjectId(id));
+
+        clientQuery['_id'] = { $in: clientIds };
+
+        if (isForDownload) {
+          const clients = await Client.find({ _id: { $in: clientIds } })
+            .select('name')
+            .lean();
+          filterArray.push({
+            label: 'Client',
+            value: clients
+              .map((i) => i.name)
+              .toString()
+              .replace(/,/g, ', '),
+            type: 'string',
+          });
+        }
+      }
+
+      const clients = await Client.find(clientQuery).select('_id').lean();
+      clientIds = clients.map((i) => i._id);
+
       const clientDebtor = await ClientDebtor.find({
         clientId: { $in: clientIds },
+        status: { $in: ['APPROVED', 'DECLINED'] },
       })
-        .select('debtorId')
+        .populate({ path: 'clientId', select: '_id name insurerId' })
+        .select('debtorId clientId')
         .lean();
-      const debtorIds = clientDebtor.map((i) =>
-        mongoose.Types.ObjectId(i.debtorId),
-      );
+      const debtorIds = [];
+
+      clientDebtor.forEach((i) => {
+        debtorIds.push(mongoose.Types.ObjectId(i.debtorId));
+        if (!clientNameMap[i.debtorId]) {
+          clientNameMap[i.debtorId] = {};
+          clientNameMap[i.debtorId]['insurerId'] = [];
+          clientNameMap[i.debtorId]['clientId'] = [];
+        }
+        clientNameMap[i.debtorId]['clientId'].push(i.clientId.name);
+        if (
+          !clientNameMap[i.debtorId]['insurerId'].includes(
+            insurers[i.clientId.insurerId],
+          )
+        ) {
+          clientNameMap[i.debtorId]['insurerId'].push(
+            insurers[i.clientId.insurerId],
+          );
+        }
+      });
       queryFilter['_id'] = { $in: debtorIds };
     }
+
     if (requestedQuery.date) {
-      requestedQuery.date = new Date(requestedQuery.date);
+      requestedQuery.date = new Date(requestedQuery.date.trim());
       if (isForDownload) {
         filterArray.push({
           label: 'Month-Year',
@@ -1043,12 +1110,12 @@ const getReviewReport = async ({
       let dateFilter = {};
       if (requestedQuery.limitStartDate) {
         dateFilter = {
-          $gte: new Date(requestedQuery.limitStartDate),
+          $gte: new Date(requestedQuery.limitStartDate.trim()),
         };
       }
       if (requestedQuery.limitEndDate) {
         dateFilter = Object.assign({}, dateQuery, {
-          $lte: new Date(requestedQuery.limitEndDate),
+          $lte: new Date(requestedQuery.limitEndDate.trim()),
         });
       }
       queryFilter.expiryDate = dateFilter;
@@ -1067,12 +1134,12 @@ const getReviewReport = async ({
       let dateFilter = {};
       if (requestedQuery.reportStartDate) {
         dateFilter = {
-          $gte: new Date(requestedQuery.reportStartDate),
+          $gte: new Date(requestedQuery.reportStartDate.trim()),
         };
       }
       if (requestedQuery.reportEndDate) {
         dateFilter = Object.assign({}, dateQuery, {
-          $lte: new Date(requestedQuery.reportEndDate),
+          $lte: new Date(requestedQuery.reportEndDate.trim()),
         });
       }
       query.push({
@@ -1221,6 +1288,14 @@ const getReviewReport = async ({
       }
       if (debtor.entityType) {
         debtor.entityType = formatString(debtor.entityType);
+      }
+      if (isInsurerNameSelected) {
+        debtor.insurerId =
+          clientNameMap[debtor._id]['insurerId']?.join(', ') || '';
+      }
+      if (isClientNameSelected) {
+        debtor.clientId =
+          clientNameMap[debtor._id]['clientId']?.join(', ') || '';
       }
       delete debtor.address;
       delete debtor.id;
