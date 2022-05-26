@@ -457,7 +457,7 @@ router.get('/details/:debtorId', async function (req, res) {
 });
 
 /**
- * Download credit-limit in CSV
+ * Download credit-limit in Excel
  */
 router.get('/download', async function (req, res) {
   try {

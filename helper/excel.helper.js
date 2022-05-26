@@ -17,7 +17,9 @@ const generateExcel = ({ data, reportFor, headers, filter, title }) => {
       base64: base64Data,
       extension: 'png',
     });
-    worksheet.addImage(image, 'A1:A1');
+    worksheet.addImage(image, {
+      ext: { width: 170, height: 50 },
+    });
 
     const currentDate = new Date();
     filter.unshift({
@@ -130,6 +132,14 @@ const generateExcel = ({ data, reportFor, headers, filter, title }) => {
         break;
       case 'Task List':
         addColumnsForTaskList({
+          data,
+          worksheet,
+          headers,
+          filter,
+        });
+        break;
+      case 'Overdue Report':
+        addColumnsForOverdueList({
           data,
           worksheet,
           headers,
@@ -481,6 +491,34 @@ const addColumnsForTaskList = async ({ data, worksheet, headers, filter }) => {
   }
 };
 
+const addColumnsForOverdueList = async ({
+  data,
+  worksheet,
+  headers,
+  filter,
+}) => {
+  try {
+    const lastColumn = convertNumberToAlphabet(headers.length);
+    worksheet.mergeCells(`A1:${lastColumn}1`);
+    for (let i = 0; i <= filter.length; i++) {
+      if (filter[i]) {
+        worksheet.mergeCells(`A${i + 2}:${lastColumn}${i + 2}`);
+      }
+    }
+    for (let i = 1; i <= headers.length; i++) {
+      worksheet.getColumn(i).width = i === 1 ? 45 : 30;
+    }
+
+    worksheet.addRow();
+    worksheet.mergeCells(
+      `A${worksheet.lastRow.number}:${lastColumn}${worksheet.lastRow.number}`,
+    );
+    await addDataForTable({ data, headers, worksheet });
+  } catch (e) {
+    Logger.log.error('Error occurred in add overdue data', e.message || e);
+  }
+};
+
 const addDataForTable = ({ data, worksheet, headers }) => {
   try {
     const headerArray = headers.map((i) => i.label);
@@ -532,10 +570,10 @@ const addDataForTable = ({ data, worksheet, headers }) => {
           }
           getRowInsert.getCell(j + 1).value =
             data[i][headers[j]['name']] || '-';
-          if (!data[i][headers[j]['name']]) {
+          if (data[i][headers[j]['name']]) {
             getRowInsert.getCell(j + 1).alignment = {
               vertical: 'middle',
-              horizontal: 'center',
+              horizontal: 'left',
             };
           }
         }
@@ -569,6 +607,17 @@ const addDataForTable = ({ data, worksheet, headers }) => {
     });*/
   } catch (e) {
     Logger.log.error('Error occurred in add limit list data', e.message || e);
+  }
+};
+
+const convertNumberToAlphabet = (number) => {
+  try {
+    return (number + 9).toString(36).toUpperCase();
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in convert number to alphabet',
+      e.message || e,
+    );
   }
 };
 

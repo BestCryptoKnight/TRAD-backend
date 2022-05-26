@@ -1178,6 +1178,7 @@
     {
       "name": "review-report",
       "manageColumns": [
+        { "name": "clientId", "label": "Client Name", "type": "string" },
         { "name": "entityName", "label": "Entity Name", "type": "string" },
         { "name": "abn", "label": "ABN/NZBN", "type": "string" },
         { "name": "acn", "label": "ACN/NCN", "type": "string" },
@@ -1187,6 +1188,7 @@
           "type": "string"
         },
         { "name": "tradingName", "label": "Trading Name", "type": "string" },
+        { "name": "insurerId", "label": "Insurer Name", "type": "string" },
         { "name": "entityType", "label": "Entity Type", "type": "string" },
         { "name": "reviewDate", "label": "Review Date", "type": "date" },
         { "name": "fullAddress", "label": "Full Address", "type": "string" },
@@ -1208,6 +1210,7 @@
         { "name": "updatedAt", "label": "Modified Date", "type": "date" }
       ],
       "defaultColumns": [
+        "clientId",
         "abn",
         "entityName",
         "acn",

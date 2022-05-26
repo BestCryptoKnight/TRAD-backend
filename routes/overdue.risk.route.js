@@ -18,10 +18,12 @@ const {
   getMonthString,
   formatString,
   updateList,
+  downloadOverdueList,
 } = require('./../helper/overdue.helper');
 const { insurerList } = require('./../helper/task.helper');
 const { getClientList } = require('./../helper/client.helper');
 const { getCurrentDebtorList } = require('./../helper/debtor.helper');
+const { generateExcel } = require('../helper/excel.helper');
 
 /**
  * Get Entity List
@@ -318,8 +320,71 @@ router.get('/', async function (req, res) {
       },
     });
   } catch (e) {
-    Logger.log.error('Error occurred in get application list ', e.message || e);
+    Logger.log.error('Error occurred in get overdue list ', e.message || e);
     res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Download overdue list
+ */
+router.get('/download', async function (req, res) {
+  if (!req.query.startDate && !req.query.endDate) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require field is missing.',
+    });
+  }
+  try {
+    const { overdueList, headers, filters } = await downloadOverdueList({
+      requestedQuery: req.query,
+    });
+    const finalArray = [];
+    let data;
+    if (overdueList.length !== 0) {
+      overdueList.forEach((i) => {
+        data = {};
+        data['clientName'] = i['clientName'];
+        data = Object.assign(
+          data,
+          ...i.records.map((object) => ({
+            [object.month + '-' + object.year]: object.count,
+          })),
+        );
+        headers.map((key) => {
+          if (!data[key.name]) {
+            data[key.name] = '-';
+          }
+        });
+        finalArray.push(data);
+      });
+    }
+    headers.unshift({
+      name: 'clientName',
+      label: 'Client Name',
+      type: 'string',
+    });
+    const excelData = await generateExcel({
+      data: finalArray,
+      reportFor: 'Overdue Report',
+      headers,
+      filter: filters,
+      title: 'Report for',
+    });
+    const fileName = 'overdue-report-' + new Date().getTime() + '.xlsx';
+    res.header(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader('Content-Disposition', 'attachment; filename=' + fileName);
+    res.status(200).send(excelData);
+  } catch (e) {
+    Logger.log.error('Error occurred in download overdue list', e.message || e);
+    res.status(e.messageCode === 'DOWNLOAD_LIMIT_EXCEED' ? 400 : 500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
     });
