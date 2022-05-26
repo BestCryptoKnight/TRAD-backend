@@ -164,20 +164,24 @@ const getOverdueList = async ({
   isForSubmodule = false,
 }) => {
   try {
-    const queryFilter = [];
+    const queryFilter = {};
     requestedQuery.page = requestedQuery.page || 1;
     requestedQuery.limit = requestedQuery.limit || 5;
     if (!isForRisk) {
-      queryFilter.push({ clientId: mongoose.Types.ObjectId(clientId) });
+      // queryFilter.push({ clientId: mongoose.Types.ObjectId(clientId) });
+      queryFilter.clientId = mongoose.Types.ObjectId(clientId);
     } else if (isForSubmodule && entityId && requestedQuery.entityType) {
       if (requestedQuery.entityType === 'client') {
-        queryFilter.push({
-          clientId: mongoose.Types.ObjectId(entityId),
-        });
+        queryFilter.clientId = mongoose.Types.ObjectId(entityId);
+
+        // queryFilter.push({
+        //   clientId: mongoose.Types.ObjectId(entityId),
+        // });
       } else if (requestedQuery.entityType === 'debtor') {
-        queryFilter.push({
-          debtorId: mongoose.Types.ObjectId(entityId),
-        });
+        // queryFilter.push({
+        //   debtorId: mongoose.Types.ObjectId(entityId),
+        // });
+        queryFilter.debtorId = mongoose.Types.ObjectId(entityId);
         isForSubmodule = false;
       }
     } else if (isForRisk && !hasFullAccess) {
@@ -187,34 +191,101 @@ const getOverdueList = async ({
         .select('_id name')
         .lean();
       const clientIds = clients.map((i) => i._id);
-      queryFilter.push({ clientId: { $in: clientIds } });
+      // queryFilter.push({ clientId: { $in: clientIds } });
+      queryFilter.clientId = { $in: clientIds };
     }
     if (requestedQuery.debtorId) {
-      queryFilter.push({
-        debtorId: mongoose.Types.ObjectId(requestedQuery.debtorId),
-      });
+      // queryFilter.push({
+      //   debtorId: mongoose.Types.ObjectId(requestedQuery.debtorId),
+      // });
+      queryFilter.debtorId = mongoose.Types.ObjectId(requestedQuery.debtorId);
     }
     if (requestedQuery.clientId && isForRisk) {
-      queryFilter.push({
-        clientId: mongoose.Types.ObjectId(requestedQuery.clientId),
-      });
+      // queryFilter.push({
+      //   clientId: mongoose.Types.ObjectId(requestedQuery.clientId),
+      // });
+      queryFilter.clientId = mongoose.Types.ObjectId(requestedQuery.clientId);
     }
-    if (requestedQuery.minOutstandingAmount) {
-      queryFilter.push({
-        outstandingAmount: {
+
+    // if (requestedQuery.minOutstandingAmount) {
+    //   queryFilter.push({
+    //     outstandingAmount: {
+    //       $gte: parseInt(requestedQuery.minOutstandingAmount),
+    //     },
+    //   });
+    // }
+    // if (requestedQuery.maxOutstandingAmount) {
+    //   queryFilter.push({
+    //     outstandingAmount: {
+    //       $lte: parseInt(requestedQuery.maxOutstandingAmount),
+    //     },
+    //   });
+    // }
+
+    if (
+      requestedQuery.minOutstandingAmount ||
+      requestedQuery.maxOutstandingAmount
+    ) {
+      let outstandingQuery = {};
+      if (requestedQuery.minOutstandingAmount) {
+        outstandingQuery = {
           $gte: parseInt(requestedQuery.minOutstandingAmount),
-        },
-      });
-    }
-    if (requestedQuery.maxOutstandingAmount) {
-      queryFilter.push({
-        outstandingAmount: {
+        };
+        /*queryFilter.push({
+          outstandingAmount: {
+            $gte: parseInt(requestedQuery.minOutstandingAmount),
+          },
+        });*/
+      }
+      if (requestedQuery.maxOutstandingAmount) {
+        /* queryFilter.push({
+          outstandingAmount: {
+            $lte: parseInt(requestedQuery.maxOutstandingAmount),
+          },
+        });*/
+        outstandingQuery = Object.assign({}, outstandingQuery, {
           $lte: parseInt(requestedQuery.maxOutstandingAmount),
-        },
-      });
+        });
+      }
+      queryFilter.outstandingAmount = outstandingQuery;
     }
+
+    const query = [];
+    if (requestedQuery.startDate || requestedQuery.endDate) {
+      const dateQuery = [];
+      query.push(
+        {
+          $addFields: {
+            monthInt: { $toInt: '$month' },
+            yearInt: { $toInt: '$year' },
+          },
+        },
+        {
+          $addFields: {
+            monthYear: { $add: [{ $multiply: ['$yearInt', 12] }, '$monthInt'] },
+          },
+        },
+      );
+      const { startYear, endYear, startMonth, endMonth } = await checkDateRange(
+        {
+          startDate: requestedQuery.startDate?.trim(),
+          endDate: requestedQuery.endDate?.trim(),
+          checkValidations: false,
+        },
+      );
+      if (requestedQuery.startDate) {
+        const startingDate = startYear * 12 + startMonth;
+        dateQuery.push({ $gte: ['$monthYear', startingDate] });
+      }
+      if (requestedQuery.endDate) {
+        const endingDate = endYear * 12 + endMonth;
+        dateQuery.push({ $lte: ['$monthYear', endingDate] });
+      }
+      query.push({ $match: { $expr: { $and: dateQuery } } });
+    }
+
     let array = [];
-    if (requestedQuery.startDate) {
+    /* if (requestedQuery.startDate) {
       requestedQuery.startDate = new Date(requestedQuery.startDate.trim());
       array.push({
         $gte: [
@@ -246,8 +317,8 @@ const getOverdueList = async ({
         ],
       });
       queryFilter.push({ $expr: { $and: array } });
-    }
-    const query = [
+    }*/
+    query.push(
       {
         $addFields: {
           monthInt: { $toInt: '$month' },
@@ -335,7 +406,7 @@ const getOverdueList = async ({
           },
         },
       },
-    ];
+    );
     const groupBy = {
       month: '$month',
       year: '$year',
@@ -482,9 +553,10 @@ const getOverdueList = async ({
         ],
       },
     });
-    if (queryFilter.length !== 0) {
-      query.unshift({ $match: { $and: queryFilter } });
+    if (Object.keys(queryFilter).length !== 0) {
+      query.unshift({ $match: queryFilter });
     }
+    console.log(JSON.stringify(query, null, 2));
     const overdueList = await Overdue.aggregate(query).allowDiskUse(true);
     overdueList[0].paginatedResult.forEach((i) => {
       if (i.debtors.length !== 0) {
@@ -592,7 +664,7 @@ const downloadOverdueList = async ({ requestedQuery }) => {
         .tz(config.organization.timeZone)
         .format('YYYY');
       console.log('startMonth', startMonth);*/
-      const startingDate = parseInt(startYear) * 12 + parseInt(startMonth);
+      const startingDate = startYear * 12 + startMonth;
       /*query.push({
         $addFields: {
           startingDate: {
@@ -616,7 +688,7 @@ const downloadOverdueList = async ({ requestedQuery }) => {
         .tz(config.organization.timeZone)
         .format('YYYY');
       console.log('end month....', endMonth);*/
-      const endingDate = parseInt(endYear) * 12 + parseInt(endMonth);
+      const endingDate = endYear * 12 + endMonth;
       /*query.push({
         $addFields: {
           endingDate: {
@@ -959,9 +1031,11 @@ const addNotifications = async ({
 const checkDateRange = async ({
   startDate = new Date(),
   endDate = new Date(),
+  checkValidations = true,
 }) => {
   try {
     const headers = [];
+    let filters = [];
 
     const startingMonth = parseInt(
       moment(startDate).tz(config.organization.timeZone).format('MM'),
@@ -969,7 +1043,6 @@ const checkDateRange = async ({
     const startYear = parseInt(
       moment(startDate).tz(config.organization.timeZone).format('YYYY'),
     );
-
     const endingMonth = parseInt(
       moment(endDate).tz(config.organization.timeZone).format('MM'),
     );
@@ -977,30 +1050,32 @@ const checkDateRange = async ({
       moment(endDate).tz(config.organization.timeZone).format('YYYY'),
     );
 
-    const filters = [
-      {
-        label: 'Date',
-        value: `${monthString[startingMonth]} ${startYear} to ${monthString[endingMonth]} ${endYear}`,
-        type: 'string',
-      },
-    ];
-
-    for (let i = startYear; i <= endYear; i++) {
-      const endMonth = i !== endYear ? 11 : endingMonth - 1;
-      const startMonth = i === startYear ? startingMonth - 1 : 0;
-      for (
-        let j = startMonth;
-        j <= endMonth;
-        j = j > 12 ? j % 12 || 11 : j + 1
-      ) {
-        const month = (j + 1).toString().padStart(2, '0');
-        headers.push({
-          name: month + '-' + i,
-          label: getMonthString(month) + '-' + i,
+    if (checkValidations) {
+      filters = [
+        {
+          label: 'Date',
+          value: `${monthString[startingMonth]} ${startYear} to ${monthString[endingMonth]} ${endYear}`,
           type: 'string',
-        });
+        },
+      ];
+      for (let i = startYear; i <= endYear; i++) {
+        const endMonth = i !== endYear ? 11 : endingMonth - 1;
+        const startMonth = i === startYear ? startingMonth - 1 : 0;
+        for (
+          let j = startMonth;
+          j <= endMonth;
+          j = j > 12 ? j % 12 || 11 : j + 1
+        ) {
+          const month = (j + 1).toString().padStart(2, '0');
+          headers.push({
+            name: month + '-' + i,
+            label: getMonthString(month) + '-' + i,
+            type: 'string',
+          });
+        }
       }
     }
+
     return {
       headers: headers.reverse(),
       filters,
