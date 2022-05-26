@@ -410,6 +410,7 @@ router.get('/download', async function (req, res) {
         break;
       case 'review-report':
         reportColumn = [
+          'clientId',
           'entityName',
           'abn',
           'acn',
@@ -419,6 +420,7 @@ router.get('/download', async function (req, res) {
           'country',
           'riskRating',
           'tradingName',
+          'insurerId',
           'property',
           'unitNumber',
           'streetNumber',

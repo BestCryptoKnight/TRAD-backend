@@ -368,8 +368,6 @@ router.get('/download', async function (req, res) {
       label: 'Client Name',
       type: 'string',
     });
-    // console.log('finalArray', finalArray);
-    console.log('finalArray', headers);
     const excelData = await generateExcel({
       data: finalArray,
       reportFor: 'Overdue Report',
@@ -386,7 +384,7 @@ router.get('/download', async function (req, res) {
     res.status(200).send(excelData);
   } catch (e) {
     Logger.log.error('Error occurred in download overdue list', e.message || e);
-    res.status(500).send({
+    res.status(e.messageCode === 'DOWNLOAD_LIMIT_EXCEED' ? 400 : 500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
     });
