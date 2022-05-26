@@ -575,13 +575,11 @@ const downloadOverdueList = async ({ requestedQuery }) => {
     }
 
     if (requestedQuery.startDate) {
-      console.log(
-        'startDate...............',
-        moment(requestedQuery.startDate)
-          .tz(config.organization.timeZone)
-          .format('MM'),
-      );
       requestedQuery.startDate = new Date(requestedQuery.startDate.trim());
+      const startMonth = moment(requestedQuery.startDate)
+        .tz(config.organization.timeZone)
+        .format('MM');
+      console.log('startMonth', startMonth);
       query.push({
         $addFields: {
           startingDate: {
@@ -592,7 +590,7 @@ const downloadOverdueList = async ({ requestedQuery }) => {
                   12,
                 ],
               },
-              { $sum: [new Date(requestedQuery.startDate).getMonth(), 1] },
+              parseInt(startMonth),
             ],
           },
         },
@@ -600,13 +598,11 @@ const downloadOverdueList = async ({ requestedQuery }) => {
       queryFilter.push({ $gte: ['$monthYear', '$startingDate'] });
     }
     if (requestedQuery.endDate) {
-      console.log(
-        'endDate...............',
-        moment(requestedQuery.endDate)
-          .tz(config.organization.timeZone)
-          .format('MM'),
-      );
       requestedQuery.endDate = new Date(requestedQuery.endDate.trim());
+      const endMonth = moment(requestedQuery.endDate)
+        .tz(config.organization.timeZone)
+        .format('MM');
+      console.log('end month....', endMonth);
       query.push({
         $addFields: {
           endingDate: {
@@ -614,7 +610,7 @@ const downloadOverdueList = async ({ requestedQuery }) => {
               {
                 $multiply: [new Date(requestedQuery.endDate).getFullYear(), 12],
               },
-              { $sum: [new Date(requestedQuery.endDate).getMonth(), 1] },
+              parseInt(endMonth),
             ],
           },
         },
