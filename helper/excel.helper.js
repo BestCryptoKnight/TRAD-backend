@@ -17,7 +17,9 @@ const generateExcel = ({ data, reportFor, headers, filter, title }) => {
       base64: base64Data,
       extension: 'png',
     });
-    worksheet.addImage(image, 'A1:A1');
+    worksheet.addImage(image, {
+      ext: { width: 150, height: 50 },
+    });
 
     const currentDate = new Date();
     filter.unshift({

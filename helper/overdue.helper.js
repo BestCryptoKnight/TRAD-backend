@@ -4,6 +4,7 @@
 const mongoose = require('mongoose');
 const Client = mongoose.model('client');
 const Overdue = mongoose.model('overdue');
+const moment = require('moment-timezone');
 
 /*
  * Local Imports
@@ -12,6 +13,7 @@ const Logger = require('./../services/logger');
 const { addAuditLog } = require('./audit-log.helper');
 const { addNotification } = require('./notification.helper');
 const { sendNotification } = require('./socket.helper');
+const config = require('../config');
 const monthString = {
   1: 'Jan',
   2: 'Feb',
@@ -573,6 +575,12 @@ const downloadOverdueList = async ({ requestedQuery }) => {
     }
 
     if (requestedQuery.startDate) {
+      console.log(
+        'startDate...............',
+        moment(requestedQuery.startDate)
+          .tz(config.organization.timeZone)
+          .format('MM'),
+      );
       requestedQuery.startDate = new Date(requestedQuery.startDate.trim());
       query.push({
         $addFields: {
@@ -592,6 +600,12 @@ const downloadOverdueList = async ({ requestedQuery }) => {
       queryFilter.push({ $gte: ['$monthYear', '$startingDate'] });
     }
     if (requestedQuery.endDate) {
+      console.log(
+        'endDate...............',
+        moment(requestedQuery.endDate)
+          .tz(config.organization.timeZone)
+          .format('MM'),
+      );
       requestedQuery.endDate = new Date(requestedQuery.endDate.trim());
       query.push({
         $addFields: {
