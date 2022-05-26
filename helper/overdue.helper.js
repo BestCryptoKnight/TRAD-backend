@@ -168,19 +168,11 @@ const getOverdueList = async ({
     requestedQuery.page = requestedQuery.page || 1;
     requestedQuery.limit = requestedQuery.limit || 5;
     if (!isForRisk) {
-      // queryFilter.push({ clientId: mongoose.Types.ObjectId(clientId) });
       queryFilter.clientId = mongoose.Types.ObjectId(clientId);
     } else if (isForSubmodule && entityId && requestedQuery.entityType) {
       if (requestedQuery.entityType === 'client') {
         queryFilter.clientId = mongoose.Types.ObjectId(entityId);
-
-        // queryFilter.push({
-        //   clientId: mongoose.Types.ObjectId(entityId),
-        // });
       } else if (requestedQuery.entityType === 'debtor') {
-        // queryFilter.push({
-        //   debtorId: mongoose.Types.ObjectId(entityId),
-        // });
         queryFilter.debtorId = mongoose.Types.ObjectId(entityId);
         isForSubmodule = false;
       }
@@ -191,36 +183,14 @@ const getOverdueList = async ({
         .select('_id name')
         .lean();
       const clientIds = clients.map((i) => i._id);
-      // queryFilter.push({ clientId: { $in: clientIds } });
       queryFilter.clientId = { $in: clientIds };
     }
     if (requestedQuery.debtorId) {
-      // queryFilter.push({
-      //   debtorId: mongoose.Types.ObjectId(requestedQuery.debtorId),
-      // });
       queryFilter.debtorId = mongoose.Types.ObjectId(requestedQuery.debtorId);
     }
     if (requestedQuery.clientId && isForRisk) {
-      // queryFilter.push({
-      //   clientId: mongoose.Types.ObjectId(requestedQuery.clientId),
-      // });
       queryFilter.clientId = mongoose.Types.ObjectId(requestedQuery.clientId);
     }
-
-    // if (requestedQuery.minOutstandingAmount) {
-    //   queryFilter.push({
-    //     outstandingAmount: {
-    //       $gte: parseInt(requestedQuery.minOutstandingAmount),
-    //     },
-    //   });
-    // }
-    // if (requestedQuery.maxOutstandingAmount) {
-    //   queryFilter.push({
-    //     outstandingAmount: {
-    //       $lte: parseInt(requestedQuery.maxOutstandingAmount),
-    //     },
-    //   });
-    // }
 
     if (
       requestedQuery.minOutstandingAmount ||
@@ -231,18 +201,8 @@ const getOverdueList = async ({
         outstandingQuery = {
           $gte: parseInt(requestedQuery.minOutstandingAmount),
         };
-        /*queryFilter.push({
-          outstandingAmount: {
-            $gte: parseInt(requestedQuery.minOutstandingAmount),
-          },
-        });*/
       }
       if (requestedQuery.maxOutstandingAmount) {
-        /* queryFilter.push({
-          outstandingAmount: {
-            $lte: parseInt(requestedQuery.maxOutstandingAmount),
-          },
-        });*/
         outstandingQuery = Object.assign({}, outstandingQuery, {
           $lte: parseInt(requestedQuery.maxOutstandingAmount),
         });
@@ -284,40 +244,6 @@ const getOverdueList = async ({
       query.push({ $match: { $expr: { $and: dateQuery } } });
     }
 
-    let array = [];
-    /* if (requestedQuery.startDate) {
-      requestedQuery.startDate = new Date(requestedQuery.startDate.trim());
-      array.push({
-        $gte: [
-          { $toInt: '$month' },
-          { $sum: [new Date(requestedQuery.startDate).getMonth(), 1] },
-        ],
-      });
-      array.push({
-        $gte: [
-          { $toInt: '$year' },
-          new Date(requestedQuery.startDate).getFullYear(),
-        ],
-      });
-      queryFilter.push({ $expr: { $and: array } });
-    }
-    if (requestedQuery.endDate) {
-      requestedQuery.endDate = new Date(requestedQuery.endDate.trim());
-      array = [];
-      array.push({
-        $lte: [
-          { $toInt: '$month' },
-          { $sum: [new Date(requestedQuery.endDate).getMonth(), 1] },
-        ],
-      });
-      array.push({
-        $lte: [
-          { $toInt: '$year' },
-          new Date(requestedQuery.endDate).getFullYear(),
-        ],
-      });
-      queryFilter.push({ $expr: { $and: array } });
-    }*/
     query.push(
       {
         $addFields: {
@@ -556,7 +482,7 @@ const getOverdueList = async ({
     if (Object.keys(queryFilter).length !== 0) {
       query.unshift({ $match: queryFilter });
     }
-    console.log(JSON.stringify(query, null, 2));
+
     const overdueList = await Overdue.aggregate(query).allowDiskUse(true);
     overdueList[0].paginatedResult.forEach((i) => {
       if (i.debtors.length !== 0) {
@@ -644,8 +570,6 @@ const downloadOverdueList = async ({ requestedQuery }) => {
       endDate: requestedQuery.endDate?.trim(),
     });
 
-    console.log({ startYear, startMonth, endMonth, endYear, headers });
-
     if (headers.length > 24) {
       return Promise.reject({
         status: 'ERROR',
@@ -656,51 +580,11 @@ const downloadOverdueList = async ({ requestedQuery }) => {
     }
 
     if (requestedQuery.startDate) {
-      // requestedQuery.startDate = new Date(requestedQuery.startDate.trim());
-      /*const startMonth = moment(requestedQuery.startDate)
-        .tz(config.organization.timeZone)
-        .format('MM');
-      const startYear = moment(requestedQuery.startDate)
-        .tz(config.organization.timeZone)
-        .format('YYYY');
-      console.log('startMonth', startMonth);*/
       const startingDate = startYear * 12 + startMonth;
-      /*query.push({
-        $addFields: {
-          startingDate: {
-            $add: [
-              {
-                $multiply: [parseInt(startYear), 12],
-              },
-              parseInt(startMonth),
-            ],
-          },
-        },
-      });*/
       queryFilter.push({ $gte: ['$monthYear', startingDate] });
     }
     if (requestedQuery.endDate) {
-      // requestedQuery.endDate = new Date(requestedQuery.endDate.trim());
-      /*const endMonth = moment(requestedQuery.endDate)
-        .tz(config.organization.timeZone)
-        .format('MM');
-      const endYear = moment(requestedQuery.endDate)
-        .tz(config.organization.timeZone)
-        .format('YYYY');
-      console.log('end month....', endMonth);*/
       const endingDate = endYear * 12 + endMonth;
-      /*query.push({
-        $addFields: {
-          endingDate: {
-            $add: [
-              {
-                $multiply: [parseInt(endYear), 12],
-              },
-              parseInt(endMonth),
-            ],
-          },
-        },
-      });*/
       queryFilter.push({ $lte: ['$monthYear', endingDate] });
     }
 
@@ -749,10 +633,8 @@ const downloadOverdueList = async ({ requestedQuery }) => {
       },
     );
 
-    console.log(JSON.stringify(query, null, 3));
     const overdueList = await Overdue.aggregate(query).allowDiskUse(true);
 
-    console.log(JSON.stringify(overdueList, null, 3));
     return { overdueList, headers, filters };
   } catch (e) {
     Logger.log.error('Error occurred in download overdue list');
