@@ -560,10 +560,19 @@ const downloadOverdueList = async ({ requestedQuery }) => {
       },
     ];
 
-    const { headers, filters } = await checkDateRange({
+    const {
+      headers,
+      filters,
+      startYear,
+      startMonth,
+      endMonth,
+      endYear,
+    } = await checkDateRange({
       startDate: requestedQuery.startDate?.trim(),
       endDate: requestedQuery.endDate?.trim(),
     });
+
+    console.log({ startYear, startMonth, endMonth, endYear, headers });
 
     if (headers.length > 24) {
       return Promise.reject({
@@ -575,15 +584,16 @@ const downloadOverdueList = async ({ requestedQuery }) => {
     }
 
     if (requestedQuery.startDate) {
-      requestedQuery.startDate = new Date(requestedQuery.startDate.trim());
-      const startMonth = moment(requestedQuery.startDate)
+      // requestedQuery.startDate = new Date(requestedQuery.startDate.trim());
+      /*const startMonth = moment(requestedQuery.startDate)
         .tz(config.organization.timeZone)
         .format('MM');
       const startYear = moment(requestedQuery.startDate)
         .tz(config.organization.timeZone)
         .format('YYYY');
-      console.log('startMonth', startMonth);
-      query.push({
+      console.log('startMonth', startMonth);*/
+      const startingDate = parseInt(startYear) * 12 + parseInt(startMonth);
+      /*query.push({
         $addFields: {
           startingDate: {
             $add: [
@@ -594,19 +604,20 @@ const downloadOverdueList = async ({ requestedQuery }) => {
             ],
           },
         },
-      });
-      queryFilter.push({ $gte: ['$monthYear', '$startingDate'] });
+      });*/
+      queryFilter.push({ $gte: ['$monthYear', startingDate] });
     }
     if (requestedQuery.endDate) {
-      requestedQuery.endDate = new Date(requestedQuery.endDate.trim());
-      const endMonth = moment(requestedQuery.endDate)
+      // requestedQuery.endDate = new Date(requestedQuery.endDate.trim());
+      /*const endMonth = moment(requestedQuery.endDate)
         .tz(config.organization.timeZone)
         .format('MM');
       const endYear = moment(requestedQuery.endDate)
         .tz(config.organization.timeZone)
         .format('YYYY');
-      console.log('end month....', endMonth);
-      query.push({
+      console.log('end month....', endMonth);*/
+      const endingDate = parseInt(endYear) * 12 + parseInt(endMonth);
+      /*query.push({
         $addFields: {
           endingDate: {
             $add: [
@@ -617,8 +628,8 @@ const downloadOverdueList = async ({ requestedQuery }) => {
             ],
           },
         },
-      });
-      queryFilter.push({ $lte: ['$monthYear', '$endingDate'] });
+      });*/
+      queryFilter.push({ $lte: ['$monthYear', endingDate] });
     }
 
     if (queryFilter.length !== 0) {
@@ -669,6 +680,7 @@ const downloadOverdueList = async ({ requestedQuery }) => {
     console.log(JSON.stringify(query, null, 3));
     const overdueList = await Overdue.aggregate(query).allowDiskUse(true);
 
+    console.log(JSON.stringify(overdueList, null, 3));
     return { overdueList, headers, filters };
   } catch (e) {
     Logger.log.error('Error occurred in download overdue list');
@@ -950,10 +962,21 @@ const checkDateRange = async ({
 }) => {
   try {
     const headers = [];
-    const startYear = new Date(startDate).getFullYear();
-    const endYear = new Date(endDate).getFullYear();
-    const startingMonth = new Date(startDate).getMonth() + 1;
-    const endingMonth = new Date(endDate).getMonth() + 1;
+
+    const startingMonth = parseInt(
+      moment(startDate).tz(config.organization.timeZone).format('MM'),
+    );
+    const startYear = parseInt(
+      moment(startDate).tz(config.organization.timeZone).format('YYYY'),
+    );
+
+    const endingMonth = parseInt(
+      moment(endDate).tz(config.organization.timeZone).format('MM'),
+    );
+    const endYear = parseInt(
+      moment(endDate).tz(config.organization.timeZone).format('YYYY'),
+    );
+
     const filters = [
       {
         label: 'Date',
@@ -978,7 +1001,14 @@ const checkDateRange = async ({
         });
       }
     }
-    return { headers: headers.reverse(), filters };
+    return {
+      headers: headers.reverse(),
+      filters,
+      startMonth: startingMonth,
+      startYear,
+      endMonth: endingMonth,
+      endYear,
+    };
   } catch (e) {
     Logger.log.error('Error occurred in check for date range');
     Logger.log.error(e);
