@@ -633,9 +633,12 @@ const downloadOverdueList = async ({ requestedQuery }) => {
       },
     );
 
-    const overdueList = await Overdue.aggregate(query).allowDiskUse(true);
+    const [overdueList, clients] = await Promise.all([
+      Overdue.aggregate(query).allowDiskUse(true),
+      Client.find({ isDeleted: false }).select({ name: 1 }).lean(),
+    ]);
 
-    return { overdueList, headers, filters };
+    return { overdueList, headers, filters, clients };
   } catch (e) {
     Logger.log.error('Error occurred in download overdue list');
     Logger.log.error(e);
