@@ -340,15 +340,22 @@ router.get('/download', async function (req, res) {
     });
   }
   try {
-    const { overdueList, headers, filters } = await downloadOverdueList({
+    const {
+      overdueList,
+      headers,
+      filters,
+      clients,
+    } = await downloadOverdueList({
       requestedQuery: req.query,
     });
     const finalArray = [];
+    const clientNames = [];
     let data;
     if (overdueList.length !== 0) {
       overdueList.forEach((i) => {
         data = {};
         data['clientName'] = i['clientName'];
+        clientNames.push(i['clientName']);
         data = Object.assign(
           data,
           ...i.records.map((object) => ({
@@ -363,6 +370,17 @@ router.get('/download', async function (req, res) {
         finalArray.push(data);
       });
     }
+
+    clients.forEach((client) => {
+      if (!clientNames.includes(client.name)) {
+        data = {};
+        data['clientName'] = client['name'];
+        headers.map((key) => {
+          data[key.name] = '-';
+        });
+        finalArray.push(data);
+      }
+    });
     headers.unshift({
       name: 'clientName',
       label: 'Client Name',
