@@ -18,7 +18,7 @@ const generateExcel = ({ data, reportFor, headers, filter, title }) => {
       extension: 'png',
     });
     worksheet.addImage(image, {
-      ext: { width: 170, height: 50 },
+      ext: { width: headers.length <= 2 ? 139 : 170, height: 39 },
     });
 
     const currentDate = new Date();
