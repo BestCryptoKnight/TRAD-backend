@@ -3260,5 +3260,6 @@
       "_id": "247_ALERT"
     }
   ],
-  "AlertPriorities": ["Low", "Moderate", "High"]
+  "AlertPriorities": ["Low", "Moderate", "High"],
+  "disclaimer": "Disclaimer: Full details of the terms and conditions relating to individual credit limits can only be determined by reference to the original limit endorsements issued by your insurer. The list provided is a summary of your credit limits only, based on information obtained from the insurer's website. Whilst every precaution has been taken by TCR to provide you with accurate and up-to-date information, TCR cannot be held responsible for any errors or omissions contained herein."
 }

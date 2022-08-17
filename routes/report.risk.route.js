@@ -554,6 +554,7 @@ router.get('/download', async function (req, res) {
         finalArray.push(data);
       });
     }
+
     const excelData = await generateExcel({
       data: finalArray,
       reportFor: reportFor,
@@ -561,6 +562,7 @@ router.get('/download', async function (req, res) {
       filter: response.filterArray,
       title: 'Report for',
     });
+
     const fileName = report + '-' + new Date().getTime() + '.xlsx';
     res.header(
       'Content-Type',
