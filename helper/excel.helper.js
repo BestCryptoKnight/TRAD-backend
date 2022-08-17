@@ -4,6 +4,7 @@ const { numberWithCommas } = require('./report.helper');
 const config = require('./../config');
 const { getBase64 } = require('./pdf-generator.helper');
 const Logger = require('./../services/logger');
+const StaticData = require('./../static-files/staticData.json');
 
 const generateExcel = ({ data, reportFor, headers, filter, title }) => {
   return new Promise(async (resolve, reject) => {
@@ -206,6 +207,24 @@ const addColumnsForLimitList = async ({ data, worksheet, headers, filter }) => {
         worksheet.mergeCells(`A${i + 2}:O${i + 2}`);
       }
     }
+
+    worksheet.addRow();
+    worksheet.mergeCells(
+      `A${worksheet.lastRow.number}:O${worksheet.lastRow.number}`,
+    );
+
+    const staticDisclaimer = [];
+    staticDisclaimer[1] = StaticData.disclaimer;
+    const row = worksheet.addRow(staticDisclaimer);
+    row.font = {
+      name: 'Calibri',
+      size: 10,
+      wrapText: true,
+    };
+    worksheet.mergeCells(
+      `A${worksheet.lastRow.number}:O${worksheet.lastRow.number}`,
+    );
+
     worksheet.getColumn(1).width = 40;
     worksheet.getColumn(2).width = 25;
     worksheet.getColumn(3).width = 40;
@@ -438,6 +457,24 @@ const addColumnsForCreditLimitList = async ({
         worksheet.mergeCells(`A${i + 2}:M${i + 2}`);
       }
     }
+
+    worksheet.addRow();
+    worksheet.mergeCells(
+      `A${worksheet.lastRow.number}:O${worksheet.lastRow.number}`,
+    );
+
+    const staticDisclaimer = [];
+    staticDisclaimer[1] = StaticData.disclaimer;
+    const row = worksheet.addRow(staticDisclaimer);
+    row.font = {
+      name: 'Calibri',
+      size: 10,
+      wrapText: true,
+    };
+    worksheet.mergeCells(
+      `A${worksheet.lastRow.number}:O${worksheet.lastRow.number}`,
+    );
+
     worksheet.getColumn(1).width = 45;
     worksheet.getColumn(2).width = 25;
     worksheet.getColumn(3).width = 25;
