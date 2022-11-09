@@ -210,6 +210,9 @@ const getClientCreditLimit = async ({
     });
     fields.push(['debtorId._id', 1]);
     fields.push(['activeApplicationId._id', 1]);
+    fields.push(['activeApplicationId.expiryDate', 1]);
+    fields.push(['activeApplicationId.clientReference', 1]);
+    fields.push(['activeApplicationId.comments', 1]);
     aggregationQuery.push({
       $project: fields.reduce((obj, [key, val]) => {
         obj[key] = val;
