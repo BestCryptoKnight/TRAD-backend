@@ -12,6 +12,7 @@ const authenticate = require('./../middlewares/authenticate')
 const Logger = require('./../services/logger');
 const {
   getClients,
+  getDebtorDirectorListClient,
   getTaskList,
   getApplications,
   getClientDebtorList,
@@ -26,12 +27,24 @@ router.get('/', authenticate, async function (req, res) {
     });
   }
   try {
-    const [clients, debtors, tasks, applications] = await Promise.all([
+    const [
+      clients,
+      debtorDirector,
+      debtors,
+      tasks,
+      applications,
+    ] = await Promise.all([
       getClients({
         searchString: req.query.searchString,
         userId: req.user._id,
         isForRisk: false,
         clientId: req.user.clientId,
+      }),
+      getDebtorDirectorListClient({
+        moduleAccess: req.user.moduleAccess,
+        searchString: req.query.searchString,
+        userId: req.user._id,
+        isForRisk: true,
       }),
       getClientDebtorList({
         clientId: req.user.clientId,
@@ -49,7 +62,8 @@ router.get('/', authenticate, async function (req, res) {
         clientId: req.user.clientId,
       }),
     ]);
-    let response = clients.concat(debtors);
+    let response = clients.concat(debtorDirector);
+    response = response.concat(debtors);
     response = response.concat(tasks);
     response = response.concat(applications);
     res.status(200).send({
