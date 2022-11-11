@@ -8,6 +8,7 @@ const ClientUser = mongoose.model('client-user');
 const Insurer = mongoose.model('insurer');
 const InsurerUser = mongoose.model('insurer-user');
 const Debtor = mongoose.model('debtor');
+const DebtorDirector = mongoose.model('debtor-director');
 const ClientDebtor = mongoose.model('client-debtor');
 const Application = mongoose.model('application');
 const Task = mongoose.model('task');
@@ -310,6 +311,176 @@ const getDebtorList = async ({
 };
 
 /**
+ * Get DebtorDirector list for Global search & Entity search drop-down
+ */
+const getDebtorDirectorList = async ({ searchString, limit = 100 }) => {
+  try {
+    let queryFilter = {};
+    const stakeholderName = searchString.split(' ');
+    let stakeholderFields = [];
+    if (stakeholderName.length == 3) {
+      stakeholderFields = [
+        {
+          firstName: {
+            $regex: getRegexForSearch(stakeholderName[0]),
+            $options: 'i',
+          },
+          isDeleted: false,
+        },
+        {
+          middleName: {
+            $regex: getRegexForSearch(stakeholderName[1]),
+            $options: 'i',
+          },
+          isDeleted: false,
+        },
+        {
+          lastName: {
+            $regex: getRegexForSearch(stakeholderName[2]),
+            $options: 'i',
+          },
+          isDeleted: false,
+        },
+      ];
+    } else if (stakeholderName.length == 2) {
+      stakeholderFields = [
+        {
+          firstName: {
+            $regex: getRegexForSearch(stakeholderName[0]),
+            $options: 'i',
+          },
+          isDeleted: false,
+        },
+        {
+          lastName: {
+            $regex: getRegexForSearch(stakeholderName[1]),
+            $options: 'i',
+          },
+          isDeleted: false,
+        },
+      ];
+    } else {
+      stakeholderFields = [
+        {
+          firstName: {
+            $regex: getRegexForSearch(searchString),
+            $options: 'i',
+          },
+          isDeleted: false,
+        },
+        {
+          middleName: {
+            $regex: getRegexForSearch(searchString),
+            $options: 'i',
+          },
+          isDeleted: false,
+        },
+        {
+          lastName: {
+            $regex: getRegexForSearch(searchString),
+            $options: 'i',
+          },
+          isDeleted: false,
+        },
+      ];
+    }
+    queryFilter = {
+      $or: [
+        {
+          entityName: {
+            $regex: getRegexForSearch(searchString),
+            $options: 'i',
+          },
+          isDeleted: false,
+        },
+        {
+          acn: {
+            $regex: getRegexForSearch(searchString),
+            $options: 'i',
+          },
+          isDeleted: false,
+        },
+        {
+          abn: {
+            $regex: getRegexForSearch(searchString),
+            $options: 'i',
+          },
+          isDeleted: false,
+        },
+        {
+          registrationNumber: {
+            $regex: getRegexForSearch(searchString),
+            $options: 'i',
+          },
+          isDeleted: false,
+        },
+      ],
+    };
+    queryFilter.$or = queryFilter.$or.concat(stakeholderFields);
+    let [debtorDirector] = await Promise.all([
+      DebtorDirector.find(queryFilter)
+        .select('_id entityName debtorId firstName lastName middleName')
+        .limit(limit)
+        .lean(),
+    ]);
+    if (stakeholderName.length === 3 || stakeholderName.length === 2) {
+      debtorDirector = debtorDirector.filter((v) => {
+        let result = false;
+        if (v.entityName) result = true;
+        else if (
+          stakeholderName.length === 3 &&
+          v.firstName.toLowerCase() === stakeholderName[0].toLowerCase() &&
+          v.middleName.toLowerCase() === stakeholderName[1].toLowerCase() &&
+          v.lastName.toLowerCase() === stakeholderName[2].toLowerCase()
+        )
+          result = true;
+        else if (
+          stakeholderName.length === 2 &&
+          v.firstName.toLowerCase() === stakeholderName[0].toLowerCase() &&
+          v.lastName.toLowerCase() === stakeholderName[1].toLowerCase()
+        )
+          result = true;
+        return result;
+      });
+    }
+    let showStakeholderName = '';
+    debtorDirector.forEach((dd) => {
+      if (dd.entityName) {
+        showStakeholderName = showStakeholderName + dd.entityName;
+      } else {
+        if (dd.firstName) {
+          if (dd.middleName) {
+            showStakeholderName = showStakeholderName + dd.firstName + ' ';
+            showStakeholderName = showStakeholderName + dd.middleName + ' ';
+            showStakeholderName = showStakeholderName + dd.lastName;
+          } else {
+            showStakeholderName = showStakeholderName + dd.firstName + ' ';
+            showStakeholderName = showStakeholderName + dd.lastName;
+          }
+        }
+      }
+      delete dd._id;
+      delete dd.firstName;
+      delete dd.middleName;
+      delete dd.lastName;
+      delete dd.entityName;
+      dd.title = showStakeholderName;
+      dd._id = dd.debtorId;
+      dd.module = 'debtors';
+      dd.hasSubModule = true;
+      dd.subModule = 'stakeholder';
+    });
+    const response = debtorDirector;
+    return response;
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred while search in debtorDirector module',
+      e.message || e,
+    );
+  }
+};
+
+/**
  * Get Task list for Global search
  */
 const getTaskList = async ({
@@ -549,6 +720,7 @@ module.exports = {
   getClients: getClientList,
   getInsurerList,
   getDebtorList,
+  getDebtorDirectorList,
   getTaskList,
   getApplications: getApplicationList,
   getClientDebtorList,
