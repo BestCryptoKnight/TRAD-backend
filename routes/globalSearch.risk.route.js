@@ -14,6 +14,7 @@ const {
   getClients,
   getInsurerList,
   getDebtorList,
+  getDebtorDirectorList,
   getTaskList,
   getApplications,
 } = require('./../helper/globalSearch.helper');
@@ -32,6 +33,7 @@ router.get('/', authenticate, async function (req, res) {
       clients,
       insurers,
       debtors,
+      debtorDirector,
       tasks,
       applications,
     ] = await Promise.all([
@@ -55,6 +57,12 @@ router.get('/', authenticate, async function (req, res) {
         userId: req.user._id,
         isForRisk: true,
       }),
+      getDebtorDirectorList({
+        moduleAccess: req.user.moduleAccess,
+        searchString: req.query.searchString,
+        userId: req.user._id,
+        isForRisk: true,
+      }),
       getTaskList({
         moduleAccess: req.user.moduleAccess,
         searchString: req.query.searchString,
@@ -71,6 +79,7 @@ router.get('/', authenticate, async function (req, res) {
     let response = users.concat(clients);
     response = response.concat(insurers);
     response = response.concat(debtors);
+    response = response.concat(debtorDirector);
     response = response.concat(tasks);
     response = response.concat(applications);
     res.status(200).send({
