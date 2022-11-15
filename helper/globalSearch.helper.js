@@ -483,9 +483,12 @@ const getDebtorDirectorList = async ({ searchString, limit = 100 }) => {
 /**
  * Get DebtorDirector list for Global search for client panel
  */
-const getDebtorDirectorListClient = async ({ searchString, limit = 100 }) => {
+const getDebtorDirectorListClient = async ({
+  searchString,
+  clientId,
+  limit = 100,
+}) => {
   try {
-    let queryFilter = {};
     const stakeholderName = searchString.split(' ');
     let stakeholderFields = [];
     if (stakeholderName.length == 3) {
@@ -495,21 +498,18 @@ const getDebtorDirectorListClient = async ({ searchString, limit = 100 }) => {
             $regex: getRegexForSearch(stakeholderName[0]),
             $options: 'i',
           },
-          isDeleted: false,
         },
         {
           middleName: {
             $regex: getRegexForSearch(stakeholderName[1]),
             $options: 'i',
           },
-          isDeleted: false,
         },
         {
           lastName: {
             $regex: getRegexForSearch(stakeholderName[2]),
             $options: 'i',
           },
-          isDeleted: false,
         },
       ];
     } else if (stakeholderName.length == 2) {
@@ -519,14 +519,12 @@ const getDebtorDirectorListClient = async ({ searchString, limit = 100 }) => {
             $regex: getRegexForSearch(stakeholderName[0]),
             $options: 'i',
           },
-          isDeleted: false,
         },
         {
           lastName: {
             $regex: getRegexForSearch(stakeholderName[1]),
             $options: 'i',
           },
-          isDeleted: false,
         },
       ];
     } else {
@@ -536,65 +534,128 @@ const getDebtorDirectorListClient = async ({ searchString, limit = 100 }) => {
             $regex: getRegexForSearch(searchString),
             $options: 'i',
           },
-          isDeleted: false,
         },
         {
           middleName: {
             $regex: getRegexForSearch(searchString),
             $options: 'i',
           },
-          isDeleted: false,
         },
         {
           lastName: {
             $regex: getRegexForSearch(searchString),
             $options: 'i',
           },
-          isDeleted: false,
         },
       ];
     }
-    queryFilter = {
-      $or: [
-        {
-          entityName: {
-            $regex: getRegexForSearch(searchString),
-            $options: 'i',
-          },
-          isDeleted: false,
+    let queryFilter = [
+      {
+        $match: {
+          clientId: mongoose.Types.ObjectId(clientId),
+          status: { $exists: true, $in: ['APPROVED', 'DECLINED'] },
         },
-        {
-          acn: {
-            $regex: getRegexForSearch(searchString),
-            $options: 'i',
-          },
-          isDeleted: false,
+      },
+      {
+        $lookup: {
+          from: 'debtors',
+          localField: 'debtorId',
+          foreignField: '_id',
+          as: 'debtorId',
         },
-        {
-          abn: {
-            $regex: getRegexForSearch(searchString),
-            $options: 'i',
-          },
-          isDeleted: false,
+      },
+      {
+        $unwind: {
+          path: '$debtorId',
+          preserveNullAndEmptyArrays: true,
         },
-        {
-          registrationNumber: {
-            $regex: getRegexForSearch(searchString),
-            $options: 'i',
-          },
-          isDeleted: false,
+      },
+      {
+        $match: {
+          $or: [
+            { 'debtorId.entityType': 'PARTNERSHIP' },
+            { 'debtorId.entityType': 'TRUST' },
+          ],
         },
-      ],
-    };
-    queryFilter.$or = queryFilter.$or.concat(stakeholderFields);
-    let [debtorDirector] = await Promise.all([
-      DebtorDirector.find(queryFilter)
-        .select('_id entityName debtorId firstName lastName middleName')
-        .limit(limit)
-        .lean(),
-    ]);
+      },
+      {
+        $project: {
+          _id: 1,
+          clientId: '$clientId',
+          debtorId: '$debtorId._id',
+          entityType: '$debtorId.entityType',
+        },
+      },
+      {
+        $lookup: {
+          from: 'debtor-directors',
+          localField: 'debtorId',
+          foreignField: 'debtorId',
+          as: 'debtorDirector',
+        },
+      },
+      {
+        $unwind: {
+          path: '$debtorDirector',
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          entityName: '$debtorDirector.entityName',
+          firstName: '$debtorDirector.firstName',
+          middleName: '$debtorDirector.middleName',
+          lastName: '$debtorDirector.lastName',
+          abn: '$debtorDirector.abn',
+          acn: '$debtorDirector.acn',
+          registrationNumber: '$debtorDirector.registrationNumber',
+          isDeleted: '$debtorDirector.isDeleted',
+        },
+      },
+      {
+        $match: {
+          $and: [
+            { isDeleted: false },
+            {
+              $or: [
+                {
+                  entityName: {
+                    $regex: getRegexForSearch(searchString),
+                    $options: 'i',
+                  },
+                },
+                {
+                  abn: {
+                    $regex: getRegexForSearch(searchString),
+                    $options: 'i',
+                  },
+                },
+                {
+                  acn: {
+                    $regex: getRegexForSearch(searchString),
+                    $options: 'i',
+                  },
+                },
+                {
+                  registrationNumber: {
+                    $regex: getRegexForSearch(searchString),
+                    $options: 'i',
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      },
+      { $limit: limit },
+    ];
+    queryFilter[queryFilter.length - 2].$match.$and[1].$or = queryFilter[
+      queryFilter.length - 2
+    ].$match.$and[1].$or.concat(stakeholderFields);
+
+    let debtors = await ClientDebtor.aggregate(queryFilter).allowDiskUse(true);
     if (stakeholderName.length === 3 || stakeholderName.length === 2) {
-      debtorDirector = debtorDirector.filter((v) => {
+      debtors = debtors.filter((v) => {
         let result = false;
         if (v.entityName) result = true;
         else if (
@@ -613,38 +674,39 @@ const getDebtorDirectorListClient = async ({ searchString, limit = 100 }) => {
         return result;
       });
     }
-    let showStakeholderName = '';
-    debtorDirector.forEach((dd) => {
-      if (dd.entityName) {
-        showStakeholderName = showStakeholderName + dd.entityName;
+    debtors.forEach((debtor) => {
+      let title = '';
+      if (debtor.entityName) {
+        title = title + debtor.entityName;
       } else {
-        if (dd.firstName) {
-          if (dd.middleName) {
-            showStakeholderName = showStakeholderName + dd.firstName + ' ';
-            showStakeholderName = showStakeholderName + dd.middleName + ' ';
-            showStakeholderName = showStakeholderName + dd.lastName;
+        if (debtor.firstName) {
+          if (debtor.middleName) {
+            title = title + debtor.firstName + ' ';
+            title = title + debtor.middleName + ' ';
+            title = title + debtor.lastName;
           } else {
-            showStakeholderName = showStakeholderName + dd.firstName + ' ';
-            showStakeholderName = showStakeholderName + dd.lastName;
+            title = title + debtor.firstName + ' ';
+            title = title + debtor.lastName;
           }
         }
       }
-      delete dd._id;
-      delete dd.firstName;
-      delete dd.middleName;
-      delete dd.lastName;
-      delete dd.entityName;
-      dd.title = showStakeholderName;
-      dd._id = dd.debtorId;
-      dd.module = 'credit limits';
-      dd.hasSubModule = true;
-      dd.subModule = 'stakeholder';
+      delete debtor.abn;
+      delete debtor.acn;
+      delete debtor.registrationNumber;
+      delete debtor.firstName;
+      delete debtor.middleName;
+      delete debtor.lastName;
+      delete debtor.entityName;
+      delete debtor.isDeleted;
+      debtor.title = title;
+      debtor.module = 'credit limit';
+      debtor.hasSubModule = true;
+      debtor.subModule = 'stakeholder';
     });
-    const response = debtorDirector;
-    return response;
+    return debtors;
   } catch (e) {
     Logger.log.error(
-      'Error occurred while search in debtorDirector module',
+      'Error occurred while search in Debtor Director List Client module',
       e.message || e,
     );
   }

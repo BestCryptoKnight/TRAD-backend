@@ -41,10 +41,8 @@ router.get('/', authenticate, async function (req, res) {
         clientId: req.user.clientId,
       }),
       getDebtorDirectorListClient({
-        moduleAccess: req.user.moduleAccess,
         searchString: req.query.searchString,
-        userId: req.user._id,
-        isForRisk: true,
+        clientId: req.user.clientId,
       }),
       getClientDebtorList({
         clientId: req.user.clientId,
