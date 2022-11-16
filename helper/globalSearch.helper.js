@@ -268,7 +268,7 @@ const getDebtorList = async ({
         .lean();
       debtors.forEach((debtor) => {
         debtor.title = debtor.entityName;
-        debtor.module = 'debtor';
+        debtor.module = 'debtors';
         debtor.hasSubModule = false;
         delete debtor.entityName;
       });
@@ -443,8 +443,9 @@ const getDebtorDirectorList = async ({ searchString, limit = 100 }) => {
         return result;
       });
     }
-    let showStakeholderName = '';
+
     debtorDirector.forEach((dd) => {
+      let showStakeholderName = '';
       if (dd.entityName) {
         showStakeholderName = showStakeholderName + dd.entityName;
       } else {
@@ -933,7 +934,7 @@ const getClientDebtorList = async ({ searchString, clientId, limit = 100 }) => {
 
     debtors.forEach((debtor) => {
       debtor.title = debtor?.debtorId?.entityName;
-      debtor.module = 'debtor';
+      debtor.module = 'debtors';
       debtor.hasSubModule = false;
       delete debtor.debtorId;
     });
