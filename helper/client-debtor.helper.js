@@ -213,13 +213,13 @@ const getClientCreditLimit = async ({
     fields.push(['activeApplicationId.expiryDate', 1]);
     fields.push(['activeApplicationId.clientReference', 1]);
     fields.push(['activeApplicationId.comments', 1]);
+    fields.push(['activeApplicationId.creditLimit', 1]);
     aggregationQuery.push({
       $project: fields.reduce((obj, [key, val]) => {
         obj[key] = val;
         return obj;
       }, {}),
     });
-
     if (requestedQuery.search) {
       aggregationQuery.push({
         $match: {
