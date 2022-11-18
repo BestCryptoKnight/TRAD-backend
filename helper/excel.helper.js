@@ -486,7 +486,7 @@ const addColumnsForCreditLimitList = async ({
     worksheet.getColumn(9).width = 25;
     worksheet.getColumn(10).width = 25;
     worksheet.getColumn(11).width = 20;
-    worksheet.getColumn(12).width = 20;
+    worksheet.getColumn(12).width = 70;
     worksheet.getColumn(13).width = 40;
 
     worksheet.addRow();
@@ -611,6 +611,7 @@ const addDataForTable = ({ data, worksheet, headers }) => {
             getRowInsert.getCell(j + 1).alignment = {
               vertical: 'middle',
               horizontal: 'left',
+              wrapText: true,
             };
           }
         }
