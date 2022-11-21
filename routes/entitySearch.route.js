@@ -32,6 +32,12 @@ router.get('/', async function (req, res) {
         : req.query.isForRisk
       : false;
     let response = [];
+    if (
+      req.query.entityType === 'debtorIds' ||
+      req.query.entityType === 'debtorId'
+    ) {
+      req.query.entityType = 'debtors';
+    }
     if (req.query.searchString) {
       switch (req.query.entityType) {
         case 'clients':
