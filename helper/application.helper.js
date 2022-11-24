@@ -773,8 +773,7 @@ const storePartnerDetails = async ({ requestBody }) => {
           !requestBody.partners[i].title ||
           !requestBody.partners[i].firstName ||
           !requestBody.partners[i].lastName ||
-          (!requestBody.partners[i].dateOfBirth &&
-            !requestBody.partners[i].driverLicenceNumber) ||
+          !requestBody.partners[i].dateOfBirth ||
           !requestBody.partners[i].address ||
           !requestBody.partners[i].address.state ||
           !requestBody.partners[i].address.postCode ||
