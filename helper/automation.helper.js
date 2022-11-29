@@ -123,35 +123,40 @@ const identifyReport = async ({ matrix, creditLimit, reportType, country }) => {
         : creditLimit;
       if (lowerLimit <= creditLimit && upperLimit >= creditLimit) {
         identifiedPriceRange = matrix.priceRange[i];
-        break;
-      }
-    }
-    const identifiedReportDetails =
-      reportType === 'individual'
-        ? identifiedPriceRange.australianIndividuals
-        : country === 'AUS'
-        ? identifiedPriceRange.australianCompanies
-        : identifiedPriceRange.newZealand;
-    let reportCode;
-    if (identifiedReportDetails.reports.length === 1) {
-      for (let i = 0; i < reports.length; i++) {
-        if (identifiedReportDetails.reports[0].includes(reports[i].name)) {
-          reportCode = reports[i].code;
-          break;
-        }
-      }
-    } else {
-      //TODO change for multiple reports
-      for (let i = 0; i < identifiedReportDetails.reports.length; i++) {
-        for (let j = 0; j < reports.length; j++) {
-          if (identifiedReportDetails.reports[i].includes(reports[j].name)) {
-            reportCode = reports[j].code;
-            break;
+        const identifiedReportDetails =
+          reportType === 'individual'
+            ? identifiedPriceRange.australianIndividuals
+            : country === 'AUS'
+            ? identifiedPriceRange.australianCompanies
+            : identifiedPriceRange.newZealand;
+        let reportCode;
+        if (identifiedReportDetails.reports.length === 1) {
+          for (let i = 0; i < reports.length; i++) {
+            if (identifiedReportDetails.reports[0].includes(reports[i].name)) {
+              reportCode = reports[i].code;
+              break;
+            }
+          }
+        } else {
+          //TODO change for multiple reports
+          for (let i = 0; i < identifiedReportDetails.reports.length; i++) {
+            for (let j = 0; j < reports.length; j++) {
+              if (
+                identifiedReportDetails.reports[i].includes(reports[j].name)
+              ) {
+                reportCode = reports[j].code;
+                break;
+              }
+            }
           }
         }
+        return { identifiedPriceRange, identifiedReportDetails, reportCode };
+      } else if (i == matrix.priceRange.length - 1) {
+        let blocker =
+          'Requested credit limit amount exceeds all band values of policy matrix.';
+        return { blocker };
       }
     }
-    return { identifiedPriceRange, identifiedReportDetails, reportCode };
   } catch (e) {
     Logger.log.error('Error occurred in identify report ', e);
   }
@@ -384,48 +389,53 @@ const insurerQBE = async ({ application, type, policy }) => {
       identifiedReportDetails,
       identifiedPriceRange,
       reportCode,
+      blocker,
     } = await identifyReport({
       matrix: qbe,
       creditLimit: application.creditLimit,
       country: application.debtorId.address.country.code,
       reportType: type,
     });
-    if (!reportCode) {
-      blockers.push('Unable to get report code');
-    }
-    const [response, entityData] = await Promise.all([
-      getReportData({
-        type,
-        reportCode,
-        entityType: application.debtorId.entityType,
-        debtor: application.debtorId,
-        clientDebtorId: application.clientDebtorId._id,
-      }),
-      getEntityData({
-        country: application.debtorId.address.country.code,
-        businessNumber: application.debtorId.abn || application.debtorId.acn,
-      }),
-    ]);
-    const reportData = response.reportData ? response.reportData : null;
-    if (!reportData) {
-      if (response.errorMessage) {
-        blockers.push(response.errorMessage);
+    if (blocker) {
+      blockers.push(blocker);
+    } else {
+      if (!reportCode) {
+        blockers.push('Unable to get report code');
       }
+      const [response, entityData] = await Promise.all([
+        getReportData({
+          type,
+          reportCode,
+          entityType: application.debtorId.entityType,
+          debtor: application.debtorId,
+          clientDebtorId: application.clientDebtorId._id,
+        }),
+        getEntityData({
+          country: application.debtorId.address.country.code,
+          businessNumber: application.debtorId.abn || application.debtorId.acn,
+        }),
+      ]);
+      const reportData = response.reportData ? response.reportData : null;
+      if (!reportData) {
+        if (response.errorMessage) {
+          blockers.push(response.errorMessage);
+        }
+      }
+      blockers = await checkGuidelines({
+        guidelines: qbe.generalTerms,
+        application,
+        entityData: entityData,
+        reportData: reportData ? reportData : null,
+        blockers,
+        country: application.debtorId.address.country.code,
+        policy,
+      });
+      blockers = await checkPriceRangeGuidelines({
+        guidelines: identifiedReportDetails.guideLines,
+        reportData: reportData ? reportData : null,
+        blockers,
+      });
     }
-    blockers = await checkGuidelines({
-      guidelines: qbe.generalTerms,
-      application,
-      entityData: entityData,
-      reportData: reportData ? reportData : null,
-      blockers,
-      country: application.debtorId.address.country.code,
-      policy,
-    });
-    blockers = await checkPriceRangeGuidelines({
-      guidelines: identifiedReportDetails.guideLines,
-      reportData: reportData ? reportData : null,
-      blockers,
-    });
     return blockers;
   } catch (e) {
     Logger.log.error('Error occurred in insurer QBE ', e);
@@ -439,48 +449,53 @@ const insurerBond = async ({ application, type, policy }) => {
       identifiedReportDetails,
       identifiedPriceRange,
       reportCode,
+      blocker,
     } = await identifyReport({
       matrix: bond,
       creditLimit: application.creditLimit,
       country: application.debtorId.address.country.code,
       reportType: type,
     });
-    if (!reportCode) {
-      blockers.push('Unable to get report code');
-    }
-    const [response, entityData] = await Promise.all([
-      getReportData({
-        type,
-        reportCode,
-        entityType: application.debtorId.entityType,
-        debtor: application.debtorId,
-        clientDebtorId: application.clientDebtorId._id,
-      }),
-      getEntityData({
-        country: application.debtorId.address.country.code,
-        businessNumber: application.debtorId.abn || application.debtorId.acn,
-      }),
-    ]);
-    const reportData = response.reportData ? response.reportData : null;
-    if (!reportData) {
-      if (response.errorMessage) {
-        blockers.push(response.errorMessage);
+    if (blocker) {
+      blockers.push(blocker);
+    } else {
+      if (!reportCode) {
+        blockers.push('Unable to get report code');
       }
+      const [response, entityData] = await Promise.all([
+        getReportData({
+          type,
+          reportCode,
+          entityType: application.debtorId.entityType,
+          debtor: application.debtorId,
+          clientDebtorId: application.clientDebtorId._id,
+        }),
+        getEntityData({
+          country: application.debtorId.address.country.code,
+          businessNumber: application.debtorId.abn || application.debtorId.acn,
+        }),
+      ]);
+      const reportData = response.reportData ? response.reportData : null;
+      if (!reportData) {
+        if (response.errorMessage) {
+          blockers.push(response.errorMessage);
+        }
+      }
+      blockers = await checkGuidelines({
+        guidelines: qbe.generalTerms,
+        application,
+        entityData: entityData,
+        reportData: reportData ? reportData : null,
+        blockers,
+        country: application.debtorId.address.country.code,
+        policy,
+      });
+      blockers = await checkPriceRangeGuidelines({
+        guidelines: identifiedReportDetails.guideLines,
+        reportData: reportData ? reportData : null,
+        blockers,
+      });
     }
-    blockers = await checkGuidelines({
-      guidelines: qbe.generalTerms,
-      application,
-      entityData: entityData,
-      reportData: reportData ? reportData : null,
-      blockers,
-      country: application.debtorId.address.country.code,
-      policy,
-    });
-    blockers = await checkPriceRangeGuidelines({
-      guidelines: identifiedReportDetails.guideLines,
-      reportData: reportData ? reportData : null,
-      blockers,
-    });
     return blockers;
   } catch (e) {
     Logger.log.error('Error occurred in insurer Bond ', e);
@@ -494,48 +509,53 @@ const insurerAtradius = async ({ application, type, policy }) => {
       identifiedReportDetails,
       identifiedPriceRange,
       reportCode,
+      blocker,
     } = await identifyReport({
       matrix: atradius,
       creditLimit: application.creditLimit,
       country: application.debtorId.address.country.code,
       reportType: type,
     });
-    if (!reportCode) {
-      blockers.push('Unable to get report code');
-    }
-    const [response, entityData] = await Promise.all([
-      getReportData({
-        type,
-        reportCode,
-        entityType: application.debtorId.entityType,
-        debtor: application.debtorId,
-        clientDebtorId: application.clientDebtorId._id,
-      }),
-      getEntityData({
-        country: application.debtorId.address.country.code,
-        businessNumber: application.debtorId.abn || application.debtorId.acn,
-      }),
-    ]);
-    const reportData = response.reportData ? response.reportData : null;
-    if (!reportData) {
-      if (response.errorMessage) {
-        blockers.push(response.errorMessage);
+    if (blocker) {
+      blockers.push(blocker);
+    } else {
+      if (!reportCode) {
+        blockers.push('Unable to get report code');
       }
+      const [response, entityData] = await Promise.all([
+        getReportData({
+          type,
+          reportCode,
+          entityType: application.debtorId.entityType,
+          debtor: application.debtorId,
+          clientDebtorId: application.clientDebtorId._id,
+        }),
+        getEntityData({
+          country: application.debtorId.address.country.code,
+          businessNumber: application.debtorId.abn || application.debtorId.acn,
+        }),
+      ]);
+      const reportData = response.reportData ? response.reportData : null;
+      if (!reportData) {
+        if (response.errorMessage) {
+          blockers.push(response.errorMessage);
+        }
+      }
+      blockers = await checkGuidelines({
+        guidelines: qbe.generalTerms,
+        application,
+        entityData: entityData,
+        reportData: reportData ? reportData : null,
+        blockers,
+        country: application.debtorId.address.country.code,
+        policy,
+      });
+      blockers = await checkPriceRangeGuidelines({
+        guidelines: identifiedReportDetails.guideLines,
+        reportData: reportData ? reportData : null,
+        blockers,
+      });
     }
-    blockers = await checkGuidelines({
-      guidelines: qbe.generalTerms,
-      application,
-      entityData: entityData,
-      reportData: reportData ? reportData : null,
-      blockers,
-      country: application.debtorId.address.country.code,
-      policy,
-    });
-    blockers = await checkPriceRangeGuidelines({
-      guidelines: identifiedReportDetails.guideLines,
-      reportData: reportData ? reportData : null,
-      blockers,
-    });
     return blockers;
   } catch (e) {
     Logger.log.error('Error occurred in insurer Atradius ', e);
@@ -549,48 +569,53 @@ const insurerCoface = async ({ application, type, policy }) => {
       identifiedReportDetails,
       identifiedPriceRange,
       reportCode,
+      blocker,
     } = await identifyReport({
       matrix: coface,
       creditLimit: application.creditLimit,
       country: application.debtorId.address.country.code,
       reportType: type,
     });
-    if (!reportCode) {
-      blockers.push('Unable to get report code');
-    }
-    const [response, entityData] = await Promise.all([
-      getReportData({
-        type,
-        reportCode,
-        entityType: application.debtorId.entityType,
-        debtor: application.debtorId,
-        clientDebtorId: application.clientDebtorId._id,
-      }),
-      getEntityData({
-        country: application.debtorId.address.country.code,
-        businessNumber: application.debtorId.abn || application.debtorId.acn,
-      }),
-    ]);
-    const reportData = response.reportData ? response.reportData : null;
-    if (!reportData) {
-      if (response.errorMessage) {
-        blockers.push(response.errorMessage);
+    if (blocker) {
+      blockers.push(blocker);
+    } else {
+      if (!reportCode) {
+        blockers.push('Unable to get report code');
       }
+      const [response, entityData] = await Promise.all([
+        getReportData({
+          type,
+          reportCode,
+          entityType: application.debtorId.entityType,
+          debtor: application.debtorId,
+          clientDebtorId: application.clientDebtorId._id,
+        }),
+        getEntityData({
+          country: application.debtorId.address.country.code,
+          businessNumber: application.debtorId.abn || application.debtorId.acn,
+        }),
+      ]);
+      const reportData = response.reportData ? response.reportData : null;
+      if (!reportData) {
+        if (response.errorMessage) {
+          blockers.push(response.errorMessage);
+        }
+      }
+      blockers = await checkGuidelines({
+        guidelines: qbe.generalTerms,
+        application,
+        entityData: entityData,
+        reportData: reportData ? reportData : null,
+        blockers,
+        country: application.debtorId.address.country.code,
+        policy,
+      });
+      blockers = await checkPriceRangeGuidelines({
+        guidelines: identifiedReportDetails.guideLines,
+        reportData: reportData ? reportData : null,
+        blockers,
+      });
     }
-    blockers = await checkGuidelines({
-      guidelines: qbe.generalTerms,
-      application,
-      entityData: entityData,
-      reportData: reportData ? reportData : null,
-      blockers,
-      country: application.debtorId.address.country.code,
-      policy,
-    });
-    blockers = await checkPriceRangeGuidelines({
-      guidelines: identifiedReportDetails.guideLines,
-      reportData: reportData ? reportData : null,
-      blockers,
-    });
     return blockers;
   } catch (e) {
     Logger.log.error('Error occurred in insurer Coface ', e);
@@ -604,48 +629,53 @@ const insurerEuler = async ({ application, type, policy }) => {
       identifiedReportDetails,
       identifiedPriceRange,
       reportCode,
+      blocker,
     } = await identifyReport({
       matrix: euler,
       creditLimit: application.creditLimit,
       country: application.debtorId.address.country.code,
       reportType: type,
     });
-    if (!reportCode) {
-      blockers.push('Unable to get report code');
-    }
-    const [response, entityData] = await Promise.all([
-      getReportData({
-        type,
-        reportCode,
-        entityType: application.debtorId.entityType,
-        debtor: application.debtorId,
-        clientDebtorId: application.clientDebtorId._id,
-      }),
-      getEntityData({
-        country: application.debtorId.address.country.code,
-        businessNumber: application.debtorId.abn || application.debtorId.acn,
-      }),
-    ]);
-    const reportData = response.reportData ? response.reportData : null;
-    if (!reportData) {
-      if (response.errorMessage) {
-        blockers.push(response.errorMessage);
+    if (blocker) {
+      blockers.push(blocker);
+    } else {
+      if (!reportCode) {
+        blockers.push('Unable to get report code');
       }
+      const [response, entityData] = await Promise.all([
+        getReportData({
+          type,
+          reportCode,
+          entityType: application.debtorId.entityType,
+          debtor: application.debtorId,
+          clientDebtorId: application.clientDebtorId._id,
+        }),
+        getEntityData({
+          country: application.debtorId.address.country.code,
+          businessNumber: application.debtorId.abn || application.debtorId.acn,
+        }),
+      ]);
+      const reportData = response.reportData ? response.reportData : null;
+      if (!reportData) {
+        if (response.errorMessage) {
+          blockers.push(response.errorMessage);
+        }
+      }
+      blockers = await checkGuidelines({
+        guidelines: qbe.generalTerms,
+        application,
+        entityData: entityData,
+        reportData: reportData ? reportData : null,
+        blockers,
+        country: application.debtorId.address.country.code,
+        policy,
+      });
+      blockers = await checkPriceRangeGuidelines({
+        guidelines: identifiedReportDetails.guideLines,
+        reportData: reportData ? reportData : null,
+        blockers,
+      });
     }
-    blockers = await checkGuidelines({
-      guidelines: qbe.generalTerms,
-      application,
-      entityData: entityData,
-      reportData: reportData ? reportData : null,
-      blockers,
-      country: application.debtorId.address.country.code,
-      policy,
-    });
-    blockers = await checkPriceRangeGuidelines({
-      guidelines: identifiedReportDetails.guideLines,
-      reportData: reportData ? reportData : null,
-      blockers,
-    });
     return blockers;
   } catch (e) {
     Logger.log.error('Error occurred in insurer Euler ', e);
@@ -659,48 +689,53 @@ const insurerTrad = async ({ application, type, policy }) => {
       identifiedReportDetails,
       identifiedPriceRange,
       reportCode,
+      blocker,
     } = await identifyReport({
       matrix: trad,
       creditLimit: application.creditLimit,
       country: application.debtorId.address.country.code,
       reportType: type,
     });
-    if (!reportCode) {
-      blockers.push('Unable to get report code');
-    }
-    const [response, entityData] = await Promise.all([
-      getReportData({
-        type,
-        reportCode,
-        entityType: application.debtorId.entityType,
-        debtor: application.debtorId,
-        clientDebtorId: application.clientDebtorId._id,
-      }),
-      getEntityData({
-        country: application.debtorId.address.country.code,
-        businessNumber: application.debtorId.abn || application.debtorId.acn,
-      }),
-    ]);
-    const reportData = response.reportData ? response.reportData : null;
-    if (!reportData) {
-      if (response.errorMessage) {
-        blockers.push(response.errorMessage);
+    if (blocker) {
+      blockers.push(blocker);
+    } else {
+      if (!reportCode) {
+        blockers.push('Unable to get report code');
       }
+      const [response, entityData] = await Promise.all([
+        getReportData({
+          type,
+          reportCode,
+          entityType: application.debtorId.entityType,
+          debtor: application.debtorId,
+          clientDebtorId: application.clientDebtorId._id,
+        }),
+        getEntityData({
+          country: application.debtorId.address.country.code,
+          businessNumber: application.debtorId.abn || application.debtorId.acn,
+        }),
+      ]);
+      const reportData = response.reportData ? response.reportData : null;
+      if (!reportData) {
+        if (response.errorMessage) {
+          blockers.push(response.errorMessage);
+        }
+      }
+      blockers = await checkGuidelines({
+        guidelines: qbe.generalTerms,
+        application,
+        entityData: entityData,
+        reportData: reportData ? reportData : null,
+        blockers,
+        country: application.debtorId.address.country.code,
+        policy,
+      });
+      blockers = await checkPriceRangeGuidelines({
+        guidelines: identifiedReportDetails.guideLines,
+        reportData: reportData ? reportData : null,
+        blockers,
+      });
     }
-    blockers = await checkGuidelines({
-      guidelines: qbe.generalTerms,
-      application,
-      entityData: entityData,
-      reportData: reportData ? reportData : null,
-      blockers,
-      country: application.debtorId.address.country.code,
-      policy,
-    });
-    blockers = await checkPriceRangeGuidelines({
-      guidelines: identifiedReportDetails.guideLines,
-      reportData: reportData ? reportData : null,
-      blockers,
-    });
     return blockers;
   } catch (e) {
     Logger.log.error('Error occurred in insurer Trad ', e);
