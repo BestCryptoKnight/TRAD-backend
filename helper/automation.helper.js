@@ -150,10 +150,6 @@ const identifyReport = async ({ matrix, creditLimit, reportType, country }) => {
             }
           }
         }
-        console.log('identifiedPriceRange=', identifiedPriceRange);
-        console.log('identifiedReportDetails=', identifiedReportDetails);
-        console.log('reportCode=', reportCode);
-
         return { identifiedPriceRange, identifiedReportDetails, reportCode };
       } else if (i == matrix.priceRange.length - 1) {
         let blocker =
