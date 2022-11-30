@@ -75,7 +75,7 @@
     },
     {
       "lowerLimit": 75001,
-      "upperLimit": 100000,
+      "upperLimit": 150000,
       "australianIndividuals": {
         "reports": ["Equifax Report: Commercial Apply (Individuals tab)"],
         "isAutoApproval": true,
