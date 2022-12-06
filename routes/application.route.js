@@ -8,7 +8,8 @@ const ClientUser = mongoose.model('client-user');
 const Application = mongoose.model('application');
 const DebtorDirector = mongoose.model('debtor-director');
 const Debtor = mongoose.model('debtor');
-
+const Document = mongoose.model('document');
+const { deleteFile } = require('./../helper/static-file.helper');
 /*
  * Local Imports
  * */
@@ -43,6 +44,67 @@ const { generateExcel } = require('../helper/excel.helper.js');
 const {
   downloadDecisionLetterFromApplication,
 } = require('./../helper/client-debtor.helper');
+
+/**
+ * Delete Draft application and its saved documents
+ */
+router.delete('/:applicationId', async function (req, res) {
+  if (!req.params.applicationId) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    let application = await Application.deleteOne({
+      _id: req.params.applicationId,
+      status: 'DRAFT',
+    });
+    if (
+      application.deletedCount === 1 &&
+      application.n === 1 &&
+      application.ok === 1
+    ) {
+      let uploadedDocuments = await Document.find({
+        entityRefId: req.params.applicationId,
+      });
+      uploadedDocuments.map(async (v) => {
+        if (v.keyPath) {
+          await deleteFile({ filePath: v.keyPath });
+        }
+      });
+      let deleteDocuments = await Document.deleteMany({
+        entityRefId: req.params.applicationId,
+      });
+      if (deleteDocuments.ok !== 1) {
+        res.status(400).send({
+          status: 'Error',
+          message: 'Error in deleting Draft application',
+        });
+      } else {
+        res.status(200).send({
+          status: 'SUCCESS',
+          message: 'Draft Application deleted successfully',
+        });
+      }
+    } else {
+      res.status(400).send({
+        status: 'Error',
+        message: 'Error in deleting Draft application',
+      });
+    }
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in deleting Draft application',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
 
 /**
  * Get Column Names
