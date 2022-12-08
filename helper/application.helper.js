@@ -11,6 +11,8 @@ const DebtorDirector = mongoose.model('debtor-director');
 const ClientDebtor = mongoose.model('client-debtor');
 const User = mongoose.model('user');
 const ClientUser = mongoose.model('client-user');
+const Document = mongoose.model('document');
+const { deleteFile } = require('./../helper/static-file.helper');
 
 /*
  * Local Imports
@@ -506,6 +508,36 @@ const getApplicationList = async ({
     return applicationResponse;
   } catch (e) {
     Logger.log.error('Error occurred in get aggregation stages ', e);
+  }
+};
+/**
+ * Delete Draft application and its saved documents
+ */
+const deleteDraftApplication = async (applicationId) => {
+  try {
+    let uploadedDocuments = await Document.find({
+      entityRefId: applicationId,
+    });
+    uploadedDocuments.map(async (v) => {
+      if (v.keyPath) {
+        //delete document from s3
+        await deleteFile({ filePath: v.keyPath });
+      }
+    });
+    //delete stored documents
+    await Document.deleteMany({
+      entityRefId: applicationId,
+    });
+    //delete stored application
+    await Application.deleteOne({
+      _id: applicationId,
+    });
+    return 'Draft Application deleted successfully';
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in deleting Draft application',
+      e.message || e,
+    );
   }
 };
 
@@ -1613,6 +1645,7 @@ const checkForPendingApplication = async ({ clientId, debtorId }) => {
 
 module.exports = {
   getApplicationList,
+  deleteDraftApplication,
   storeCompanyDetails,
   storePartnerDetails,
   storeCreditLimitDetails,

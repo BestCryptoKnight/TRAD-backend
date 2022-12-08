@@ -19,6 +19,7 @@ const config = require('./../config');
 const StaticFile = require('./../static-files/moduleColumn');
 const {
   getApplicationList,
+  deleteDraftApplication,
   storeCompanyDetails,
   storePartnerDetails,
   storeCreditLimitDetails,
@@ -74,41 +75,23 @@ router.delete('/:applicationId', async function (req, res) {
     });
   }
   try {
-    let application = await Application.deleteOne({
+    const application = await Application.findOne({
       _id: req.params.applicationId,
-      status: 'DRAFT',
     });
-    if (
-      application.deletedCount === 1 &&
-      application.n === 1 &&
-      application.ok === 1
-    ) {
-      let uploadedDocuments = await Document.find({
-        entityRefId: req.params.applicationId,
+    if (!application || (application && application?.status !== 'DRAFT')) {
+      let message = !application
+        ? 'Application not found.'
+        : 'Application is not in draft.';
+      Logger.log.error('Error occurred in deleting Draft application', message);
+      res.status(404).send({
+        status: 'ERROR',
+        message: message,
       });
-      uploadedDocuments.map(async (v) => {
-        if (v.keyPath) {
-          await deleteFile({ filePath: v.keyPath });
-        }
-      });
-      let deleteDocuments = await Document.deleteMany({
-        entityRefId: req.params.applicationId,
-      });
-      if (deleteDocuments.ok !== 1) {
-        res.status(400).send({
-          status: 'Error',
-          message: 'Error in deleting Draft application',
-        });
-      } else {
-        res.status(200).send({
-          status: 'SUCCESS',
-          message: 'Draft Application deleted successfully',
-        });
-      }
     } else {
-      res.status(400).send({
-        status: 'Error',
-        message: 'Error in deleting Draft application',
+      let response = await deleteDraftApplication(req.params.applicationId);
+      res.status(200).send({
+        status: 'SUCCESS',
+        message: response,
       });
     }
   } catch (e) {
