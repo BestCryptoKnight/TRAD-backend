@@ -8,8 +8,7 @@ const ClientUser = mongoose.model('client-user');
 const Application = mongoose.model('application');
 const DebtorDirector = mongoose.model('debtor-director');
 const Debtor = mongoose.model('debtor');
-const Document = mongoose.model('document');
-const { deleteFile } = require('./../helper/static-file.helper');
+
 /*
  * Local Imports
  * */
