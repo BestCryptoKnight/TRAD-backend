@@ -518,12 +518,14 @@ const deleteDraftApplication = async (applicationId) => {
     let uploadedDocuments = await Document.find({
       entityRefId: applicationId,
     });
-    uploadedDocuments.map(async (v) => {
+    const promiseArray = [];
+    uploadedDocuments.map((v) => {
       if (v.keyPath) {
         //delete document from s3
-        await deleteFile({ filePath: v.keyPath });
+        promiseArray.push(deleteFile({ filePath: v.keyPath }));
       }
     });
+    Promise.all(promiseArray);
     //delete stored documents
     await Document.deleteMany({
       entityRefId: applicationId,
