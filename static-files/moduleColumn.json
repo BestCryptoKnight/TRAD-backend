@@ -108,7 +108,12 @@
           "type": "string"
         },
         { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" },
+        {
+          "name": "delete",
+          "label": "Delete",
+          "type": "icon"
+        }
       ],
       "defaultColumns": [
         "applicationId",
@@ -119,7 +124,8 @@
         "creditLimit",
         "requestDate",
         "createdById",
-        "updatedAt"
+        "updatedAt",
+        "delete"
       ]
     },
     {
