@@ -18,6 +18,7 @@ const config = require('./../config');
 const StaticFile = require('./../static-files/moduleColumn');
 const {
   getApplicationList,
+  deleteDraftApplication,
   storeCompanyDetails,
   storePartnerDetails,
   storeCreditLimitDetails,
@@ -60,6 +61,49 @@ const { getUserList } = require('./../helper/user.helper');
 const {
   downloadDecisionLetterFromApplication,
 } = require('./../helper/client-debtor.helper');
+
+/**
+ * Delete Draft application and its saved documents
+ */
+router.delete('/:applicationId', async function (req, res) {
+  if (!req.params.applicationId) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const application = await Application.findOne({
+      _id: req.params.applicationId,
+    });
+    if (!application || (application && application?.status !== 'DRAFT')) {
+      let message = !application
+        ? 'Application not found.'
+        : 'Application is not in draft.';
+      Logger.log.error('Error occurred in deleting Draft application', message);
+      res.status(404).send({
+        status: 'ERROR',
+        message: message,
+      });
+    } else {
+      let response = await deleteDraftApplication(req.params.applicationId);
+      res.status(200).send({
+        status: 'SUCCESS',
+        message: response,
+      });
+    }
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in deleting Draft application',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
 
 /**
  * Get Column Names
