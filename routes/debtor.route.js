@@ -805,35 +805,14 @@ router.put('/credit-limit/:creditLimitId', async function (req, res) {
         creditLimit: req.body.creditLimit,
       });
     } else {
-      await ClientDebtor.updateOne(
-        { _id: req.params.creditLimitId },
-        {
-          creditLimit: 0,
-          isActive: false,
-          status: 'SURRENDERED',
-        },
-      );
-      await addAuditLog({
-        entityType: 'credit-limit',
-        entityRefId: req.params.creditLimitId,
-        actionType: 'edit',
-        userType: 'client-user',
-        userRefId: req.user.clientId,
-        logDescription: `A credit limit of ${clientDebtor?.clientId?.name} ${clientDebtor?.debtorId?.entityName} is surrendered by ${clientDebtor?.clientId?.name}`,
+      await generateNewApplication({
+        clientDebtorId: clientDebtor._id,
+        createdByType: 'user',
+        createdById: req.user._id,
+        creditLimit: 0,
+        applicationId: clientDebtor?.activeApplicationId,
+        isSurrender: true,
       });
-      const hasActiveCreditLimit = await checkForActiveCreditLimit({
-        debtorId: clientDebtor?.debtorId?._id,
-      });
-      if (!hasActiveCreditLimit) {
-        //TODO uncomment to remove entity from alert profile
-        if (clientDebtor?.debtorId?._id) {
-          checkForEntityInProfile({
-            entityId: clientDebtor.debtorId._id,
-            action: 'remove',
-            entityType: 'debtor',
-          });
-        }
-      }
     }
     res.status(200).send({
       status: 'SUCCESS',

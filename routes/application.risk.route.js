@@ -1116,6 +1116,88 @@ router.get('/:entityId', async function (req, res) {
 });
 
 /**
+ * Get Specific Entity's Application
+ */
+router.get('/:entityId/download', async function (req, res) {
+  if (
+    !req.params.entityId ||
+    !req.query.listFor ||
+    !mongoose.Types.ObjectId.isValid(req.params.entityId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const queryFilter = {
+      isDeleted: false,
+    };
+    switch (req.query.listFor) {
+      case 'client-application':
+        queryFilter.clientId = mongoose.Types.ObjectId(req.params.entityId);
+        break;
+      case 'debtor-application':
+        queryFilter.debtorId = mongoose.Types.ObjectId(req.params.entityId);
+        break;
+      default:
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'BAD_REQUEST',
+          message: 'Please pass correct fields',
+        });
+    }
+    const module = StaticFile.modules.find((i) => i.name === req.query.listFor);
+    const applicationColumn = req.user.manageColumns.find(
+      (i) => i.moduleName === req.query.listFor,
+    );
+
+    const clientModuleAccess = req.user.moduleAccess
+      .filter((userModule) => userModule.name === 'client')
+      .shift();
+    const hasOnlyReadAccessForClientModule =
+      clientModuleAccess.accessTypes.length === 0;
+
+    const debtorModuleAccess = req.user.moduleAccess
+      .filter((userModule) => userModule.name === 'debtor')
+      .shift();
+    const hasOnlyReadAccessForDebtorModule =
+      debtorModuleAccess.accessTypes.length === 0;
+
+    const hasFullAccess = req.accessTypes.indexOf('full-access') !== -1;
+    const response = await getApplicationList({
+      hasFullAccess: hasFullAccess,
+      applicationColumn: applicationColumn.columns,
+      isForRisk: true,
+      requestedQuery: req.query,
+      queryFilter: queryFilter,
+      moduleColumn: module.manageColumns,
+      userId: req.user._id,
+      hasOnlyReadAccessForClientModule,
+      hasOnlyReadAccessForDebtorModule,
+    });
+
+    const excelData = await generateExcel({
+      data: response.docs,
+      reportFor: 'Application List',
+      headers: response.headers,
+      filter: response.filterArray,
+    });
+    res.status(200).send(excelData);
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred while getting specific entity applications ',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
  * Update Column Names
  */
 router.put('/column-name', async function (req, res) {
@@ -1388,7 +1470,55 @@ router.put('/:applicationId', async function (req, res) {
       let approvedAmount = 0;
       let isEndorsedLimit = false;
       applicationUpdate.status = req.body.status;
-      if (req.body.status === 'APPROVED') {
+      if (
+        (req.body.status === 'APPROVED' || req.body.status === 'DECLINED') &&
+        application.status === 'REVIEW_SURRENDER'
+      ) {
+        applicationUpdate.approvalOrDecliningDate = new Date();
+        const surrenderClientDebtor = await ClientDebtor.findOne({
+          _id: application.clientDebtorId,
+        });
+        await ClientDebtor.updateOne(
+          { _id: application.clientDebtorId },
+          {
+            creditLimit: 0,
+            isActive: false,
+            status: 'SURRENDERED',
+            updatedAt: new Date(),
+          },
+        );
+        await addAuditLog({
+          entityType: 'credit-limit',
+          entityRefId: application.clientDebtorId,
+          actionType: 'edit',
+          userType: 'user',
+          userRefId: req.user._id,
+          logDescription: `A credit limit of ${surrenderClientDebtor?.creditLimit} is surrendered by ${req.user.name}`,
+        });
+        const hasActiveCreditLimit = await checkForActiveCreditLimit({
+          debtorId: surrenderClientDebtor?.debtorId,
+        });
+        if (!hasActiveCreditLimit) {
+          //TODO uncomment to remove entity from alert profile
+          if (surrenderClientDebtor?.debtorId) {
+            checkForEntityInProfile({
+              entityId: surrenderClientDebtor.debtorId,
+              action: 'remove',
+              entityType: 'debtor',
+            });
+          }
+        }
+      }
+      if (
+        (req.body.status === 'CANCELLED' || req.body.status === 'WITHDRAWN') &&
+        application.status === 'REVIEW_SURRENDER'
+      ) {
+        applicationUpdate.approvalOrDecliningDate = new Date();
+      }
+      if (
+        req.body.status === 'APPROVED' &&
+        application.status !== 'REVIEW_SURRENDER'
+      ) {
         if (!req.body.creditLimit || !/^\d+$/.test(req.body.creditLimit)) {
           return res.status(400).send({
             status: 'ERROR',
@@ -1435,9 +1565,10 @@ router.put('/:applicationId', async function (req, res) {
           update,
         );
       } else if (
-        req.body.status === 'DECLINED' ||
-        req.body.status === 'CANCELLED' ||
-        req.body.status === 'WITHDRAWN'
+        (req.body.status === 'DECLINED' ||
+          req.body.status === 'CANCELLED' ||
+          req.body.status === 'WITHDRAWN') &&
+        application.status !== 'REVIEW_SURRENDER'
       ) {
         applicationUpdate.approvalOrDecliningDate = new Date();
         if (req.body.status === 'DECLINED') {
@@ -1517,7 +1648,10 @@ router.put('/:applicationId', async function (req, res) {
           }
         }
       }
-      if (req.body.status === 'DECLINED') {
+      if (
+        req.body.status === 'DECLINED' &&
+        application.status !== 'REVIEW_SURRENDER'
+      ) {
         const hasActiveCreditLimit = await checkForActiveCreditLimit({
           debtorId: application?.debtorId,
         });
