@@ -1116,9 +1116,9 @@ router.get('/:entityId', async function (req, res) {
 });
 
 /**
- * Get Specific Entity's Application
+ * download Specific Entity's Application
  */
-router.get('/:entityId/download', async function (req, res) {
+router.get('/download/:entityId', async function (req, res) {
   if (
     !req.params.entityId ||
     !req.query.listFor ||
@@ -1177,17 +1177,35 @@ router.get('/:entityId/download', async function (req, res) {
       hasOnlyReadAccessForClientModule,
       hasOnlyReadAccessForDebtorModule,
     });
-
+    let sendingResponse = response.docs;
+    if (response?.docs[0]?.debtorId?.hasOwnProperty('value')) {
+      sendingResponse = response.docs.map((v) => {
+        v.debtorId = v.debtorId.value;
+        return v;
+      });
+    }
+    if (response?.docs[0]?.clientId?.hasOwnProperty('value')) {
+      sendingResponse = response.docs.map((v) => {
+        v.clientId = v.clientId.value;
+        return v;
+      });
+    }
     const excelData = await generateExcel({
-      data: response.docs,
+      data: sendingResponse,
       reportFor: 'Application List',
       headers: response.headers,
       filter: response.filterArray,
     });
+    const fileName = new Date().getTime() + '.xlsx';
+    res.header(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader('Content-Disposition', 'attachment; filename=' + fileName);
     res.status(200).send(excelData);
   } catch (e) {
     Logger.log.error(
-      'Error occurred while getting specific entity applications ',
+      'Error occurred while downloading specific entity applications ',
       e.message || e,
     );
     res.status(500).send({
