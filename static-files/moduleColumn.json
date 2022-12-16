@@ -109,6 +109,7 @@
         },
         { "name": "createdAt", "label": "Created Date", "type": "date" },
         { "name": "updatedAt", "label": "Modified Date", "type": "date" },
+        { "name": "comments", "label": "Comments", "type": "string" },
         {
           "name": "delete",
           "label": "Delete",
@@ -125,6 +126,7 @@
         "requestDate",
         "createdById",
         "updatedAt",
+        "comments",
         "delete"
       ]
     },
@@ -295,7 +297,8 @@
           "type": "amount"
         },
         { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" },
+        { "name": "comments", "label": "Comments", "type": "string" }
       ],
       "defaultColumns": [
         "entityType",
@@ -304,7 +307,8 @@
         "applicationId",
         "requestDate",
         "approvalOrDecliningDate",
-        "createdById"
+        "createdById",
+        "comments"
       ]
     },
     {
@@ -817,7 +821,8 @@
           "type": "amount"
         },
         { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+        { "name": "updatedAt", "label": "Modified Date", "type": "date" },
+        { "name": "comments", "label": "Comments", "type": "string" }
       ],
       "defaultColumns": [
         "clientId",
@@ -826,7 +831,8 @@
         "status",
         "requestDate",
         "approvalOrDecliningDate",
-        "acceptedAmount"
+        "acceptedAmount",
+        "comments"
       ]
     },
     {

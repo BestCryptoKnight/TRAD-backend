@@ -57,6 +57,7 @@ const getApplicationList = async ({
   moduleColumn,
   userId,
   isForDownload = false,
+  clientId = null,
   hasOnlyReadAccessForClientModule = false,
   hasOnlyReadAccessForDebtorModule = false,
 }) => {
@@ -65,6 +66,7 @@ const getApplicationList = async ({
     let aggregationQuery = [];
     const filterArray = [];
     let sortingOptions = {};
+    requestedQuery ? null : (requestedQuery = {});
     requestedQuery.sortBy = requestedQuery.sortBy || '_id';
     requestedQuery.sortOrder = requestedQuery.sortOrder || 'desc';
 
@@ -365,6 +367,11 @@ const getApplicationList = async ({
         return obj;
       }, {}),
     });
+    if (clientId) {
+      query.push({
+        $match: { 'clientId._id': clientId },
+      });
+    }
 
     if (requestedQuery.sortBy && requestedQuery.sortOrder) {
       if (requestedQuery.sortBy === 'clientId') {
@@ -1252,6 +1259,7 @@ const generateNewApplication = async ({
   createdById,
   creditLimit,
   applicationId,
+  isSurrender,
 }) => {
   try {
     const query = applicationId
@@ -1265,7 +1273,9 @@ const generateNewApplication = async ({
       .sort({ updatedAt: -1 })
       .lean();
     if (application) {
-      const organization = await Organization.findOne({ isDeleted: false })
+      const organization = await Organization.findOne({
+        isDeleted: false,
+      })
         .select('entityCount')
         .lean();
       const applicationDetails = {
@@ -1296,18 +1306,23 @@ const generateNewApplication = async ({
         { isDeleted: false },
         { $inc: { 'entityCount.application': 1 } },
       );
-      if (creditLimit === 0) {
+      if (isSurrender) {
+        application.status = 'REVIEW_SURRENDER';
+        applicationDetails.status = 'REVIEW_SURRENDER';
+        applicationDetails.comments = 'Credit Limit requested to Surrender';
+        applicationDetails.isAutoApproved = false;
+      } else if (creditLimit === 0) {
         applicationDetails.status = 'REVIEW_APPLICATION';
         applicationDetails.isAutoApproved = false;
       }
       const applicationData = await Application.create(applicationDetails);
-      if (creditLimit !== 0) {
+      if (creditLimit !== 0 && !isSurrender) {
         checkForAutomation({
           applicationId: applicationData._id,
           userId: createdById,
           userType: createdByType,
         });
-      } else if (creditLimit === 0) {
+      } else if (creditLimit === 0 && !isSurrender) {
         sendNotificationsToUser({
           application: applicationData,
           userType: createdByType,
