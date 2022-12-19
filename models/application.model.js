@@ -17,6 +17,7 @@ const applicationSchema = new Schema(
     status: {
       type: Schema.Types.String,
       enum: [
+        'REVIEW_SURRENDER',
         'DRAFT',
         'SENT_TO_INSURER',
         'REVIEW_APPLICATION',
