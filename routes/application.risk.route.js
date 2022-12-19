@@ -795,7 +795,7 @@ router.get('/details/:applicationId', async function (req, res) {
         },
       ];
     }
-    if (response.status.value !== 'REVIEW_SURRENDER') {
+    if (response.applicationStatus && response.status.value !== 'REVIEW_SURRENDER') {
       response.applicationStatus = response.applicationStatus.filter((v) => {
         if (v.value !== 'REVIEW_SURRENDER') {
           return v;
