@@ -588,6 +588,7 @@ const addDataForTable = ({ data, worksheet, headers }) => {
       right: { style: 'thin', color: { argb: 'FF666666' } },
     };
     let date;
+    let value;
     for (let i = 0; i < data.length; i++) {
       getRowInsert = worksheet.getRow(newRowNumber);
       for (let j = 0; j <= headers.length; j++) {
@@ -601,7 +602,11 @@ const addDataForTable = ({ data, worksheet, headers }) => {
               '/' +
               date.getFullYear();
           }
-          if (headers[j]['type'] === 'amount' && data[i][headers[j]['name']]) {
+          value = data[i][headers[j]['name']];
+          if (data[i][headers[j]['name']] === 0) {
+            value = true;
+          }
+          if (headers[j]['type'] === 'amount' && value) {
             data[i][headers[j]['name']] =
               '$' + numberWithCommas(data[i][headers[j]['name']]);
           }

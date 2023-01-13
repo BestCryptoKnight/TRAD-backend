@@ -500,6 +500,10 @@ const getApplicationList = async ({
         }
       }
     }
+    response.forEach((v) => {
+      !v.hasOwnProperty('acceptedAmount') ? (v['acceptedAmount'] = 0) : null;
+      !v.hasOwnProperty('creditLimit') ? (v['creditLimit'] = 0) : null;
+    });
     const applicationResponse = {
       docs: response,
       headers,
