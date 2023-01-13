@@ -795,7 +795,10 @@ router.get('/details/:applicationId', async function (req, res) {
         },
       ];
     }
-    if (response.applicationStatus && response.status.value !== 'REVIEW_SURRENDER') {
+    if (
+      response.applicationStatus &&
+      response.status.value !== 'REVIEW_SURRENDER'
+    ) {
       response.applicationStatus = response.applicationStatus.filter((v) => {
         if (v.value !== 'REVIEW_SURRENDER') {
           return v;
@@ -1595,6 +1598,11 @@ router.put('/:applicationId', async function (req, res) {
           req.body.status === 'WITHDRAWN') &&
         application.status !== 'REVIEW_SURRENDER'
       ) {
+        const date = new Date();
+        applicationUpdate.approvalOrDecliningDate = new Date();
+        let expiryDate = new Date(date.setMonth(date.getMonth() + 12));
+        expiryDate = new Date(expiryDate.setDate(expiryDate.getDate() - 1));
+        applicationUpdate.expiryDate = application?.expiryDate || expiryDate;
         applicationUpdate.approvalOrDecliningDate = new Date();
         if (req.body.status === 'DECLINED') {
           applicationUpdate.acceptedAmount = 0;
