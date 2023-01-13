@@ -681,6 +681,10 @@ const getLimitListReport = async ({
         { label: 'Credit Checks', value: creditChecks, type: 'string' },
       );
     }
+    response.forEach((v) => {
+      !v.hasOwnProperty('acceptedAmount') ? (v['acceptedAmount'] = 0) : null;
+      !v.hasOwnProperty('creditLimit') ? (v['creditLimit'] = 0) : null;
+    });
     return { response, total, filterArray };
   } catch (e) {
     Logger.log.error('Error occurred in get limit list report');
