@@ -1612,6 +1612,7 @@ router.put('/:applicationId', async function (req, res) {
               isFromOldSystem: false,
               creditLimit: 0,
               status: 'DECLINED',
+              expiryDate: applicationUpdate.expiryDate,
               activeApplicationId: application._id,
               isActive: true,
             },
