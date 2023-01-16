@@ -1598,13 +1598,13 @@ router.put('/:applicationId', async function (req, res) {
           req.body.status === 'WITHDRAWN') &&
         application.status !== 'REVIEW_SURRENDER'
       ) {
-        const date = new Date();
-        applicationUpdate.approvalOrDecliningDate = new Date();
-        let expiryDate = new Date(date.setMonth(date.getMonth() + 12));
-        expiryDate = new Date(expiryDate.setDate(expiryDate.getDate() - 1));
-        applicationUpdate.expiryDate = application?.expiryDate || expiryDate;
         applicationUpdate.approvalOrDecliningDate = new Date();
         if (req.body.status === 'DECLINED') {
+          const date = new Date();
+          applicationUpdate.approvalOrDecliningDate = new Date();
+          let expiryDate = new Date(date.setMonth(date.getMonth() + 12));
+          expiryDate = new Date(expiryDate.setDate(expiryDate.getDate() - 1));
+          applicationUpdate.expiryDate = application?.expiryDate || expiryDate;
           applicationUpdate.acceptedAmount = 0;
           await ClientDebtor.updateOne(
             { _id: application.clientDebtorId },
