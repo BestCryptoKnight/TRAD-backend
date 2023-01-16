@@ -795,7 +795,10 @@ router.get('/details/:applicationId', async function (req, res) {
         },
       ];
     }
-    if (response.applicationStatus && response.status.value !== 'REVIEW_SURRENDER') {
+    if (
+      response.applicationStatus &&
+      response.status.value !== 'REVIEW_SURRENDER'
+    ) {
       response.applicationStatus = response.applicationStatus.filter((v) => {
         if (v.value !== 'REVIEW_SURRENDER') {
           return v;
@@ -1597,6 +1600,11 @@ router.put('/:applicationId', async function (req, res) {
       ) {
         applicationUpdate.approvalOrDecliningDate = new Date();
         if (req.body.status === 'DECLINED') {
+          const date = new Date();
+          applicationUpdate.approvalOrDecliningDate = new Date();
+          let expiryDate = new Date(date.setMonth(date.getMonth() + 12));
+          expiryDate = new Date(expiryDate.setDate(expiryDate.getDate() - 1));
+          applicationUpdate.expiryDate = application?.expiryDate || expiryDate;
           applicationUpdate.acceptedAmount = 0;
           await ClientDebtor.updateOne(
             { _id: application.clientDebtorId },
@@ -1604,6 +1612,7 @@ router.put('/:applicationId', async function (req, res) {
               isFromOldSystem: false,
               creditLimit: 0,
               status: 'DECLINED',
+              expiryDate: applicationUpdate.expiryDate,
               activeApplicationId: application._id,
               isActive: true,
             },
