@@ -836,6 +836,7 @@ const addClaimDetail = async ({ claim }) => {
   } catch (e) {
     Logger.log.error('Error occurred in add claim details in RSS');
     Logger.log.error(e.message || e);
+    return Promise.reject(Error('Error occurred in add claim details in RSS'));
   }
 };
 
