@@ -33,15 +33,26 @@ const upload = multer({ storage: storage });
  * Get RSS Users
  */
 router.get('/rss-users', async function (req, res) {
-  let claimManagerList = await getClaimsManagerList(1, 100);
-  let result = [];
-  claimManagerList.list.forEach((v) => {
-    result.push({
-      id: v.record.id,
-      name: v.record.first + ' ' + v.record.last,
+  try {
+    let claimManagerList = await getClaimsManagerList(1, 100);
+    let result = [];
+    claimManagerList.list.forEach((v) => {
+      result.push({
+        id: v.record.id,
+        name: v.record.first + ' ' + v.record.last,
+      });
     });
-  });
-  res.send(result);
+    res.send(result);
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in while getting RSS Users',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
 });
 
 /**

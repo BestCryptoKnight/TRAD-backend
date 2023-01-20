@@ -35,6 +35,7 @@ const getClaimsManagerList = async ({ liveValue = 1, limitValue = 100 }) => {
   } catch (e) {
     Logger.log.error('Error occurred in get Claims Manager List');
     Logger.log.error(e.message || e);
+    return Promise.reject(Error('Error in fetching Claim Managers'));
   }
 };
 
