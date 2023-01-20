@@ -71,11 +71,11 @@ router.get('/rss-users', async function (req, res) {
     let result = [];
     claimManagerList.list.forEach((v) => {
       result.push({
-        id: v.record.id,
-        name: v.record.first + ' ' + v.record.last,
+        value: v.record.id,
+        label: v.record.first + ' ' + v.record.last,
       });
     });
-    res.send(result);
+    res.send({ data: result, status: 'SUCCESS' });
   } catch (e) {
     Logger.log.error(
       'Error occurred in while getting RSS Users',
