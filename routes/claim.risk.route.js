@@ -319,7 +319,7 @@ router.post('/', async function (req, res) {
     !req.body.underwriter ||
     !req.body.stage ||
     !req.body.accountid ||
-    !req.body.claimsManager
+    !req.body.claimsmanager
   ) {
     return res.status(400).send({
       status: 'ERROR',
