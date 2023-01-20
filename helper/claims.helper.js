@@ -190,8 +190,8 @@ const addClaimInRSS = async ({
       'dateofoldestinvoice',
       'instalmentamounts',
       'frequency',
-      'finalpaymentdate',
       'repaymentplanlength',
+      'claimsManager',
     ];
     const claim = {};
     const query =
