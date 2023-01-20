@@ -20,10 +20,29 @@ const {
   uploadDocumentInRSS,
 } = require('./../helper/claims.helper');
 const { getClientList } = require('./../helper/client.helper');
-const { getClaimById, downloadDocument } = require('./../helper/rss.helper');
+const {
+  getClaimById,
+  downloadDocument,
+  getClaimsManagerList,
+} = require('./../helper/rss.helper');
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
+
+/**
+ * Get RSS Users
+ */
+router.get('/rss-users', async function (req, res) {
+  let claimManagerList = await getClaimsManagerList(1, 100);
+  let result = [];
+  claimManagerList.list.forEach((v) => {
+    result.push({
+      id: v.record.id,
+      name: v.record.first + ' ' + v.record.last,
+    });
+  });
+  res.send(result);
+});
 
 /**
  * Get Column Names
@@ -288,7 +307,8 @@ router.post('/', async function (req, res) {
     !req.body.hasOwnProperty('claimsinforequested') ||
     !req.body.underwriter ||
     !req.body.stage ||
-    !req.body.accountid
+    !req.body.accountid ||
+    !req.body.claimsManager
   ) {
     return res.status(400).send({
       status: 'ERROR',
@@ -302,6 +322,7 @@ router.post('/', async function (req, res) {
       userType: 'user',
       userId: req.user._id,
       userName: req.user.name,
+      claimsManager: req.body.claimsManager,
     });
     res.status(200).send({
       status: 'SUCCESS',

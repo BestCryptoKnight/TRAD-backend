@@ -15,6 +15,30 @@ const Logger = require('../services/logger');
 const { addAuditLog } = require('./audit-log.helper');
 
 /*
+Get Claims Manager List
+ */
+const getClaimsManagerList = async ({ liveValue = 1, limitValue = 100 }) => {
+  try {
+    const url = `https://apiv4.reallysimplesystems.com/users?q={"live":${liveValue}}&limit=${limitValue}`;
+    const organization = await Organization.findOne({ isDeleted: false })
+      .select({ 'integration.rss': 1 })
+      .lean();
+    const options = {
+      method: 'GET',
+      url: url,
+      headers: {
+        Authorization: 'Bearer ' + organization.integration.rss.accessToken,
+      },
+    };
+    const { data } = await axios(options);
+    return data;
+  } catch (e) {
+    Logger.log.error('Error occurred in get Claims Manager List');
+    Logger.log.error(e.message || e);
+  }
+};
+
+/*
 Get Client List
  */
 const getClients = async ({ searchKeyword }) => {
@@ -922,6 +946,7 @@ const downloadDocument = async ({ documentId }) => {
 };
 
 module.exports = {
+  getClaimsManagerList,
   getClients,
   getInsurers,
   getClientById: getClientById,

@@ -19,7 +19,11 @@ const {
   listDocuments,
   uploadDocumentInRSS,
 } = require('./../helper/claims.helper');
-const { getClaimById, downloadDocument } = require('./../helper/rss.helper');
+const {
+  getClaimById,
+  downloadDocument,
+  getClaimsManagerList,
+} = require('./../helper/rss.helper');
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
@@ -58,6 +62,20 @@ const clientClaimColumn = {
   defaultColumns: ['name', 'stage', 'grossdebtamount', 'amountpaid', 'stage'],
 };
 
+/**
+ * Get RSS Users
+ */
+router.get('/rss-users', async function (req, res) {
+  let claimManagerList = await getClaimsManagerList(1, 100);
+  let result = [];
+  claimManagerList.list.forEach((v) => {
+    result.push({
+      id: v.record.id,
+      name: v.record.first + ' ' + v.record.last,
+    });
+  });
+  res.send(result);
+});
 /**
  * Get Column Names
  */
