@@ -191,7 +191,7 @@ const addClaimInRSS = async ({
       'instalmentamounts',
       'frequency',
       'repaymentplanlength',
-      'claimsManager',
+      'claimsmanager',
     ];
     const claim = {};
     const query =
