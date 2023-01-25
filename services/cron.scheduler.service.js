@@ -225,7 +225,7 @@ const scheduler = async () => {
                   crmPolicyId: policiesFromCrm[j].crmPolicyId,
                   isDeleted: false,
                 }).lean();
-                if (!policy && !policy._id) {
+                if (!policy) {
                   newPolicies.push(policiesFromCrm[j].crmPolicyId);
                 }
               }
