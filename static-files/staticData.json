@@ -3256,6 +3256,10 @@
       "_id": "CREDIT_CHECK"
     },
     {
+      "name": "Credit Check NZ",
+      "_id": "CREDIT_CHECK_NZ"
+    },
+    {
       "name": "Health Check",
       "_id": "HEALTH_CHECK"
     },

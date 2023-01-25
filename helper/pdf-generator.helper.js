@@ -31,6 +31,7 @@ const generateDecisionLetter = async ({
   requestedDate,
   approvalOrDecliningDate,
   expiryDate,
+  isCreditCheckOrNZ,
 }) => {
   const pdfBuffer = await new Promise(async (resolve) => {
     const date =
@@ -91,7 +92,7 @@ const generateDecisionLetter = async ({
     // table.plugins[1].x = 0
     //   pdf.moveDown(3);
     pdf.fill('#FFFFFF').font('Helvetica-Bold').fontSize(15);
-    pdf.text('Credit Check', 0, 110, {
+    pdf.text(isCreditCheckOrNZ, 0, 110, {
       align: 'center',
     });
     pdf.moveDown(0.5);
