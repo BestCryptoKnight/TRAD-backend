@@ -15,7 +15,6 @@ const Policy = mongoose.model('policy');
 const Logger = require('./logger');
 const config = require('./../config');
 const RssHelper = require('./../helper/rss.helper');
-const { getClientPolicies } = require('./../helper/rss.helper');
 const { sendNotification } = require('./../helper/socket.helper');
 const { addNotification } = require('./../helper/notification.helper');
 const { removeUserToken } = require('./../helper/user.helper');
@@ -104,18 +103,19 @@ const scheduler = async () => {
       },
     );
 
-    /*
-    Sync Clients everyday at 2AM Australia Sydney time
-     */
+    const wait = async (milliseconds) => {
+      await new Promise((resolve) => setTimeout(resolve, milliseconds));
+    };
 
+    /*
+    Sync Clients everyday at 2AM Australia time
+     */
+    Logger.log.info('User Details Syncing Started.');
     cron.schedule(
       '0 2 * * *',
       async () => {
         let clients = await Client.find({}).lean();
-        let delay = 10000;
-        const wait = async (seconds) => {
-          await new Promise((resolve) => setTimeout(resolve, seconds * 1000));
-        };
+
         for (let i = 0; i < clients.length; i++) {
           /**
            * Sync client contacts
@@ -128,7 +128,6 @@ const scheduler = async () => {
               .select('crmContactId')
               .lean();
             const oldUsers = clientUsers.map((i) => i.crmContactId.toString());
-            //const newUsers = [];
             let contactsFromCrm = await RssHelper.getClientContacts({
               clientId: clients[i].crmClientId,
             });
@@ -172,18 +171,6 @@ const scheduler = async () => {
                   upsert: true,
                 }),
               );
-              // if (clientUser && clientUser._id) {
-              //   promiseArr.push(
-              //     addAuditLog({
-              //       entityType: 'client-user',
-              //       entityRefId: clientUser._id,
-              //       userType: 'user',
-              //       userRefId: req.user._id,
-              //       actionType: 'sync',
-              //       logDescription: `Client contact ${contactsFromCrm[k].name} synced by ${req.user.name}`,
-              //     }),
-              //   );
-              // }
             }
             if (oldUsers?.length !== 0) {
               promiseArr.push(
@@ -208,26 +195,17 @@ const scheduler = async () => {
               underwriterName: clientDataFromCrm.underWriter,
               crmClientId: clientDataFromCrm.crmClientId,
               clientId: clients[i]._id,
-              // auditLog: { userType: 'user', userRefId: req.user._id },
             });
             clientDataFromCrm.insurerId =
               insurer && insurer._id ? insurer._id : null;
             await Client.updateOne({ _id: clients[i]._id }, clientDataFromCrm);
-            // await addAuditLog({
-            //   entityType: 'client',
-            //   entityRefId: req.params.clientId,
-            //   userType: 'user',
-            //   userRefId: req.user._id,
-            //   actionType: 'sync',
-            //   logDescription: `Client ${clientDataFromCrm.name} synced by ${req.user.name}`,
-            // });
 
             // sync client policies
 
             let promiseArray = [];
             let newPolicies = [];
             if (clients[i] && clients[i]._id && clients[i].insurerId) {
-              const policiesFromCrm = await getClientPolicies({
+              const policiesFromCrm = await RssHelper.getClientPolicies({
                 clientId: clients[i]._id,
                 crmClientId: clients[i].crmClientId,
                 insurerId: clients[i].insurerId,
@@ -247,48 +225,19 @@ const scheduler = async () => {
                   crmPolicyId: policiesFromCrm[j].crmPolicyId,
                   isDeleted: false,
                 }).lean();
-                if (policy && policy._id) {
-                  // promiseArray.push(
-                  //   addAuditLog({
-                  //     entityType: 'policy',
-                  //     entityRefId: policy._id,
-                  //     userType: 'user',
-                  //     userRefId: req.user._id,
-                  //     actionType: 'sync',
-                  //     logDescription: `Client ${client.name} policy no. ${policiesFromCrm[j].policyNumber} synced by ${req.user.name}`,
-                  //   }),
-                  // );
-                } else {
+                if (!policy && !policy._id) {
                   newPolicies.push(policiesFromCrm[j].crmPolicyId);
                 }
               }
               await Promise.all(promiseArray);
             }
-            // let promises = [];
-            // if (newPolicies.length !== 0) {
-            //   const policyData = await Policy.find({
-            //     crmPolicyId: { $in: newPolicies },
-            //   }).lean();
-            // for (let i = 0; i < policyData.length; i++) {
-            //   promises.push(
-            //     addAuditLog({
-            //       entityType: 'policy',
-            //       entityRefId: policyData[i]._id,
-            //       userType: 'user',
-            //       userRefId: req.user._id,
-            //       actionType: 'sync',
-            //       logDescription: `Client ${client.name} policy no. ${policyData[i].policyNumber} synced by ${req.user.name}`,
-            //     }),
-            //   );
-            // }
-            // }
           } catch (e) {
             Logger.log.error(
               'Error occurred in Sync Client Data Cron Scheduler',
               e.message || e,
             );
           }
-          await wait(2);
+          await wait(2000);
         }
         Logger.log.info('User Details Synced Successfully.');
       },
