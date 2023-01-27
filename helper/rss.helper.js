@@ -679,7 +679,7 @@ const fetchInsurerDetails = async ({
       }
       return insurer;
     } else {
-      getInsurers({ searchKeyword: searchQuery });
+      let data = await getInsurers({ searchKeyword: searchQuery });
       if (!data) {
         searchQuery = { $in: words };
         data = await getInsurers({ searchKeyword: searchQuery });
