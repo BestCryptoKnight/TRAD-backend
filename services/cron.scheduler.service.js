@@ -25,6 +25,7 @@ const {
   checkForReviewDebtor,
 } = require('./../helper/debtor.helper');
 const { retrieveAlertListFromIllion } = require('./../helper/alert.helper');
+const { addAuditLog } = require('../helper/audit-log.helper');
 
 const scheduler = async () => {
   try {
@@ -110,10 +111,16 @@ const scheduler = async () => {
     /*
     Sync Clients everyday at 2AM Australia time
      */
-    Logger.log.info('User Details Syncing Started.');
     cron.schedule(
       '0 2 * * *',
       async () => {
+        Logger.log.info('User Details Syncing Started.');
+        await addAuditLog({
+          entityType: 'client',
+          actionType: 'sync',
+          userType: 'system',
+          logDescription: `Clients Sync from RSS started at ${new Date().toISOString()}`,
+        });
         let clients = await Client.find({}).lean();
 
         for (let i = 0; i < clients.length; i++) {
@@ -130,6 +137,7 @@ const scheduler = async () => {
             const oldUsers = clientUsers.map((i) => i.crmContactId.toString());
             let contactsFromCrm = await RssHelper.getClientContacts({
               clientId: clients[i].crmClientId,
+              limit: 100,
             });
             contactsFromCrm.forEach((i) => {
               if (oldUsers.includes(i.crmContactId.toString())) {
@@ -209,6 +217,7 @@ const scheduler = async () => {
                 clientId: clients[i]._id,
                 crmClientId: clients[i].crmClientId,
                 insurerId: clients[i].insurerId,
+                limit: 100,
               });
               for (let j = 0; j < policiesFromCrm.length; j++) {
                 promiseArray.push(
@@ -237,9 +246,15 @@ const scheduler = async () => {
               e.message || e,
             );
           }
-          await wait(2000);
+          await wait(3000);
         }
         Logger.log.info('User Details Synced Successfully.');
+        await addAuditLog({
+          entityType: 'client',
+          actionType: 'sync',
+          userType: 'system',
+          logDescription: `Clients Sync from RSS completed at ${new Date().toISOString()}`,
+        });
       },
       {
         scheduled: true,
