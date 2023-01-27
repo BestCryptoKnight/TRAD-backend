@@ -278,7 +278,7 @@ const getClientCreditLimit = async ({
     if (isForDownload) {
       let endorsedLimits = 0;
       let creditChecks = 0;
-
+      let creditChecksNZ = 0;
       response.forEach((debtor) => {
         if (debtor?.activeApplicationId?.limitType) {
           debtor.limitType =
@@ -287,6 +287,8 @@ const getClientCreditLimit = async ({
             ? endorsedLimits++
             : debtor.activeApplicationId.limitType === 'CREDIT_CHECK'
             ? creditChecks++
+            : debtor.activeApplicationId.limitType === 'CREDIT_CHECK_NZ'
+            ? creditChecksNZ++
             : null;
         }
         debtor.approvalOrDecliningDate =
@@ -861,6 +863,14 @@ const downloadDecisionLetter = async ({ creditLimitId }) => {
       } else {
         response.registrationNumber =
           clientDebtor?.debtorId?.registrationNumber;
+      }
+      const application = await Application.findOne({
+        _id: clientDebtor.activeApplicationId._id,
+      });
+      if (application.limitType === 'CREDIT_CHECK_NZ') {
+        response.isCreditCheckOrNZ = 'Credit Check NZ';
+      } else {
+        response.isCreditCheckOrNZ = 'Credit Check';
       }
       bufferData = await generateDecisionLetter(response);
     }

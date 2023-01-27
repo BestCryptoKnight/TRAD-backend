@@ -1211,7 +1211,11 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
       update.status = 'APPROVED';
       update.acceptedAmount = application.creditLimit;
       update.isAutoApproved = true;
-      update.limitType = 'CREDIT_CHECK';
+      if (application.debtorId.address.country.code === 'NZL') {
+        update.limitType = 'CREDIT_CHECK_NZ';
+      } else {
+        update.limitType = 'CREDIT_CHECK';
+      }
       await ClientDebtor.updateOne(
         { _id: application.clientDebtorId._id },
         {
@@ -1559,6 +1563,7 @@ const sendDecisionLetter = async ({
   status,
   approvedAmount,
   applicationId,
+  isCreditCheckNZ,
 }) => {
   try {
     const application = await Application.findOne({
@@ -1623,6 +1628,11 @@ const sendDecisionLetter = async ({
         response.rejectionReason = reason;
       } else {
         response.approvalStatus = reason;
+      }
+      if (isCreditCheckNZ === true) {
+        response.isCreditCheckOrNZ = 'Credit Check NZ';
+      } else {
+        response.isCreditCheckOrNZ = 'Credit Check';
       }
       const bufferData = await generateDecisionLetter(response);
       mailObj.attachments.push({

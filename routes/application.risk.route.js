@@ -1681,6 +1681,18 @@ router.put('/:applicationId', async function (req, res) {
             });
           }
         }
+        if (application?.limitType === 'CREDIT_CHECK_NZ') {
+          //TODO uncomment to send decision letter
+          if (config.mailer.isForProduction === 'true') {
+            sendDecisionLetter({
+              reason: req.body.comments || '',
+              status,
+              approvedAmount,
+              applicationId: application._id,
+              isCreditCheckNZ: true,
+            });
+          }
+        }
       }
       if (
         req.body.status === 'DECLINED' &&

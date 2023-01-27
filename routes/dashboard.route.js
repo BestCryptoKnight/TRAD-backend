@@ -69,9 +69,10 @@ router.get('/', async function (req, res) {
           ? ciPolicy.expiryDate
           : rmpPolicy.expiryDate;
     }
+    let nzCreditChecks = rmpPolicy?.nzCreditChecks || 0;
     const noOfCreditChecks =
       rmpPolicy && rmpPolicy.creditChecks
-        ? rmpPolicy.creditChecks
+        ? rmpPolicy.creditChecks + nzCreditChecks
         : ciPolicy && ciPolicy.creditChecks
         ? ciPolicy.creditChecks
         : 0;

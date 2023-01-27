@@ -75,7 +75,7 @@ const getCreditChecks = async ({
       status: {
         $nin: ['DRAFT'],
       },
-      limitType: { $eq: 'CREDIT_CHECK' },
+      limitType: { $in: ['CREDIT_CHECK', 'CREDIT_CHECK_NZ'] },
     };
     if (startDate && endDate) {
       query.requestDate = {
