@@ -318,6 +318,7 @@ const getClientCreditLimit = async ({
           type: 'string',
         },
         { label: 'Credit Checks', value: creditChecks, type: 'string' },
+        { label: 'Credit Checks NZ', value: creditChecksNZ, type: 'string' },
       );
       return {
         docs: response,
@@ -898,7 +899,8 @@ const downloadDecisionLetterFromApplication = async ({ applicationId }) => {
       })
       .populate({
         path: 'debtorId',
-        select: 'entityName registrationNumber abn acn address tradingName',
+        select:
+          'entityName registrationNumber abn acn address tradingName limitType status',
       })
       .lean();
     let bufferData;
@@ -937,6 +939,11 @@ const downloadDecisionLetterFromApplication = async ({ applicationId }) => {
         response.acn = application?.debtorId?.acn;
       } else {
         response.registrationNumber = application?.debtorId?.registrationNumber;
+      }
+      if (application.limitType === 'Credit Check NZ') {
+        response.isCreditCheckOrNZ = 'Credit Check NZ';
+      } else {
+        response.isCreditCheckOrNZ = 'Credit Check';
       }
       bufferData = await generateDecisionLetter(response);
     }
