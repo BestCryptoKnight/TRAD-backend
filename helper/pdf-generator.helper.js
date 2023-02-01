@@ -38,6 +38,9 @@ const generateDecisionLetter = async ({
       moment().tz(config.organization.timeZone).format('DD/MM/YYYY') ||
       new Date();
     let buffer;
+    if (approvedAmount === undefined || approvedAmount === null) {
+      approvedAmount = '0.00';
+    }
     let pdf = new PDFDocument({
       autoFirstPage: false,
       bufferPages: true,

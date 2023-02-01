@@ -388,7 +388,7 @@ const removeClientUserToken = async () => {
     const promises = [];
     let update;
     for (let i = 0; i < users.length; i++) {
-      if (users[i].jwtToken.length !== 0) {
+      if (users[i].jwtToken && users[i].jwtToken.length !== 0) {
         update = {};
         users[i].jwtToken = users[i].jwtToken.filter((i) => {
           return expireTime < i.lastAPICallTime;
