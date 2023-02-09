@@ -46,6 +46,7 @@ const sendMail = ({ toAddress, subject, text, html, mailFor, attachments }) => {
           nameOfServiceManagerOrRiskAnalyst:
             text.nameOfServiceManagerOrRiskAnalyst,
           claimLink: text.claimLink,
+          claimName: text.claimName,
         });
         break;
       case 'newAdminUser':
