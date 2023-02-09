@@ -267,6 +267,7 @@ const addClaimInRSS = async ({
             name: client.name,
             nameOfServiceManagerOrRiskAnalyst: user.name,
             claimLink: process.env.FRONTEND_ADMIN_URL + 'claims',
+            claimName: requestBody.name,
           },
           mailFor: 'claimCreated',
         };
