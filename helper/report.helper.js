@@ -569,6 +569,7 @@ const getLimitListReport = async ({
 
     let endorsedLimits = 0;
     let creditChecks = 0;
+    let creditChecksNZ = 0;
     response.forEach((limit) => {
       if (limit.insurerId) {
         limit.insurerId =
@@ -660,6 +661,8 @@ const getLimitListReport = async ({
           ? endorsedLimits++
           : limit.activeApplicationId[0].limitType === 'CREDIT_CHECK'
           ? creditChecks++
+          : limit.activeApplicationId[0].limitType === 'CREDIT_CHECK_NZ'
+          ? creditChecksNZ++
           : null;
       }
       if (limit?.activeApplicationId?.[0]?.comments) {
@@ -679,6 +682,7 @@ const getLimitListReport = async ({
           type: 'string',
         },
         { label: 'Credit Checks', value: creditChecks, type: 'string' },
+        { label: 'Credit Checks NZ', value: creditChecksNZ, type: 'string' },
       );
     }
     response.forEach((v) => {

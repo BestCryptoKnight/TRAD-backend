@@ -315,13 +315,7 @@ router.get('/:entityId', async function (req, res) {
  * Add Claim in RSS
  */
 router.post('/', async function (req, res) {
-  if (
-    !req.body ||
-    !req.body.name ||
-    !req.body.underwriter ||
-    !req.body.stage ||
-    !req.body.claimsmanager
-  ) {
+  if (!req.body || !req.body.name) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
