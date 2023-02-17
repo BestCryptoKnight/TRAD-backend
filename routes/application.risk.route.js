@@ -1494,6 +1494,9 @@ router.put('/:applicationId', async function (req, res) {
             'Automation is in process. Please change the status after some time.',
         });
       }
+      if (req.body.comments) {
+        applicationUpdate.comments = req.body.comments;
+      }
       let status = req.body.status;
       let approvedAmount = 0;
       let isEndorsedLimit = false;
