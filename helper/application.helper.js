@@ -1315,8 +1315,8 @@ const generateNewApplication = async ({
         { $inc: { 'entityCount.application': 1 } },
       );
       if (isSurrender) {
-        application.status = 'REVIEW_SURRENDER';
-        applicationDetails.status = 'REVIEW_SURRENDER';
+        application.status = 'REVIEW_SURRENDERED';
+        applicationDetails.status = 'REVIEW_SURRENDERED';
         applicationDetails.comments = 'Credit Limit requested to Surrender';
         applicationDetails.isAutoApproved = false;
       } else if (creditLimit === 0) {
