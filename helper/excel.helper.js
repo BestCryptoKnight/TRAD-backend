@@ -12,14 +12,14 @@ const generateExcel = ({ data, reportFor, headers, filter, title }) => {
     const worksheet = workbook.addWorksheet(reportFor);
 
     const base64Data = await getBase64(
-      `${config.staticServing.bucketURL}static-files/mail-images/tcr-logo.png`,
+      `${config.staticServing.bucketURL}static-files/mail-images/psc-trad.png`,
     );
     const image = workbook.addImage({
       base64: base64Data,
       extension: 'png',
     });
     worksheet.addImage(image, {
-      ext: { width: headers.length <= 2 ? 139 : 170, height: 39 },
+      ext: { width: headers.length <= 2 ? 269 : 300, height: 40 },
     });
 
     const currentDate = new Date();
@@ -38,7 +38,7 @@ const generateExcel = ({ data, reportFor, headers, filter, title }) => {
     const row = worksheet.addRow([
       title ? `${title}: ${reportFor}` : `${reportFor}`,
     ]);
-    row.height = 40;
+    row.height = 30;
     let date;
     for (let i = 0; i <= filter.length; i++) {
       if (filter[i]) {

@@ -797,10 +797,10 @@ router.get('/details/:applicationId', async function (req, res) {
     }
     if (
       response.applicationStatus &&
-      response.status.value !== 'REVIEW_SURRENDER'
+      response.status.value !== 'REVIEW_SURRENDERED'
     ) {
       response.applicationStatus = response.applicationStatus.filter((v) => {
-        if (v.value !== 'REVIEW_SURRENDER') {
+        if (v.value !== 'REVIEW_SURRENDERED') {
           return v;
         }
       });
@@ -1503,7 +1503,7 @@ router.put('/:applicationId', async function (req, res) {
       applicationUpdate.status = req.body.status;
       if (
         (req.body.status === 'APPROVED' || req.body.status === 'DECLINED') &&
-        application.status === 'REVIEW_SURRENDER'
+        application.status === 'REVIEW_SURRENDERED'
       ) {
         applicationUpdate.approvalOrDecliningDate = new Date();
         const surrenderClientDebtor = await ClientDebtor.findOne({
@@ -1542,13 +1542,13 @@ router.put('/:applicationId', async function (req, res) {
       }
       if (
         (req.body.status === 'CANCELLED' || req.body.status === 'WITHDRAWN') &&
-        application.status === 'REVIEW_SURRENDER'
+        application.status === 'REVIEW_SURRENDERED'
       ) {
         applicationUpdate.approvalOrDecliningDate = new Date();
       }
       if (
         req.body.status === 'APPROVED' &&
-        application.status !== 'REVIEW_SURRENDER'
+        application.status !== 'REVIEW_SURRENDERED'
       ) {
         if (!req.body.creditLimit || !/^\d+$/.test(req.body.creditLimit)) {
           return res.status(400).send({
@@ -1599,7 +1599,7 @@ router.put('/:applicationId', async function (req, res) {
         (req.body.status === 'DECLINED' ||
           req.body.status === 'CANCELLED' ||
           req.body.status === 'WITHDRAWN') &&
-        application.status !== 'REVIEW_SURRENDER'
+        application.status !== 'REVIEW_SURRENDERED'
       ) {
         applicationUpdate.approvalOrDecliningDate = new Date();
         if (req.body.status === 'DECLINED') {
@@ -1699,7 +1699,7 @@ router.put('/:applicationId', async function (req, res) {
       }
       if (
         req.body.status === 'DECLINED' &&
-        application.status !== 'REVIEW_SURRENDER'
+        application.status !== 'REVIEW_SURRENDERED'
       ) {
         const hasActiveCreditLimit = await checkForActiveCreditLimit({
           debtorId: application?.debtorId,

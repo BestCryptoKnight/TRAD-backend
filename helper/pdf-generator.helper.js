@@ -77,20 +77,20 @@ const generateDecisionLetter = async ({
         },
       ]);
     /*Top Border Starts*/
-    pdf.rect(0, 0, 595.28, 15.6).fillOpacity(1).fill('#123A78');
-    pdf.rect(0, 15.6, 595.28, 15.6).fillOpacity(1).fill('#EF7B11');
+    pdf.rect(0, 0, 595.28, 15.6).fillOpacity(1).fill('#0073ab');
+    pdf.rect(0, 15.6, 595.28, 15.6).fillOpacity(1).fill('#f6a457');
     /*Top Border Ends*/
     /*Header with Logo Starts*/
     pdf.rect(0, 31.2, 595.28, 69).fillOpacity(1).fill('#F4F6F8');
     buffer = await getBase64(
-      `${config.staticServing.bucketURL}static-files/mail-images/trad-logo.png`,
+      `${config.staticServing.bucketURL}static-files/mail-images/psc-trad.png`,
     );
     pdf.image(buffer, 30, 52, { fit: [250, 250] });
-    pdf.fill('#EF7B10').font('Helvetica-Bold');
+    pdf.fill('#f6a457').font('Helvetica-Bold');
     pdf.text(`Date: ${date}`, 490, 70, {});
     /*Header with Logo Ends*/
     /*Page Title with Client Starts*/
-    pdf.rect(0, 100.2, 595.28, 62).fillOpacity(1).fill('#003A78');
+    pdf.rect(0, 100.2, 595.28, 62).fillOpacity(1).fill('#0073ab');
     // table.plugins[1].shade1 = '#F4F6F8'
     // table.plugins[1].x = 0
     //   pdf.moveDown(3);
@@ -105,7 +105,7 @@ const generateDecisionLetter = async ({
     /*Page Title with Client Ends*/
     /*Debtor Details Starts*/
     pdf.moveDown(1.0);
-    pdf.fill('#003A78').font('Helvetica').fontSize(11.25);
+    pdf.fill('#0073ab').font('Helvetica').fontSize(11.25);
     pdf.text(`Debtor Name: ${debtorName}`, {
       align: 'center',
     });
@@ -170,7 +170,7 @@ const generateDecisionLetter = async ({
       align: 'center',
     });
     pdf.moveDown(0.5);
-    pdf.fill('#003A78').font('Helvetica-Bold').fontSize(19);
+    pdf.fill('#0073ab').font('Helvetica-Bold').fontSize(19);
     pdf.text(`$${numberWithCommas(requestedAmount)} AUD`, {
       align: 'center',
     });
@@ -187,14 +187,14 @@ const generateDecisionLetter = async ({
       align: 'center',
     });
     pdf.moveDown(0.5);
-    pdf.fill('#003A78').font('Helvetica-Bold').fontSize(19);
+    pdf.fill('#0073ab').font('Helvetica-Bold').fontSize(19);
     pdf.text(`$${numberWithCommas(approvedAmount)} AUD`, {
       align: 'center',
     });
     /*Applied Limit Ends*/
     /*Summary Starts*/
     pdf.y = pdf.y + 14;
-    pdf.fill('#003A78').font('Helvetica-Bold').fontSize(11.25);
+    pdf.fill('#0073ab').font('Helvetica-Bold').fontSize(11.25);
     pdf.text('Summary:', 20, pdf.y, {
       // align: 'center',
     });
@@ -250,7 +250,7 @@ const generateDecisionLetter = async ({
     /*Summary Ends*/
     /*Conditions of Opinion Starts*/
     pdf.moveDown(1.6);
-    pdf.fill('#003A78').font('Helvetica-Bold').fontSize(11.25);
+    pdf.fill('#0073ab').font('Helvetica-Bold').fontSize(11.25);
     pdf.text('Conditions of Opinion', {
       // align: 'center',
     });
@@ -281,13 +281,13 @@ Please contact your Service Manager${
     /*Conditions of Opinion Ends*/
     /*Licence Detail Starts*/
     pdf.moveDown(2);
-    pdf.fill('#003A78').font('Helvetica-Bold').fontSize(12);
+    pdf.fill('#0073ab').font('Helvetica-Bold').fontSize(12);
     pdf.text('Australian Financial Services Licence #: 422672', 0, 715, {
       align: 'center',
     });
     /*Licence of Opinion Ends*/
     /*Footer Starts*/
-    pdf.rect(0, 735, 595.28, 107).fillOpacity(1).fill('#EF7B10');
+    pdf.rect(0, 735, 595.28, 107).fillOpacity(1).fill('#f6a457');
     // table.plugins[1].shade1 = '#F4F6F8'
     // table.plugins[1].x = 0
     //   pdf.moveDown(3);

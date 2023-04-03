@@ -1031,8 +1031,8 @@
       "label": "Awaiting Information"
     },
     {
-      "value": "REVIEW_SURRENDER",
-      "label": "Review Surrender"
+      "value": "REVIEW_SURRENDERED",
+      "label": "Review Surrendered"
     }
   ],
   "countryList": [
