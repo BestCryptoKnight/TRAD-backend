@@ -11,7 +11,7 @@ module.exports = ({
   return `
 Dear ${nameOfServiceManagerOrRiskAnalyst},<br/><br/>
 
-A new claim for ${claimName} has been logged on the portal by client, ${clientName}.<br/><br/>
+A new claim for ${claimName} has been lodged on the portal by client, ${clientName}.<br/><br/>
 
 Please find link to the claim below:<br/>
 <a href="${claimLink}">Claims</a><br/><br/>
