@@ -249,18 +249,15 @@ const addClaimInRSS = async ({
         });
       }
       let idOfServiceManagerOrRiskAnalyst;
-      console.log('client=', client);
       if (
         client.hasOwnProperty('serviceManagerId') &&
         client.serviceManagerId !== null
       ) {
-        console.log('in');
         idOfServiceManagerOrRiskAnalyst = client.serviceManagerId;
       } else if (
         client.hasOwnProperty('riskAnalystId') &&
         client.riskAnalystId !== null
       ) {
-        console.log('in2');
         idOfServiceManagerOrRiskAnalyst = client.riskAnalystId;
       }
       if (idOfServiceManagerOrRiskAnalyst) {
