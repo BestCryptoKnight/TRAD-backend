@@ -19,7 +19,11 @@ const {
   listDocuments,
   uploadDocumentInRSS,
 } = require('./../helper/claims.helper');
-const { getClaimById, downloadDocument } = require('./../helper/rss.helper');
+const {
+  getClaimById,
+  downloadDocument,
+  getClaimsManagerList,
+} = require('./../helper/rss.helper');
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
@@ -58,6 +62,31 @@ const clientClaimColumn = {
   defaultColumns: ['name', 'stage', 'grossdebtamount', 'amountpaid', 'stage'],
 };
 
+/**
+ * Get RSS Users
+ */
+router.get('/rss-users', async function (req, res) {
+  try {
+    let claimManagerList = await getClaimsManagerList(1, 100);
+    let result = [];
+    claimManagerList.list.forEach((v) => {
+      result.push({
+        value: v.record.id,
+        label: v.record.first + ' ' + v.record.last,
+      });
+    });
+    res.send({ data: result, status: 'SUCCESS' });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in while getting RSS Users',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
 /**
  * Get Column Names
  */
@@ -286,7 +315,7 @@ router.get('/:entityId', async function (req, res) {
  * Add Claim in RSS
  */
 router.post('/', async function (req, res) {
-  if (!req.body || !req.body.name || !req.body.underwriter || !req.body.stage) {
+  if (!req.body || !req.body.name) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',

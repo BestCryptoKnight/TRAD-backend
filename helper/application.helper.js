@@ -11,6 +11,8 @@ const DebtorDirector = mongoose.model('debtor-director');
 const ClientDebtor = mongoose.model('client-debtor');
 const User = mongoose.model('user');
 const ClientUser = mongoose.model('client-user');
+const Document = mongoose.model('document');
+const { deleteFile } = require('./../helper/static-file.helper');
 
 /*
  * Local Imports
@@ -55,6 +57,7 @@ const getApplicationList = async ({
   moduleColumn,
   userId,
   isForDownload = false,
+  clientId = null,
   hasOnlyReadAccessForClientModule = false,
   hasOnlyReadAccessForDebtorModule = false,
 }) => {
@@ -63,6 +66,7 @@ const getApplicationList = async ({
     let aggregationQuery = [];
     const filterArray = [];
     let sortingOptions = {};
+    requestedQuery ? null : (requestedQuery = {});
     requestedQuery.sortBy = requestedQuery.sortBy || '_id';
     requestedQuery.sortOrder = requestedQuery.sortOrder || 'desc';
 
@@ -363,6 +367,11 @@ const getApplicationList = async ({
         return obj;
       }, {}),
     });
+    if (clientId) {
+      query.push({
+        $match: { 'clientId._id': clientId },
+      });
+    }
 
     if (requestedQuery.sortBy && requestedQuery.sortOrder) {
       if (requestedQuery.sortBy === 'clientId') {
@@ -491,6 +500,10 @@ const getApplicationList = async ({
         }
       }
     }
+    response.forEach((v) => {
+      !v.hasOwnProperty('acceptedAmount') ? (v['acceptedAmount'] = 0) : null;
+      !v.hasOwnProperty('creditLimit') ? (v['creditLimit'] = 0) : null;
+    });
     const applicationResponse = {
       docs: response,
       headers,
@@ -506,6 +519,38 @@ const getApplicationList = async ({
     return applicationResponse;
   } catch (e) {
     Logger.log.error('Error occurred in get aggregation stages ', e);
+  }
+};
+/**
+ * Delete Draft application and its saved documents
+ */
+const deleteDraftApplication = async (applicationId) => {
+  try {
+    let uploadedDocuments = await Document.find({
+      entityRefId: applicationId,
+    });
+    const promiseArray = [];
+    uploadedDocuments.map((v) => {
+      if (v.keyPath) {
+        //delete document from s3
+        promiseArray.push(deleteFile({ filePath: v.keyPath }));
+      }
+    });
+    Promise.all(promiseArray);
+    //delete stored documents
+    await Document.deleteMany({
+      entityRefId: applicationId,
+    });
+    //delete stored application
+    await Application.deleteOne({
+      _id: applicationId,
+    });
+    return 'Draft Application deleted successfully';
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in deleting Draft application',
+      e.message || e,
+    );
   }
 };
 
@@ -773,8 +818,7 @@ const storePartnerDetails = async ({ requestBody }) => {
           !requestBody.partners[i].title ||
           !requestBody.partners[i].firstName ||
           !requestBody.partners[i].lastName ||
-          (!requestBody.partners[i].dateOfBirth &&
-            !requestBody.partners[i].driverLicenceNumber) ||
+          !requestBody.partners[i].dateOfBirth ||
           !requestBody.partners[i].address ||
           !requestBody.partners[i].address.state ||
           !requestBody.partners[i].address.postCode ||
@@ -1167,7 +1211,11 @@ const checkForAutomation = async ({ applicationId, userId, userType }) => {
       update.status = 'APPROVED';
       update.acceptedAmount = application.creditLimit;
       update.isAutoApproved = true;
-      update.limitType = 'CREDIT_CHECK';
+      if (application.debtorId.address.country.code === 'NZL') {
+        update.limitType = 'CREDIT_CHECK_NZ';
+      } else {
+        update.limitType = 'CREDIT_CHECK';
+      }
       await ClientDebtor.updateOne(
         { _id: application.clientDebtorId._id },
         {
@@ -1219,6 +1267,7 @@ const generateNewApplication = async ({
   createdById,
   creditLimit,
   applicationId,
+  isSurrender,
 }) => {
   try {
     const query = applicationId
@@ -1232,7 +1281,9 @@ const generateNewApplication = async ({
       .sort({ updatedAt: -1 })
       .lean();
     if (application) {
-      const organization = await Organization.findOne({ isDeleted: false })
+      const organization = await Organization.findOne({
+        isDeleted: false,
+      })
         .select('entityCount')
         .lean();
       const applicationDetails = {
@@ -1263,18 +1314,23 @@ const generateNewApplication = async ({
         { isDeleted: false },
         { $inc: { 'entityCount.application': 1 } },
       );
-      if (creditLimit === 0) {
+      if (isSurrender) {
+        application.status = 'REVIEW_SURRENDERED';
+        applicationDetails.status = 'REVIEW_SURRENDERED';
+        applicationDetails.comments = 'Credit Limit requested to Surrender';
+        applicationDetails.isAutoApproved = false;
+      } else if (creditLimit === 0) {
         applicationDetails.status = 'REVIEW_APPLICATION';
         applicationDetails.isAutoApproved = false;
       }
       const applicationData = await Application.create(applicationDetails);
-      if (creditLimit !== 0) {
+      if (creditLimit !== 0 && !isSurrender) {
         checkForAutomation({
           applicationId: applicationData._id,
           userId: createdById,
           userType: createdByType,
         });
-      } else if (creditLimit === 0) {
+      } else if (creditLimit === 0 && !isSurrender) {
         sendNotificationsToUser({
           application: applicationData,
           userType: createdByType,
@@ -1507,6 +1563,7 @@ const sendDecisionLetter = async ({
   status,
   approvedAmount,
   applicationId,
+  isCreditCheckNZ,
 }) => {
   try {
     const application = await Application.findOne({
@@ -1572,6 +1629,11 @@ const sendDecisionLetter = async ({
       } else {
         response.approvalStatus = reason;
       }
+      if (isCreditCheckNZ === true) {
+        response.isCreditCheckOrNZ = 'Credit Check NZ';
+      } else {
+        response.isCreditCheckOrNZ = 'Credit Check';
+      }
       const bufferData = await generateDecisionLetter(response);
       mailObj.attachments.push({
         content: bufferData,
@@ -1614,6 +1676,7 @@ const checkForPendingApplication = async ({ clientId, debtorId }) => {
 
 module.exports = {
   getApplicationList,
+  deleteDraftApplication,
   storeCompanyDetails,
   storePartnerDetails,
   storeCreditLimitDetails,

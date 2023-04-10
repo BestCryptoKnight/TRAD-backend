@@ -16,6 +16,7 @@ const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
 const {
   getApplicationList,
+  deleteDraftApplication,
   storeCompanyDetails,
   storePartnerDetails,
   storeCreditLimitDetails,
@@ -43,6 +44,49 @@ const { generateExcel } = require('../helper/excel.helper.js');
 const {
   downloadDecisionLetterFromApplication,
 } = require('./../helper/client-debtor.helper');
+
+/**
+ * Delete Draft application and its saved documents
+ */
+router.delete('/:applicationId', async function (req, res) {
+  if (!req.params.applicationId) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const application = await Application.findOne({
+      _id: req.params.applicationId,
+    });
+    if (!application || (application && application?.status !== 'DRAFT')) {
+      let message = !application
+        ? 'Application not found.'
+        : 'Application is not in draft.';
+      Logger.log.error('Error occurred in deleting Draft application', message);
+      res.status(404).send({
+        status: 'ERROR',
+        message: message,
+      });
+    } else {
+      let response = await deleteDraftApplication(req.params.applicationId);
+      res.status(200).send({
+        status: 'SUCCESS',
+        message: response,
+      });
+    }
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in deleting Draft application',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
 
 /**
  * Get Column Names
@@ -835,6 +879,74 @@ router.get('/:entityId', async function (req, res) {
   } catch (e) {
     Logger.log.error(
       'Error occurred while getting specific entity applications ',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Download Specific Entity's Application
+ */
+router.get('/download/:entityId', async function (req, res) {
+  if (
+    !req.params.entityId ||
+    !req.query.listFor ||
+    !mongoose.Types.ObjectId.isValid(req.params.entityId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const queryFilter = {
+      isDeleted: false,
+    };
+    switch (req.query.listFor) {
+      case 'debtor-application':
+        queryFilter.debtorId = mongoose.Types.ObjectId(req.params.entityId);
+        queryFilter.clientId = mongoose.Types.ObjectId(req.user.clientId);
+        break;
+      default:
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'BAD_REQUEST',
+          message: 'Please pass correct fields',
+        });
+    }
+    const module = StaticFile.modules.find((i) => i.name === req.query.listFor);
+    const applicationColumn = req.user.manageColumns.find(
+      (i) => i.moduleName === req.query.listFor,
+    );
+    const response = await getApplicationList({
+      hasFullAccess: false,
+      applicationColumn: applicationColumn.columns,
+      isForRisk: false,
+      requestedQuery: req.query,
+      queryFilter: queryFilter,
+      moduleColumn: module.manageColumns,
+    });
+    const excelData = await generateExcel({
+      data: response.docs,
+      reportFor: 'Application List',
+      headers: response.headers,
+      filter: response.filterArray,
+    });
+    const fileName = new Date().getTime() + '.xlsx';
+    res.header(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader('Content-Disposition', 'attachment; filename=' + fileName);
+    res.status(200).send(excelData);
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred while downloading specific entity applications ',
       e.message || e,
     );
     res.status(500).send({

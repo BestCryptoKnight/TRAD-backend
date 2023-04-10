@@ -12,6 +12,7 @@ const config = require('../config');
 const Logger = require('./../services/logger');
 const forgotPasswordAdminTemplate = require('./../static-files/forgotPassword.risk.template');
 const newAdminTemplate = require('./../static-files/newUser.risk.template');
+const claimCreatedTemplate = require('./../static-files/claimCreated.client.template');
 const newClientTemplate = require('./../static-files/newUser.client.template');
 const forgotPasswordClientTemplate = require('../static-files/forgotPassword.client.template.js');
 const decisionLetterClientTemplate = require('../static-files/decisionLetter.client.template');
@@ -39,6 +40,15 @@ const sendMail = ({ toAddress, subject, text, html, mailFor, attachments }) => {
       subject: subject,
     };
     switch (mailFor) {
+      case 'claimCreated':
+        mailBody.html = claimCreatedTemplate({
+          clientName: text.name,
+          nameOfServiceManagerOrRiskAnalyst:
+            text.nameOfServiceManagerOrRiskAnalyst,
+          claimLink: text.claimLink,
+          claimName: text.claimName,
+        });
+        break;
       case 'newAdminUser':
         mailBody.html = newAdminTemplate({
           name: text.name,

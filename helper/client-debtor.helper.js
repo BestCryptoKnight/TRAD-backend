@@ -278,7 +278,7 @@ const getClientCreditLimit = async ({
     if (isForDownload) {
       let endorsedLimits = 0;
       let creditChecks = 0;
-
+      let creditChecksNZ = 0;
       response.forEach((debtor) => {
         if (debtor?.activeApplicationId?.limitType) {
           debtor.limitType =
@@ -287,6 +287,8 @@ const getClientCreditLimit = async ({
             ? endorsedLimits++
             : debtor.activeApplicationId.limitType === 'CREDIT_CHECK'
             ? creditChecks++
+            : debtor.activeApplicationId.limitType === 'CREDIT_CHECK_NZ'
+            ? creditChecksNZ++
             : null;
         }
         debtor.approvalOrDecliningDate =
@@ -316,6 +318,7 @@ const getClientCreditLimit = async ({
           type: 'string',
         },
         { label: 'Credit Checks', value: creditChecks, type: 'string' },
+        { label: 'Credit Checks NZ', value: creditChecksNZ, type: 'string' },
       );
       return {
         docs: response,
@@ -862,6 +865,14 @@ const downloadDecisionLetter = async ({ creditLimitId }) => {
         response.registrationNumber =
           clientDebtor?.debtorId?.registrationNumber;
       }
+      const application = await Application.findOne({
+        _id: clientDebtor.activeApplicationId._id,
+      });
+      if (application.limitType === 'CREDIT_CHECK_NZ') {
+        response.isCreditCheckOrNZ = 'Credit Check NZ';
+      } else {
+        response.isCreditCheckOrNZ = 'Credit Check';
+      }
       bufferData = await generateDecisionLetter(response);
     }
     return {
@@ -888,7 +899,8 @@ const downloadDecisionLetterFromApplication = async ({ applicationId }) => {
       })
       .populate({
         path: 'debtorId',
-        select: 'entityName registrationNumber abn acn address tradingName',
+        select:
+          'entityName registrationNumber abn acn address tradingName limitType status',
       })
       .lean();
     let bufferData;
@@ -927,6 +939,11 @@ const downloadDecisionLetterFromApplication = async ({ applicationId }) => {
         response.acn = application?.debtorId?.acn;
       } else {
         response.registrationNumber = application?.debtorId?.registrationNumber;
+      }
+      if (application.limitType === 'Credit Check NZ') {
+        response.isCreditCheckOrNZ = 'Credit Check NZ';
+      } else {
+        response.isCreditCheckOrNZ = 'Credit Check';
       }
       bufferData = await generateDecisionLetter(response);
     }

@@ -3,9 +3,11 @@
  * */
 const mongoose = require('mongoose');
 const Client = mongoose.model('client');
+const User = mongoose.model('user');
 const FormData = require('form-data');
 const fs = require('fs');
 const Path = require('path');
+const MailHelper = require('./mailer.helper');
 
 /*
  * Local Imports
@@ -188,8 +190,8 @@ const addClaimInRSS = async ({
       'dateofoldestinvoice',
       'instalmentamounts',
       'frequency',
-      'finalpaymentdate',
       'repaymentplanlength',
+      'claimsmanager',
     ];
     const claim = {};
     const query =
@@ -197,7 +199,7 @@ const addClaimInRSS = async ({
         ? { _id: clientId }
         : { _id: requestBody.accountid };
     const client = await Client.findOne(query)
-      .select('_id crmClientId name serviceManagerId')
+      .select('_id crmClientId name serviceManagerId riskAnalystId')
       .lean();
     requestBody.accountid = client?.crmClientId;
     keys.map((key) => {
@@ -246,11 +248,43 @@ const addClaimInRSS = async ({
           userId: notification.userId,
         });
       }
+      let idOfServiceManagerOrRiskAnalyst;
+      if (
+        client.hasOwnProperty('serviceManagerId') &&
+        client.serviceManagerId !== null
+      ) {
+        idOfServiceManagerOrRiskAnalyst = client.serviceManagerId;
+      } else if (
+        client.hasOwnProperty('riskAnalystId') &&
+        client.riskAnalystId !== null
+      ) {
+        idOfServiceManagerOrRiskAnalyst = client.riskAnalystId;
+      }
+      if (idOfServiceManagerOrRiskAnalyst) {
+        const user = await User.findOne({
+          _id: idOfServiceManagerOrRiskAnalyst,
+        })
+          .select('name email')
+          .lean();
+        let mailObj = {
+          toAddress: [user.email],
+          subject: `New Claim Notification - ${client.name}`,
+          text: {
+            name: client.name,
+            nameOfServiceManagerOrRiskAnalyst: user.name,
+            claimLink: process.env.FRONTEND_ADMIN_URL + 'claims',
+            claimName: requestBody.name,
+          },
+          mailFor: 'claimCreated',
+        };
+        await MailHelper.sendMail(mailObj);
+      }
     }
     return response;
   } catch (e) {
     Logger.log.error('Error occurred while adding claim in RSS');
     Logger.log.error(e);
+    return Promise.reject(e);
   }
 };
 

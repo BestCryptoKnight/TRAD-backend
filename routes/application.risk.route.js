@@ -18,6 +18,7 @@ const config = require('./../config');
 const StaticFile = require('./../static-files/moduleColumn');
 const {
   getApplicationList,
+  deleteDraftApplication,
   storeCompanyDetails,
   storePartnerDetails,
   storeCreditLimitDetails,
@@ -60,6 +61,49 @@ const { getUserList } = require('./../helper/user.helper');
 const {
   downloadDecisionLetterFromApplication,
 } = require('./../helper/client-debtor.helper');
+
+/**
+ * Delete Draft application and its saved documents
+ */
+router.delete('/:applicationId', async function (req, res) {
+  if (!req.params.applicationId) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const application = await Application.findOne({
+      _id: req.params.applicationId,
+    });
+    if (!application || (application && application?.status !== 'DRAFT')) {
+      let message = !application
+        ? 'Application not found.'
+        : 'Application is not in draft.';
+      Logger.log.error('Error occurred in deleting Draft application', message);
+      res.status(404).send({
+        status: 'ERROR',
+        message: message,
+      });
+    } else {
+      let response = await deleteDraftApplication(req.params.applicationId);
+      res.status(200).send({
+        status: 'SUCCESS',
+        message: response,
+      });
+    }
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in deleting Draft application',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
 
 /**
  * Get Column Names
@@ -751,6 +795,16 @@ router.get('/details/:applicationId', async function (req, res) {
         },
       ];
     }
+    if (
+      response.applicationStatus &&
+      response.status.value !== 'REVIEW_SURRENDERED'
+    ) {
+      response.applicationStatus = response.applicationStatus.filter((v) => {
+        if (v.value !== 'REVIEW_SURRENDERED') {
+          return v;
+        }
+      });
+    }
     res.status(200).send({
       status: 'SUCCESS',
       data: response,
@@ -1072,6 +1126,106 @@ router.get('/:entityId', async function (req, res) {
 });
 
 /**
+ * download Specific Entity's Application
+ */
+router.get('/download/:entityId', async function (req, res) {
+  if (
+    !req.params.entityId ||
+    !req.query.listFor ||
+    !mongoose.Types.ObjectId.isValid(req.params.entityId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const queryFilter = {
+      isDeleted: false,
+    };
+    switch (req.query.listFor) {
+      case 'client-application':
+        queryFilter.clientId = mongoose.Types.ObjectId(req.params.entityId);
+        break;
+      case 'debtor-application':
+        queryFilter.debtorId = mongoose.Types.ObjectId(req.params.entityId);
+        break;
+      default:
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'BAD_REQUEST',
+          message: 'Please pass correct fields',
+        });
+    }
+    const module = StaticFile.modules.find((i) => i.name === req.query.listFor);
+    const applicationColumn = req.user.manageColumns.find(
+      (i) => i.moduleName === req.query.listFor,
+    );
+
+    const clientModuleAccess = req.user.moduleAccess
+      .filter((userModule) => userModule.name === 'client')
+      .shift();
+    const hasOnlyReadAccessForClientModule =
+      clientModuleAccess.accessTypes.length === 0;
+
+    const debtorModuleAccess = req.user.moduleAccess
+      .filter((userModule) => userModule.name === 'debtor')
+      .shift();
+    const hasOnlyReadAccessForDebtorModule =
+      debtorModuleAccess.accessTypes.length === 0;
+
+    const hasFullAccess = req.accessTypes.indexOf('full-access') !== -1;
+    const response = await getApplicationList({
+      hasFullAccess: hasFullAccess,
+      applicationColumn: applicationColumn.columns,
+      isForRisk: true,
+      requestedQuery: req.query,
+      queryFilter: queryFilter,
+      moduleColumn: module.manageColumns,
+      userId: req.user._id,
+      hasOnlyReadAccessForClientModule,
+      hasOnlyReadAccessForDebtorModule,
+    });
+    let sendingResponse = response.docs;
+    if (response?.docs[0]?.debtorId?.hasOwnProperty('value')) {
+      sendingResponse = response.docs.map((v) => {
+        v.debtorId = v.debtorId.value;
+        return v;
+      });
+    }
+    if (response?.docs[0]?.clientId?.hasOwnProperty('value')) {
+      sendingResponse = response.docs.map((v) => {
+        v.clientId = v.clientId.value;
+        return v;
+      });
+    }
+    const excelData = await generateExcel({
+      data: sendingResponse,
+      reportFor: 'Application List',
+      headers: response.headers,
+      filter: response.filterArray,
+    });
+    const fileName = new Date().getTime() + '.xlsx';
+    res.header(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader('Content-Disposition', 'attachment; filename=' + fileName);
+    res.status(200).send(excelData);
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred while downloading specific entity applications ',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
  * Update Column Names
  */
 router.put('/column-name', async function (req, res) {
@@ -1340,11 +1494,62 @@ router.put('/:applicationId', async function (req, res) {
             'Automation is in process. Please change the status after some time.',
         });
       }
+      if (req.body.comments) {
+        applicationUpdate.comments = req.body.comments;
+      }
       let status = req.body.status;
       let approvedAmount = 0;
       let isEndorsedLimit = false;
       applicationUpdate.status = req.body.status;
-      if (req.body.status === 'APPROVED') {
+      if (
+        (req.body.status === 'APPROVED' || req.body.status === 'DECLINED') &&
+        application.status === 'REVIEW_SURRENDERED'
+      ) {
+        applicationUpdate.approvalOrDecliningDate = new Date();
+        const surrenderClientDebtor = await ClientDebtor.findOne({
+          _id: application.clientDebtorId,
+        });
+        await ClientDebtor.updateOne(
+          { _id: application.clientDebtorId },
+          {
+            creditLimit: 0,
+            isActive: false,
+            status: 'SURRENDERED',
+            updatedAt: new Date(),
+          },
+        );
+        await addAuditLog({
+          entityType: 'credit-limit',
+          entityRefId: application.clientDebtorId,
+          actionType: 'edit',
+          userType: 'user',
+          userRefId: req.user._id,
+          logDescription: `A credit limit of ${surrenderClientDebtor?.creditLimit} is surrendered by ${req.user.name}`,
+        });
+        const hasActiveCreditLimit = await checkForActiveCreditLimit({
+          debtorId: surrenderClientDebtor?.debtorId,
+        });
+        if (!hasActiveCreditLimit) {
+          //TODO uncomment to remove entity from alert profile
+          if (surrenderClientDebtor?.debtorId) {
+            checkForEntityInProfile({
+              entityId: surrenderClientDebtor.debtorId,
+              action: 'remove',
+              entityType: 'debtor',
+            });
+          }
+        }
+      }
+      if (
+        (req.body.status === 'CANCELLED' || req.body.status === 'WITHDRAWN') &&
+        application.status === 'REVIEW_SURRENDERED'
+      ) {
+        applicationUpdate.approvalOrDecliningDate = new Date();
+      }
+      if (
+        req.body.status === 'APPROVED' &&
+        application.status !== 'REVIEW_SURRENDERED'
+      ) {
         if (!req.body.creditLimit || !/^\d+$/.test(req.body.creditLimit)) {
           return res.status(400).send({
             status: 'ERROR',
@@ -1391,12 +1596,18 @@ router.put('/:applicationId', async function (req, res) {
           update,
         );
       } else if (
-        req.body.status === 'DECLINED' ||
-        req.body.status === 'CANCELLED' ||
-        req.body.status === 'WITHDRAWN'
+        (req.body.status === 'DECLINED' ||
+          req.body.status === 'CANCELLED' ||
+          req.body.status === 'WITHDRAWN') &&
+        application.status !== 'REVIEW_SURRENDERED'
       ) {
         applicationUpdate.approvalOrDecliningDate = new Date();
         if (req.body.status === 'DECLINED') {
+          const date = new Date();
+          applicationUpdate.approvalOrDecliningDate = new Date();
+          let expiryDate = new Date(date.setMonth(date.getMonth() + 12));
+          expiryDate = new Date(expiryDate.setDate(expiryDate.getDate() - 1));
+          applicationUpdate.expiryDate = application?.expiryDate || expiryDate;
           applicationUpdate.acceptedAmount = 0;
           await ClientDebtor.updateOne(
             { _id: application.clientDebtorId },
@@ -1404,6 +1615,7 @@ router.put('/:applicationId', async function (req, res) {
               isFromOldSystem: false,
               creditLimit: 0,
               status: 'DECLINED',
+              expiryDate: applicationUpdate.expiryDate,
               activeApplicationId: application._id,
               isActive: true,
             },
@@ -1472,8 +1684,23 @@ router.put('/:applicationId', async function (req, res) {
             });
           }
         }
+        if (application?.limitType === 'CREDIT_CHECK_NZ') {
+          //TODO uncomment to send decision letter
+          if (config.mailer.isForProduction === 'true') {
+            sendDecisionLetter({
+              reason: req.body.comments || '',
+              status,
+              approvedAmount,
+              applicationId: application._id,
+              isCreditCheckNZ: true,
+            });
+          }
+        }
       }
-      if (req.body.status === 'DECLINED') {
+      if (
+        req.body.status === 'DECLINED' &&
+        application.status !== 'REVIEW_SURRENDERED'
+      ) {
         const hasActiveCreditLimit = await checkForActiveCreditLimit({
           debtorId: application?.debtorId,
         });

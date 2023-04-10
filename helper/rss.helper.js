@@ -15,6 +15,31 @@ const Logger = require('../services/logger');
 const { addAuditLog } = require('./audit-log.helper');
 
 /*
+Get Claims Manager List
+ */
+const getClaimsManagerList = async ({ liveValue = 1, limitValue = 100 }) => {
+  try {
+    const url = `https://apiv4.reallysimplesystems.com/users?q={"live":${liveValue}}&limit=${limitValue}`;
+    const organization = await Organization.findOne({ isDeleted: false })
+      .select({ 'integration.rss': 1 })
+      .lean();
+    const options = {
+      method: 'GET',
+      url: url,
+      headers: {
+        Authorization: 'Bearer ' + organization.integration.rss.accessToken,
+      },
+    };
+    const { data } = await axios(options);
+    return data;
+  } catch (e) {
+    Logger.log.error('Error occurred in get Claims Manager List');
+    Logger.log.error(e.message || e);
+    return Promise.reject(Error('Error in fetching Claim Managers'));
+  }
+};
+
+/*
 Get Client List
  */
 const getClients = async ({ searchKeyword }) => {
@@ -583,19 +608,17 @@ const fetchInsurerDetails = async ({
 }) => {
   try {
     let searchQuery = underwriterName;
-    let [insurer, data] = await Promise.all([
+    let [insurer] = await Promise.all([
       Insurer.findOne({
         name: { $regex: underwriterName, $options: 'i' },
       }),
-      getInsurers({ searchKeyword: searchQuery }),
     ]);
     //TODO remove after changes are done from RSS
-    if (!insurer && !data) {
+    if (!insurer) {
       const words = underwriterName.split(' ');
       const regex = words.map(function (e) {
         return new RegExp(e, 'i');
       });
-      searchQuery = { $in: words };
       insurer = await Insurer.findOne({
         name: {
           $in: regex,
@@ -656,7 +679,9 @@ const fetchInsurerDetails = async ({
       }
       return insurer;
     } else {
+      let data = await getInsurers({ searchKeyword: searchQuery });
       if (!data) {
+        searchQuery = { $in: words };
         data = await getInsurers({ searchKeyword: searchQuery });
       }
       let promiseArr = [];
@@ -836,6 +861,7 @@ const addClaimDetail = async ({ claim }) => {
   } catch (e) {
     Logger.log.error('Error occurred in add claim details in RSS');
     Logger.log.error(e.message || e);
+    return Promise.reject(Error('Error occurred in add claim details in RSS'));
   }
 };
 
@@ -921,6 +947,7 @@ const downloadDocument = async ({ documentId }) => {
 };
 
 module.exports = {
+  getClaimsManagerList,
   getClients,
   getInsurers,
   getClientById: getClientById,

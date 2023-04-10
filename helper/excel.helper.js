@@ -12,14 +12,14 @@ const generateExcel = ({ data, reportFor, headers, filter, title }) => {
     const worksheet = workbook.addWorksheet(reportFor);
 
     const base64Data = await getBase64(
-      `${config.staticServing.bucketURL}static-files/mail-images/tcr-logo.png`,
+      `${config.staticServing.bucketURL}static-files/mail-images/psc-trad.png`,
     );
     const image = workbook.addImage({
       base64: base64Data,
       extension: 'png',
     });
     worksheet.addImage(image, {
-      ext: { width: headers.length <= 2 ? 139 : 170, height: 39 },
+      ext: { width: headers.length <= 2 ? 269 : 300, height: 40 },
     });
 
     const currentDate = new Date();
@@ -38,7 +38,7 @@ const generateExcel = ({ data, reportFor, headers, filter, title }) => {
     const row = worksheet.addRow([
       title ? `${title}: ${reportFor}` : `${reportFor}`,
     ]);
-    row.height = 40;
+    row.height = 30;
     let date;
     for (let i = 0; i <= filter.length; i++) {
       if (filter[i]) {
@@ -486,7 +486,7 @@ const addColumnsForCreditLimitList = async ({
     worksheet.getColumn(9).width = 25;
     worksheet.getColumn(10).width = 25;
     worksheet.getColumn(11).width = 20;
-    worksheet.getColumn(12).width = 20;
+    worksheet.getColumn(12).width = 70;
     worksheet.getColumn(13).width = 40;
 
     worksheet.addRow();
@@ -588,6 +588,7 @@ const addDataForTable = ({ data, worksheet, headers }) => {
       right: { style: 'thin', color: { argb: 'FF666666' } },
     };
     let date;
+    let value;
     for (let i = 0; i < data.length; i++) {
       getRowInsert = worksheet.getRow(newRowNumber);
       for (let j = 0; j <= headers.length; j++) {
@@ -601,7 +602,11 @@ const addDataForTable = ({ data, worksheet, headers }) => {
               '/' +
               date.getFullYear();
           }
-          if (headers[j]['type'] === 'amount' && data[i][headers[j]['name']]) {
+          value = data[i][headers[j]['name']];
+          if (data[i][headers[j]['name']] === 0) {
+            value = true;
+          }
+          if (headers[j]['type'] === 'amount' && value) {
             data[i][headers[j]['name']] =
               '$' + numberWithCommas(data[i][headers[j]['name']]);
           }
@@ -611,6 +616,7 @@ const addDataForTable = ({ data, worksheet, headers }) => {
             getRowInsert.getCell(j + 1).alignment = {
               vertical: 'middle',
               horizontal: 'left',
+              wrapText: true,
             };
           }
         }

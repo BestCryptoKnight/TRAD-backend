@@ -1029,6 +1029,10 @@
     {
       "value": "AWAITING_INFORMATION",
       "label": "Awaiting Information"
+    },
+    {
+      "value": "REVIEW_SURRENDERED",
+      "label": "Review Surrendered"
     }
   ],
   "countryList": [
@@ -3250,6 +3254,10 @@
     {
       "name": "Credit Check",
       "_id": "CREDIT_CHECK"
+    },
+    {
+      "name": "Credit Check NZ",
+      "_id": "CREDIT_CHECK_NZ"
     },
     {
       "name": "Health Check",
