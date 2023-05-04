@@ -2294,6 +2294,7 @@ const getAlertReport = async ({
   userId,
   reportColumn,
   requestedQuery,
+  isForDownload = false
 }) => {
   try {
     const queryFilter = {};
@@ -2305,6 +2306,7 @@ const getAlertReport = async ({
       isDeleted: false,
     };
     const mapClientNames = {};
+    const filterArray = [];
 
     reportColumn.push('alertId');
     const isDescriptionFieldSelected = reportColumn.includes('description');
@@ -2441,6 +2443,8 @@ const getAlertReport = async ({
           },
         },
       };
+
+      
       // fields.push(['debtorDetails._id',1])
     }
 
@@ -2489,8 +2493,12 @@ const getAlertReport = async ({
         alert.description = StaticData.AlertList[alert.alertId].description;
       }
       if (isClientFieldSelected) {
-        alert.clientName =
+        if(alert.entityId) {
+          alert.clientName = mapClientNames[alert.entityId]?.join(', ') || '';
+        } else {
+          alert.clientName =
           mapClientNames[alert.debtorDetails?._id]?.join(', ') || '';
+        }
       }
       if (isABNFieldSelected) {
         alert.abn = alert.debtorDetails?.abn;
@@ -2499,12 +2507,16 @@ const getAlertReport = async ({
         alert.acn = alert.debtorDetails?.acn;
       }
       if (isDebtorFieldSelected) {
-        alert.debtorName = alert.debtorDetails?.entityName;
+        if(alert.companyName) {
+          alert.debtorName = alert.companyName;
+        } else {
+          alert.debtorName = alert.debtorDetails?.entityName;
+        }
       }
       delete alert.alertId;
       delete alert.debtorDetails;
     });
-    return { response, total };
+    return { response, total, filterArray };
   } catch (e) {
     Logger.log.error('Error occurred in get alert report');
     Logger.log.error(e.message || e);
