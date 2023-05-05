@@ -80,6 +80,9 @@ const generateExcel = ({ data, reportFor, headers, filter, title }) => {
       case 'Limit List':
         addColumnsForLimitList({ data, worksheet, headers, filter });
         break;
+      case 'Alert Report':
+        addColumnsForAlertList({ data, worksheet, headers, filter });
+        break;
       case 'Pending Application':
         addColumnsForPendingApplicationList({
           data,
@@ -146,7 +149,7 @@ const generateExcel = ({ data, reportFor, headers, filter, title }) => {
           headers,
           filter,
         });
-        break;
+        break;      
     }
     workbook.xlsx.writeBuffer().then((buffer) => {
       return resolve(buffer);
@@ -247,6 +250,30 @@ const addColumnsForLimitList = async ({ data, worksheet, headers, filter }) => {
     await addDataForTable({ data, headers, worksheet });
   } catch (e) {
     Logger.log.error('Error occurred in add limit list data', e.message || e);
+  }
+};
+
+const addColumnsForAlertList = async ({ data, worksheet, headers, filter }) => {
+  try {
+    worksheet.mergeCells('A1:I1');
+    for (let i = 0; i <= filter.length; i++) {
+      if (filter[i]) {
+        worksheet.mergeCells(`A${i + 2}:I${i + 2}`);
+      }
+    }
+    worksheet.getColumn(1).width = 40;
+    worksheet.getColumn(2).width = 40;
+    worksheet.getColumn(3).width = 40;
+    worksheet.getColumn(4).width = 25;
+    worksheet.getColumn(5).width = 25;
+    worksheet.getColumn(6).width = 25;
+    worksheet.addRow();
+    worksheet.mergeCells(
+      `A${worksheet.lastRow.number}:I${worksheet.lastRow.number}`,
+    );
+    await addDataForTable({ data, headers, worksheet });
+  } catch (e) {
+    Logger.log.error('Error occurred in add alert report data', e.message || e);
   }
 };
 
