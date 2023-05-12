@@ -1260,6 +1260,21 @@
         },
         { "name": "expiryDate", "label": "Policy Expiry Date", "type": "date" },
         {
+          "name": "nzCreditChecks",
+          "label": "NZ Credit Checks",
+          "type": "number"
+        },
+        {
+          "name": "healthChecks",
+          "label": "Health Checks",
+          "type": "number"
+        },
+        {
+          "name": "alerts247",
+          "label": "24/7 Alerts",
+          "type": "number"
+        },
+        {
           "name": "riskAnalystId",
           "label": "Risk Analyst",
           "type": "string"

@@ -1508,7 +1508,7 @@ const getUsageReport = async ({
           expiryDate: { $gt: new Date() },
         })
           .select(
-            '_id clientId product policyNumber creditChecks inceptionDate expiryDate',
+            '_id clientId product policyNumber creditChecks alerts247 healthChecks nzCreditChecks inceptionDate expiryDate',
           )
           .lean(),
         Policy.find({
@@ -1521,7 +1521,7 @@ const getUsageReport = async ({
           expiryDate: { $gt: new Date() },
         })
           .select(
-            '_id clientId product policyNumber creditChecks inceptionDate expiryDate',
+            '_id clientId product policyNumber creditChecks alerts247 healthChecks nzCreditChecks inceptionDate expiryDate',
           )
           .lean(),
       ]);
@@ -1533,6 +1533,15 @@ const getUsageReport = async ({
           policies[policy.clientId]['creditChecks'] = policy['creditChecks']
             ? policy['creditChecks']
             : policies[policy.clientId]['creditChecks'];
+          policies[policy.clientId]['alerts247'] = policy['alerts247']
+            ? policy['alerts247']
+            : policies[policy.clientId]['alerts247'];
+          policies[policy.clientId]['healthChecks'] = policy['healthChecks']
+            ? policy['healthChecks']
+            : policies[policy.clientId]['healthChecks'];
+          policies[policy.clientId]['nzCreditChecks'] = policy['nzCreditChecks']
+            ? policy['nzCreditChecks']
+            : policies[policy.clientId]['nzCreditChecks'];
           if (policy['policyNumber']) {
             policies[policy.clientId]['otherPolicyNumber'] =
               policy['policyNumber'];
@@ -1583,6 +1592,9 @@ const getUsageReport = async ({
     );
     const isInceptionDateSelected = reportColumn.includes('inceptionDate');
     const isExpiryDateSelected = reportColumn.includes('expiryDate');
+    const isCreditCheckNZ = reportColumn.includes('nzCreditChecks');
+    const isHealthChecks = reportColumn.includes('healthChecks');
+    const isAlerts247 = reportColumn.includes('alerts247');
     response.forEach((client) => {
       if (client.insurerId) {
         client.insurerId =
@@ -1625,6 +1637,24 @@ const getUsageReport = async ({
             ? policies[client._id]['creditChecks']
             : 0;
       }
+      if (isCreditCheckNZ) {
+        client.nzCreditChecks =
+          policies[client._id] && policies[client._id]['nzCreditChecks']
+            ? policies[client._id]['nzCreditChecks']
+            : 0;
+      }
+      if (isHealthChecks) {
+        client.healthChecks =
+          policies[client._id] && policies[client._id]['healthChecks']
+            ? policies[client._id]['healthChecks']
+            : 0;
+      }
+      if (isAlerts247) {
+        client.alerts247 =
+          policies[client._id] && policies[client._id]['alerts247']
+            ? policies[client._id]['alerts247']
+            : 0;
+      }
       if (isInceptionDateSelected) {
         client.inceptionDate =
           policies[client._id] && policies[client._id]['inceptionDate']
@@ -1662,6 +1692,7 @@ const getUsagePerClientReport = async ({
       status: { $exists: true, $in: ['APPROVED', 'DECLINED'] },
     };
     let query = [];
+    const aggregationQuery = [];
     const facetQuery = [];
     const filterArray = [];
     if (requestedQuery.clientIds) {
@@ -1736,6 +1767,8 @@ const getUsagePerClientReport = async ({
       });
     }
 
+    aggregationQuery.push({ $match: queryFilter });
+
     if (
       reportColumn.includes('applicationId') ||
       reportColumn.includes('status') ||
@@ -1749,7 +1782,7 @@ const getUsagePerClientReport = async ({
       requestedQuery.limitType
     ) {
       reportColumn.push('activeApplicationId');
-      facetQuery.push({
+      aggregationQuery.push({
         $lookup: {
           from: 'applications',
           localField: 'activeApplicationId',
@@ -1757,22 +1790,49 @@ const getUsagePerClientReport = async ({
           as: 'activeApplicationId',
         },
       });
-    }
 
-    if (requestedQuery.limitType) {
-      facetQuery.push({
-        $match: {
-          'activeApplicationId.limitType': {
-            $in: requestedQuery.limitType.split(','),
+      if (requestedQuery.startDate || requestedQuery.endDate) {
+        if(requestedQuery.startDate && requestedQuery.endDate)
+          aggregationQuery.push({
+            $match: {
+              'activeApplicationId.approvalOrDecliningDate': {
+                '$gte': new Date(requestedQuery.startDate),
+                '$lte': new Date(requestedQuery.endDate)
+              },
+            },
+          });
+        else if(requestedQuery.startDate)
+          aggregationQuery.push({
+            $match: {
+              'activeApplicationId.approvalOrDecliningDate': {
+                '$gte': new Date(requestedQuery.startDate)
+              },
+            },
+          });
+        else if(requestedQuery.endDate)
+          aggregationQuery.push({
+            $match: {
+              'activeApplicationId.approvalOrDecliningDate': {
+                '$lte': new Date(requestedQuery.endDate)
+              },
+            },
+          });
+      }
+      if (requestedQuery.limitType) {
+        aggregationQuery.push({
+          $match: {
+            'activeApplicationId.limitType': {
+              $in: requestedQuery.limitType.split(','),
+            },
           },
-        },
-      });
-      if (isForDownload) {
-        filterArray.push({
-          label: 'Limit Type',
-          value: requestedQuery.limitType,
-          type: 'string',
         });
+        if (isForDownload) {
+            filterArray.push({
+              label: 'Limit Type',
+              value: requestedQuery.limitType,
+              type: 'string',
+            });
+          }
       }
     }
 
@@ -1808,6 +1868,7 @@ const getUsagePerClientReport = async ({
         return obj;
       }, {}),
     });
+    query.push(...aggregationQuery);
     if (requestedQuery.page && requestedQuery.limit) {
       query.push({
         $facet: {
@@ -1830,7 +1891,7 @@ const getUsagePerClientReport = async ({
     } else if (facetQuery.length !== 0) {
       query = query.concat(facetQuery);
     }
-    query.unshift({ $match: queryFilter });
+
     const clientDebtors = await ClientDebtor.aggregate(query).allowDiskUse(
       true,
     );
