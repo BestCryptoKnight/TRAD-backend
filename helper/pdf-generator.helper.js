@@ -125,12 +125,12 @@ const generateDecisionLetter = async ({
       const companyNumbers = {};
       if (acn) {
         companyNumbers.column2 = `${
-          country === 'AUS' ? 'ACN:' : 'NCN:'
+          isCreditCheckOrNZ === 'Credit Check' ? 'ACN:' : 'NCN:'
         } ${acn}`;
       }
       if (abn) {
         companyNumbers.column1 = `${
-          country === 'AUS' ? 'ABN:' : 'NZBN:'
+          isCreditCheckOrNZ === 'Credit Check' ? 'ABN:' : 'NZBN:'
         } ${abn}`;
       }
       tableData.push(companyNumbers);
