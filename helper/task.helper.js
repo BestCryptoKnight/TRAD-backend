@@ -101,6 +101,9 @@ const aggregationQuery = async ({
     let queryFilter = {
       isDeleted: false,
       isCompleted: false,
+      entityType: {
+        $nin: ['application'],
+      },
     };
     const filterArray = [];
     const query = [];
@@ -247,16 +250,28 @@ const aggregationQuery = async ({
       aggregationQuery.push({
         $match: {
           'assigneeId._id': mongoose.Types.ObjectId(requestedQuery.assigneeId),
+          entityType: {
+            $nin: ['application'],
+          },
         },
       });
     } else if (isForRisk && !requestedQuery.requestedEntityId) {
       if (requestedQuery.assigneeId !== 'all_user') {
         aggregationQuery.push({
           $match: {
-            $or: [
-              { assigneeId: mongoose.Types.ObjectId(userId) },
+            $and: [
               {
-                'assigneeId._id': mongoose.Types.ObjectId(userId),
+                $or: [
+                  { assigneeId: mongoose.Types.ObjectId(userId) },
+                  {
+                    'assigneeId._id': mongoose.Types.ObjectId(userId),
+                  },
+                ],
+              },
+              {
+                entityType: {
+                  $nin: ['application'],
+                },
               },
             ],
           },
@@ -474,6 +489,9 @@ const aggregationQuery = async ({
       query.push({
         $match: {
           'createdById.name': requestedQuery.createdById,
+          entityType: {
+            $nin: ['application'],
+          },
         },
       });
     }
