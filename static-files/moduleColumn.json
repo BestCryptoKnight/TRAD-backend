@@ -3,17 +3,41 @@
     {
       "name": "audit-logs",
       "manageColumns": [
-        { "name": "entityType", "label": "Module", "type": "string" },
+        {
+          "name": "entityType",
+          "label": "Module",
+          "type": "string"
+        },
         {
           "name": "logDescription",
           "label": "Log Description",
           "type": "string"
         },
-        { "name": "userType", "label": "User Type", "type": "string" },
-        { "name": "userRefId", "label": "User Name", "type": "string" },
-        { "name": "entityRefId", "label": "Entity Name", "type": "string" },
-        { "name": "actionType", "label": "Action Type", "type": "string" },
-        { "name": "createdAt", "label": "Created Date", "type": "date" }
+        {
+          "name": "userType",
+          "label": "User Type",
+          "type": "string"
+        },
+        {
+          "name": "userRefId",
+          "label": "User Name",
+          "type": "string"
+        },
+        {
+          "name": "entityRefId",
+          "label": "Entity Name",
+          "type": "string"
+        },
+        {
+          "name": "actionType",
+          "label": "Action Type",
+          "type": "string"
+        },
+        {
+          "name": "createdAt",
+          "label": "Created Date",
+          "type": "date"
+        }
       ],
       "defaultColumns": [
         "entityType",
@@ -40,15 +64,25 @@
           "name": "clientId",
           "label": "Client Name",
           "type": "modal",
-          "request": { "method": "GET", "url": "client/details" }
+          "request": {
+            "method": "GET",
+            "url": "client/details"
+          }
         },
         {
           "name": "debtorId",
           "label": "Debtor Name",
           "type": "modal",
-          "request": { "method": "GET", "url": "debtor/drawer" }
+          "request": {
+            "method": "GET",
+            "url": "debtor/drawer"
+          }
         },
-        { "name": "entityType", "label": "Entity Type", "type": "string" },
+        {
+          "name": "entityType",
+          "label": "Entity Type",
+          "type": "string"
+        },
         {
           "name": "creditLimit",
           "label": "Requested Amount",
@@ -59,14 +93,26 @@
           "label": "Approved Amount",
           "type": "amount"
         },
-        { "name": "requestDate", "label": "Requested Date", "type": "date" },
+        {
+          "name": "requestDate",
+          "label": "Requested Date",
+          "type": "date"
+        },
         {
           "name": "approvalOrDecliningDate",
           "label": "Approval Date",
           "type": "date"
         },
-        { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
-        { "name": "createdById", "label": "Submitted By", "type": "string" },
+        {
+          "name": "expiryDate",
+          "label": "Expiry Date",
+          "type": "date"
+        },
+        {
+          "name": "createdById",
+          "label": "Submitted By",
+          "type": "string"
+        },
         {
           "name": "outstandingAmount",
           "label": "Outstanding Amount",
@@ -107,9 +153,21 @@
           "label": "Passed Overdue Details",
           "type": "string"
         },
-        { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" },
-        { "name": "comments", "label": "Comments", "type": "string" },
+        {
+          "name": "createdAt",
+          "label": "Created Date",
+          "type": "date"
+        },
+        {
+          "name": "updatedAt",
+          "label": "Modified Date",
+          "type": "date"
+        },
+        {
+          "name": "comments",
+          "label": "Comments",
+          "type": "string"
+        },
         {
           "name": "delete",
           "label": "Delete",
@@ -133,16 +191,56 @@
     {
       "name": "application-task",
       "manageColumns": [
-        { "name": "priority", "label": "Priority", "type": "string" },
-        { "name": "description", "label": "Description", "type": "string" },
-        { "name": "comments", "label": "Comments", "type": "string" },
-        { "name": "entityType", "label": "Entity Type", "type": "string" },
-        { "name": "entityId", "label": "Entity Name", "type": "modal" },
-        { "name": "createdById", "label": "Created By", "type": "string" },
-        { "name": "assigneeId", "label": "Assignee", "type": "string" },
-        { "name": "dueDate", "label": "Due Date", "type": "date" },
-        { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+        {
+          "name": "priority",
+          "label": "Priority",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "label": "Description",
+          "type": "string"
+        },
+        {
+          "name": "comments",
+          "label": "Comments",
+          "type": "string"
+        },
+        {
+          "name": "entityType",
+          "label": "Entity Type",
+          "type": "string"
+        },
+        {
+          "name": "entityId",
+          "label": "Entity Name",
+          "type": "modal"
+        },
+        {
+          "name": "createdById",
+          "label": "Created By",
+          "type": "string"
+        },
+        {
+          "name": "assigneeId",
+          "label": "Assignee",
+          "type": "string"
+        },
+        {
+          "name": "dueDate",
+          "label": "Due Date",
+          "type": "date"
+        },
+        {
+          "name": "createdAt",
+          "label": "Created Date",
+          "type": "date"
+        },
+        {
+          "name": "updatedAt",
+          "label": "Modified Date",
+          "type": "date"
+        }
       ],
       "defaultColumns": [
         "priority",
@@ -156,8 +254,16 @@
     {
       "name": "client",
       "manageColumns": [
-        { "name": "clientCode", "label": "Client Code", "type": "string" },
-        { "name": "name", "label": "Name", "type": "string" },
+        {
+          "name": "clientCode",
+          "label": "Client Code",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "label": "Name",
+          "type": "string"
+        },
         {
           "name": "contactNumber",
           "label": "Contact Number",
@@ -173,28 +279,96 @@
           "label": "Service Manager",
           "type": "string"
         },
-        { "name": "insurerId", "label": "Insurer Name", "type": "string" },
-        { "name": "fullAddress", "label": "Full Address", "type": "string" },
-        { "name": "addressLine", "label": "Address Line", "type": "string" },
-        { "name": "city", "label": "City", "type": "string" },
-        { "name": "state", "label": "Country/State", "type": "string" },
-        { "name": "country", "label": "Country", "type": "string" },
-        { "name": "zipCode", "label": "Postcode/Zip", "type": "string" },
-        { "name": "website", "label": "Website", "type": "string" },
-        { "name": "sector", "label": "Sector", "type": "string" },
-        { "name": "abn", "label": "ABN/NZBN", "type": "string" },
-        { "name": "acn", "label": "ACN/NCN", "type": "string" },
-        { "name": "salesPerson", "label": "Sales Person", "type": "string" },
-        { "name": "referredBy", "label": "Referred By", "type": "string" },
-        { "name": "inceptionDate", "label": "Inception Date", "type": "date" },
-        { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
+        {
+          "name": "insurerId",
+          "label": "Insurer Name",
+          "type": "string"
+        },
+        {
+          "name": "fullAddress",
+          "label": "Full Address",
+          "type": "string"
+        },
+        {
+          "name": "addressLine",
+          "label": "Address Line",
+          "type": "string"
+        },
+        {
+          "name": "city",
+          "label": "City",
+          "type": "string"
+        },
+        {
+          "name": "state",
+          "label": "Country/State",
+          "type": "string"
+        },
+        {
+          "name": "country",
+          "label": "Country",
+          "type": "string"
+        },
+        {
+          "name": "zipCode",
+          "label": "Postcode/Zip",
+          "type": "string"
+        },
+        {
+          "name": "website",
+          "label": "Website",
+          "type": "string"
+        },
+        {
+          "name": "sector",
+          "label": "Sector",
+          "type": "string"
+        },
+        {
+          "name": "abn",
+          "label": "ABN/NZBN",
+          "type": "string"
+        },
+        {
+          "name": "acn",
+          "label": "ACN/NCN",
+          "type": "string"
+        },
+        {
+          "name": "salesPerson",
+          "label": "Sales Person",
+          "type": "string"
+        },
+        {
+          "name": "referredBy",
+          "label": "Referred By",
+          "type": "string"
+        },
+        {
+          "name": "inceptionDate",
+          "label": "Inception Date",
+          "type": "date"
+        },
+        {
+          "name": "expiryDate",
+          "label": "Expiry Date",
+          "type": "date"
+        },
         {
           "name": "isAutoApproveAllowed",
           "label": "AutoApprove Allowed",
           "type": "string"
         },
-        { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+        {
+          "name": "createdAt",
+          "label": "Created Date",
+          "type": "date"
+        },
+        {
+          "name": "updatedAt",
+          "label": "Modified Date",
+          "type": "date"
+        }
       ],
       "defaultColumns": [
         "clientCode",
@@ -214,36 +388,61 @@
           "name": "name",
           "label": "Name",
           "type": "modal",
-          "request": { "method": "GET", "url": "client/user-details" }
+          "request": {
+            "method": "GET",
+            "url": "client/user-details"
+          }
         },
         {
           "name": "contactNumber",
           "label": "Contact Number",
           "type": "string"
         },
-        { "name": "department", "label": "Department", "type": "string" },
+        {
+          "name": "department",
+          "label": "Department",
+          "type": "string"
+        },
         {
           "name": "hasPortalAccess",
           "label": "Portal Access",
           "type": "boolean",
           "isDisabled": false,
-          "request": { "method": "PUT", "url": "client/user" }
+          "request": {
+            "method": "PUT",
+            "url": "client/user"
+          }
         },
         {
           "name": "sendDecisionLetter",
           "label": "Decision Letter",
           "type": "boolean",
           "isDisabled": false,
-          "request": { "method": "PUT", "url": "client/user" }
+          "request": {
+            "method": "PUT",
+            "url": "client/user"
+          }
         },
         {
           "name": "hasLeftCompany",
           "label": "Left Company",
           "type": "string"
         },
-        { "name": "email", "label": "Email", "type": "string" },
-        { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+        {
+          "name": "email",
+          "label": "Email",
+          "type": "string"
+        },
+        {
+          "name": "createdAt",
+          "label": "Created Date",
+          "type": "date"
+        },
+        {
+          "name": "updatedAt",
+          "label": "Modified Date",
+          "type": "date"
+        }
       ],
       "defaultColumns": [
         "name",
@@ -260,14 +459,21 @@
           "name": "debtorId",
           "label": "Debtor Name",
           "type": "modal",
-          "request": { "method": "GET", "url": "debtor/drawer" }
+          "request": {
+            "method": "GET",
+            "url": "debtor/drawer"
+          }
         },
         {
           "name": "applicationId",
           "label": "Application Number",
           "type": "redirectLink"
         },
-        { "name": "entityType", "label": "Entity Type", "type": "string" },
+        {
+          "name": "entityType",
+          "label": "Entity Type",
+          "type": "string"
+        },
         {
           "name": "status",
           "label": "Status",
@@ -283,22 +489,46 @@
           "label": "Approved Amount",
           "type": "amount"
         },
-        { "name": "requestDate", "label": "Requested Date", "type": "date" },
+        {
+          "name": "requestDate",
+          "label": "Requested Date",
+          "type": "date"
+        },
         {
           "name": "approvalOrDecliningDate",
           "label": "Approval Date",
           "type": "date"
         },
-        { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
-        { "name": "createdById", "label": "Submitted By", "type": "string" },
+        {
+          "name": "expiryDate",
+          "label": "Expiry Date",
+          "type": "date"
+        },
+        {
+          "name": "createdById",
+          "label": "Submitted By",
+          "type": "string"
+        },
         {
           "name": "outstandingAmount",
           "label": "Outstanding Amount",
           "type": "amount"
         },
-        { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" },
-        { "name": "comments", "label": "Comments", "type": "string" }
+        {
+          "name": "createdAt",
+          "label": "Created Date",
+          "type": "date"
+        },
+        {
+          "name": "updatedAt",
+          "label": "Modified Date",
+          "type": "date"
+        },
+        {
+          "name": "comments",
+          "label": "Comments",
+          "type": "string"
+        }
       ],
       "defaultColumns": [
         "entityType",
@@ -314,7 +544,11 @@
     {
       "name": "client-claim",
       "manageColumns": [
-        { "name": "name", "label": "Claim Name", "type": "string" },
+        {
+          "name": "name",
+          "label": "Claim Name",
+          "type": "string"
+        },
         {
           "name": "notifiedofcase",
           "label": "Notified of Case",
@@ -335,16 +569,36 @@
           "label": "Date Submitted to U/W",
           "type": "date"
         },
-        { "name": "podreceived", "label": "POD Received", "type": "string" },
-        { "name": "podsenttouw", "label": "POD Sent to U/W", "type": "date" },
-        { "name": "codrequested", "label": "COD Requested", "type": "date" },
-        { "name": "codreceived", "label": "COD Received", "type": "date" },
+        {
+          "name": "podreceived",
+          "label": "POD Received",
+          "type": "string"
+        },
+        {
+          "name": "podsenttouw",
+          "label": "POD Sent to U/W",
+          "type": "date"
+        },
+        {
+          "name": "codrequested",
+          "label": "COD Requested",
+          "type": "date"
+        },
+        {
+          "name": "codreceived",
+          "label": "COD Received",
+          "type": "date"
+        },
         {
           "name": "grossdebtamount",
           "label": "Gross Debt Amount",
           "type": "amount"
         },
-        { "name": "amountpaid", "label": "Amount Paid", "type": "amount" },
+        {
+          "name": "amountpaid",
+          "label": "Amount Paid",
+          "type": "amount"
+        },
         {
           "name": "receivedlolfromuw",
           "label": "Received LOL from U/W",
@@ -435,7 +689,11 @@
           "label": "Sector",
           "type": "string"
         },
-        { "name": "createddate", "label": "Created Date", "type": "date" }
+        {
+          "name": "createddate",
+          "label": "Created Date",
+          "type": "date"
+        }
       ],
       "defaultColumns": [
         "name",
@@ -449,7 +707,11 @@
     {
       "name": "client-policy",
       "manageColumns": [
-        { "name": "insurerId", "label": "Insurer Name", "type": "string" },
+        {
+          "name": "insurerId",
+          "label": "Insurer Name",
+          "type": "string"
+        },
         {
           "name": "product",
           "label": "Product",
@@ -464,16 +726,36 @@
             "url": "policy/client/policy-details"
           }
         },
-        { "name": "policyPeriod", "label": "Policy Period", "type": "string" },
+        {
+          "name": "policyPeriod",
+          "label": "Policy Period",
+          "type": "string"
+        },
         {
           "name": "policyCurrency",
           "label": "Policy Currency",
           "type": "string"
         },
-        { "name": "inceptionDate", "label": "Inception Date", "type": "date" },
-        { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
-        { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+        {
+          "name": "inceptionDate",
+          "label": "Inception Date",
+          "type": "date"
+        },
+        {
+          "name": "expiryDate",
+          "label": "Expiry Date",
+          "type": "date"
+        },
+        {
+          "name": "createdAt",
+          "label": "Created Date",
+          "type": "date"
+        },
+        {
+          "name": "updatedAt",
+          "label": "Modified Date",
+          "type": "date"
+        }
       ],
       "defaultColumns": [
         "insurerId",
@@ -488,16 +770,56 @@
     {
       "name": "client-task",
       "manageColumns": [
-        { "name": "priority", "label": "Priority", "type": "string" },
-        { "name": "description", "label": "Description", "type": "string" },
-        { "name": "comments", "label": "Comments", "type": "string" },
-        { "name": "entityType", "label": "Entity Type", "type": "string" },
-        { "name": "entityId", "label": "Entity Name", "type": "modal" },
-        { "name": "createdById", "label": "Created By", "type": "string" },
-        { "name": "assigneeId", "label": "Assignee", "type": "string" },
-        { "name": "dueDate", "label": "Due Date", "type": "date" },
-        { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+        {
+          "name": "priority",
+          "label": "Priority",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "label": "Description",
+          "type": "string"
+        },
+        {
+          "name": "comments",
+          "label": "Comments",
+          "type": "string"
+        },
+        {
+          "name": "entityType",
+          "label": "Entity Type",
+          "type": "string"
+        },
+        {
+          "name": "entityId",
+          "label": "Entity Name",
+          "type": "modal"
+        },
+        {
+          "name": "createdById",
+          "label": "Created By",
+          "type": "string"
+        },
+        {
+          "name": "assigneeId",
+          "label": "Assignee",
+          "type": "string"
+        },
+        {
+          "name": "dueDate",
+          "label": "Due Date",
+          "type": "date"
+        },
+        {
+          "name": "createdAt",
+          "label": "Created Date",
+          "type": "date"
+        },
+        {
+          "name": "updatedAt",
+          "label": "Modified Date",
+          "type": "date"
+        }
       ],
       "defaultColumns": [
         "priority",
@@ -516,7 +838,11 @@
           "label": "Document Type",
           "type": "string"
         },
-        { "name": "description", "label": "Description", "type": "string" },
+        {
+          "name": "description",
+          "label": "Description",
+          "type": "string"
+        },
         {
           "name": "originalFileName",
           "label": "Link",
@@ -526,8 +852,16 @@
             "url": "document/download?action=view&documentIds="
           }
         },
-        { "name": "uploadById", "label": "Uploaded By", "type": "string" },
-        { "name": "createdAt", "label": "Created Date", "type": "date" }
+        {
+          "name": "uploadById",
+          "label": "Uploaded By",
+          "type": "string"
+        },
+        {
+          "name": "createdAt",
+          "label": "Created Date",
+          "type": "date"
+        }
       ],
       "defaultColumns": [
         "description",
@@ -549,7 +883,11 @@
             "url": "client/credit-limit/drawer-details"
           }
         },
-        { "name": "entityType", "label": "Entity Type", "type": "string" },
+        {
+          "name": "entityType",
+          "label": "Entity Type",
+          "type": "string"
+        },
         {
           "name": "activeApplicationId",
           "label": "Application Number",
@@ -559,7 +897,11 @@
             "url": "application/drawer-details"
           }
         },
-        { "name": "creditLimit", "label": "Credit Limit", "type": "amount" },
+        {
+          "name": "creditLimit",
+          "label": "Credit Limit",
+          "type": "amount"
+        },
         {
           "name": "limitType",
           "label": "Limit Type",
@@ -570,16 +912,36 @@
           "label": "Approval Date",
           "type": "date"
         },
-        { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
-        { "name": "abn", "label": "ABN/NZBN", "type": "string" },
+        {
+          "name": "expiryDate",
+          "label": "Expiry Date",
+          "type": "date"
+        },
+        {
+          "name": "abn",
+          "label": "ABN/NZBN",
+          "type": "string"
+        },
         {
           "name": "registrationNumber",
           "label": "Registration Number",
           "type": "string"
         },
-        { "name": "acn", "label": "ACN/NCN", "type": "string" },
-        { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+        {
+          "name": "acn",
+          "label": "ACN/NCN",
+          "type": "string"
+        },
+        {
+          "name": "createdAt",
+          "label": "Created Date",
+          "type": "date"
+        },
+        {
+          "name": "updatedAt",
+          "label": "Modified Date",
+          "type": "date"
+        }
       ],
       "defaultColumns": [
         "entityName",
@@ -592,12 +954,19 @@
     {
       "name": "claim",
       "manageColumns": [
-        { "name": "name", "label": "Claim Name", "type": "string" },
+        {
+          "name": "name",
+          "label": "Claim Name",
+          "type": "string"
+        },
         {
           "name": "accountid",
           "label": "Client Name",
           "type": "modal",
-          "request": { "method": "GET", "url": "client/details" }
+          "request": {
+            "method": "GET",
+            "url": "client/details"
+          }
         },
         {
           "name": "notifiedofcase",
@@ -619,16 +988,36 @@
           "label": "Date Submitted to U/W",
           "type": "date"
         },
-        { "name": "podreceived", "label": "POD Received", "type": "string" },
-        { "name": "podsenttouw", "label": "POD Sent to U/W", "type": "date" },
-        { "name": "codrequested", "label": "COD Requested", "type": "date" },
-        { "name": "codreceived", "label": "COD Received", "type": "date" },
+        {
+          "name": "podreceived",
+          "label": "POD Received",
+          "type": "string"
+        },
+        {
+          "name": "podsenttouw",
+          "label": "POD Sent to U/W",
+          "type": "date"
+        },
+        {
+          "name": "codrequested",
+          "label": "COD Requested",
+          "type": "date"
+        },
+        {
+          "name": "codreceived",
+          "label": "COD Received",
+          "type": "date"
+        },
         {
           "name": "grossdebtamount",
           "label": "Gross Debt Amount",
           "type": "amount"
         },
-        { "name": "amountpaid", "label": "Amount Paid", "type": "amount" },
+        {
+          "name": "amountpaid",
+          "label": "Amount Paid",
+          "type": "amount"
+        },
         {
           "name": "receivedlolfromuw",
           "label": "Received LOL from U/W",
@@ -719,7 +1108,11 @@
           "label": "Sector",
           "type": "string"
         },
-        { "name": "createddate", "label": "Created Date", "type": "date" }
+        {
+          "name": "createddate",
+          "label": "Created Date",
+          "type": "date"
+        }
       ],
       "defaultColumns": [
         "name",
@@ -734,37 +1127,121 @@
     {
       "name": "debtor",
       "manageColumns": [
-        { "name": "debtorCode", "label": "Debtor Code", "type": "string" },
-        { "name": "entityName", "label": "Entity Name", "type": "string" },
-        { "name": "abn", "label": "ABN/NZBN", "type": "string" },
-        { "name": "acn", "label": "ACN/NCN", "type": "string" },
+        {
+          "name": "debtorCode",
+          "label": "Debtor Code",
+          "type": "string"
+        },
+        {
+          "name": "entityName",
+          "label": "Entity Name",
+          "type": "string"
+        },
+        {
+          "name": "abn",
+          "label": "ABN/NZBN",
+          "type": "string"
+        },
+        {
+          "name": "acn",
+          "label": "ACN/NCN",
+          "type": "string"
+        },
         {
           "name": "registrationNumber",
           "label": "Registration Number",
           "type": "string"
         },
-        { "name": "tradingName", "label": "Trading Name", "type": "string" },
-        { "name": "entityType", "label": "Entity Type", "type": "string" },
-        { "name": "fullAddress", "label": "Full Address", "type": "string" },
-        { "name": "property", "label": "Property", "type": "string" },
-        { "name": "unitNumber", "label": "Unit Number", "type": "string" },
-        { "name": "streetNumber", "label": "Street Number", "type": "string" },
-        { "name": "streetName", "label": "Street Name", "type": "string" },
-        { "name": "streetType", "label": "Street Type", "type": "string" },
-        { "name": "suburb", "label": "Suburb", "type": "string" },
-        { "name": "state", "label": "Country/State", "type": "string" },
-        { "name": "country", "label": "Country", "type": "string" },
-        { "name": "postCode", "label": "Postcode/Zip", "type": "string" },
+        {
+          "name": "tradingName",
+          "label": "Trading Name",
+          "type": "string"
+        },
+        {
+          "name": "entityType",
+          "label": "Entity Type",
+          "type": "string"
+        },
+        {
+          "name": "fullAddress",
+          "label": "Full Address",
+          "type": "string"
+        },
+        {
+          "name": "property",
+          "label": "Property",
+          "type": "string"
+        },
+        {
+          "name": "unitNumber",
+          "label": "Unit Number",
+          "type": "string"
+        },
+        {
+          "name": "streetNumber",
+          "label": "Street Number",
+          "type": "string"
+        },
+        {
+          "name": "streetName",
+          "label": "Street Name",
+          "type": "string"
+        },
+        {
+          "name": "streetType",
+          "label": "Street Type",
+          "type": "string"
+        },
+        {
+          "name": "suburb",
+          "label": "Suburb",
+          "type": "string"
+        },
+        {
+          "name": "state",
+          "label": "Country/State",
+          "type": "string"
+        },
+        {
+          "name": "country",
+          "label": "Country",
+          "type": "string"
+        },
+        {
+          "name": "postCode",
+          "label": "Postcode/Zip",
+          "type": "string"
+        },
         {
           "name": "contactNumber",
           "label": "Contact Number",
           "type": "string"
         },
-        { "name": "riskRating", "label": "Risk Rating", "type": "string" },
-        { "name": "reviewDate", "label": "Review Date", "type": "date" },
-        { "name": "isActive", "label": "Active", "type": "string" },
-        { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+        {
+          "name": "riskRating",
+          "label": "Risk Rating",
+          "type": "string"
+        },
+        {
+          "name": "reviewDate",
+          "label": "Review Date",
+          "type": "date"
+        },
+        {
+          "name": "isActive",
+          "label": "Active",
+          "type": "string"
+        },
+        {
+          "name": "createdAt",
+          "label": "Created Date",
+          "type": "date"
+        },
+        {
+          "name": "updatedAt",
+          "label": "Modified Date",
+          "type": "date"
+        }
       ],
       "defaultColumns": [
         "debtorCode",
@@ -785,7 +1262,10 @@
           "name": "clientId",
           "label": "Client Name",
           "type": "modal",
-          "request": { "method": "GET", "url": "client/details" }
+          "request": {
+            "method": "GET",
+            "url": "client/details"
+          }
         },
         {
           "name": "applicationId",
@@ -807,22 +1287,46 @@
           "label": "Approved Amount",
           "type": "amount"
         },
-        { "name": "requestDate", "label": "Requested Date", "type": "date" },
+        {
+          "name": "requestDate",
+          "label": "Requested Date",
+          "type": "date"
+        },
         {
           "name": "approvalOrDecliningDate",
           "label": "Approval Date",
           "type": "date"
         },
-        { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
-        { "name": "createdById", "label": "Submitted By", "type": "string" },
+        {
+          "name": "expiryDate",
+          "label": "Expiry Date",
+          "type": "date"
+        },
+        {
+          "name": "createdById",
+          "label": "Submitted By",
+          "type": "string"
+        },
         {
           "name": "outstandingAmount",
           "label": "Outstanding Amount",
           "type": "amount"
         },
-        { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" },
-        { "name": "comments", "label": "Comments", "type": "string" }
+        {
+          "name": "createdAt",
+          "label": "Created Date",
+          "type": "date"
+        },
+        {
+          "name": "updatedAt",
+          "label": "Modified Date",
+          "type": "date"
+        },
+        {
+          "name": "comments",
+          "label": "Comments",
+          "type": "string"
+        }
       ],
       "defaultColumns": [
         "clientId",
@@ -838,16 +1342,56 @@
     {
       "name": "debtor-task",
       "manageColumns": [
-        { "name": "priority", "label": "Priority", "type": "string" },
-        { "name": "description", "label": "Description", "type": "string" },
-        { "name": "comments", "label": "Comments", "type": "string" },
-        { "name": "entityType", "label": "Entity Type", "type": "string" },
-        { "name": "entityId", "label": "Entity Name", "type": "modal" },
-        { "name": "createdById", "label": "Created By", "type": "string" },
-        { "name": "assigneeId", "label": "Assignee", "type": "string" },
-        { "name": "dueDate", "label": "Due Date", "type": "date" },
-        { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+        {
+          "name": "priority",
+          "label": "Priority",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "label": "Description",
+          "type": "string"
+        },
+        {
+          "name": "comments",
+          "label": "Comments",
+          "type": "string"
+        },
+        {
+          "name": "entityType",
+          "label": "Entity Type",
+          "type": "string"
+        },
+        {
+          "name": "entityId",
+          "label": "Entity Name",
+          "type": "modal"
+        },
+        {
+          "name": "createdById",
+          "label": "Created By",
+          "type": "string"
+        },
+        {
+          "name": "assigneeId",
+          "label": "Assignee",
+          "type": "string"
+        },
+        {
+          "name": "dueDate",
+          "label": "Due Date",
+          "type": "date"
+        },
+        {
+          "name": "createdAt",
+          "label": "Created Date",
+          "type": "date"
+        },
+        {
+          "name": "updatedAt",
+          "label": "Modified Date",
+          "type": "date"
+        }
       ],
       "defaultColumns": [
         "priority",
@@ -866,7 +1410,11 @@
           "label": "Document Type",
           "type": "string"
         },
-        { "name": "description", "label": "Description", "type": "string" },
+        {
+          "name": "description",
+          "label": "Description",
+          "type": "string"
+        },
         {
           "name": "originalFileName",
           "label": "Link",
@@ -876,8 +1424,16 @@
             "url": "document/download?action=view&documentIds="
           }
         },
-        { "name": "uploadById", "label": "Uploaded By", "type": "string" },
-        { "name": "createdAt", "label": "Created Date", "type": "date" }
+        {
+          "name": "uploadById",
+          "label": "Uploaded By",
+          "type": "string"
+        },
+        {
+          "name": "createdAt",
+          "label": "Created Date",
+          "type": "date"
+        }
       ],
       "defaultColumns": [
         "description",
@@ -894,7 +1450,10 @@
           "name": "name",
           "label": "Client Name",
           "type": "modal",
-          "request": { "method": "GET", "url": "client/details" }
+          "request": {
+            "method": "GET",
+            "url": "client/details"
+          }
         },
         {
           "name": "contactNumber",
@@ -910,7 +1469,11 @@
             "url": "application/drawer-details"
           }
         },
-        { "name": "creditLimit", "label": "Credit Limit", "type": "amount" },
+        {
+          "name": "creditLimit",
+          "label": "Credit Limit",
+          "type": "amount"
+        },
         {
           "name": "limitType",
           "label": "Limit Type",
@@ -921,11 +1484,31 @@
           "label": "Approval Date",
           "type": "date"
         },
-        { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
-        { "name": "abn", "label": "ABN", "type": "string" },
-        { "name": "acn", "label": "ACN", "type": "string" },
-        { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+        {
+          "name": "expiryDate",
+          "label": "Expiry Date",
+          "type": "date"
+        },
+        {
+          "name": "abn",
+          "label": "ABN",
+          "type": "string"
+        },
+        {
+          "name": "acn",
+          "label": "ACN",
+          "type": "string"
+        },
+        {
+          "name": "createdAt",
+          "label": "Created Date",
+          "type": "date"
+        },
+        {
+          "name": "updatedAt",
+          "label": "Modified Date",
+          "type": "date"
+        }
       ],
       "defaultColumns": [
         "name",
@@ -938,21 +1521,61 @@
     {
       "name": "insurer",
       "manageColumns": [
-        { "name": "name", "label": "Name", "type": "string" },
+        {
+          "name": "name",
+          "label": "Name",
+          "type": "string"
+        },
         {
           "name": "contactNumber",
           "label": "Contact Number",
           "type": "string"
         },
-        { "name": "fullAddress", "label": "Full Address", "type": "string" },
-        { "name": "addressLine", "label": "Address Line", "type": "string" },
-        { "name": "city", "label": "City", "type": "string" },
-        { "name": "state", "label": "Country/State", "type": "string" },
-        { "name": "country", "label": "Country", "type": "string" },
-        { "name": "zipCode", "label": "Postcode/Zip", "type": "string" },
-        { "name": "website", "label": "Website", "type": "string" },
-        { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+        {
+          "name": "fullAddress",
+          "label": "Full Address",
+          "type": "string"
+        },
+        {
+          "name": "addressLine",
+          "label": "Address Line",
+          "type": "string"
+        },
+        {
+          "name": "city",
+          "label": "City",
+          "type": "string"
+        },
+        {
+          "name": "state",
+          "label": "Country/State",
+          "type": "string"
+        },
+        {
+          "name": "country",
+          "label": "Country",
+          "type": "string"
+        },
+        {
+          "name": "zipCode",
+          "label": "Postcode/Zip",
+          "type": "string"
+        },
+        {
+          "name": "website",
+          "label": "Website",
+          "type": "string"
+        },
+        {
+          "name": "createdAt",
+          "label": "Created Date",
+          "type": "date"
+        },
+        {
+          "name": "updatedAt",
+          "label": "Modified Date",
+          "type": "date"
+        }
       ],
       "defaultColumns": [
         "name",
@@ -970,24 +1593,51 @@
           "name": "name",
           "label": "Name",
           "type": "modal",
-          "request": { "method": "GET", "url": "insurer/user-details" }
+          "request": {
+            "method": "GET",
+            "url": "insurer/user-details"
+          }
         },
-        { "name": "email", "label": "Email", "type": "string" },
+        {
+          "name": "email",
+          "label": "Email",
+          "type": "string"
+        },
         {
           "name": "contactNumber",
           "label": "Contact Number",
           "type": "string"
         },
-        { "name": "direct", "label": "Direct", "type": "string" },
-        { "name": "jobTitle", "label": "Job Title", "type": "string" },
-        { "name": "hasLeftCompany", "label": "Left Company", "type": "string" },
+        {
+          "name": "direct",
+          "label": "Direct",
+          "type": "string"
+        },
+        {
+          "name": "jobTitle",
+          "label": "Job Title",
+          "type": "string"
+        },
+        {
+          "name": "hasLeftCompany",
+          "label": "Left Company",
+          "type": "string"
+        },
         {
           "name": "isDecisionMaker",
           "label": "Decision Maker",
           "type": "string"
         },
-        { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+        {
+          "name": "createdAt",
+          "label": "Created Date",
+          "type": "date"
+        },
+        {
+          "name": "updatedAt",
+          "label": "Modified Date",
+          "type": "date"
+        }
       ],
       "defaultColumns": [
         "name",
@@ -1015,17 +1665,41 @@
             "url": "policy/details"
           }
         },
-        { "name": "policyPeriod", "label": "Policy Period", "type": "string" },
-        { "name": "clientId", "label": "Client Name", "type": "string" },
+        {
+          "name": "policyPeriod",
+          "label": "Policy Period",
+          "type": "string"
+        },
+        {
+          "name": "clientId",
+          "label": "Client Name",
+          "type": "string"
+        },
         {
           "name": "policyCurrency",
           "label": "Policy Currency",
           "type": "string"
         },
-        { "name": "inceptionDate", "label": "Inception Date", "type": "date" },
-        { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
-        { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+        {
+          "name": "inceptionDate",
+          "label": "Inception Date",
+          "type": "date"
+        },
+        {
+          "name": "expiryDate",
+          "label": "Expiry Date",
+          "type": "date"
+        },
+        {
+          "name": "createdAt",
+          "label": "Created Date",
+          "type": "date"
+        },
+        {
+          "name": "updatedAt",
+          "label": "Modified Date",
+          "type": "date"
+        }
       ],
       "defaultColumns": [
         "clientId",
@@ -1040,13 +1714,21 @@
     {
       "name": "client-list-report",
       "manageColumns": [
-        { "name": "name", "label": "Client Name", "type": "string" },
+        {
+          "name": "name",
+          "label": "Client Name",
+          "type": "string"
+        },
         {
           "name": "discretionaryLimit",
           "label": "Discretionary Limit",
           "type": "amount"
         },
-        { "name": "insurerId", "label": "Insurer Name", "type": "string" },
+        {
+          "name": "insurerId",
+          "label": "Insurer Name",
+          "type": "string"
+        },
         {
           "name": "creditChecks",
           "label": "No of Credit Checks",
@@ -1067,10 +1749,26 @@
           "label": "Service Manager",
           "type": "string"
         },
-        { "name": "sector", "label": "Sector", "type": "string" },
-        { "name": "salesPerson", "label": "Sales Person", "type": "string" },
-        { "name": "inceptionDate", "label": "Inception Date", "type": "date" },
-        { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
+        {
+          "name": "sector",
+          "label": "Sector",
+          "type": "string"
+        },
+        {
+          "name": "salesPerson",
+          "label": "Sales Person",
+          "type": "string"
+        },
+        {
+          "name": "inceptionDate",
+          "label": "Inception Date",
+          "type": "date"
+        },
+        {
+          "name": "expiryDate",
+          "label": "Expiry Date",
+          "type": "date"
+        },
         {
           "name": "totalApplication",
           "label": "Total Application",
@@ -1094,17 +1792,41 @@
     {
       "name": "limit-list-report",
       "manageColumns": [
-        { "name": "clientId", "label": "Client Name", "type": "string" },
-        { "name": "insurerId", "label": "Insurer Name", "type": "string" },
-        { "name": "debtorId", "label": "Debtor Name", "type": "string" },
-        { "name": "abn", "label": "ABN/NZBN", "type": "string" },
-        { "name": "acn", "label": "ACN/NCN", "type": "string" },
+        {
+          "name": "clientId",
+          "label": "Client Name",
+          "type": "string"
+        },
+        {
+          "name": "insurerId",
+          "label": "Insurer Name",
+          "type": "string"
+        },
+        {
+          "name": "debtorId",
+          "label": "Debtor Name",
+          "type": "string"
+        },
+        {
+          "name": "abn",
+          "label": "ABN/NZBN",
+          "type": "string"
+        },
+        {
+          "name": "acn",
+          "label": "ACN/NCN",
+          "type": "string"
+        },
         {
           "name": "registrationNumber",
           "label": "Registration Number",
           "type": "string"
         },
-        { "name": "country", "label": "Country", "type": "string" },
+        {
+          "name": "country",
+          "label": "Country",
+          "type": "string"
+        },
         {
           "name": "applicationId",
           "label": "Application Number",
@@ -1125,14 +1847,26 @@
           "label": "Approval Date",
           "type": "date"
         },
-        { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
-        { "name": "limitType", "label": "Limit Type", "type": "string" },
+        {
+          "name": "expiryDate",
+          "label": "Expiry Date",
+          "type": "date"
+        },
+        {
+          "name": "limitType",
+          "label": "Limit Type",
+          "type": "string"
+        },
         {
           "name": "clientReference",
           "label": "Client Reference",
           "type": "string"
         },
-        { "name": "comments", "label": "Comments", "type": "string" }
+        {
+          "name": "comments",
+          "label": "Comments",
+          "type": "string"
+        }
       ],
       "defaultColumns": [
         "clientId",
@@ -1147,8 +1881,16 @@
     {
       "name": "pending-application-report",
       "manageColumns": [
-        { "name": "clientId", "label": "Client Name", "type": "string" },
-        { "name": "debtorId", "label": "Debtor Name", "type": "string" },
+        {
+          "name": "clientId",
+          "label": "Client Name",
+          "type": "string"
+        },
+        {
+          "name": "debtorId",
+          "label": "Debtor Name",
+          "type": "string"
+        },
         {
           "name": "entityType",
           "label": "Debtor Entity Type",
@@ -1164,7 +1906,11 @@
           "label": "Application Status",
           "type": "string"
         },
-        { "name": "insurerId", "label": "Insurer Name", "type": "string" },
+        {
+          "name": "insurerId",
+          "label": "Insurer Name",
+          "type": "string"
+        },
         {
           "name": "creditLimit",
           "label": "Requested Amount",
@@ -1175,7 +1921,11 @@
           "label": "Limit Type",
           "type": "string"
         },
-        { "name": "requestDate", "label": "Applied Date", "type": "date" }
+        {
+          "name": "requestDate",
+          "label": "Applied Date",
+          "type": "date"
+        }
       ],
       "defaultColumns": [
         "clientId",
@@ -1190,36 +1940,116 @@
     {
       "name": "review-report",
       "manageColumns": [
-        { "name": "clientId", "label": "Client Name", "type": "string" },
-        { "name": "entityName", "label": "Entity Name", "type": "string" },
-        { "name": "abn", "label": "ABN/NZBN", "type": "string" },
-        { "name": "acn", "label": "ACN/NCN", "type": "string" },
+        {
+          "name": "clientId",
+          "label": "Client Name",
+          "type": "string"
+        },
+        {
+          "name": "entityName",
+          "label": "Entity Name",
+          "type": "string"
+        },
+        {
+          "name": "abn",
+          "label": "ABN/NZBN",
+          "type": "string"
+        },
+        {
+          "name": "acn",
+          "label": "ACN/NCN",
+          "type": "string"
+        },
         {
           "name": "registrationNumber",
           "label": "Registration Number",
           "type": "string"
         },
-        { "name": "tradingName", "label": "Trading Name", "type": "string" },
-        { "name": "insurerId", "label": "Insurer Name", "type": "string" },
-        { "name": "entityType", "label": "Entity Type", "type": "string" },
-        { "name": "reviewDate", "label": "Review Date", "type": "date" },
-        { "name": "fullAddress", "label": "Full Address", "type": "string" },
-        { "name": "property", "label": "Property", "type": "string" },
-        { "name": "unitNumber", "label": "Unit Number", "type": "string" },
-        { "name": "streetNumber", "label": "Street Number", "type": "string" },
-        { "name": "streetName", "label": "Street Name", "type": "string" },
-        { "name": "streetType", "label": "Street Type", "type": "string" },
-        { "name": "suburb", "label": "Suburb", "type": "string" },
-        { "name": "state", "label": "Country/State", "type": "string" },
-        { "name": "country", "label": "Country", "type": "string" },
-        { "name": "postCode", "label": "Postcode/Zip", "type": "string" },
+        {
+          "name": "tradingName",
+          "label": "Trading Name",
+          "type": "string"
+        },
+        {
+          "name": "insurerId",
+          "label": "Insurer Name",
+          "type": "string"
+        },
+        {
+          "name": "entityType",
+          "label": "Entity Type",
+          "type": "string"
+        },
+        {
+          "name": "reviewDate",
+          "label": "Review Date",
+          "type": "date"
+        },
+        {
+          "name": "fullAddress",
+          "label": "Full Address",
+          "type": "string"
+        },
+        {
+          "name": "property",
+          "label": "Property",
+          "type": "string"
+        },
+        {
+          "name": "unitNumber",
+          "label": "Unit Number",
+          "type": "string"
+        },
+        {
+          "name": "streetNumber",
+          "label": "Street Number",
+          "type": "string"
+        },
+        {
+          "name": "streetName",
+          "label": "Street Name",
+          "type": "string"
+        },
+        {
+          "name": "streetType",
+          "label": "Street Type",
+          "type": "string"
+        },
+        {
+          "name": "suburb",
+          "label": "Suburb",
+          "type": "string"
+        },
+        {
+          "name": "state",
+          "label": "Country/State",
+          "type": "string"
+        },
+        {
+          "name": "country",
+          "label": "Country",
+          "type": "string"
+        },
+        {
+          "name": "postCode",
+          "label": "Postcode/Zip",
+          "type": "string"
+        },
         {
           "name": "contactNumber",
           "label": "Contact Number",
           "type": "string"
         },
-        { "name": "riskRating", "label": "Risk Rating", "type": "string" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+        {
+          "name": "riskRating",
+          "label": "Risk Rating",
+          "type": "string"
+        },
+        {
+          "name": "updatedAt",
+          "label": "Modified Date",
+          "type": "date"
+        }
       ],
       "defaultColumns": [
         "clientId",
@@ -1236,16 +2066,54 @@
     {
       "name": "usage-report",
       "manageColumns": [
-        { "name": "name", "label": "Client Name", "type": "string" },
-        { "name": "insurerId", "label": "Insurer Name", "type": "string" },
+        {
+          "name": "name",
+          "label": "Client Name",
+          "type": "string"
+        },
+        {
+          "name": "insurerId",
+          "label": "Insurer Name",
+          "type": "string"
+        },
         {
           "name": "creditChecks",
-          "label": "Total Credit Checks Assigned",
+          "label": "Credit Checks Purchased",
           "type": "number"
         },
         {
-          "name": "noOfCreditChecksUsed",
-          "label": "No. of used Credit Checks",
+          "name": "creditChecksUsed",
+          "label": "Credit Checks Used",
+          "type": "number"
+        },
+        {
+          "name": "nzCreditChecks",
+          "label": "Credit Checks NZ Purchased",
+          "type": "number"
+        },
+        {
+          "name": "nzCreditChecksUsed",
+          "label": "Credit Checks NZ Used",
+          "type": "number"
+        },
+        {
+          "name": "healthChecks",
+          "label": "Health Checks Purchased",
+          "type": "number"
+        },
+        {
+          "name": "healthChecksUsed",
+          "label": "Health Checks Used",
+          "type": "number"
+        },
+        {
+          "name": "alerts247",
+          "label": "24/7 Alerts Purchased",
+          "type": "number"
+        },
+        {
+          "name": "alerts247Used",
+          "label": "24/7 Alerts Used",
           "type": "number"
         },
         {
@@ -1258,7 +2126,11 @@
           "label": "Policy Inception Date",
           "type": "date"
         },
-        { "name": "expiryDate", "label": "Policy Expiry Date", "type": "date" },
+        {
+          "name": "expiryDate",
+          "label": "Policy Expiry Date",
+          "type": "date"
+        },
         {
           "name": "riskAnalystId",
           "label": "Risk Analyst",
@@ -1283,22 +2155,46 @@
     {
       "name": "usage-per-client-report",
       "manageColumns": [
-        { "name": "clientId", "label": "Client Name", "type": "string" },
-        { "name": "insurerId", "label": "Insurer Name", "type": "string" },
-        { "name": "debtorId", "label": "Debtor Name", "type": "string" },
+        {
+          "name": "clientId",
+          "label": "Client Name",
+          "type": "string"
+        },
+        {
+          "name": "insurerId",
+          "label": "Insurer Name",
+          "type": "string"
+        },
+        {
+          "name": "debtorId",
+          "label": "Debtor Name",
+          "type": "string"
+        },
         {
           "name": "entityType",
           "label": "Debtor Entity Type",
           "type": "string"
         },
-        { "name": "abn", "label": "Debtor ABN/NZBN", "type": "string" },
-        { "name": "acn", "label": "Debtor ACN/NCN", "type": "string" },
+        {
+          "name": "abn",
+          "label": "Debtor ABN/NZBN",
+          "type": "string"
+        },
+        {
+          "name": "acn",
+          "label": "Debtor ACN/NCN",
+          "type": "string"
+        },
         {
           "name": "registrationNumber",
           "label": "Debtor Registration Number",
           "type": "string"
         },
-        { "name": "country", "label": "Debtor Country", "type": "string" },
+        {
+          "name": "country",
+          "label": "Debtor Country",
+          "type": "string"
+        },
         {
           "name": "creditLimitStatus",
           "label": "Current Status of Credit Limit",
@@ -1339,14 +2235,26 @@
           "label": "Approval Date",
           "type": "date"
         },
-        { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
-        { "name": "limitType", "label": "Limit Type", "type": "string" },
+        {
+          "name": "expiryDate",
+          "label": "Expiry Date",
+          "type": "date"
+        },
+        {
+          "name": "limitType",
+          "label": "Limit Type",
+          "type": "string"
+        },
         {
           "name": "clientReference",
           "label": "Client Reference",
           "type": "string"
         },
-        { "name": "comments", "label": "Comments", "type": "string" }
+        {
+          "name": "comments",
+          "label": "Comments",
+          "type": "string"
+        }
       ],
       "defaultColumns": [
         "clientId",
@@ -1372,22 +2280,46 @@
           "label": "Application Status",
           "type": "string"
         },
-        { "name": "clientId", "label": "Client Name", "type": "string" },
-        { "name": "debtorId", "label": "Debtor Name", "type": "string" },
+        {
+          "name": "clientId",
+          "label": "Client Name",
+          "type": "string"
+        },
+        {
+          "name": "debtorId",
+          "label": "Debtor Name",
+          "type": "string"
+        },
         {
           "name": "entityType",
           "label": "Debtor Entity Type",
           "type": "string"
         },
-        { "name": "abn", "label": "Debtor ABN/NZBN", "type": "string" },
-        { "name": "acn", "label": "Debtor ACN/NCN", "type": "string" },
+        {
+          "name": "abn",
+          "label": "Debtor ABN/NZBN",
+          "type": "string"
+        },
+        {
+          "name": "acn",
+          "label": "Debtor ACN/NCN",
+          "type": "string"
+        },
         {
           "name": "registrationNumber",
           "label": "Debtor Registration Number",
           "type": "string"
         },
-        { "name": "country", "label": "Debtor Country", "type": "string" },
-        { "name": "insurerId", "label": "Insurer Name", "type": "string" },
+        {
+          "name": "country",
+          "label": "Debtor Country",
+          "type": "string"
+        },
+        {
+          "name": "insurerId",
+          "label": "Insurer Name",
+          "type": "string"
+        },
         {
           "name": "creditLimit",
           "label": "Requested Amount",
@@ -1403,14 +2335,26 @@
           "label": "Approval Date",
           "type": "date"
         },
-        { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
-        { "name": "limitType", "label": "Limit Type", "type": "string" },
+        {
+          "name": "expiryDate",
+          "label": "Expiry Date",
+          "type": "date"
+        },
+        {
+          "name": "limitType",
+          "label": "Limit Type",
+          "type": "string"
+        },
         {
           "name": "clientReference",
           "label": "Client Reference",
           "type": "string"
         },
-        { "name": "comments", "label": "Comments", "type": "string" }
+        {
+          "name": "comments",
+          "label": "Comments",
+          "type": "string"
+        }
       ],
       "defaultColumns": [
         "clientId",
@@ -1428,7 +2372,11 @@
     {
       "name": "claims-report",
       "manageColumns": [
-        { "name": "name", "label": "Claim Name", "type": "string" },
+        {
+          "name": "name",
+          "label": "Claim Name",
+          "type": "string"
+        },
         {
           "name": "accountid",
           "label": "Client Name",
@@ -1454,16 +2402,36 @@
           "label": "Date Submitted to U/W",
           "type": "string"
         },
-        { "name": "podreceived", "label": "POD Received", "type": "string" },
-        { "name": "podsenttouw", "label": "POD Sent to U/W", "type": "string" },
-        { "name": "codrequested", "label": "COD Requested", "type": "string" },
-        { "name": "codreceived", "label": "COD Received", "type": "string" },
+        {
+          "name": "podreceived",
+          "label": "POD Received",
+          "type": "string"
+        },
+        {
+          "name": "podsenttouw",
+          "label": "POD Sent to U/W",
+          "type": "string"
+        },
+        {
+          "name": "codrequested",
+          "label": "COD Requested",
+          "type": "string"
+        },
+        {
+          "name": "codreceived",
+          "label": "COD Received",
+          "type": "string"
+        },
         {
           "name": "grossdebtamount",
           "label": "Gross Debt Amount",
           "type": "string"
         },
-        { "name": "amountpaid", "label": "Amount Paid", "type": "string" },
+        {
+          "name": "amountpaid",
+          "label": "Amount Paid",
+          "type": "string"
+        },
         {
           "name": "receivedlolfromuw",
           "label": "Received LOL from U/W",
@@ -1570,27 +2538,51 @@
     {
       "name": "alert-report",
       "manageColumns": [
-        { "name": "clientName", "label": "Client Name", "type": "string" },
+        {
+          "name": "clientName",
+          "label": "Client Name",
+          "type": "string"
+        },
         {
           "name": "debtorName",
           "label": "Debtor name",
           "type": "string"
         },
-        { "name": "abn", "label": "ABN/NZBN", "type": "string" },
-        { "name": "acn", "label": "ACN/NCN", "type": "string" },
+        {
+          "name": "abn",
+          "label": "ABN/NZBN",
+          "type": "string"
+        },
+        {
+          "name": "acn",
+          "label": "ACN/NCN",
+          "type": "string"
+        },
         {
           "name": "alertCategory",
           "label": "Alert Category",
           "type": "string"
         },
-        { "name": "alertType", "label": "Alert Type", "type": "string" },
-        { "name": "alertDate", "label": "Alert Date", "type": "date" },
+        {
+          "name": "alertType",
+          "label": "Alert Type",
+          "type": "string"
+        },
+        {
+          "name": "alertDate",
+          "label": "Alert Date",
+          "type": "date"
+        },
         {
           "name": "alertPriority",
           "label": "Alert Priority",
           "type": "string"
         },
-        { "name": "description", "label": "Description", "type": "string" }
+        {
+          "name": "description",
+          "label": "Description",
+          "type": "string"
+        }
       ],
       "defaultColumns": [
         "clientName",
@@ -1604,7 +2596,11 @@
     {
       "name": "stakeholder",
       "manageColumns": [
-        { "name": "title", "label": "Title", "type": "string" },
+        {
+          "name": "title",
+          "label": "Title",
+          "type": "string"
+        },
         {
           "name": "name",
           "label": "Name",
@@ -1614,41 +2610,121 @@
             "url": "debtor/stakeholder/drawer-details"
           }
         },
-        { "name": "abn", "label": "ABN/NZBN", "type": "string" },
-        { "name": "acn", "label": "ACN/NCN", "type": "string" },
+        {
+          "name": "abn",
+          "label": "ABN/NZBN",
+          "type": "string"
+        },
+        {
+          "name": "acn",
+          "label": "ACN/NCN",
+          "type": "string"
+        },
         {
           "name": "registrationNumber",
           "label": "Registration Number",
           "type": "string"
         },
-        { "name": "tradingName", "label": "Trading Name", "type": "string" },
-        { "name": "entityType", "label": "Entity Type", "type": "string" },
-        { "name": "dateOfBirth", "label": "Date Of Birth", "type": "date" },
+        {
+          "name": "tradingName",
+          "label": "Trading Name",
+          "type": "string"
+        },
+        {
+          "name": "entityType",
+          "label": "Entity Type",
+          "type": "string"
+        },
+        {
+          "name": "dateOfBirth",
+          "label": "Date Of Birth",
+          "type": "date"
+        },
         {
           "name": "driverLicenceNumber",
           "label": "Driver Licence Number",
           "type": "string"
         },
-        { "name": "email", "label": "Email", "type": "string" },
-        { "name": "phoneNumber", "label": "Phone Number", "type": "string" },
-        { "name": "mobileNumber", "label": "Mobile Number", "type": "string" },
-        { "name": "fullAddress", "label": "Full Address", "type": "string" },
-        { "name": "property", "label": "Property", "type": "string" },
-        { "name": "unitNumber", "label": "Unit Number", "type": "string" },
-        { "name": "streetNumber", "label": "Street Number", "type": "string" },
-        { "name": "streetName", "label": "Street Name", "type": "string" },
-        { "name": "streetType", "label": "Street Type", "type": "string" },
-        { "name": "suburb", "label": "Suburb", "type": "string" },
-        { "name": "state", "label": "Country/State", "type": "string" },
-        { "name": "country", "label": "Country", "type": "string" },
-        { "name": "postCode", "label": "Postcode/Zip", "type": "string" },
+        {
+          "name": "email",
+          "label": "Email",
+          "type": "string"
+        },
+        {
+          "name": "phoneNumber",
+          "label": "Phone Number",
+          "type": "string"
+        },
+        {
+          "name": "mobileNumber",
+          "label": "Mobile Number",
+          "type": "string"
+        },
+        {
+          "name": "fullAddress",
+          "label": "Full Address",
+          "type": "string"
+        },
+        {
+          "name": "property",
+          "label": "Property",
+          "type": "string"
+        },
+        {
+          "name": "unitNumber",
+          "label": "Unit Number",
+          "type": "string"
+        },
+        {
+          "name": "streetNumber",
+          "label": "Street Number",
+          "type": "string"
+        },
+        {
+          "name": "streetName",
+          "label": "Street Name",
+          "type": "string"
+        },
+        {
+          "name": "streetType",
+          "label": "Street Type",
+          "type": "string"
+        },
+        {
+          "name": "suburb",
+          "label": "Suburb",
+          "type": "string"
+        },
+        {
+          "name": "state",
+          "label": "Country/State",
+          "type": "string"
+        },
+        {
+          "name": "country",
+          "label": "Country",
+          "type": "string"
+        },
+        {
+          "name": "postCode",
+          "label": "Postcode/Zip",
+          "type": "string"
+        },
         {
           "name": "allowToCheckCreditHistory",
           "label": "Allow To Check CreditHistory",
           "type": "string"
         },
-        { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+        {
+          "name": "createdAt",
+          "label": "Created Date",
+          "type": "date"
+        },
+        {
+          "name": "updatedAt",
+          "label": "Modified Date",
+          "type": "date"
+        }
       ],
       "defaultColumns": [
         "title",
@@ -1664,16 +2740,56 @@
     {
       "name": "task",
       "manageColumns": [
-        { "name": "priority", "label": "Priority", "type": "string" },
-        { "name": "description", "label": "Description", "type": "string" },
-        { "name": "comments", "label": "Comments", "type": "string" },
-        { "name": "entityType", "label": "Entity Type", "type": "string" },
-        { "name": "entityId", "label": "Entity Name", "type": "modal" },
-        { "name": "createdById", "label": "Created By", "type": "string" },
-        { "name": "assigneeId", "label": "Assignee", "type": "string" },
-        { "name": "dueDate", "label": "Due Date", "type": "date" },
-        { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+        {
+          "name": "priority",
+          "label": "Priority",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "label": "Description",
+          "type": "string"
+        },
+        {
+          "name": "comments",
+          "label": "Comments",
+          "type": "string"
+        },
+        {
+          "name": "entityType",
+          "label": "Entity Type",
+          "type": "string"
+        },
+        {
+          "name": "entityId",
+          "label": "Entity Name",
+          "type": "modal"
+        },
+        {
+          "name": "createdById",
+          "label": "Created By",
+          "type": "string"
+        },
+        {
+          "name": "assigneeId",
+          "label": "Assignee",
+          "type": "string"
+        },
+        {
+          "name": "dueDate",
+          "label": "Due Date",
+          "type": "date"
+        },
+        {
+          "name": "createdAt",
+          "label": "Created Date",
+          "type": "date"
+        },
+        {
+          "name": "updatedAt",
+          "label": "Modified Date",
+          "type": "date"
+        }
       ],
       "defaultColumns": [
         "priority",
@@ -1687,22 +2803,46 @@
     {
       "name": "user",
       "manageColumns": [
-        { "name": "name", "label": "Name", "type": "string" },
-        { "name": "email", "label": "Email", "type": "string" },
+        {
+          "name": "name",
+          "label": "Name",
+          "type": "string"
+        },
+        {
+          "name": "email",
+          "label": "Email",
+          "type": "string"
+        },
         {
           "name": "contactNumber",
           "label": "Contact Number",
           "type": "string"
         },
-        { "name": "role", "label": "Role", "type": "string" },
+        {
+          "name": "role",
+          "label": "Role",
+          "type": "string"
+        },
         {
           "name": "maxCreditLimit",
           "label": "Max Credit Limit",
           "type": "amount"
         },
-        { "name": "status", "label": "Status", "type": "string" },
-        { "name": "createdAt", "label": "Created Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+        {
+          "name": "status",
+          "label": "Status",
+          "type": "string"
+        },
+        {
+          "name": "createdAt",
+          "label": "Created Date",
+          "type": "date"
+        },
+        {
+          "name": "updatedAt",
+          "label": "Modified Date",
+          "type": "date"
+        }
       ],
       "defaultColumns": [
         "name",
@@ -1716,19 +2856,46 @@
     {
       "name": "credit-report",
       "manageColumns": [
-        { "name": "reportProvider", "label": "Report By", "type": "string" },
-        { "name": "name", "label": "Name", "type": "string" },
-        { "name": "productCode", "label": "Product Code", "type": "string" },
+        {
+          "name": "reportProvider",
+          "label": "Report By",
+          "type": "string"
+        },
+        {
+          "name": "name",
+          "label": "Name",
+          "type": "string"
+        },
+        {
+          "name": "productCode",
+          "label": "Product Code",
+          "type": "string"
+        },
         {
           "name": "isExpired",
           "label": "Is Expired",
           "type": "boolean",
           "isDisabled": false,
-          "request": { "method": "PUT", "url": "credit-report" }
+          "request": {
+            "method": "PUT",
+            "url": "credit-report"
+          }
         },
-        { "name": "expiryDate", "label": "Expiry Date", "type": "date" },
-        { "name": "createdAt", "label": "Generation Date", "type": "date" },
-        { "name": "updatedAt", "label": "Modified Date", "type": "date" }
+        {
+          "name": "expiryDate",
+          "label": "Expiry Date",
+          "type": "date"
+        },
+        {
+          "name": "createdAt",
+          "label": "Generation Date",
+          "type": "date"
+        },
+        {
+          "name": "updatedAt",
+          "label": "Modified Date",
+          "type": "date"
+        }
       ],
       "defaultColumns": [
         "name",
@@ -1741,10 +2908,26 @@
     {
       "name": "import-application",
       "manageColumns": [
-        { "name": "clientCode", "label": "Client Code", "type": "string" },
-        { "name": "debtorCode", "label": "Debtor Code", "type": "string" },
-        { "name": "abn", "label": "Debtor ABN", "type": "string" },
-        { "name": "acn", "label": "Debtor ACN", "type": "string" },
+        {
+          "name": "clientCode",
+          "label": "Client Code",
+          "type": "string"
+        },
+        {
+          "name": "debtorCode",
+          "label": "Debtor Code",
+          "type": "string"
+        },
+        {
+          "name": "abn",
+          "label": "Debtor ABN",
+          "type": "string"
+        },
+        {
+          "name": "acn",
+          "label": "Debtor ACN",
+          "type": "string"
+        },
         {
           "name": "companyRegistrationNumber",
           "label": "Company Registration Number",
@@ -1755,8 +2938,16 @@
           "label": "Debtor Entity Name",
           "type": "string"
         },
-        { "name": "creditLimit", "label": "Credit Limit", "type": "amount" },
-        { "name": "reason", "label": "Reason", "type": "string" }
+        {
+          "name": "creditLimit",
+          "label": "Credit Limit",
+          "type": "amount"
+        },
+        {
+          "name": "reason",
+          "label": "Reason",
+          "type": "string"
+        }
       ]
     }
   ]
