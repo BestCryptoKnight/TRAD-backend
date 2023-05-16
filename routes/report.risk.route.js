@@ -387,6 +387,24 @@ router.get('/download', async function (req, res) {
           isForDownload: true,
         });
         break;
+      case 'alert-report':
+        reportColumn = [
+          'clientName',
+          'debtorName',
+          'alertCategory',
+          'alertType',
+          'alertDate',
+          'alertPriority',
+        ];
+        reportFor = 'Alert Report';
+        response = await getAlertReport({
+          reportColumn: reportColumn,
+          hasFullAccess,
+          userId: req.user._id,
+          requestedQuery: req.query,
+          isForDownload: true,
+        });
+        break;
       case 'pending-application-report':
         reportColumn = [
           'clientId',

@@ -1491,13 +1491,22 @@ const getUsageReport = async ({
         ? clients[0]['totalCount'][0]['count']
         : 0;
     const policies = {};
-    const clientApplications = {};
+    const creditCheckApplications = {};
+    const nzCreditCheckApplications = {};
+    const healthCheckApplications = {};
+    const alertApplications = {};
     if (
       reportColumn.includes('policyNumber') ||
       reportColumn.includes('creditChecks') ||
+      reportColumn.includes('nzCreditChecks') ||
+      reportColumn.includes('healthChecks') ||
+      reportColumn.includes('alerts247') ||
       reportColumn.includes('inceptionDate') ||
       reportColumn.includes('expiryDate') ||
-      reportColumn.includes('noOfCreditChecksUsed')
+      reportColumn.includes('creditChecksUsed') ||
+      reportColumn.includes('nzCreditChecksUsed') ||
+      reportColumn.includes('healthChecksUsed') ||
+      reportColumn.includes('alerts247Used')
     ) {
       const clientIds = response.map((i) => i._id);
       const [ciPolicy, rmpPolicy] = await Promise.all([
@@ -1508,7 +1517,7 @@ const getUsageReport = async ({
           expiryDate: { $gt: new Date() },
         })
           .select(
-            '_id clientId product policyNumber creditChecks inceptionDate expiryDate',
+            '_id clientId product policyNumber creditChecks alerts247 healthChecks nzCreditChecks inceptionDate expiryDate',
           )
           .lean(),
         Policy.find({
@@ -1521,7 +1530,7 @@ const getUsageReport = async ({
           expiryDate: { $gt: new Date() },
         })
           .select(
-            '_id clientId product policyNumber creditChecks inceptionDate expiryDate',
+            '_id clientId product policyNumber creditChecks alerts247 healthChecks nzCreditChecks inceptionDate expiryDate',
           )
           .lean(),
       ]);
@@ -1533,6 +1542,15 @@ const getUsageReport = async ({
           policies[policy.clientId]['creditChecks'] = policy['creditChecks']
             ? policy['creditChecks']
             : policies[policy.clientId]['creditChecks'];
+          policies[policy.clientId]['alerts247'] = policy['alerts247']
+            ? policy['alerts247']
+            : policies[policy.clientId]['alerts247'];
+          policies[policy.clientId]['healthChecks'] = policy['healthChecks']
+            ? policy['healthChecks']
+            : policies[policy.clientId]['healthChecks'];
+          policies[policy.clientId]['nzCreditChecks'] = policy['nzCreditChecks']
+            ? policy['nzCreditChecks']
+            : policies[policy.clientId]['nzCreditChecks'];
           if (policy['policyNumber']) {
             policies[policy.clientId]['otherPolicyNumber'] =
               policy['policyNumber'];
@@ -1541,37 +1559,155 @@ const getUsageReport = async ({
           policies[policy.clientId] = policy;
         }
       });
-      if (reportColumn.includes('noOfCreditChecksUsed')) {
-        const promises = [];
-        rmpPolicy.map((i) => {
-          promises.push(
-            Application.aggregate([
-              {
-                $match: {
-                  clientId: i.clientId,
-                  status: {
-                    $nin: ['DRAFT'],
+      if (
+        reportColumn.includes('creditChecksUsed') ||
+        reportColumn.includes('nzCreditChecksUsed') ||
+        reportColumn.includes('healthChecksUsed') ||
+        reportColumn.includes('alerts247Used')
+      ) {
+        const creditCheckPromises = [];
+        const nzCreditCheckPromises = [];
+        const healthCheckPromises = [];
+        const alert247Promises = [];
+        if (reportColumn.includes('creditChecksUsed')) {
+          rmpPolicy.map((i) => {
+            creditCheckPromises.push(
+              Application.aggregate([
+                {
+                  $match: {
+                    clientId: i.clientId,
+                    status: {
+                      $nin: ['DRAFT'],
+                    },
+                    requestDate: {
+                      $gte: new Date(i.inceptionDate),
+                      $lte: new Date(i.expiryDate),
+                    },
+                    limitType: { $eq: 'CREDIT_CHECK' },
                   },
-                  requestDate: {
-                    $gte: new Date(i.inceptionDate),
-                    $lte: new Date(i.expiryDate),
+                },
+                {
+                  $group: {
+                    _id: '$clientId',
+                    count: { $sum: 1 },
                   },
-                  limitType: { $eq: 'CREDIT_CHECK' },
                 },
-              },
-              {
-                $group: {
-                  _id: '$clientId',
-                  count: { $sum: 1 },
+              ]).allowDiskUse(true),
+            );
+          });
+        }
+        if (reportColumn.includes('nzCreditChecksUsed')) {
+          rmpPolicy.map((i) => {
+            nzCreditCheckPromises.push(
+              Application.aggregate([
+                {
+                  $match: {
+                    clientId: i.clientId,
+                    status: {
+                      $nin: ['DRAFT'],
+                    },
+                    requestDate: {
+                      $gte: new Date(i.inceptionDate),
+                      $lte: new Date(i.expiryDate),
+                    },
+                    limitType: { $eq: 'CREDIT_CHECK_NZ' },
+                  },
                 },
-              },
-            ]).allowDiskUse(true),
-          );
-        });
-        const applications = await Promise.all(promises);
-        applications.forEach((i) => {
+                {
+                  $group: {
+                    _id: '$clientId',
+                    count: { $sum: 1 },
+                  },
+                },
+              ]).allowDiskUse(true),
+            );
+          });
+        }
+        if (reportColumn.includes('healthChecksUsed')) {
+          rmpPolicy.map((i) => {
+            healthCheckPromises.push(
+              Application.aggregate([
+                {
+                  $match: {
+                    clientId: i.clientId,
+                    status: {
+                      $nin: ['DRAFT'],
+                    },
+                    requestDate: {
+                      $gte: new Date(i.inceptionDate),
+                      $lte: new Date(i.expiryDate),
+                    },
+                    limitType: { $eq: 'HEALTH_CHECK' },
+                  },
+                },
+                {
+                  $group: {
+                    _id: '$clientId',
+                    count: { $sum: 1 },
+                  },
+                },
+              ]).allowDiskUse(true),
+            );
+          });
+        }
+        if (reportColumn.includes('alerts247Used')) {
+          rmpPolicy.map((i) => {
+            alert247Promises.push(
+              Application.aggregate([
+                {
+                  $match: {
+                    clientId: i.clientId,
+                    status: {
+                      $nin: ['DRAFT'],
+                    },
+                    requestDate: {
+                      $gte: new Date(i.inceptionDate),
+                      $lte: new Date(i.expiryDate),
+                    },
+                    limitType: { $eq: '247_ALERT' },
+                  },
+                },
+                {
+                  $group: {
+                    _id: '$clientId',
+                    count: { $sum: 1 },
+                  },
+                },
+              ]).allowDiskUse(true),
+            );
+          });
+        }
+
+        const [
+          creditCheckApps,
+          nzCreditCheckApps,
+          healthCheckApps,
+          alert247Apps,
+        ] = await Promise.all([
+          Promise.all(creditCheckPromises),
+          Promise.all(nzCreditCheckPromises),
+          Promise.all(healthCheckPromises),
+          Promise.all(alert247Promises),
+        ]);
+
+        creditCheckApps.forEach((i) => {
           if (Array.isArray(i) && i[0]) {
-            clientApplications[i[0]._id] = i[0].count;
+            creditCheckApplications[i[0]._id] = i[0].count;
+          }
+        });
+        nzCreditCheckApps.forEach((i) => {
+          if (Array.isArray(i) && i[0]) {
+            nzCreditCheckApplications[i[0]._id] = i[0].count;
+          }
+        });
+        healthCheckApps.forEach((i) => {
+          if (Array.isArray(i) && i[0]) {
+            healthCheckApplications[i[0]._id] = i[0].count;
+          }
+        });
+        alert247Apps.forEach((i) => {
+          if (Array.isArray(i) && i[0]) {
+            alertApplications[i[0]._id] = i[0].count;
           }
         });
       }
@@ -1579,10 +1715,20 @@ const getUsageReport = async ({
     const isPolicyNumberSelected = reportColumn.includes('policyNumber');
     const isCreditChecksSelected = reportColumn.includes('creditChecks');
     const isCreditChecksUsedSelected = reportColumn.includes(
-      'noOfCreditChecksUsed',
+      'creditChecksUsed',
     );
+    const isNZCreditChecksUsedSelected = reportColumn.includes(
+      'nzCreditChecksUsed',
+    );
+    const isHealthChecksUsedSelected = reportColumn.includes(
+      'healthChecksUsed',
+    );
+    const isAlertUsedSelected = reportColumn.includes('alerts247Used');
     const isInceptionDateSelected = reportColumn.includes('inceptionDate');
     const isExpiryDateSelected = reportColumn.includes('expiryDate');
+    const isCreditCheckNZ = reportColumn.includes('nzCreditChecks');
+    const isHealthChecks = reportColumn.includes('healthChecks');
+    const isAlerts247 = reportColumn.includes('alerts247');
     response.forEach((client) => {
       if (client.insurerId) {
         client.insurerId =
@@ -1625,6 +1771,24 @@ const getUsageReport = async ({
             ? policies[client._id]['creditChecks']
             : 0;
       }
+      if (isCreditCheckNZ) {
+        client.nzCreditChecks =
+          policies[client._id] && policies[client._id]['nzCreditChecks']
+            ? policies[client._id]['nzCreditChecks']
+            : 0;
+      }
+      if (isHealthChecks) {
+        client.healthChecks =
+          policies[client._id] && policies[client._id]['healthChecks']
+            ? policies[client._id]['healthChecks']
+            : 0;
+      }
+      if (isAlerts247) {
+        client.alerts247 =
+          policies[client._id] && policies[client._id]['alerts247']
+            ? policies[client._id]['alerts247']
+            : 0;
+      }
       if (isInceptionDateSelected) {
         client.inceptionDate =
           policies[client._id] && policies[client._id]['inceptionDate']
@@ -1638,8 +1802,23 @@ const getUsageReport = async ({
             : 0;
       }
       if (isCreditChecksUsedSelected) {
-        client.noOfCreditChecksUsed = clientApplications[client._id]
-          ? clientApplications[client._id]
+        client.creditChecksUsed = creditCheckApplications[client._id]
+          ? creditCheckApplications[client._id]
+          : 0;
+      }
+      if (isNZCreditChecksUsedSelected) {
+        client.nzCreditChecksUsed = nzCreditCheckApplications[client._id]
+          ? nzCreditCheckApplications[client._id]
+          : 0;
+      }
+      if (isHealthChecksUsedSelected) {
+        client.healthChecksUsed = healthCheckApplications[client._id]
+          ? healthCheckApplications[client._id]
+          : 0;
+      }
+      if (isAlertUsedSelected) {
+        client.alerts247Used = alertApplications[client._id]
+          ? alertApplications[client._id]
           : 0;
       }
     });
@@ -1658,10 +1837,9 @@ const getUsagePerClientReport = async ({
   isForDownload = false,
 }) => {
   try {
-    const queryFilter = {
-      status: { $exists: true, $in: ['APPROVED', 'DECLINED'] },
-    };
+    const queryFilter = {};
     let query = [];
+    const aggregationQuery = [];
     const facetQuery = [];
     const filterArray = [];
     if (requestedQuery.clientIds) {
@@ -1736,6 +1914,8 @@ const getUsagePerClientReport = async ({
       });
     }
 
+    aggregationQuery.push({ $match: queryFilter });
+
     if (
       reportColumn.includes('applicationId') ||
       reportColumn.includes('status') ||
@@ -1749,7 +1929,7 @@ const getUsagePerClientReport = async ({
       requestedQuery.limitType
     ) {
       reportColumn.push('activeApplicationId');
-      facetQuery.push({
+      aggregationQuery.push({
         $lookup: {
           from: 'applications',
           localField: 'activeApplicationId',
@@ -1757,22 +1937,49 @@ const getUsagePerClientReport = async ({
           as: 'activeApplicationId',
         },
       });
-    }
 
-    if (requestedQuery.limitType) {
-      facetQuery.push({
-        $match: {
-          'activeApplicationId.limitType': {
-            $in: requestedQuery.limitType.split(','),
+      if (requestedQuery.startDate || requestedQuery.endDate) {
+        if (requestedQuery.startDate && requestedQuery.endDate)
+          aggregationQuery.push({
+            $match: {
+              'activeApplicationId.approvalOrDecliningDate': {
+                $gte: new Date(requestedQuery.startDate),
+                $lte: new Date(requestedQuery.endDate),
+              },
+            },
+          });
+        else if (requestedQuery.startDate)
+          aggregationQuery.push({
+            $match: {
+              'activeApplicationId.approvalOrDecliningDate': {
+                $gte: new Date(requestedQuery.startDate),
+              },
+            },
+          });
+        else if (requestedQuery.endDate)
+          aggregationQuery.push({
+            $match: {
+              'activeApplicationId.approvalOrDecliningDate': {
+                $lte: new Date(requestedQuery.endDate),
+              },
+            },
+          });
+      }
+      if (requestedQuery.limitType) {
+        aggregationQuery.push({
+          $match: {
+            'activeApplicationId.limitType': {
+              $in: requestedQuery.limitType.split(','),
+            },
           },
-        },
-      });
-      if (isForDownload) {
-        filterArray.push({
-          label: 'Limit Type',
-          value: requestedQuery.limitType,
-          type: 'string',
         });
+        if (isForDownload) {
+          filterArray.push({
+            label: 'Limit Type',
+            value: requestedQuery.limitType,
+            type: 'string',
+          });
+        }
       }
     }
 
@@ -1808,6 +2015,7 @@ const getUsagePerClientReport = async ({
         return obj;
       }, {}),
     });
+    query.push(...aggregationQuery);
     if (requestedQuery.page && requestedQuery.limit) {
       query.push({
         $facet: {
@@ -1830,7 +2038,7 @@ const getUsagePerClientReport = async ({
     } else if (facetQuery.length !== 0) {
       query = query.concat(facetQuery);
     }
-    query.unshift({ $match: queryFilter });
+
     const clientDebtors = await ClientDebtor.aggregate(query).allowDiskUse(
       true,
     );
@@ -1842,6 +2050,7 @@ const getUsagePerClientReport = async ({
     if (isApplicationCountSelected) {
       const promises = [];
       const clientDebtorIds = response.map((i) => i._id);
+      response.map((i) => {});
       promises.push(
         Application.aggregate([
           {
@@ -2294,6 +2503,7 @@ const getAlertReport = async ({
   userId,
   reportColumn,
   requestedQuery,
+  isForDownload = false,
 }) => {
   try {
     const queryFilter = {};
@@ -2305,6 +2515,7 @@ const getAlertReport = async ({
       isDeleted: false,
     };
     const mapClientNames = {};
+    const filterArray = [];
 
     reportColumn.push('alertId');
     const isDescriptionFieldSelected = reportColumn.includes('description');
@@ -2441,6 +2652,7 @@ const getAlertReport = async ({
           },
         },
       };
+
       // fields.push(['debtorDetails._id',1])
     }
 
@@ -2489,8 +2701,12 @@ const getAlertReport = async ({
         alert.description = StaticData.AlertList[alert.alertId].description;
       }
       if (isClientFieldSelected) {
-        alert.clientName =
-          mapClientNames[alert.debtorDetails?._id]?.join(', ') || '';
+        if (alert.entityId) {
+          alert.clientName = mapClientNames[alert.entityId]?.join(', ') || '';
+        } else {
+          alert.clientName =
+            mapClientNames[alert.debtorDetails?._id]?.join(', ') || '';
+        }
       }
       if (isABNFieldSelected) {
         alert.abn = alert.debtorDetails?.abn;
@@ -2499,12 +2715,16 @@ const getAlertReport = async ({
         alert.acn = alert.debtorDetails?.acn;
       }
       if (isDebtorFieldSelected) {
-        alert.debtorName = alert.debtorDetails?.entityName;
+        if (alert.companyName) {
+          alert.debtorName = alert.companyName;
+        } else {
+          alert.debtorName = alert.debtorDetails?.entityName;
+        }
       }
       delete alert.alertId;
       delete alert.debtorDetails;
     });
-    return { response, total };
+    return { response, total, filterArray };
   } catch (e) {
     Logger.log.error('Error occurred in get alert report');
     Logger.log.error(e.message || e);

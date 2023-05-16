@@ -940,8 +940,8 @@ const downloadDecisionLetterFromApplication = async ({ applicationId }) => {
       } else {
         response.registrationNumber = application?.debtorId?.registrationNumber;
       }
-      if (application.limitType === 'Credit Check NZ') {
-        response.isCreditCheckOrNZ = 'Credit Check NZ';
+      if (application.limitType === 'CREDIT_CHECK_NZ') {
+        response.isCreditCheckOrNZ = 'New Zealand Credit Check';
       } else {
         response.isCreditCheckOrNZ = 'Credit Check';
       }
