@@ -281,7 +281,7 @@ router.get('/download', async function (req, res) {
       isForDownload: true,
       requestedQuery: req.query,
       isForRisk: false,
-      hasFullAccess: false,
+      hasFullAccess,
       userId: req.user.clientId,
     });
     const taskList = await Task.aggregate(query).allowDiskUse(true);

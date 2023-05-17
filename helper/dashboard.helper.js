@@ -28,12 +28,12 @@ const getEndorsedLimit = async ({
       // ],
       status: { $exists: true, $in: ['APPROVED'] },
     };
-    if (startDate && endDate) {
-      query.approvalOrDecliningDate = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate),
-      };
-    }
+    // if (startDate && endDate) {
+    //   query.approvalOrDecliningDate = {
+    //     $gte: new Date(startDate),
+    //     $lte: new Date(endDate),
+    //   };
+    // }
     const data = await ClientDebtor.aggregate([
       {
         $match: query,
@@ -158,7 +158,6 @@ const getApprovedAmount = async ({
   try {
     const query = {
       clientId: mongoose.Types.ObjectId(clientId),
-      status: 'APPROVED',
     };
     if (startDate && endDate) {
       query.approvalOrDecliningDate = {
@@ -196,6 +195,7 @@ const getApprovedAmount = async ({
                   $and: [
                     { $eq: ['$clientDebtorId.activeApplicationId', '$_id'] },
                     { $eq: ['$clientDebtorId.isActive', true] },
+                    { $eq: ['$status', 'APPROVED'] },
                   ],
                 },
                 '$clientDebtorId.creditLimit',
