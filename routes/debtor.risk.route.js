@@ -41,6 +41,10 @@ const { addAuditLog } = require('./../helper/audit-log.helper');
 const {
   getDebtorListWithDetails,
   checkForRegistrationNumber,
+  storeCompanyDetails,
+  // storePartnerDetails,
+  // storeCreditLimitDetails,
+  submitDebtor,
 } = require('./../helper/debtor.helper');
 const {
   listEntitySpecificAlerts,
@@ -48,6 +52,11 @@ const {
   checkForEntityInProfile,
   checkForActiveCreditLimit,
 } = require('./../helper/alert.helper');
+
+const {
+  getApplicationDocumentList,
+  getSpecificEntityDocumentList,
+} = require('./../helper/document.helper');
 
 /**
  * Get Column Names
@@ -536,7 +545,7 @@ router.get('/drawer-details/:debtorId', async function (req, res) {
         path: 'debtorId',
         select: { _id: 0, isDeleted: 0, createdAt: 0, updatedAt: 0 },
       })
-      .select({ _id: 0, isDeleted: 0, clientId: 0, __v: 0 })
+      .select({ _id: 0, isDeleted: 0, clientId: 0, __v: 0, debtorStage: 0 })
       .lean();
     if (!debtor) {
       return res.status(400).send({
@@ -618,7 +627,7 @@ router.get('/drawer/:debtorId', async function (req, res) {
  * Get Debtor Details
  */
 router.get('/details/:debtorId', async function (req, res) {
-  if (!req.params.debtorId || !req.query.clientId) {
+  if (!req.params.debtorId) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -627,64 +636,7 @@ router.get('/details/:debtorId', async function (req, res) {
   }
   try {
     let responseData = {};
-    const application = await Application.findOne({
-      debtorId: req.params.debtorId,
-      clientId: req.query.clientId,
-      status: {
-        $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED'],
-      },
-    }).lean();
-    let anotherApplication;
-    if (application) {
-      anotherApplication = await Application.findOne({
-        _id: { $ne: application._id },
-        clientId: req.query.clientId,
-        debtorId: req.params.debtorId,
-        status: {
-          $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED'],
-        },
-      });
-    }
-    if (
-      application &&
-      ((!anotherApplication &&
-        application.status !== 'APPROVED' &&
-        application.status !== 'DRAFT') ||
-        (anotherApplication && application.status !== 'APPROVED'))
-    ) {
-      Logger.log.info('Application already exists..');
-      return res.status(400).send({
-        status: 'ERROR',
-        messageCode: 'APPLICATION_ALREADY_EXISTS',
-        message:
-          'Application already exists, please create with another debtor',
-      });
-    } else if (application && application.status === 'APPROVED') {
-      const otherApplication = await Application.findOne({
-        debtorId: req.params.debtorId,
-        clientId: req.query.clientId,
-        status: {
-          $nin: [
-            'DECLINED',
-            'CANCELLED',
-            'WITHDRAWN',
-            'SURRENDERED',
-            'APPROVED',
-          ],
-        },
-      }).lean();
-      if (otherApplication) {
-        return res.status(400).send({
-          status: 'ERROR',
-          messageCode: 'APPLICATION_ALREADY_EXISTS',
-          message:
-            'Application already exists, please create with another debtor',
-        });
-      }
-      responseData.message =
-        'You already have one approved application, do you still want to create another one?';
-      responseData.messageCode = 'APPROVED_APPLICATION_ALREADY_EXISTS';
-    }
+
     const debtor = await Debtor.findById(req.params.debtorId)
       .select({ isDeleted: 0, createdAt: 0, updatedAt: 0, __v: 0 })
       .lean();
@@ -741,7 +693,17 @@ router.get('/details/:debtorId', async function (req, res) {
       }
     }
     responseData.status = 'SUCCESS';
-    responseData.data = debtor;
+    responseData.data = {
+      company: debtor,
+      debtorStage: debtor.debtorStage,
+      _id: debtor._id,
+      entityType: debtor.entityTpe,
+      documents: {
+        uploadDocumentDebtorData: await getApplicationDocumentList({
+          entityId: debtor._id,
+        }),
+      },
+    };
     res.status(200).send(responseData);
   } catch (e) {
     Logger.log.error('Error occurred in get debtor details ', e.message || e);
@@ -1445,6 +1407,115 @@ router.put('/column-name', async function (req, res) {
 });
 
 /**
+ * Generate New Debtor
+ */
+
+router.put('/generate', async function (req, res) {
+  if (!req.body.stepper) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  // if (
+  //   req.body.stepper !== 'company'
+  //   && (!req.body.applicationId ||
+  //     !mongoose.Types.ObjectId.isValid(req.body.applicationId))
+  // ) {
+  //   return res.status(400).send({
+  //     status: 'ERROR',
+  //     messageCode: 'REQUIRE_FIELD_MISSING',
+  //     message: 'Require fields are missing.',
+  //   });
+  // }
+  if (
+    req.body.stepper === 'company' &&
+    // !req.body.clientId ||
+    (!req.body.address ||
+      !req.body.address.country ||
+      !req.body.entityType ||
+      (req.body.entityType === 'TRUST' &&
+        (!req.body.address.state || !req.body.address.postCode)) ||
+      (!req.body.abn && !req.body.acn && !req.body.registrationNumber) ||
+      !req.body.entityName)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    let response;
+    let message;
+    switch (req.body.stepper) {
+      case 'company':
+        response = await storeCompanyDetails({
+          requestBody: req.body,
+          createdByType: 'user',
+          createdBy: req.user._id,
+          createdByName: req.user.name,
+        });
+        break;
+      case 'documents':
+        // const entityTypes = ['TRUST', 'PARTNERSHIP'];
+        // const debtorStage = 2;
+        await Debtor.updateOne({ _id: req.body.debtorId }, { debtorStage: 2 });
+
+        response = await Debtor.findById(req.body.debtorId)
+          .select('_id debtorStage')
+          .lean();
+        // await Application.findById(req.body.applicationId)
+        //   .select('_id debtorStage')
+        //   .lean();
+        break;
+      case 'confirmation':
+        message = await submitDebtor({
+          debtorId: req.body.debtorId,
+          userId: req.user._id,
+          userType: 'user',
+          userName: req.user.name,
+        });
+
+        response = {
+          debtorStage: 3,
+        };
+
+        // checkForAutomation({
+        //   debtorId: req.body.debtorId,
+        //   userType: 'user',
+        //   userId: req.user._id,
+        // });
+        break;
+      default:
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'BAD_REQUEST',
+          message: 'Please pass correct fields',
+        });
+    }
+    if (response && response.status && response.status === 'ERROR') {
+      return res.status(400).send(response);
+    }
+    res.status(200).send({
+      status: 'SUCCESS',
+      message: message,
+      data: response,
+    });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in generating application ',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e,
+    });
+  }
+});
+
+/**
  * Update client-debtor status
  */
 router.put('/', async function (req, res) {
@@ -1476,7 +1547,7 @@ router.put('/', async function (req, res) {
 /**
  * Update Debtor Details
  */
-router.put('/:debtorId', async function (req, res) {
+router.put('/details/:debtorId', async function (req, res) {
   if (
     !req.params.debtorId ||
     !mongoose.Types.ObjectId.isValid(req.params.debtorId)

@@ -22,7 +22,12 @@ const {
   addEntitiesToProfile,
   removeEntitiesFromProfile,
 } = require('./illion.helper');
-
+const {
+  getEntityDetailsByABN,
+  getEntityDetailsByNZBN,
+  getEntityDetailsByACN,
+  getEntityListByNameFromNZBN,
+} = require('./abr.helper');
 /*
 Get only existing debtor list(Active Credit Limit)
  */
@@ -199,6 +204,8 @@ const createDebtor = async ({
       update.reviewDate = new Date(date.setMonth(date.getMonth() + 11));
       update.debtorCode =
         'D' + (organization.entityCount.debtor + 1).toString().padStart(4, '0');
+      update.debtorStage = 1;
+      update.status = 'DRAFT';
       await Organization.updateOne(
         { isDeleted: false },
         { $inc: { 'entityCount.debtor': 1 } },
@@ -778,6 +785,197 @@ const getLimitType = (limitType) => {
   }
 };
 
+//TODO verify ABN & ACN
+const storeCompanyDetails = async ({
+  requestBody,
+  createdBy,
+  createdByType,
+  createdByName,
+}) => {
+  const organization = await Organization.findOne({ isDeleted: false })
+    .select('entityCount')
+    .lean();
+
+  try {
+    let isDebtorExists = true;
+    let query;
+    if (requestBody.registrationNumber) {
+      query = { registrationNumber: requestBody.registrationNumber };
+    } else if (requestBody.abn) {
+      query = { abn: requestBody.abn };
+    } else {
+      query = { acn: requestBody.acn };
+    }
+    const debtorData = await Debtor.findOne(query).lean();
+    if (!debtorData) {
+      isDebtorExists = false;
+    } else {
+      if (requestBody.entityType !== debtorData.entityType) {
+        if (
+          requestBody.hasOwnProperty('removeStakeholders') &&
+          requestBody.removeStakeholders
+        ) {
+          await DebtorDirector.updateMany(
+            { debtorId: debtorData._id, isDeleted: false },
+            { isDeleted: true },
+          );
+        } else {
+          const stakeholders = await DebtorDirector.find({
+            isDeleted: false,
+            debtorId: debtorData._id,
+          })
+            .select('_id type')
+            .lean();
+          if (stakeholders.length !== 0) {
+            return {
+              status: 'ERROR',
+              messageCode: 'ENTITY_TYPE_CHANGED',
+              message: 'Debtor entity type is changed',
+            };
+          }
+        }
+      }
+    }
+    if (
+      requestBody.address.country.code === 'AUS' &&
+      (requestBody.abn || requestBody.acn)
+    ) {
+      let entityData;
+      if (requestBody.abn) {
+        entityData = await getEntityDetailsByABN({
+          searchString: requestBody.abn,
+        });
+      } else {
+        entityData = await getEntityDetailsByACN({
+          searchString: requestBody.acn,
+        });
+      }
+
+      if (
+        !entityData ||
+        !entityData.response ||
+        !(
+          entityData.response.businessEntity202001 ||
+          entityData.response.businessEntity201408 ||
+          requestBody.acn
+        )
+      ) {
+        return {
+          status: 'ERROR',
+          messageCode: 'INVALID_NUMBER',
+          message: requestBody.abn
+            ? 'Invalid Australian Business Number'
+            : 'Invalid Australian Company Number',
+        };
+      }
+    }
+
+    if (
+      requestBody.address.country.code === 'NZL' &&
+      (requestBody.abn || requestBody.acn)
+    ) {
+      let entityData;
+      if (requestBody.abn) {
+        entityData = await getEntityDetailsByNZBN({
+          searchString: requestBody.abn,
+        });
+      } else {
+        entityData = await getEntityListByNameFromNZBN({
+          searchString: requestBody.acn,
+        });
+        if (entityData && entityData.items && entityData.items.length !== 0) {
+          for (let i = 0; i < entityData.items.length; i++) {
+            if (
+              entityData.items[i]?.sourceRegisterUniqueId === requestBody.acn
+            ) {
+              entityData = entityData.items[i];
+              break;
+            }
+          }
+        }
+      }
+      if (entityData && entityData.status === 'ERROR') {
+        return entityData;
+      }
+      if (!entityData || !entityData.nzbn || !entityData.entityName) {
+        return {
+          status: 'ERROR',
+          messageCode: 'INVALID_NUMBER',
+          message: requestBody.abn
+            ? 'Invalid New Zealand Business Number'
+            : 'Invalid New Zealand Company Number',
+        };
+      }
+    }
+    const { debtor, clientDebtor } = await createDebtor({
+      requestBody,
+      organization,
+      isDebtorExists,
+      userId: createdBy,
+      userName: createdByName,
+      clientId: null,
+      userType: createdByType,
+    });
+    return { debtor, clientDebtor, debtorStage: 1, _id: debtor._id };
+  } catch (e) {
+    Logger.log.error('Error occurred in store company details ', e);
+  }
+};
+
+const submitDebtor = async ({ debtorId, userId, userName, userType }) => {
+  try {
+    // const application = await Application.findOne({
+    //   _id: applicationId,
+    // })
+    //   .populate({ path: 'clientId', select: '_id name' })
+    //   .lean();
+
+    const debtorData = await Debtor.findOne({
+      _id: debtorId,
+      status: {
+        $nin: [
+          'DECLINED',
+          'CANCELLED',
+          'WITHDRAWN',
+          'SURRENDERED',
+          'DRAFT',
+          'APPROVED',
+        ],
+      },
+    }).lean();
+
+    if (debtorData) {
+      return {
+        status: 'ERROR',
+        messageCode: 'DEBTOR_ALREADY_EXISTS',
+        message: 'Debtor already exists',
+      };
+    }
+
+    await Debtor.updateOne(
+      { _id: debtorId },
+      {
+        $set: {
+          status: 'SUBMITTED',
+          $inc: { debtorStage: 1 },
+        },
+      },
+    );
+    await addAuditLog({
+      entityType: 'debtor',
+      entityRefId: debtorId,
+      actionType: 'add',
+      userType: userType,
+      userRefId: userId,
+      logDescription: `A new debtor ${debtorId} is successfully generated by ${userName}`,
+    });
+    return 'Debtor submitted successfully.';
+  } catch (e) {
+    Logger.log.error('Error occurred in submit application');
+    Logger.log.error(e);
+  }
+};
+
 module.exports = {
   createDebtor,
   getDebtorFullAddress,
@@ -791,4 +989,6 @@ module.exports = {
   getCurrentDebtorList,
   checkForRegistrationNumber,
   getLimitType,
+  storeCompanyDetails,
+  submitDebtor,
 };
