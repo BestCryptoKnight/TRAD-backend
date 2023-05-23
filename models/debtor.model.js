@@ -52,6 +52,12 @@ const debtorSchema = new Schema(
     riskRating: { type: Schema.Types.String },
     isActive: { type: Schema.Types.Boolean, default: true },
     // isDeleted: { type: Schema.Types.Boolean, default: false },
+    status: {
+      type: Schema.Types.String,
+      enum: ['DRAFT', 'SUBMITTED'],
+      default: 'DRAFT',
+    },
+    debtorStage: { type: Schema.Types.Number },
   },
   { timestamps: true },
 );
