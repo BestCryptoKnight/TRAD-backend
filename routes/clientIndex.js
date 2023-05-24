@@ -29,6 +29,7 @@ const overdue = require('./overdue.route');
 const policy = require('./policy.route');
 const task = require('./task.route');
 const user = require('./user.route');
+const creditLimit = require('./creditLimit.route');
 
 router.use('/auth', clientAuth);
 router.use('/search', globalSearch);
@@ -47,6 +48,7 @@ router.use('/overdue', overdue);
 router.use('/policy', policy);
 router.use('/task', task);
 router.use('/user', user);
+router.use('/credit-limit', creditLimit);
 
 /**
  * Export Router
