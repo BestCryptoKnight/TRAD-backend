@@ -157,11 +157,6 @@ router.get('/column-name', async function (req, res) {
 });
 
 /**
- * Get Credit-Limit Modal details
- */
-router.get('/drawer-details/:creditLimitId', async function (req, res) {});
-
-/**
  * Get StakeHolder List
  */
 router.get('/stakeholder/:creditLimitId', async function (req, res) {
