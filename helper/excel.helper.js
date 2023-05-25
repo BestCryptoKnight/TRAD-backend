@@ -149,7 +149,7 @@ const generateExcel = ({ data, reportFor, headers, filter, title }) => {
           headers,
           filter,
         });
-        break;      
+        break;
     }
     workbook.xlsx.writeBuffer().then((buffer) => {
       return resolve(buffer);
@@ -328,9 +328,15 @@ const addColumnsForUsageReport = async ({
     worksheet.getColumn(4).width = 30;
     worksheet.getColumn(5).width = 30;
     worksheet.getColumn(6).width = 30;
-    worksheet.getColumn(7).width = 20;
-    worksheet.getColumn(8).width = 25;
-    worksheet.getColumn(9).width = 25;
+    worksheet.getColumn(7).width = 30;
+    worksheet.getColumn(8).width = 30;
+    worksheet.getColumn(9).width = 30;
+    worksheet.getColumn(10).width = 30;
+    worksheet.getColumn(11).width = 30;
+    worksheet.getColumn(12).width = 30;
+    worksheet.getColumn(13).width = 30;
+    worksheet.getColumn(14).width = 30;
+    worksheet.getColumn(15).width = 30;
     worksheet.addRow();
     worksheet.mergeCells(
       `A${worksheet.lastRow.number}:I${worksheet.lastRow.number}`,
