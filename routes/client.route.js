@@ -6,6 +6,7 @@ const router = express.Router();
 let mongoose = require('mongoose');
 const Client = mongoose.model('client');
 const ClientUser = mongoose.model('client-user');
+const ClientDebtor = mongoose.model('client-debtor');
 
 /*
  * Local Imports
@@ -13,6 +14,7 @@ const ClientUser = mongoose.model('client-user');
 const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
 const { getRegexForSearch } = require('./../helper/audit-log.helper');
+const { getClientDebtorDetails } = require('../helper/client-debtor.helper');
 
 /**
  * Get Column Names
@@ -302,6 +304,61 @@ router.get('/', async function (req, res) {
     });
   }
 });
+
+/**
+ * Get Credit-Limit Modal details
+ */
+router.get(
+  '/credit-limit/drawer-details/:creditLimitId',
+  async function (req, res) {
+    if (
+      !req.params.creditLimitId ||
+      !mongoose.Types.ObjectId.isValid(req.params.creditLimitId)
+    ) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'REQUIRE_FIELD_MISSING',
+        message: 'Require fields are missing',
+      });
+    }
+    try {
+      const module = StaticFile.modules.find((i) => i.name === 'debtor');
+      const debtor = await ClientDebtor.findOne({
+        _id: req.params.creditLimitId,
+      })
+        .populate({
+          path: 'debtorId',
+          select: { _id: 0, isDeleted: 0, createdAt: 0, updatedAt: 0 },
+        })
+        .select({ _id: 0, isDeleted: 0, clientId: 0, __v: 0 })
+        .lean();
+      if (!debtor) {
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'NO_DEBTOR_FOUND',
+          message: 'No debtor found',
+        });
+      }
+      const response = await getClientDebtorDetails({
+        debtor,
+        manageColumns: module.manageColumns,
+      });
+      res.status(200).send({
+        status: 'SUCCESS',
+        data: { response, header: 'Debtor Details' },
+      });
+    } catch (e) {
+      Logger.log.error(
+        'Error occurred in get credit-limit modal details ',
+        e.message || e,
+      );
+      res.status(500).send({
+        status: 'ERROR',
+        message: e.message || 'Something went wrong, please try again later.',
+      });
+    }
+  },
+);
 
 /**
  * Update Column Names
