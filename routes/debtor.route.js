@@ -149,9 +149,9 @@ router.get('/entity-list', async function (req, res) {
  */
 router.get('/', async function (req, res) {
   try {
-    const module = StaticFile.modules.find((i) => i.name === 'credit-limit');
+    const module = StaticFile.modules.find((i) => i.name === 'debtor');
     const debtorColumn = req.user.manageColumns.find(
-      (i) => i.moduleName === 'credit-limit',
+      (i) => i.moduleName === 'debtor',
     );
     const response = await getClientCreditLimit({
       requestedQuery: req.query,
@@ -712,6 +712,7 @@ router.put('/column-name', async function (req, res) {
     let updateColumns = [];
     let module;
     switch (req.body.columnFor) {
+      case 'debtor':
       case 'credit-limit':
       case 'stakeholder':
         if (req.body.isReset) {
