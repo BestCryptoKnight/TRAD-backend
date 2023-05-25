@@ -1133,6 +1133,11 @@
           "type": "string"
         },
         {
+          "name": "status",
+          "label": "Status",
+          "type": "string"
+        },
+        {
           "name": "entityName",
           "label": "Entity Name",
           "type": "string"
@@ -1245,6 +1250,7 @@
       ],
       "defaultColumns": [
         "debtorCode",
+        "status",
         "abn",
         "entityName",
         "acn",
