@@ -198,6 +198,33 @@ const getClientCreditLimit = async ({
         },
       );
     }
+    if (requestedQuery.startDate || requestedQuery.endDate) {
+      if (requestedQuery.startDate && requestedQuery.endDate)
+        aggregationQuery.push({
+          $match: {
+            'activeApplicationId.expiryDate': {
+              $gte: new Date(requestedQuery.startDate),
+              $lte: new Date(requestedQuery.endDate),
+            },
+          },
+        });
+      else if (requestedQuery.startDate)
+        aggregationQuery.push({
+          $match: {
+            'activeApplicationId.expiryDate': {
+              $gte: new Date(requestedQuery.startDate),
+            },
+          },
+        });
+      else if (requestedQuery.endDate)
+        aggregationQuery.push({
+          $match: {
+            'activeApplicationId.expiryDate': {
+              $lte: new Date(requestedQuery.endDate),
+            },
+          },
+        });
+    }
     const fields = debtorColumn.map((i) => {
       i = clientDebtorDetails.includes(i)
         ? i

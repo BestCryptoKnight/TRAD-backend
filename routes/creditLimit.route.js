@@ -4,11 +4,10 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
+let User = mongoose.model('user');
 const ClientUser = mongoose.model('client-user');
-const ClientDebtor = mongoose.model('client-debtor');
-const Debtor = mongoose.model('debtor');
 const Client = mongoose.model('client');
-const Application = mongoose.model('application');
+const ClientDebtor = mongoose.model('client-debtor');
 
 /*
  * Local Imports
@@ -20,56 +19,102 @@ const {
   getClientDebtorDetails,
   getClientCreditLimit,
   downloadDecisionLetter,
-} = require('./../helper/client-debtor.helper');
+} = require('../helper/client-debtor.helper');
 const {
-  getDebtorFullAddress,
   getCurrentDebtorList,
-  checkForRegistrationNumber,
-} = require('./../helper/debtor.helper');
+  getDebtorFullAddress,
+} = require('../helper/debtor.helper');
+const { generateExcel } = require('./../helper/excel.helper');
 const {
   generateNewApplication,
   checkForPendingApplication,
 } = require('./../helper/application.helper');
-const {
-  getStakeholderList,
-  getStakeholderDetails,
-} = require('./../helper/stakeholder.helper');
-const {
-  checkForEntityInProfile,
-  checkForActiveCreditLimit,
-} = require('./../helper/alert.helper');
-const { generateExcel } = require('./../helper/excel.helper');
+const { getStakeholderList } = require('./../helper/stakeholder.helper');
 const { addAuditLog } = require('./../helper/audit-log.helper');
 
-/**
- * Get Column Names
- */
-router.get('/column-name', async function (req, res) {
-  if (!req.query.columnFor) {
+router.get('/', async function (req, res) {
+  if (!req.user._id || !mongoose.Types.ObjectId.isValid(req.user._id)) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Require field is missing.',
+      message: 'Require fields are missing',
     });
   }
   try {
-    const module = StaticFile.modules.find(
-      (i) => i.name === req.query.columnFor,
-    );
+    const module = StaticFile.modules.find((i) => i.name === 'credit-limit');
     const debtorColumn = req.user.manageColumns.find(
-      (i) => i.moduleName === req.query.columnFor,
+      (i) => i.moduleName === 'credit-limit',
     );
-    if (!module || !module.manageColumns || module.manageColumns.length === 0) {
-      return res.status(400).send({
-        status: 'ERROR',
-        messageCode: 'BAD_REQUEST',
-        message: 'Please pass correct fields',
-      });
+    const hasOnlyReadAccessForApplicationModule = false;
+    const hasOnlyReadAccessForDebtorModule = false;
+    const response = await getClientCreditLimit({
+      requestedQuery: req.query,
+      debtorColumn: debtorColumn.columns,
+      clientId: req.user.clientId,
+      moduleColumn: module.manageColumns,
+      hasOnlyReadAccessForApplicationModule,
+      hasOnlyReadAccessForDebtorModule,
+      isForRisk: true,
+    });
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: response,
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in get Credit Limit data ', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+router.get('/entity-list', async function (req, res) {
+  try {
+    let hasFullAccess = true;
+    if (req.accessTypes && req.accessTypes.indexOf('full-access') === -1) {
+      hasFullAccess = false;
     }
-    const customFields = [];
-    const defaultFields = [];
+    const debtors = await getCurrentDebtorList({
+      showCompleteList: req.query?.isForFilter || true,
+      page: req.query.page,
+      limit: req.query.limit,
+      isForRisk: true,
+      userId: req.user._id,
+      hasFullAccess,
+    });
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: {
+        debtors: { field: 'debtorId', data: debtors },
+        entityType: { field: 'entityType', data: StaticData.entityType },
+      },
+    });
+  } catch (error) {}
+});
+
+router.get('/column-name', async function (req, res) {
+  try {
+    let module = [];
+    let clientColumn = [];
+    if (req?.query?.columnFor == 'stakeholder') {
+      module = StaticFile.modules.find((i) => i.name === 'stakeholder');
+      clientColumn = req.user.manageColumns.find(
+        (i) => i.moduleName === 'stakeholder',
+      );
+    } else {
+      module = StaticFile.modules.find((i) => i.name === 'credit-limit');
+      clientColumn = req.user.manageColumns.find(
+        (i) => i.moduleName === 'credit-limit',
+      );
+    }
+    let customFields = [];
+    let defaultFields = [];
     for (let i = 0; i < module.manageColumns.length; i++) {
-      if (debtorColumn.columns.includes(module.manageColumns[i].name)) {
+      if (
+        clientColumn &&
+        clientColumn.columns.includes(module.manageColumns[i].name)
+      ) {
         if (module.defaultColumns.includes(module.manageColumns[i].name)) {
           defaultFields.push({
             name: module.manageColumns[i].name,
@@ -103,145 +148,21 @@ router.get('/column-name', async function (req, res) {
       .status(200)
       .send({ status: 'SUCCESS', data: { defaultFields, customFields } });
   } catch (e) {
-    Logger.log.error(
-      'Error occurred in get debtor column names',
-      e.message || e,
-    );
+    Logger.log.error('Error occurred in get column names', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
     });
   }
 });
-
-/**
- * Get Entity Type List
- * */
-router.get('/entity-list', async function (req, res) {
-  try {
-    const debtors = await getCurrentDebtorList({
-      showCompleteList: false,
-      isForRisk: false,
-      userId: req.user.clientId,
-    });
-    res.status(200).send({
-      status: 'SUCCESS',
-      data: {
-        streetType: StaticData.streetType,
-        australianStates: StaticData.australianStates,
-        entityType: StaticData.entityType,
-        newZealandStates: StaticData.newZealandStates,
-        countryList: StaticData.countryList,
-        debtors,
-      },
-    });
-  } catch (e) {
-    Logger.log.error('Error occurred in get entity type list', e.message || e);
-    res.status(500).send({
-      status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
-    });
-  }
-});
-
-/**
- * Get Debtor list
- */
-router.get('/', async function (req, res) {
-  try {
-    const module = StaticFile.modules.find((i) => i.name === 'debtor');
-    const debtorColumn = req.user.manageColumns.find(
-      (i) => i.moduleName === 'debtor',
-    );
-    const response = await getClientCreditLimit({
-      requestedQuery: req.query,
-      debtorColumn: debtorColumn.columns,
-      clientId: req.user.clientId,
-      moduleColumn: module.manageColumns,
-      isForRisk: false,
-    });
-    res.status(200).send({
-      status: 'SUCCESS',
-      data: response,
-    });
-  } catch (e) {
-    Logger.log.error('Error occurred in get client-debtor details ', e);
-    res.status(500).send({
-      status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
-    });
-  }
-});
-
-/**
- * Generate Company Registration Number
- */
-router.get('/generate/registration-number', async function (req, res) {
-  try {
-    const registrationNumber = await checkForRegistrationNumber();
-    res.status(200).send({
-      status: 'SUCCESS',
-      data: registrationNumber,
-    });
-  } catch (e) {
-    Logger.log.error('Error occurred in generate registration number ', e);
-    res.status(500).send({
-      status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
-    });
-  }
-});
-
-/**
- * Get Stakeholder drawer details
- */
-router.get(
-  '/stakeholder/drawer-details/:stakeholderId',
-  async function (req, res) {
-    if (
-      !req.params.stakeholderId ||
-      !mongoose.Types.ObjectId.isValid(req.params.stakeholderId)
-    ) {
-      return res.status(400).send({
-        status: 'ERROR',
-        messageCode: 'REQUIRE_FIELD_MISSING',
-        message: 'Require fields are missing',
-      });
-    }
-    try {
-      let module = StaticFile.modules.find((i) => i.name === 'stakeholder');
-      module = JSON.parse(JSON.stringify(module));
-      const response = await getStakeholderDetails({
-        stakeholderId: req.params.stakeholderId,
-        manageColumns: module.manageColumns,
-      });
-      if (response && response.status && response.status === 'ERROR') {
-        return res.status(400).send(response);
-      }
-      res.status(200).send({
-        status: 'SUCCESS',
-        data: { response, header: 'Stakeholder Details' },
-      });
-    } catch (e) {
-      Logger.log.error(
-        'Error occurred in get stakeholder modal details ',
-        e.message || e,
-      );
-      res.status(500).send({
-        status: 'ERROR',
-        message: e.message || 'Something went wrong, please try again later.',
-      });
-    }
-  },
-);
 
 /**
  * Get StakeHolder List
  */
-router.get('/stakeholder/:debtorId', async function (req, res) {
+router.get('/stakeholder/:creditLimitId', async function (req, res) {
   if (
-    !req.params.debtorId ||
-    !mongoose.Types.ObjectId.isValid(req.params.debtorId)
+    !req.params.creditLimitId ||
+    !mongoose.Types.ObjectId.isValid(req.params.creditLimitId)
   ) {
     return res.status(400).send({
       status: 'ERROR',
@@ -255,7 +176,7 @@ router.get('/stakeholder/:debtorId', async function (req, res) {
       (i) => i.moduleName === 'stakeholder',
     );
     const response = await getStakeholderList({
-      debtorId: req.params.debtorId,
+      debtorId: req.params.creditLimitId,
       requestedQuery: req.query,
       manageColumns: module.manageColumns,
       stakeholderColumn: stakeholderColumn.columns,
@@ -271,193 +192,7 @@ router.get('/stakeholder/:debtorId', async function (req, res) {
 });
 
 /**
- * Get Debtor Modal details
- */
-router.get('/drawer/:debtorId', async function (req, res) {
-  if (
-    !req.params.debtorId ||
-    !mongoose.Types.ObjectId.isValid(req.params.debtorId)
-  ) {
-    return res.status(400).send({
-      status: 'ERROR',
-      messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Require fields are missing',
-    });
-  }
-  try {
-    let module = StaticFile.modules.find((i) => i.name === 'debtor');
-    module = JSON.parse(JSON.stringify(module));
-    const debtor = await Debtor.findOne({
-      _id: req.params.debtorId,
-    })
-      .select({ _id: 0, isDeleted: 0, createdAt: 0, updatedAt: 0 })
-      .lean();
-    if (!debtor) {
-      return res.status(400).send({
-        status: 'ERROR',
-        messageCode: 'NO_DEBTOR_FOUND',
-        message: 'No debtor found',
-      });
-    }
-    const response = await getClientDebtorDetails({
-      debtor: { debtorId: debtor },
-      manageColumns: module.manageColumns,
-    });
-    res.status(200).send({
-      status: 'SUCCESS',
-      data: { response, header: 'Debtor Details' },
-    });
-  } catch (e) {
-    Logger.log.error(
-      'Error occurred in get debtor modal details ',
-      e.message || e,
-    );
-    res.status(500).send({
-      status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
-    });
-  }
-});
-
-/**
- * Get Debtor Details
- */
-router.get('/details/:debtorId', async function (req, res) {
-  if (!req.params.debtorId) {
-    return res.status(400).send({
-      status: 'ERROR',
-      messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Require fields are missing.',
-    });
-  }
-  try {
-    let responseData = {};
-    const application = await Application.findOne({
-      debtorId: req.params.debtorId,
-      clientId: req.user.clientId,
-      status: {
-        $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED'],
-      },
-    }).lean();
-    let anotherApplication;
-    if (application) {
-      anotherApplication = await Application.findOne({
-        _id: { $ne: application._id },
-        debtorId: req.params.debtorId,
-        clientId: req.user.clientId,
-        status: {
-          $nin: ['DECLINED', 'CANCELLED', 'WITHDRAWN', 'SURRENDERED'],
-        },
-      });
-    }
-    if (
-      application &&
-      ((!anotherApplication &&
-        application.status !== 'APPROVED' &&
-        application.status !== 'DRAFT') ||
-        (anotherApplication && application.status !== 'APPROVED'))
-    ) {
-      return res.status(400).send({
-        status: 'ERROR',
-        messageCode: 'APPLICATION_ALREADY_EXISTS',
-        message:
-          'Application already exists, please create with another debtor',
-      });
-    } else if (application && application.status === 'APPROVED') {
-      const otherApplication = await Application.findOne({
-        debtorId: req.params.debtorId,
-        clientId: req.user.clientId,
-        status: {
-          $nin: [
-            'DECLINED',
-            'CANCELLED',
-            'WITHDRAWN',
-            'SURRENDERED',
-            'APPROVED',
-          ],
-        },
-      }).lean();
-      if (otherApplication) {
-        return res.status(400).send({
-          status: 'ERROR',
-          messageCode: 'APPLICATION_ALREADY_EXISTS',
-          message:
-            'Application already exists, please create with another debtor',
-        });
-      }
-      responseData.message =
-        'You already have one approved application, do you still want to create another one?';
-      responseData.messageCode = 'APPROVED_APPLICATION_ALREADY_EXISTS';
-    }
-    const debtor = await Debtor.findById(req.params.debtorId)
-      .select({ isDeleted: 0, createdAt: 0, updatedAt: 0, __v: 0 })
-      .lean();
-    if (debtor) {
-      if (debtor.address) {
-        for (let key in debtor.address) {
-          debtor[key] = debtor.address[key];
-        }
-        delete debtor.address;
-      }
-      if (debtor.country) {
-        debtor.country = {
-          label: debtor.country.name,
-          value: debtor.country.code,
-        };
-      }
-      if (debtor.entityType) {
-        debtor.entityType = {
-          label: debtor.entityType
-            .replace(/_/g, ' ')
-            .replace(/\w\S*/g, function (txt) {
-              return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
-            }),
-          value: debtor.entityType,
-        };
-      }
-      if (debtor.entityName) {
-        debtor.entityName = {
-          label: debtor.entityName,
-          value: debtor.entityName,
-        };
-      }
-      if (debtor.state) {
-        const state = StaticData.australianStates.find((i) => {
-          if (i._id === debtor.state) return i;
-        });
-        if (state) {
-          debtor.state = {
-            label: state.name,
-            value: debtor.state,
-          };
-        }
-      }
-      if (debtor.streetType) {
-        const streetType = StaticData.streetType.find((i) => {
-          if (i._id === debtor.streetType) return i;
-        });
-        if (streetType) {
-          debtor.streetType = {
-            label: streetType.name,
-            value: debtor.streetType,
-          };
-        }
-      }
-    }
-    responseData.status = 'SUCCESS';
-    responseData.data = debtor;
-    res.status(200).send(responseData);
-  } catch (e) {
-    Logger.log.error('Error occurred in get debtor details ', e.message || e);
-    res.status(500).send({
-      status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
-    });
-  }
-});
-
-/**
- * Download credit-limit in Excel
+ * Download Excel
  */
 router.get('/download', async function (req, res) {
   try {
@@ -598,7 +333,7 @@ router.get(
         });
       }
     } catch (e) {
-      Logger.log.error('Error occurred in download decision letter in csv', e);
+      Logger.log.error('Error occurred in download Decision Letter', e);
       res.status(500).send({
         status: 'ERROR',
         message: e.message || 'Something went wrong, please try again later.',
@@ -608,7 +343,7 @@ router.get(
 );
 
 /**
- * Get Debtor Details
+ * Get Details
  */
 router.get('/:creditLimitId', async function (req, res) {
   if (!req.params.creditLimitId) {
@@ -685,7 +420,7 @@ router.get('/:creditLimitId', async function (req, res) {
     }
     res.status(200).send({ status: 'SUCCESS', data: debtor });
   } catch (e) {
-    Logger.log.error('Error occurred in get debtor details ', e.message || e);
+    Logger.log.error('Error occurred in get debtor details', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -697,49 +432,48 @@ router.get('/:creditLimitId', async function (req, res) {
  * Update Column Names
  */
 router.put('/column-name', async function (req, res) {
-  if (
-    !req.body.hasOwnProperty('isReset') ||
-    !req.body.columns ||
-    !req.body.columnFor
-  ) {
+  if (!req.body.hasOwnProperty('isReset') || !req.body.columns) {
+    Logger.log.warn('Require fields are missing');
     return res.status(400).send({
       status: 'ERROR',
-      messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Require fields are missing',
+      message: 'Something went wrong, please try again.',
     });
   }
   try {
     let updateColumns = [];
-    let module;
-    switch (req.body.columnFor) {
-      case 'debtor':
-      case 'credit-limit':
-      case 'stakeholder':
-        if (req.body.isReset) {
-          module = StaticFile.modules.find(
-            (i) => i.name === req.body.columnFor,
-          );
-          updateColumns = module.defaultColumns;
-        } else {
-          updateColumns = req.body.columns;
-        }
-        break;
-      default:
-        return res.status(400).send({
-          status: 'ERROR',
-          messageCode: 'BAD_REQUEST',
-          message: 'Please pass correct fields',
-        });
+    if (req.body.columnFor == 'stakeholder') {
+      if (req.body.isReset) {
+        const module = StaticFile.modules.find((i) => i.name === 'stakeholder');
+        updateColumns = module.defaultColumns;
+      } else {
+        updateColumns = req.body.columns;
+      }
+      await ClientUser.updateOne(
+        { _id: req.user._id, 'manageColumns.moduleName': 'stakeholder' },
+        { $set: { 'manageColumns.$.columns': updateColumns } },
+      );
+    } else {
+      if (req.body.isReset) {
+        const module = StaticFile.modules.find(
+          (i) => i.name === 'credit-limit',
+        );
+        updateColumns = module.defaultColumns;
+      } else {
+        updateColumns = req.body.columns;
+      }
+      await ClientUser.updateOne(
+        { _id: req.user._id, 'manageColumns.moduleName': 'credit-limit' },
+        { $set: { 'manageColumns.$.columns': updateColumns } },
+      );
     }
-    await ClientUser.updateOne(
-      { _id: req.user._id, 'manageColumns.moduleName': req.body.columnFor },
-      { $set: { 'manageColumns.$.columns': updateColumns } },
-    );
     res
       .status(200)
       .send({ status: 'SUCCESS', message: 'Columns updated successfully' });
   } catch (e) {
-    Logger.log.error('Error occurred in update column names', e.message || e);
+    Logger.log.error(
+      'Error occurred in update credit-limit column names',
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -788,22 +522,23 @@ router.put('/credit-limit/:creditLimitId', async function (req, res) {
         return res.status(400).send({
           status: 'ERROR',
           messageCode: 'APPLICATION_ALREADY_EXISTS',
-          message: `Application already exists for Debtor: ${clientDebtor?.debtorId?.entityName}`,
+          message: `Application already exists for the Client: ${clientDebtor?.clientId?.name} & Debtor: ${clientDebtor?.debtorId?.entityName}`,
         });
       }
       await addAuditLog({
         entityType: 'credit-limit',
         entityRefId: req.params.creditLimitId,
         actionType: 'edit',
-        userType: 'client-user',
-        userRefId: req.user.clientId,
-        logDescription: `A credit limit of ${clientDebtor?.clientId?.name} ${clientDebtor?.debtorId?.entityName} is modified by ${clientDebtor?.clientId?.name}`,
+        userType: 'user',
+        userRefId: req.user._id,
+        logDescription: `A credit limit of ${clientDebtor?.clientId?.name} ${clientDebtor?.debtorId?.entityName} is modified by ${req.user.name}`,
       });
       await generateNewApplication({
         clientDebtorId: clientDebtor._id,
-        createdById: req.user.clientId,
-        createdByType: 'client-user',
+        createdByType: 'user',
+        createdById: req.user._id,
         creditLimit: req.body.creditLimit,
+        applicationId: clientDebtor?.activeApplicationId,
       });
     } else {
       await generateNewApplication({
@@ -820,7 +555,7 @@ router.put('/credit-limit/:creditLimitId', async function (req, res) {
       message: 'Credit limit updated successfully',
     });
   } catch (e) {
-    Logger.log.error('Error occurred in update credit-limit', e);
+    Logger.log.error('Error occurred in update credit-limit', e.message || e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -828,7 +563,4 @@ router.put('/credit-limit/:creditLimitId', async function (req, res) {
   }
 });
 
-/**
- * Export Router
- */
 module.exports = router;
