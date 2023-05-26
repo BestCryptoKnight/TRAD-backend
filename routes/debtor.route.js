@@ -19,6 +19,7 @@ const StaticData = require('./../static-files/staticData.json');
 const {
   getClientDebtorDetails,
   getClientCreditLimit,
+  getDebtorCreditLimit,
   downloadDecisionLetter,
 } = require('./../helper/client-debtor.helper');
 const {
@@ -686,6 +687,59 @@ router.get('/:creditLimitId', async function (req, res) {
     res.status(200).send({ status: 'SUCCESS', data: debtor });
   } catch (e) {
     Logger.log.error('Error occurred in get debtor details ', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Get Credit Limit Lists
+ */
+router.get('/credit-limit/:debtorId', async function (req, res) {
+  if (
+    !req.params.debtorId ||
+    !mongoose.Types.ObjectId.isValid(req.params.debtorId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const module = StaticFile.modules.find(
+      (i) => i.name === 'debtor-credit-limit',
+    );
+    const debtorColumn = req.user.manageColumns.find(
+      (i) => i.moduleName === 'debtor-credit-limit',
+    );
+    const hasOnlyReadAccessForApplicationModule = false;
+
+    const hasOnlyReadAccessForClientModule = false;
+
+    const hasFullAccessForClientModule = true;
+
+    const response = await getDebtorCreditLimit({
+      requestedQuery: req.query,
+      debtorColumn: debtorColumn.columns,
+      moduleColumn: module.manageColumns,
+      debtorId: req.params.debtorId,
+      hasOnlyReadAccessForApplicationModule,
+      hasOnlyReadAccessForClientModule,
+      hasFullAccessForClientModule,
+      userId: req.user._id,
+    });
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: response,
+    });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in get client-debtor details ',
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
