@@ -9,10 +9,10 @@ const ClientUser = mongoose.model('client-user');
 /*
  * Local Imports
  * */
-const authenticate = require('./../middlewares/authenticate').authMiddleWare;
+// const authenticate = require('./../middlewares/authenticate').authMiddleWare;
 const Logger = require('./../services/logger');
 
-router.get('/', authenticate, async function (req, res) {
+router.get('/', async function (req, res) {
   try {
     const user = await ClientUser.findById(req.user._id)
       .select('moduleAccess')
