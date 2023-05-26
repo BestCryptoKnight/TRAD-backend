@@ -438,6 +438,8 @@ router.get('/:entityId', async function (req, res) {
     }
 
     const total =
+      documents.length !== 0 &&
+      documents[0]['totalCount'] &&
       documents[0]['totalCount'].length !== 0
         ? documents[0]['totalCount'][0]['count']
         : 0;
@@ -445,7 +447,7 @@ router.get('/:entityId', async function (req, res) {
     res.status(200).send({
       status: 'SUCCESS',
       data: {
-        docs: documents[0].paginatedResult,
+        docs: response,
         headers,
         total,
         page: parseInt(req.query.page),

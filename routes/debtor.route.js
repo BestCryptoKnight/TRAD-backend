@@ -26,6 +26,8 @@ const {
   getDebtorFullAddress,
   getCurrentDebtorList,
   checkForRegistrationNumber,
+  storeCompanyDetails,
+  submitDebtor,
 } = require('./../helper/debtor.helper');
 const {
   generateNewApplication,
@@ -128,12 +130,18 @@ router.get('/entity-list', async function (req, res) {
     res.status(200).send({
       status: 'SUCCESS',
       data: {
-        streetType: StaticData.streetType,
-        australianStates: StaticData.australianStates,
-        entityType: StaticData.entityType,
-        newZealandStates: StaticData.newZealandStates,
-        countryList: StaticData.countryList,
-        debtors,
+        streetType: { field: 'streetType', data: StaticData.streetType },
+        australianStates: { field: 'state', data: StaticData.australianStates },
+        newZealandStates: { field: 'state', data: StaticData.newZealandStates },
+        entityType: { field: 'entityType', data: StaticData.entityType },
+        countryList: { field: 'country', data: StaticData.countryList },
+        debtors: { field: 'debtor', data: debtors },
+        // streetType: StaticData.streetType,
+        // australianStates: StaticData.australianStates,
+        // entityType: StaticData.entityType,
+        // newZealandStates: StaticData.newZealandStates,
+        // countryList: StaticData.countryList,
+        // debtors,
       },
     });
   } catch (e) {
@@ -878,6 +886,116 @@ router.put('/credit-limit/:creditLimitId', async function (req, res) {
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Generate New Debtor
+ */
+
+router.put('/generate', async function (req, res) {
+  if (!req.body.stepper) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  // if (
+  //   req.body.stepper !== 'company'
+  //   && (!req.body.applicationId ||
+  //     !mongoose.Types.ObjectId.isValid(req.body.applicationId))
+  // ) {
+  //   return res.status(400).send({
+  //     status: 'ERROR',
+  //     messageCode: 'REQUIRE_FIELD_MISSING',
+  //     message: 'Require fields are missing.',
+  //   });
+  // }
+  if (
+    req.body.stepper === 'company' &&
+    // !req.body.clientId ||
+    (!req.body.address ||
+      !req.body.address.country ||
+      !req.body.entityType ||
+      (req.body.entityType === 'TRUST' &&
+        (!req.body.address.state || !req.body.address.postCode)) ||
+      (!req.body.abn && !req.body.acn && !req.body.registrationNumber) ||
+      !req.body.entityName)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    let response;
+    let message;
+    switch (req.body.stepper) {
+      case 'company':
+        response = await storeCompanyDetails({
+          requestBody: req.body,
+          createdByType: 'user',
+          createdBy: req.user._id,
+          createdByName: req.user.name,
+        });
+        break;
+      case 'documents':
+        // const entityTypes = ['TRUST', 'PARTNERSHIP'];
+        // const debtorStage = 2;
+        await Debtor.updateOne({ _id: req.body.debtorId }, { debtorStage: 2 });
+
+        response = await Debtor.findById(req.body.debtorId)
+          .select('_id debtorStage')
+          .lean();
+        // await Application.findById(req.body.applicationId)
+        //   .select('_id debtorStage')
+        //   .lean();
+        break;
+      case 'confirmation':
+        console.log('userID_________', req.user._id);
+        message = await submitDebtor({
+          debtorId: req.body.debtorId,
+          userId: req.user.clientId,
+          userType: 'client-user',
+          userName: req.user.name,
+        });
+
+        response = {
+          debtorStage: 3,
+        };
+
+        // checkForAutomation({
+        //   debtorId: req.body.debtorId,
+        //   userType: 'user',
+        //   userId: req.user._id,
+        // });
+        break;
+      default:
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'BAD_REQUEST',
+          message: 'Please pass correct fields',
+        });
+    }
+    if (response && response.status && response.status === 'ERROR') {
+      return res.status(400).send(response);
+    }
+    res.status(200).send({
+      status: 'SUCCESS',
+      message: message,
+      data: response,
+    });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in generating application ',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e,
     });
   }
 });
