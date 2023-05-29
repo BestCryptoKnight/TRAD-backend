@@ -19,12 +19,15 @@ const StaticData = require('./../static-files/staticData.json');
 const {
   getClientDebtorDetails,
   getClientCreditLimit,
+  getDebtorCreditLimit,
   downloadDecisionLetter,
 } = require('./../helper/client-debtor.helper');
 const {
   getDebtorFullAddress,
   getCurrentDebtorList,
   checkForRegistrationNumber,
+  storeCompanyDetails,
+  submitDebtor,
 } = require('./../helper/debtor.helper');
 const {
   generateNewApplication,
@@ -35,9 +38,14 @@ const {
   getStakeholderDetails,
 } = require('./../helper/stakeholder.helper');
 const {
+  listEntitySpecificAlerts,
   checkForEntityInProfile,
   checkForActiveCreditLimit,
 } = require('./../helper/alert.helper');
+const {
+  getApplicationDocumentList,
+  getSpecificEntityDocumentList,
+} = require('./../helper/document.helper');
 const { generateExcel } = require('./../helper/excel.helper');
 const { addAuditLog } = require('./../helper/audit-log.helper');
 
@@ -127,12 +135,18 @@ router.get('/entity-list', async function (req, res) {
     res.status(200).send({
       status: 'SUCCESS',
       data: {
-        streetType: StaticData.streetType,
-        australianStates: StaticData.australianStates,
-        entityType: StaticData.entityType,
-        newZealandStates: StaticData.newZealandStates,
-        countryList: StaticData.countryList,
-        debtors,
+        streetType: { field: 'streetType', data: StaticData.streetType },
+        australianStates: { field: 'state', data: StaticData.australianStates },
+        newZealandStates: { field: 'state', data: StaticData.newZealandStates },
+        entityType: { field: 'entityType', data: StaticData.entityType },
+        countryList: { field: 'country', data: StaticData.countryList },
+        debtors: { field: 'debtor', data: debtors },
+        // streetType: StaticData.streetType,
+        // australianStates: StaticData.australianStates,
+        // entityType: StaticData.entityType,
+        // newZealandStates: StaticData.newZealandStates,
+        // countryList: StaticData.countryList,
+        // debtors,
       },
     });
   } catch (e) {
@@ -254,8 +268,11 @@ router.get('/stakeholder/:debtorId', async function (req, res) {
     const stakeholderColumn = req.user.manageColumns.find(
       (i) => i.moduleName === 'stakeholder',
     );
+    const debtor = await ClientDebtor.findOne({
+      _id: req.params.debtorId,
+    }).lean();
     const response = await getStakeholderList({
-      debtorId: req.params.debtorId,
+      debtorId: debtor.debtorId,
       requestedQuery: req.query,
       manageColumns: module.manageColumns,
       stakeholderColumn: stakeholderColumn.columns,
@@ -389,7 +406,16 @@ router.get('/details/:debtorId', async function (req, res) {
         'You already have one approved application, do you still want to create another one?';
       responseData.messageCode = 'APPROVED_APPLICATION_ALREADY_EXISTS';
     }
-    const debtor = await Debtor.findById(req.params.debtorId)
+    var clientDebtor = await ClientDebtor.findOne({
+      _id: req.params.debtorId,
+    });
+
+    if (clientDebtor?.debtorId == undefined) {
+      clientDebtor = {
+        debtorId: req.params.debtorId,
+      };
+    }
+    const debtor = await Debtor.findById(clientDebtor.debtorId)
       .select({ isDeleted: 0, createdAt: 0, updatedAt: 0, __v: 0 })
       .lean();
     if (debtor) {
@@ -445,7 +471,17 @@ router.get('/details/:debtorId', async function (req, res) {
       }
     }
     responseData.status = 'SUCCESS';
-    responseData.data = debtor;
+    responseData.data = {
+      company: debtor,
+      debtorStage: debtor.debtorStage,
+      _id: debtor._id,
+      entityType: debtor.entityType,
+      documents: {
+        uploadDocumentDebtorData: await getApplicationDocumentList({
+          entityId: debtor._id,
+        }),
+      },
+    };
     res.status(200).send(responseData);
   } catch (e) {
     Logger.log.error('Error occurred in get debtor details ', e.message || e);
@@ -694,6 +730,59 @@ router.get('/:creditLimitId', async function (req, res) {
 });
 
 /**
+ * Get Credit Limit Lists
+ */
+router.get('/credit-limit/:debtorId', async function (req, res) {
+  if (
+    !req.params.debtorId ||
+    !mongoose.Types.ObjectId.isValid(req.params.debtorId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const module = StaticFile.modules.find(
+      (i) => i.name === 'debtor-credit-limit',
+    );
+    const debtorColumn = req.user.manageColumns.find(
+      (i) => i.moduleName === 'debtor-credit-limit',
+    );
+    const hasOnlyReadAccessForApplicationModule = false;
+
+    const hasOnlyReadAccessForClientModule = false;
+
+    const hasFullAccessForClientModule = true;
+
+    const response = await getDebtorCreditLimit({
+      requestedQuery: req.query,
+      debtorColumn: debtorColumn.columns,
+      moduleColumn: module.manageColumns,
+      debtorId: req.params.debtorId,
+      hasOnlyReadAccessForApplicationModule,
+      hasOnlyReadAccessForClientModule,
+      hasFullAccessForClientModule,
+      userId: req.user._id,
+    });
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: response,
+    });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in get client-debtor details ',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
  * Update Column Names
  */
 router.put('/column-name', async function (req, res) {
@@ -740,6 +829,48 @@ router.put('/column-name', async function (req, res) {
       .send({ status: 'SUCCESS', message: 'Columns updated successfully' });
   } catch (e) {
     Logger.log.error('Error occurred in update column names', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Get Alert List
+ */
+router.get('/alert-list/:debtorId', async function (req, res) {
+  if (
+    !req.params.debtorId ||
+    !mongoose.Types.ObjectId.isValid(req.params.debtorId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const alertColumn = [
+      'alertType',
+      'alertCategory',
+      'alertPriority',
+      'createdAt',
+    ];
+    const debtor = await ClientDebtor.findOne({
+      _id: req.params.debtorId,
+    }).lean();
+    const response = await listEntitySpecificAlerts({
+      debtorId: debtor.debtorId,
+      requestedQuery: req.query,
+      alertColumn,
+    });
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: response,
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in get alert list', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -821,6 +952,207 @@ router.put('/credit-limit/:creditLimitId', async function (req, res) {
     });
   } catch (e) {
     Logger.log.error('Error occurred in update credit-limit', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Generate New Debtor
+ */
+
+router.put('/generate', async function (req, res) {
+  if (!req.body.stepper) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  // if (
+  //   req.body.stepper !== 'company'
+  //   && (!req.body.applicationId ||
+  //     !mongoose.Types.ObjectId.isValid(req.body.applicationId))
+  // ) {
+  //   return res.status(400).send({
+  //     status: 'ERROR',
+  //     messageCode: 'REQUIRE_FIELD_MISSING',
+  //     message: 'Require fields are missing.',
+  //   });
+  // }
+  if (
+    req.body.stepper === 'company' &&
+    // !req.body.clientId ||
+    (!req.body.address ||
+      !req.body.address.country ||
+      !req.body.entityType ||
+      (req.body.entityType === 'TRUST' &&
+        (!req.body.address.state || !req.body.address.postCode)) ||
+      (!req.body.abn && !req.body.acn && !req.body.registrationNumber) ||
+      !req.body.entityName)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    let response;
+    let message;
+    switch (req.body.stepper) {
+      case 'company':
+        response = await storeCompanyDetails({
+          requestBody: req.body,
+          createdByType: 'client-user',
+          createdBy: req.user._id,
+          createdByName: req.user.name,
+          clientId: req.user.clientId,
+        });
+        break;
+      case 'documents':
+        // const entityTypes = ['TRUST', 'PARTNERSHIP'];
+        // const debtorStage = 2;
+        await Debtor.updateOne({ _id: req.body.debtorId }, { debtorStage: 2 });
+
+        response = await Debtor.findById(req.body.debtorId)
+          .select('_id debtorStage')
+          .lean();
+        // await Application.findById(req.body.applicationId)
+        //   .select('_id debtorStage')
+        //   .lean();
+        break;
+      case 'confirmation':
+        message = await submitDebtor({
+          debtorId: req.body.debtorId,
+          userId: req.user.clientId,
+          userType: 'client-user',
+          userName: req.user.name,
+        });
+
+        response = {
+          debtorStage: 3,
+        };
+
+        // checkForAutomation({
+        //   debtorId: req.body.debtorId,
+        //   userType: 'user',
+        //   userId: req.user._id,
+        // });
+        break;
+      default:
+        return res.status(400).send({
+          status: 'ERROR',
+          messageCode: 'BAD_REQUEST',
+          message: 'Please pass correct fields',
+        });
+    }
+    if (response && response.status && response.status === 'ERROR') {
+      return res.status(400).send(response);
+    }
+    res.status(200).send({
+      status: 'SUCCESS',
+      message: message,
+      data: response,
+    });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in generating application ',
+      e.message || e,
+    );
+    res.status(500).send({
+      status: 'ERROR',
+      message: e,
+    });
+  }
+});
+
+/**
+ * Update Debtor Details
+ */
+router.put('/details/:debtorId', async function (req, res) {
+  if (
+    !req.params.debtorId ||
+    !mongoose.Types.ObjectId.isValid(req.params.debtorId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const update = {};
+    const clientDebtor = await ClientDebtor.findById(
+      req.params.debtorId,
+    ).lean();
+    const debtor = await Debtor.findById(clientDebtor.debtorId).lean();
+    if (req.body.address && Object.keys(req.body.address).length !== 0) {
+      update.address = {};
+      if (req.body.address.property) {
+        update.address.property = req.body.address.property;
+      } else {
+        delete update.address.property;
+      }
+      if (req.body.address.unitNumber) {
+        update.address.unitNumber = req.body.address.unitNumber;
+      } else {
+        delete update.address.unitNumber;
+      }
+      if (req.body.address.streetNumber) {
+        update.address.streetNumber = req.body.address.streetNumber;
+      } else {
+        delete update.address.streetNumber;
+      }
+      if (req.body.address.streetName) {
+        update.address.streetName = req.body.address.streetName;
+      } else {
+        delete update.address.streetName;
+      }
+      if (req.body.address.streetType) {
+        update.address.streetType = req.body.address.streetType;
+      } else {
+        delete update.address.streetType;
+      }
+      if (req.body.address.suburb) {
+        update.address.suburb = req.body.address.suburb;
+      } else {
+        delete update.address.suburb;
+      }
+      update.address.state = debtor.address.state;
+      if (req.body.address.postCode) {
+        update.address.postCode = req.body.address.postCode;
+      } else {
+        delete update.address.postCode;
+      }
+      update.address.country = debtor.address.country;
+    }
+    update.contactNumber = req.body.contactNumber
+      ? req.body.contactNumber
+      : undefined;
+    update.tradingName = req.body.tradingName
+      ? req.body.tradingName
+      : undefined;
+    if (req.body.reviewDate) {
+      update.reviewDate = req.body.reviewDate;
+    }
+    await Debtor.updateOne({ _id: clientDebtor.debtorId }, update);
+    await addAuditLog({
+      entityType: 'debtor',
+      entityRefId: debtor._id,
+      actionType: 'edit',
+      userType: 'user',
+      userRefId: req.user._id,
+      logDescription: `A debtor ${debtor.entityName} is successfully updated by ${req.user.name}`,
+    });
+    res.status(200).send({
+      status: 'SUCCESS',
+      message: 'Debtors details updated successfully',
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in update debtor details ', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

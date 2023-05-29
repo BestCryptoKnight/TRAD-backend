@@ -791,6 +791,7 @@ const storeCompanyDetails = async ({
   createdBy,
   createdByType,
   createdByName,
+  clientId,
 }) => {
   const organization = await Organization.findOne({ isDeleted: false })
     .select('entityCount')
@@ -913,7 +914,7 @@ const storeCompanyDetails = async ({
       isDebtorExists,
       userId: createdBy,
       userName: createdByName,
-      clientId: null,
+      clientId: clientId,
       userType: createdByType,
     });
     return { debtor, clientDebtor, debtorStage: 1, _id: debtor._id };
@@ -957,6 +958,16 @@ const submitDebtor = async ({ debtorId, userId, userName, userType }) => {
       {
         $set: {
           status: 'SUBMITTED',
+          $inc: { debtorStage: 1 },
+        },
+      },
+    );
+    await ClientDebtor.updateOne(
+      { debtorId: debtorId },
+      {
+        $set: {
+          status: 'APPROVED',
+          clientId: userId,
           $inc: { debtorStage: 1 },
         },
       },

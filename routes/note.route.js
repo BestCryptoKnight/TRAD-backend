@@ -6,6 +6,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const Note = mongoose.model('note');
 const Application = mongoose.model('application');
+const ClientDebtor = mongoose.model('client-debtor');
 
 /*
  * Local Imports
@@ -67,8 +68,11 @@ router.get('/:entityId', async function (req, res) {
         ],
       };
     } else if (req.query.noteFor === 'debtor') {
+      const debtor = await ClientDebtor.findOne({
+        _id: req.params.entityId,
+      }).lean();
       const applications = await Application.find({
-        debtorId: req.params.entityId,
+        debtorId: debtor.debtorId,
       }).lean();
       const applicationIds = applications.map((i) =>
         mongoose.Types.ObjectId(i._id),

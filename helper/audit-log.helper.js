@@ -62,7 +62,7 @@ const getEntityName = async ({ entityType, entityId }) => {
     switch (entityType) {
       case 'application':
         entity = await Application.findById(entityId).lean();
-        response = entity.applicationId;
+        response = entity?.applicationId;
         break;
       case 'client':
         entity = await Client.findById(entityId).lean();
@@ -70,7 +70,7 @@ const getEntityName = async ({ entityType, entityId }) => {
         break;
       case 'debtor':
         entity = await Debtor.findById(entityId).lean();
-        response = entity.entityName;
+        response = entity?.entityName;
         break;
       case 'user':
         entity = await User.findById(entityId).lean();
