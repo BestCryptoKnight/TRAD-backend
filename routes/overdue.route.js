@@ -6,6 +6,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const Client = mongoose.model('client');
 const Overdue = mongoose.model('overdue');
+const ClientDebtor = mongoose.model('client-debtor');
 
 /*
  * Local Imports
@@ -347,6 +348,55 @@ router.get('/', async function (req, res) {
     });
   } catch (e) {
     Logger.log.error('Error occurred in get application list ', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Get Specific Entity Overdue List
+ */
+router.get('/:entityId', async function (req, res) {
+  if (
+    !req.params.entityId ||
+    !mongoose.Types.ObjectId.isValid(req.params.entityId) ||
+    !req.query.entityType
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const debtor = await ClientDebtor.findOne({
+      _id: req.params.entityId,
+    }).lean();
+    const { overdueList, headers, total } = await getOverdueList({
+      requestedQuery: req.query,
+      isForRisk: true,
+      clientId: req.user.clientId,
+      entityId: debtor.debtorId,
+      isForSubmodule: true,
+    });
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: {
+        docs: overdueList[0].paginatedResult,
+        headers,
+        total,
+        page: parseInt(req.query.page),
+        limit: parseInt(req.query.limit),
+        pages: Math.ceil(total / parseInt(req.query.limit)),
+      },
+    });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred while get specific overdue detail',
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
