@@ -1070,6 +1070,97 @@ router.put('/generate', async function (req, res) {
 });
 
 /**
+ * Update Debtor Details
+ */
+router.put('/details/:debtorId', async function (req, res) {
+  if (
+    !req.params.debtorId ||
+    !mongoose.Types.ObjectId.isValid(req.params.debtorId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const update = {};
+    const clientDebtor = await ClientDebtor.findById(
+      req.params.debtorId,
+    ).lean();
+    const debtor = await Debtor.findById(clientDebtor.debtorId).lean();
+    if (req.body.address && Object.keys(req.body.address).length !== 0) {
+      update.address = {};
+      if (req.body.address.property) {
+        update.address.property = req.body.address.property;
+      } else {
+        delete update.address.property;
+      }
+      if (req.body.address.unitNumber) {
+        update.address.unitNumber = req.body.address.unitNumber;
+      } else {
+        delete update.address.unitNumber;
+      }
+      if (req.body.address.streetNumber) {
+        update.address.streetNumber = req.body.address.streetNumber;
+      } else {
+        delete update.address.streetNumber;
+      }
+      if (req.body.address.streetName) {
+        update.address.streetName = req.body.address.streetName;
+      } else {
+        delete update.address.streetName;
+      }
+      if (req.body.address.streetType) {
+        update.address.streetType = req.body.address.streetType;
+      } else {
+        delete update.address.streetType;
+      }
+      if (req.body.address.suburb) {
+        update.address.suburb = req.body.address.suburb;
+      } else {
+        delete update.address.suburb;
+      }
+      update.address.state = debtor.address.state;
+      if (req.body.address.postCode) {
+        update.address.postCode = req.body.address.postCode;
+      } else {
+        delete update.address.postCode;
+      }
+      update.address.country = debtor.address.country;
+    }
+    update.contactNumber = req.body.contactNumber
+      ? req.body.contactNumber
+      : undefined;
+    update.tradingName = req.body.tradingName
+      ? req.body.tradingName
+      : undefined;
+    if (req.body.reviewDate) {
+      update.reviewDate = req.body.reviewDate;
+    }
+    await Debtor.updateOne({ _id: clientDebtor.debtorId }, update);
+    await addAuditLog({
+      entityType: 'debtor',
+      entityRefId: debtor._id,
+      actionType: 'edit',
+      userType: 'user',
+      userRefId: req.user._id,
+      logDescription: `A debtor ${debtor.entityName} is successfully updated by ${req.user.name}`,
+    });
+    res.status(200).send({
+      status: 'SUCCESS',
+      message: 'Debtors details updated successfully',
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in update debtor details ', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
  * Export Router
  */
 module.exports = router;
