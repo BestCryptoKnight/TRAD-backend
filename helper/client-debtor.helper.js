@@ -271,7 +271,7 @@ const getClientCreditLimit = async ({
         requestedQuery.sortOrder === 'desc' ? -1 : 1;
       aggregationQuery.push({ $sort: sortingOptions });
     } else {
-      requestedQuery.sortBy = 'updatedAt';
+      requestedQuery.sortBy = '_id';
       sortingOptions[requestedQuery.sortBy] =
         requestedQuery.sortOrder === 'desc' ? 1 : -1;
       aggregationQuery.push({ $sort: sortingOptions });
