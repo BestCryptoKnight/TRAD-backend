@@ -31,6 +31,7 @@ const task = require('./task.route');
 const user = require('./user.route');
 const creditLimit = require('./creditLimit.route');
 const privilege = require('./privilege.route');
+const creditReport = require('./creditReport.route');
 
 router.use('/auth', clientAuth);
 router.use('/search', globalSearch);
@@ -51,6 +52,7 @@ router.use('/task', task);
 router.use('/user', user);
 router.use('/credit-limit', creditLimit);
 router.use('/privilege', privilege);
+router.use('/credit-report', creditReport);
 
 /**
  * Export Router

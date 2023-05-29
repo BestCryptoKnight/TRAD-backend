@@ -8,6 +8,7 @@ const ClientUser = mongoose.model('client-user');
 const Application = mongoose.model('application');
 const DebtorDirector = mongoose.model('debtor-director');
 const Debtor = mongoose.model('debtor');
+const ClientDebtor = mongoose.model('client-debtor');
 
 /*
  * Local Imports
@@ -848,9 +849,12 @@ router.get('/:entityId', async function (req, res) {
     const queryFilter = {
       isDeleted: false,
     };
+    const debtor = await ClientDebtor.findOne({
+      _id: req.params.entityId,
+    }).lean();
     switch (req.query.listFor) {
       case 'debtor-application':
-        queryFilter.debtorId = mongoose.Types.ObjectId(req.params.entityId);
+        queryFilter.debtorId = mongoose.Types.ObjectId(debtor.debtorId);
         queryFilter.clientId = mongoose.Types.ObjectId(req.user.clientId);
         break;
       default:

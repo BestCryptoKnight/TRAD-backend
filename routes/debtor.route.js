@@ -38,9 +38,14 @@ const {
   getStakeholderDetails,
 } = require('./../helper/stakeholder.helper');
 const {
+  listEntitySpecificAlerts,
   checkForEntityInProfile,
   checkForActiveCreditLimit,
 } = require('./../helper/alert.helper');
+const {
+  getApplicationDocumentList,
+  getSpecificEntityDocumentList,
+} = require('./../helper/document.helper');
 const { generateExcel } = require('./../helper/excel.helper');
 const { addAuditLog } = require('./../helper/audit-log.helper');
 
@@ -263,8 +268,11 @@ router.get('/stakeholder/:debtorId', async function (req, res) {
     const stakeholderColumn = req.user.manageColumns.find(
       (i) => i.moduleName === 'stakeholder',
     );
+    const debtor = await ClientDebtor.findOne({
+      _id: req.params.debtorId,
+    }).lean();
     const response = await getStakeholderList({
-      debtorId: req.params.debtorId,
+      debtorId: debtor.debtorId,
       requestedQuery: req.query,
       manageColumns: module.manageColumns,
       stakeholderColumn: stakeholderColumn.columns,
@@ -398,7 +406,16 @@ router.get('/details/:debtorId', async function (req, res) {
         'You already have one approved application, do you still want to create another one?';
       responseData.messageCode = 'APPROVED_APPLICATION_ALREADY_EXISTS';
     }
-    const debtor = await Debtor.findById(req.params.debtorId)
+    var clientDebtor = await ClientDebtor.findOne({
+      _id: req.params.debtorId,
+    });
+
+    if (clientDebtor?.debtorId == undefined) {
+      clientDebtor = {
+        debtorId: req.params.debtorId,
+      };
+    }
+    const debtor = await Debtor.findById(clientDebtor.debtorId)
       .select({ isDeleted: 0, createdAt: 0, updatedAt: 0, __v: 0 })
       .lean();
     if (debtor) {
@@ -454,7 +471,17 @@ router.get('/details/:debtorId', async function (req, res) {
       }
     }
     responseData.status = 'SUCCESS';
-    responseData.data = debtor;
+    responseData.data = {
+      company: debtor,
+      debtorStage: debtor.debtorStage,
+      _id: debtor._id,
+      entityType: debtor.entityType,
+      documents: {
+        uploadDocumentDebtorData: await getApplicationDocumentList({
+          entityId: debtor._id,
+        }),
+      },
+    };
     res.status(200).send(responseData);
   } catch (e) {
     Logger.log.error('Error occurred in get debtor details ', e.message || e);
@@ -810,6 +837,48 @@ router.put('/column-name', async function (req, res) {
 });
 
 /**
+ * Get Alert List
+ */
+router.get('/alert-list/:debtorId', async function (req, res) {
+  if (
+    !req.params.debtorId ||
+    !mongoose.Types.ObjectId.isValid(req.params.debtorId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const alertColumn = [
+      'alertType',
+      'alertCategory',
+      'alertPriority',
+      'createdAt',
+    ];
+    const debtor = await ClientDebtor.findOne({
+      _id: req.params.debtorId,
+    }).lean();
+    const response = await listEntitySpecificAlerts({
+      debtorId: debtor.debtorId,
+      requestedQuery: req.query,
+      alertColumn,
+    });
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: response,
+    });
+  } catch (e) {
+    Logger.log.error('Error occurred in get alert list', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
  * Update credit-limit
  */
 router.put('/credit-limit/:creditLimitId', async function (req, res) {
@@ -937,9 +1006,10 @@ router.put('/generate', async function (req, res) {
       case 'company':
         response = await storeCompanyDetails({
           requestBody: req.body,
-          createdByType: 'user',
+          createdByType: 'client-user',
           createdBy: req.user._id,
           createdByName: req.user.name,
+          clientId: req.user.clientId,
         });
         break;
       case 'documents':
@@ -955,7 +1025,6 @@ router.put('/generate', async function (req, res) {
         //   .lean();
         break;
       case 'confirmation':
-        console.log('userID_________', req.user._id);
         message = await submitDebtor({
           debtorId: req.body.debtorId,
           userId: req.user.clientId,
