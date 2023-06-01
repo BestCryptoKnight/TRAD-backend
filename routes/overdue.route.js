@@ -371,14 +371,11 @@ router.get('/:entityId', async function (req, res) {
     });
   }
   try {
-    const debtor = await ClientDebtor.findOne({
-      _id: req.params.entityId,
-    }).lean();
     const { overdueList, headers, total } = await getOverdueList({
       requestedQuery: req.query,
       isForRisk: true,
       clientId: req.user.clientId,
-      entityId: debtor.debtorId,
+      entityId: req.params.entityId,
       isForSubmodule: true,
     });
     res.status(200).send({

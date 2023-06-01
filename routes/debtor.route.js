@@ -25,6 +25,7 @@ const {
 const {
   getDebtorFullAddress,
   getCurrentDebtorList,
+  getClientDebtorList,
   checkForRegistrationNumber,
   storeCompanyDetails,
   submitDebtor,
@@ -167,7 +168,7 @@ router.get('/', async function (req, res) {
     const debtorColumn = req.user.manageColumns.find(
       (i) => i.moduleName === 'debtor',
     );
-    const response = await getClientCreditLimit({
+    const response = await getClientDebtorList({
       requestedQuery: req.query,
       debtorColumn: debtorColumn.columns,
       clientId: req.user.clientId,
@@ -268,11 +269,8 @@ router.get('/stakeholder/:debtorId', async function (req, res) {
     const stakeholderColumn = req.user.manageColumns.find(
       (i) => i.moduleName === 'stakeholder',
     );
-    const debtor = await ClientDebtor.findOne({
-      _id: req.params.debtorId,
-    }).lean();
     const response = await getStakeholderList({
-      debtorId: debtor.debtorId,
+      debtorId: req.params.debtorId,
       requestedQuery: req.query,
       manageColumns: module.manageColumns,
       stakeholderColumn: stakeholderColumn.columns,
@@ -493,27 +491,37 @@ router.get('/details/:debtorId', async function (req, res) {
 });
 
 /**
- * Download credit-limit in Excel
+ * Download Debtor in Excel
  */
 router.get('/download', async function (req, res) {
   try {
-    const module = StaticFile.modules.find((i) => i.name === 'credit-limit');
+    const module = StaticFile.modules.find((i) => i.name === 'debtor');
     const debtorColumn = [
+      'debtorCode',
       'entityName',
-      'entityType',
       'abn',
       'acn',
       'registrationNumber',
+      'tradingName',
+      'entityType',
+      'fullAddress',
+      'property',
+      'unitNumber',
+      'streetNumber',
+      'streetName',
+      'streetType',
+      'suburb',
+      'state',
       'country',
-      'requestedAmount',
-      'creditLimit',
-      'approvalOrDecliningDate',
-      'expiryDate',
-      'limitType',
-      'clientReference',
-      'comments',
+      'postCode',
+      'contactNumber',
+      'riskRating',
+      'reviewDate',
+      'isActive',
+      'createdAt',
+      'updatedAt',
     ];
-    const response = await getClientCreditLimit({
+    const response = await getClientDebtorList({
       requestedQuery: req.query,
       debtorColumn: debtorColumn,
       clientId: req.user.clientId,
@@ -529,40 +537,12 @@ router.get('/download', async function (req, res) {
       });
     }
     if (response && response.docs.length !== 0) {
-      const headers = [
-        { name: 'entityName', label: 'Debtor Name', type: 'string' },
-        { name: 'abn', label: 'ABN/NZBN', type: 'string' },
-        { name: 'acn', label: 'ACN/NCN', type: 'string' },
-        {
-          name: 'registrationNumber',
-          label: 'Registration Number',
-          type: 'string',
-        },
-        { name: 'country', label: 'Country', type: 'string' },
-        {
-          name: 'requestedAmount',
-          label: 'Requested Amount',
-          type: 'amount',
-        },
-        {
-          name: 'creditLimit',
-          label: 'Approved Amount',
-          type: 'amount',
-        },
-        {
-          name: 'approvalOrDecliningDate',
-          label: 'Approval Date',
-          type: 'date',
-        },
-        { name: 'expiryDate', label: 'Expiry Date', type: 'date' },
-        { name: 'limitType', label: 'Limit Type', type: 'string' },
-        {
-          name: 'clientReference',
-          label: 'Client Reference',
-          type: 'string',
-        },
-        { name: 'comments', label: 'Comments', type: 'string' },
-      ];
+      const headers = [];
+      for (let i = 0; i < module.manageColumns.length; i++) {
+        if (debtorColumn.includes(module.manageColumns[i].name)) {
+          headers.push(module.manageColumns[i]);
+        }
+      }
       const finalArray = [];
       let data = {};
       response.docs.forEach((i) => {
@@ -582,7 +562,7 @@ router.get('/download', async function (req, res) {
       });
       const excelData = await generateExcel({
         data: finalArray,
-        reportFor: 'Credit Limit List',
+        reportFor: 'Debtor List',
         headers,
         filter: response.filterArray,
       });
@@ -590,8 +570,7 @@ router.get('/download', async function (req, res) {
         'Content-Type',
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       );
-      const fileName =
-        client?.clientCode + '-credit-limit-' + Date.now() + '.xlsx';
+      const fileName = client?.clientCode + '-debtor-' + Date.now() + '.xlsx';
       res.setHeader('Content-Disposition', 'attachment; filename=' + fileName);
       res.status(200).send(excelData);
     } else {
@@ -601,7 +580,7 @@ router.get('/download', async function (req, res) {
       });
     }
   } catch (e) {
-    Logger.log.error('Error occurred in download credit-limit in csv', e);
+    Logger.log.error('Error occurred in download debtors in csv', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -646,8 +625,11 @@ router.get(
 /**
  * Get Debtor Details
  */
-router.get('/:creditLimitId', async function (req, res) {
-  if (!req.params.creditLimitId) {
+router.get('/:debtorId', async function (req, res) {
+  if (
+    !req.params.debtorId ||
+    !mongoose.Types.ObjectId.isValid(req.params.debtorId)
+  ) {
     return res.status(400).send({
       status: 'ERROR',
       messageCode: 'REQUIRE_FIELD_MISSING',
@@ -655,57 +637,45 @@ router.get('/:creditLimitId', async function (req, res) {
     });
   }
   try {
-    let debtor = await ClientDebtor.findOne({
-      _id: req.params.creditLimitId,
-    })
-      .populate({
-        path: 'debtorId',
-        select: { isDeleted: 0, createdAt: 0, updatedAt: 0, __v: 0 },
-      })
+    const debtor = await Debtor.findById(req.params.debtorId)
+      .select({ isDeleted: 0, createdAt: 0, updatedAt: 0, __v: 0 })
       .lean();
-    debtor = debtor.debtorId;
-    if (debtor) {
-      if (debtor.address) {
-        for (let key in debtor.address) {
-          debtor[key] = debtor.address[key];
-        }
-        debtor.address = getDebtorFullAddress({
-          address: debtor.address,
-          country: debtor.address.country,
-        });
-      }
-      if (debtor.country) {
-        debtor.country = {
-          label: debtor.country.name,
-          value: debtor.country.code,
-        };
-      }
-      if (debtor.entityType) {
-        debtor.entityType = {
-          label: debtor.entityType
-            .replace(/_/g, ' ')
-            .replace(/\w\S*/g, function (txt) {
-              return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
-            }),
-          value: debtor.entityType,
-        };
-      }
-      if (debtor.entityName) {
-        debtor.entityName = {
-          label: debtor.entityName,
-          value: debtor.entityName,
-        };
+    if (!debtor) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'NO_DEBTOR_FOUND',
+        message: 'No debtor found',
+      });
+    }
+    if (debtor.entityType) {
+      debtor.entityType = {
+        label: debtor.entityType
+          .replace(/_/g, ' ')
+          .replace(/\w\S*/g, function (txt) {
+            return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+          }),
+        value: debtor.entityType,
+      };
+    }
+    if (debtor.address) {
+      for (let key in debtor.address) {
+        debtor[key] = debtor.address[key];
       }
       if (debtor.state) {
-        const state = StaticData.australianStates.find((i) => {
-          if (i._id === debtor.state) return i;
-        });
-        if (state) {
-          debtor.state = {
-            label: state.name,
-            value: debtor.state,
-          };
-        }
+        const state =
+          debtor.country.code === 'AUS'
+            ? StaticData.australianStates.find((i) => {
+                if (i._id === debtor.state) return i;
+              })
+            : debtor.country.code === 'NZL'
+            ? StaticData.newZealandStates.find((i) => {
+                if (i._id === debtor.state) return i;
+              })
+            : { name: debtor.state };
+        debtor.state = {
+          value: debtor.state,
+          label: state && state.name ? state.name : debtor.state,
+        };
       }
       if (debtor.streetType) {
         const streetType = StaticData.streetType.find((i) => {
@@ -718,10 +688,23 @@ router.get('/:creditLimitId', async function (req, res) {
           };
         }
       }
+      if (debtor.country) {
+        debtor.country = {
+          label: debtor.country.name,
+          value: debtor.country.code,
+        };
+      }
+      delete debtor.address;
     }
-    res.status(200).send({ status: 'SUCCESS', data: debtor });
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: debtor,
+    });
   } catch (e) {
-    Logger.log.error('Error occurred in get debtor details ', e.message || e);
+    Logger.log.error(
+      'Error occurred in get client-debtor details ',
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
@@ -764,7 +747,8 @@ router.get('/credit-limit/:debtorId', async function (req, res) {
       hasOnlyReadAccessForApplicationModule,
       hasOnlyReadAccessForClientModule,
       hasFullAccessForClientModule,
-      userId: req.user._id,
+      userId: null,
+      clientId: req.user.clientId,
     });
     res.status(200).send({
       status: 'SUCCESS',
@@ -857,11 +841,8 @@ router.get('/alert-list/:debtorId', async function (req, res) {
       'alertPriority',
       'createdAt',
     ];
-    const debtor = await ClientDebtor.findOne({
-      _id: req.params.debtorId,
-    }).lean();
     const response = await listEntitySpecificAlerts({
-      debtorId: debtor.debtorId,
+      debtorId: req.params.debtorId,
       requestedQuery: req.query,
       alertColumn,
     });
