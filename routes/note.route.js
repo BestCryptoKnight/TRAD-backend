@@ -68,11 +68,8 @@ router.get('/:entityId', async function (req, res) {
         ],
       };
     } else if (req.query.noteFor === 'debtor') {
-      const debtor = await ClientDebtor.findOne({
-        _id: req.params.entityId,
-      }).lean();
       const applications = await Application.find({
-        debtorId: debtor.debtorId,
+        debtorId: req.params.entityId,
       }).lean();
       const applicationIds = applications.map((i) =>
         mongoose.Types.ObjectId(i._id),

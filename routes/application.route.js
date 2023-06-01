@@ -849,12 +849,9 @@ router.get('/:entityId', async function (req, res) {
     const queryFilter = {
       isDeleted: false,
     };
-    const debtor = await ClientDebtor.findOne({
-      _id: req.params.entityId,
-    }).lean();
     switch (req.query.listFor) {
       case 'debtor-application':
-        queryFilter.debtorId = mongoose.Types.ObjectId(debtor.debtorId);
+        queryFilter.debtorId = mongoose.Types.ObjectId(req.params.entityId);
         queryFilter.clientId = mongoose.Types.ObjectId(req.user.clientId);
         break;
       default:
