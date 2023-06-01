@@ -465,6 +465,7 @@ const getDebtorCreditLimit = async ({
   hasOnlyReadAccessForApplicationModule = false,
   hasFullAccessForClientModule,
   userId,
+  clientId = null,
 }) => {
   try {
     let sendAsHeader = true;
@@ -511,6 +512,9 @@ const getDebtorCreditLimit = async ({
       if (clients?.length !== 0) {
         queryFilter.clientId = { $in: clients.map((i) => i._id) };
       }
+    }
+    if (clientId) {
+      queryFilter.clientId = clientId;
     }
     const aggregationQuery = [
       {

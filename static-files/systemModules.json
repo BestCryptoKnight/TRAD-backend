@@ -7,6 +7,12 @@
       "accessTypes": ["read", "write", "full-access"]
     },
     {
+      "name": "alerts",
+      "label": "Alerts",
+      "isDefault": false,
+      "accessTypes": ["read", "write", "full-access"]
+    },
+    {
       "name": "claim",
       "label": "Claim",
       "isDefault": false,

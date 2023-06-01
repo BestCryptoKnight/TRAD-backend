@@ -57,6 +57,7 @@ const {
   getApplicationDocumentList,
   getSpecificEntityDocumentList,
 } = require('./../helper/document.helper');
+const { generateExcel } = require('./../helper/excel.helper');
 
 /**
  * Get Column Names
@@ -259,16 +260,53 @@ router.get('/download', async function (req, res) {
       hasFullAccess: hasFullAccess,
       moduleColumn: module.manageColumns,
     });
-    if (response && response.docs.length !== 0) {
-      const finalArray = await formatCSVList({
-        moduleColumn: debtorColumn,
-        response: response.docs,
+    if (response && response?.docs.length > 20000) {
+      return res.status(400).send({
+        status: 'ERROR',
+        messageCode: 'DOWNLOAD_LIMIT_EXCEED',
+        message:
+          'User cannot download more than 20000 records at a time. Please apply filter to narrow down the list',
       });
-      const csvResponse = await convertToCSV(finalArray);
-      const fileName = 'debtor-list-' + new Date().getTime() + '.csv';
-      res.header('Content-Type', 'text/csv');
+    }
+    if (response && response.docs.length !== 0) {
+      const headers = [];
+      for (let i = 0; i < module.manageColumns.length; i++) {
+        if (debtorColumn.includes(module.manageColumns[i].name)) {
+          headers.push(module.manageColumns[i]);
+        }
+      }
+      const finalArray = [];
+      let data = {};
+      response.docs.forEach((i) => {
+        data = {};
+        debtorColumn.map((key) => {
+          data[key] = i[key];
+        });
+        finalArray.push(data);
+      });
+      const user = await User.findOne({ _id: req.user._id })
+        .select('name')
+        .lean();
+      console.log('before', response.filterArray);
+      response.filterArray.unshift({
+        label: 'User Name',
+        value: user?.name,
+        type: 'string',
+      });
+      console.log('after', response.filterArray);
+      const excelData = await generateExcel({
+        data: finalArray,
+        reportFor: 'Debtor List',
+        headers,
+        filter: response.filterArray,
+      });
+      res.header(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
+      const fileName = 'debtor-' + Date.now() + '.xlsx';
       res.setHeader('Content-Disposition', 'attachment; filename=' + fileName);
-      res.send(csvResponse);
+      res.status(200).send(excelData);
     } else {
       res.status(400).send({
         status: 'ERROR',

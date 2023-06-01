@@ -258,26 +258,23 @@ router.get('/:entityId', async function (req, res) {
       // const debtor = await ClientDebtor.findOne({
       //   _id: req.params.entityId
       // }).lean();
-      const clientDebtor = await ClientDebtor.findOne({
-        _id: req.params.entityId,
-      }).lean();
       const conditions = [
         {
-          uploadById: { $in: [clientDebtor.debtorId] },
+          uploadById: { $in: [req.params.entityId] },
         },
         { uploadByType: 'client-user', isPublic: true },
       ];
       if (req.user.clientId) {
         conditions.push({
           uploadByType: 'client-user',
-          uploadById: mongoose.Types.ObjectId(clientDebtor.debtorId),
+          uploadById: mongoose.Types.ObjectId(req.params.entityId),
         });
       }
       query = {
         $and: [
           { isDeleted: false },
           {
-            entityRefId: mongoose.Types.ObjectId(clientDebtor.debtorId),
+            entityRefId: mongoose.Types.ObjectId(req.params.entityId),
           },
           {
             $or: conditions,
