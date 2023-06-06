@@ -2614,7 +2614,7 @@ const getAlertReport = async ({
           $lookup: {
             from: 'debtor-directors',
             localField: 'entityId',
-            foreignField: '_id',
+            foreignField: 'debtorId',
             as: 'debtorDirector',
           },
         },
