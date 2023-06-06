@@ -14,6 +14,7 @@ const {
   getClients,
   getDebtorDirectorListClient,
   getTaskList,
+  getDebtorList,
   getApplications,
   getClientDebtorList,
 } = require('./../helper/globalSearch.helper');

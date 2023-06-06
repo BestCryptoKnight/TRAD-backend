@@ -243,6 +243,12 @@ const getDebtorList = async ({
             },
           },
           {
+            tradingName: {
+              $regex: getRegexForSearch(searchString),
+              $options: 'i',
+            },
+          },
+          {
             acn: {
               $regex: searchString,
               $options: 'i',
@@ -898,6 +904,12 @@ const getClientDebtorList = async ({ searchString, clientId, limit = 100 }) => {
           $or: [
             {
               'debtorId.entityName': {
+                $regex: getRegexForSearch(searchString),
+                $options: 'i',
+              },
+            },
+            {
+              'debtorId.tradingName': {
                 $regex: getRegexForSearch(searchString),
                 $options: 'i',
               },
