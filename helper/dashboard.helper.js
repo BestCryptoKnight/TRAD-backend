@@ -26,7 +26,7 @@ const getEndorsedLimit = async ({
       //   { creditLimit: { $ne: null } },
       //   { creditLimit: { $ne: 0 } },
       // ],
-      status: { $exists: true, $in: ['APPROVED'] },
+      // status: { $exists: true, $in: ['APPROVED'] },
     };
     // if (startDate && endDate) {
     //   query.approvalOrDecliningDate = {

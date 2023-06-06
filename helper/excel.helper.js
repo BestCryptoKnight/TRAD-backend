@@ -80,6 +80,9 @@ const generateExcel = ({ data, reportFor, headers, filter, title }) => {
       case 'Limit List':
         addColumnsForLimitList({ data, worksheet, headers, filter });
         break;
+      case 'Debtor List':
+        addColumnsForDebtorList({ data, worksheet, headers, filter });
+        break;
       case 'Alert Report':
         addColumnsForAlertList({ data, worksheet, headers, filter });
         break;
@@ -199,6 +202,52 @@ const addColumnsForApplicationList = async ({
       'Error occurred in addColumnsForApplicationList',
       e.message || e,
     );
+  }
+};
+
+const addColumnsForDebtorList = async ({
+  data,
+  worksheet,
+  headers,
+  filter,
+}) => {
+  try {
+    worksheet.mergeCells('A1:O1');
+    for (let i = 0; i <= filter.length; i++) {
+      if (filter[i]) {
+        worksheet.mergeCells(`A${i + 2}:O${i + 2}`);
+      }
+    }
+    worksheet.getColumn(1).width = 20;
+    worksheet.getColumn(2).width = 40;
+    worksheet.getColumn(3).width = 20;
+    worksheet.getColumn(4).width = 20;
+    worksheet.getColumn(5).width = 20;
+    worksheet.getColumn(6).width = 20;
+    worksheet.getColumn(7).width = 20;
+    worksheet.getColumn(8).width = 40;
+    worksheet.getColumn(9).width = 20;
+    worksheet.getColumn(10).width = 20;
+    worksheet.getColumn(11).width = 20;
+    worksheet.getColumn(12).width = 20;
+    worksheet.getColumn(13).width = 20;
+    worksheet.getColumn(14).width = 25;
+    worksheet.getColumn(15).width = 25;
+    worksheet.getColumn(16).width = 20;
+    worksheet.getColumn(17).width = 20;
+    worksheet.getColumn(18).width = 25;
+    worksheet.getColumn(19).width = 20;
+    worksheet.getColumn(20).width = 25;
+    worksheet.getColumn(21).width = 20;
+    worksheet.getColumn(22).width = 25;
+    worksheet.getColumn(23).width = 25;
+    worksheet.addRow();
+    worksheet.mergeCells(
+      `A${worksheet.lastRow.number}:O${worksheet.lastRow.number}`,
+    );
+    await addDataForTable({ data, headers, worksheet });
+  } catch (e) {
+    Logger.log.error('Error occurred in add debtor list data', e.message || e);
   }
 };
 

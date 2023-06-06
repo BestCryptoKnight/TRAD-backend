@@ -6,6 +6,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const Note = mongoose.model('note');
 const Application = mongoose.model('application');
+const ClientDebtor = mongoose.model('client-debtor');
 
 /*
  * Local Imports

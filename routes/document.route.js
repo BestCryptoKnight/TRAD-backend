@@ -255,22 +255,19 @@ router.get('/:entityId', async function (req, res) {
       };
     } else if (req.query.documentFor === 'debtor') {
       documentColumn.columns.push('uploadByType');
-      const applications = await Application.find({
-        debtorId: req.params.entityId,
-      }).lean();
-      const applicationIds = applications.map((i) =>
-        mongoose.Types.ObjectId(i._id),
-      );
+      // const debtor = await ClientDebtor.findOne({
+      //   _id: req.params.entityId
+      // }).lean();
       const conditions = [
         {
-          entityRefId: { $in: applicationIds },
+          uploadById: { $in: [req.params.entityId] },
         },
-        { uploadByType: 'user', isPublic: true },
+        { uploadByType: 'client-user', isPublic: true },
       ];
       if (req.user.clientId) {
         conditions.push({
           uploadByType: 'client-user',
-          uploadById: mongoose.Types.ObjectId(req.user.clientId),
+          uploadById: mongoose.Types.ObjectId(req.params.entityId),
         });
       }
       query = {
@@ -438,6 +435,8 @@ router.get('/:entityId', async function (req, res) {
     }
 
     const total =
+      documents.length !== 0 &&
+      documents[0]['totalCount'] &&
       documents[0]['totalCount'].length !== 0
         ? documents[0]['totalCount'][0]['count']
         : 0;
@@ -445,7 +444,7 @@ router.get('/:entityId', async function (req, res) {
     res.status(200).send({
       status: 'SUCCESS',
       data: {
-        docs: documents[0].paginatedResult,
+        docs: response,
         headers,
         total,
         page: parseInt(req.query.page),

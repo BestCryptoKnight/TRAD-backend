@@ -122,7 +122,7 @@ const getClientCreditLimit = async ({
     const queryFilter = {
       // isActive: true,
       clientId: mongoose.Types.ObjectId(clientId),
-      status: { $exists: true, $in: ['APPROVED', 'DECLINED'] },
+      // status: { $exists: true, $in: ['APPROVED', 'DECLINED'] },
       // creditLimit: { $exists: true, $ne: null },
       // $and: [
       //   { creditLimit: { $exists: true } },
@@ -269,6 +269,11 @@ const getClientCreditLimit = async ({
         : requestedQuery.sortBy;
       sortingOptions[requestedQuery.sortBy] =
         requestedQuery.sortOrder === 'desc' ? -1 : 1;
+      aggregationQuery.push({ $sort: sortingOptions });
+    } else {
+      requestedQuery.sortBy = '_id';
+      sortingOptions[requestedQuery.sortBy] =
+        requestedQuery.sortOrder === 'desc' ? 1 : -1;
       aggregationQuery.push({ $sort: sortingOptions });
     }
 
@@ -460,6 +465,7 @@ const getDebtorCreditLimit = async ({
   hasOnlyReadAccessForApplicationModule = false,
   hasFullAccessForClientModule,
   userId,
+  clientId = null,
 }) => {
   try {
     let sendAsHeader = true;
@@ -506,6 +512,9 @@ const getDebtorCreditLimit = async ({
       if (clients?.length !== 0) {
         queryFilter.clientId = { $in: clients.map((i) => i._id) };
       }
+    }
+    if (clientId) {
+      queryFilter.clientId = clientId;
     }
     const aggregationQuery = [
       {
