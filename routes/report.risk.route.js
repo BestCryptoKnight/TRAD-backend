@@ -297,7 +297,7 @@ router.get('/', async function (req, res) {
         break;
       case 'alert-report':
         response = await getAlertReport({
-          reportColumn: reportColumn.columns,
+          reportColumn: reportColumn?.columns,
           hasFullAccess,
           userId: req.user._id,
           requestedQuery: req.query,
