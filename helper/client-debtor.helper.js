@@ -674,7 +674,7 @@ const getDebtorCreditLimit = async ({
       if (debtor.activeApplicationId?.expiryDate) {
         debtor.expiryDate = debtor.activeApplicationId.expiryDate;
       }
-      if (!debtor?.expiryDate) {
+      if (!debtor?.expiryDate && debtor.activeApplicationId) {
         const d = new Date();
         let y = d.getFullYear();
         d.setFullYear(++y);

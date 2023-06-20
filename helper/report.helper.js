@@ -2682,6 +2682,14 @@ const getAlertReport = async ({
           ],
         },
       });
+    } else {
+      query.push({
+        $facet: {
+          paginatedResult: [
+            ...facetQuery,
+          ],
+        },
+      });
     }
     query.unshift({ $match: queryFilter });
     const alerts = await Alert.aggregate(query).allowDiskUse(true);

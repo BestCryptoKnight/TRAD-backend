@@ -17,6 +17,7 @@ const checkModuleAccess = require('./../middlewares/authenticate')
 const auth = require('./adminAuth.route');
 const application = require('./application.risk.route');
 const alert = require('./alert.risk.route');
+const alerts = require('./alerts.risk.route');
 const client = require('./client.risk.route');
 const claim = require('./claim.risk.route');
 const debtor = require('./debtor.risk.route');
@@ -65,6 +66,7 @@ router.use('/settings', settings);
 router.use('/task', task);
 router.use('/user', user);
 router.use('/alert', alert);
+router.use('/alerts', alerts);
 
 /**
  * Export Router
