@@ -15,6 +15,11 @@ const alertSchema = new Schema(
       type: Schema.Types.String,
       enum: ['debtor', 'debtor-director'],
     },
+    status: {
+      type: Schema.Types.String,
+      enum: ['Pending', 'Processed'],
+      default: 'Pending',
+    },
     alertId: { type: Schema.Types.String },
     alertType: { type: Schema.Types.String },
     alertCategory: { type: Schema.Types.String },

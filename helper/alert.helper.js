@@ -267,6 +267,11 @@ const getAlertDetail = async ({ alertId }) => {
           type: StaticData.AlertFieldTypes[key] || 'string',
         });
       }
+      response.alertDetails.push({
+        label: 'Status',
+        value: alert.status ?? 'Pending',
+        type: 'string',
+      })
     }
     if (alert.companyNumbers.ncn) {
       response.generalDetails.push({

@@ -563,7 +563,9 @@ const getDebtorCreditLimit = async ({
         : 'clientId.' + i;
       return [i, 1];
     });
+
     fields.push(['activeApplicationId._id', 1]);
+    fields.push(['activeApplicationId.expiryDate', 1]);
     if (debtorColumn.includes('name')) {
       fields.push(['clientId._id', 1]);
     }
@@ -673,12 +675,8 @@ const getDebtorCreditLimit = async ({
       }
       if (debtor.activeApplicationId?.expiryDate) {
         debtor.expiryDate = debtor.activeApplicationId.expiryDate;
-      }
-      if (!debtor?.expiryDate) {
-        const d = new Date();
-        let y = d.getFullYear();
-        d.setFullYear(++y);
-        debtor.expiryDate = d;
+      } else {
+        debtor.expiryDate = null;
       }
       if (debtor.activeApplicationId?.approvalOrDecliningDate) {
         debtor.approvalOrDecliningDate =
