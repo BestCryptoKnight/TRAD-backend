@@ -4,7 +4,7 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
-const User = mongoose.model('user');
+const ClientUser = mongoose.model('client-user');
 const Alert = mongoose.model('alert');
 
 /*
@@ -13,13 +13,8 @@ const Alert = mongoose.model('alert');
 const Logger = require('./../services/logger');
 const StaticFile = require('./../static-files/moduleColumn');
 const StaticData = require('./../static-files/staticData.json');
-const {  getAlertReport } = require('./../helper/report.helper');
-const { getClientList } = require('./../helper/client.helper');
-const { insurerList } = require('./../helper/task.helper');
-const { getUserList } = require('./../helper/user.helper');
 const { generateExcel } = require('./../helper/excel.helper');
-const { getCurrentDebtorList } = require('./../helper/debtor.helper');
-const { getAlertDetail } = require('./../helper/alert.helper')
+const { getAlertDetail, getClientAlertList } = require('./../helper/alert.helper');
 
 /**
  * Get Column Names
@@ -27,10 +22,10 @@ const { getAlertDetail } = require('./../helper/alert.helper')
 router.get('/column-name', async function (req, res) {
   try {
     const module = StaticFile.modules.find(
-      (i) => i.name === 'alerts',
+      (i) => i.name === 'alert-report',
     );
     const alertColumn = req.user.manageColumns.find(
-      (i) => i.moduleName === 'alert-report',
+      (i) => i.moduleName === 'alerts',
     );
     if (!module || !module.manageColumns || module.manageColumns.length === 0) {
       return res.status(400).send({
@@ -96,40 +91,15 @@ router.get('/entity-list', async function (req, res) {
     if (req.accessTypes && req.accessTypes.indexOf('full-access') === -1) {
       hasFullAccess = false;
     }
-    const [clients, debtors, insurers] = await Promise.all([
-      getClientList({
-        hasFullAccess: hasFullAccess,
-        userId: req.user._id,
-        sendCRMIds: true,
-        page: req.query.page,
-        limit: req.query.limit,
-      }),
-      getCurrentDebtorList({
-        userId: req.user._id,
-        hasFullAccess: hasFullAccess,
-        isForRisk: true,
-        limit: req.query.limit,
-        page: req.query.page,
-        showCompleteList: false,
-        isForOverdue: false,
-      }),
-      insurerList(),
+    const [alertPriority, alertType] = await Promise.all([
+      Alert.find().distinct('alertPriority'),
+      Alert.find().distinct('alertType'),
     ]);
-    const { riskAnalystList, serviceManagerList } = await getUserList();
-    clients.map((i) => {
-      i.clientId = i.crmClientId;
-      delete i.crmClientId;
-    });
     res.status(200).send({
       status: 'SUCCESS',
       data: {
-        clientIds: clients,
-        debtorId: debtors,
-        insurerId: insurers,
-        riskAnalystId: riskAnalystList,
-        serviceManagerId: serviceManagerList,
-        entityType: StaticData.entityType,
-        limitType: StaticData.limitType,
+        alertType,
+        alertPriority,
       },
     });
   } catch (e) {
@@ -142,57 +112,13 @@ router.get('/entity-list', async function (req, res) {
 });
 
 /**
- * Get Alert Entity List
- */
-router.get('/alert-entity-list', async function (req, res) {
-  try {
-    let hasFullAccess = true;
-    if (req.accessTypes && req.accessTypes.indexOf('full-access') === -1) {
-      hasFullAccess = false;
-    }
-    const [alertPriority, alertType, clients] = await Promise.all([
-      Alert.find().distinct('alertPriority'),
-      Alert.find().distinct('alertType'),
-      getClientList({
-        hasFullAccess: hasFullAccess,
-        userId: req.user._id,
-        sendCRMIds: true,
-        page: req.query.page,
-        limit: req.query.limit,
-      }),
-    ]);
-    clients.map((i) => {
-      i.clientId = i.crmClientId;
-      delete i.crmClientId;
-    });
-    res.status(200).send({
-      status: 'SUCCESS',
-      data: {
-        clientIds: clients,
-        alertType,
-        alertPriority,
-      },
-    });
-  } catch (e) {
-    Logger.log.error(
-      'Error occurred in get entity list for alert report',
-      e.message || e,
-    );
-    res.status(500).send({
-      status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
-    });
-  }
-});
-
-/**
  * Get Alert List
  */
 router.get('/', async function (req, res) {
   try {
-    const module = StaticFile.modules.find((i) => i.name === 'alerts');
+    const module = StaticFile.modules.find((i) => i.name === 'alert-report');
     let reportColumn = req.user.manageColumns.find(
-      (i) => i.moduleName === 'alert-report',
+      (i) => i.moduleName === 'alerts',
     );
     if (!module || !module.manageColumns || module.manageColumns.length === 0) {
       return res.status(400).send({
@@ -205,20 +131,12 @@ router.get('/', async function (req, res) {
     if (req.accessTypes && req.accessTypes.indexOf('full-access') !== -1) {
       hasFullAccess = true;
     }
-    let response = await getAlertReport({
+    let response = await getClientAlertList({
       reportColumn: reportColumn.columns,
       hasFullAccess,
-      userId: req.user._id,
+      clientId: req.user.clientId,
       requestedQuery: req.query,
     });
-    response.response.map((i) => {
-      if (i.status) {
-        return i;
-      } else {
-        i.status = 'Pending';
-        return i;
-      }
-    })
     const headers = [];
     for (let i = 0; i < module.manageColumns.length; i++) {
       if (reportColumn.columns.includes(module.manageColumns[i].name)) {
@@ -274,7 +192,7 @@ router.get('/detail/:alertId', async function (req, res) {
       message: e.message || 'Something went wrong, please try again later.',
     });
   }
-});
+})
 
 /**
  * Download Alert in Excel
@@ -288,25 +206,23 @@ router.get('/download', async function (req, res) {
     if (req.accessTypes && req.accessTypes.indexOf('full-access') !== -1) {
       hasFullAccess = true;
     }
-        reportColumn = [
-          'clientName',
-          'debtorName',
-          'alertCategory',
-          'alertType',
-          'alertDate',
-          'alertPriority',
-          'abn',
-          'acn',
-          'description',
-          'status',
-        ];
+    reportColumn = [
+      'clientName',
+      'debtorName',
+      'alertCategory',
+      'alertType',
+      'alertDate',
+      'alertPriority',
+      'abn',
+      'acn',
+      'description',
+    ];
     const reportFor = 'Alert Report';
-    const response = await getAlertReport({
+    const response = await getClientAlertList({
       reportColumn: reportColumn,
       hasFullAccess,
-      userId: req.user._id,
+      clientId: req.user.clientId,
       requestedQuery: req.query,
-      isForDownload: true,
     });
 
     if (response && response?.response.length > 20000) {
@@ -379,7 +295,7 @@ router.put('/column-name', async function (req, res) {
     });
   }
   try {
-    req.body.columnFor = 'alert-report';
+    req.body.columnFor = 'alerts';
     let updateColumns = [];
     let module;
     if (req.body.isReset) {
@@ -390,7 +306,7 @@ router.put('/column-name', async function (req, res) {
     } else {
       updateColumns = req.body.columns;
     }
-    await User.updateOne(
+    await ClientUser.updateOne(
       { _id: req.user._id, 'manageColumns.moduleName': req.body.columnFor },
       { $set: { 'manageColumns.$.columns': updateColumns } },
     );
@@ -399,38 +315,6 @@ router.put('/column-name', async function (req, res) {
       .send({ status: 'SUCCESS', message: 'Columns updated successfully' });
   } catch (e) {
     Logger.log.error('Error occurred in update column names', e.message || e);
-    res.status(500).send({
-      status: 'ERROR',
-      message: e.message || 'Something went wrong, please try again later.',
-    });
-  }
-});
-
-/**
- * Update Alert Detail Status
- */
-router.put('/detail/:alertId', async function (req, res) {
-  if (
-    !req.params.alertId ||
-    !mongoose.Types.ObjectId.isValid(req.params.alertId)
-  ) {
-    return res.status(400).send({
-      status: 'ERROR',
-      messageCode: 'REQUIRE_FIELD_MISSING',
-      message: 'Require fields are missing.',
-    });
-  }
-
-  try {
-    await Alert.updateOne(
-      { _id: req.params.alertId },
-      { $set: {'status': req.body?.value}},
-    );
-    res
-      .status(200)
-      .send({ status: 'SUCCESS', message: 'Status updated successfully' });
-  } catch (e) {
-    Logger.log.error('Error occurred in update alert status by id', e);
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',

@@ -15,10 +15,6 @@ const StaticFile = require('./../static-files/systemModules.json');
 
 router.get('/', authenticate, async function (req, res) {
   try {
-    await User.updateOne(
-      { _id: req.user._id },
-      { $set: { 'moduleAccess': StaticFile.modules }}
-    );
     const user = await User.findById(req.user._id)
       .select('moduleAccess')
       .lean();
