@@ -17,6 +17,7 @@ const clientAuth = require('./clientAuth.route');
 const application = require('./application.route');
 const client = require('./client.route');
 const claims = require('./claims.route');
+const alerts = require('./alerts.route');
 const globalSearch = require('./globalSearch.route');
 const debtor = require('./debtor.route');
 const dashboard = require('./dashboard.route');
@@ -53,6 +54,7 @@ router.use('/user', user);
 router.use('/credit-limit', creditLimit);
 router.use('/privilege', privilege);
 router.use('/credit-report', creditReport);
+router.use('/alerts', alerts);
 
 /**
  * Export Router

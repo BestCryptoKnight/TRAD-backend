@@ -1000,6 +1000,218 @@ const checkForValidEntity = async ({ lookupValue, lookupMethod }) => {
   }
 };
 
+const getClientAlertList = async ({
+  hasFullAccess = false,
+  clientId,
+  reportColumn,
+  requestedQuery,
+  isForDownload = false,
+}) => {
+  try {
+    const queryFilter = {};
+    let query = [];
+    query.push({
+      $match: {
+        status: 'Processed',
+      },
+    });
+    const facetQuery = [];
+    let creditLimits;
+    let debtorProject = {};
+    const mapClientNames = {};
+    const filterArray = [];
+
+    reportColumn.push('alertId');
+    const isDescriptionFieldSelected = reportColumn.includes('description');
+    const isClientFieldSelected = reportColumn.includes('clientName');
+    const isABNFieldSelected = reportColumn.includes('abn');
+    const isACNFieldSelected = reportColumn.includes('acn');
+    const isDebtorFieldSelected = reportColumn.includes('debtorName');
+
+    if (
+      !hasFullAccess ||
+      reportColumn.includes('clientName')
+    ) {
+      creditLimits = await ClientDebtor.find({ clientId: clientId })
+        .select('debtorId clientId')
+        .populate({ path: 'clientId', select: '_id name' })
+        .lean();
+      const debtorIds = creditLimits.map((i) => i.debtorId);
+      queryFilter.entityId = { $in: debtorIds };
+
+      creditLimits.forEach((creditLimit) => {
+        if (!mapClientNames[creditLimit.debtorId]) {
+          mapClientNames[creditLimit.debtorId] = [];
+        }
+        mapClientNames[creditLimit.debtorId].push(creditLimit.clientId?.name);
+      });
+    }
+
+    let dateQuery = {};
+    if (requestedQuery.startDate || requestedQuery.endDate) {
+      if (requestedQuery.startDate) {
+        dateQuery = {
+          $gte: new Date(requestedQuery.startDate),
+        };
+      }
+      if (requestedQuery.endDate) {
+        dateQuery = Object.assign({}, dateQuery, {
+          $lte: new Date(requestedQuery.endDate),
+        });
+      }
+      queryFilter.alertDate = dateQuery;
+    }
+
+    if (requestedQuery.alertPriority) {
+      queryFilter.alertPriority = requestedQuery.alertPriority;
+    }
+    if (requestedQuery.alertType) {
+      queryFilter.alertType = requestedQuery.alertType;
+    }
+
+    const fields = reportColumn.map((i) => {
+      return [i, 1];
+    });
+
+    if (
+      reportColumn.includes('debtorName') ||
+      reportColumn.includes('abn') ||
+      reportColumn.includes('acn') ||
+      reportColumn.includes('clientName')
+    ) {
+      facetQuery.push(
+        {
+          $lookup: {
+            from: 'debtors',
+            localField: 'entityId',
+            foreignField: '_id',
+            as: 'debtor',
+          },
+        },
+        {
+          $lookup: {
+            from: 'debtor-directors',
+            localField: 'entityId',
+            foreignField: 'debtorId',
+            as: 'debtorDirector',
+          },
+        },
+        {
+          $lookup: {
+            from: 'debtors',
+            localField: 'debtorDirector.debtorId',
+            foreignField: '_id',
+            as: 'debtorOfDirector',
+          },
+        },
+        {
+          $unwind: {
+            path: '$debtor',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $unwind: {
+            path: '$debtorOfDirector',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+      );
+
+      debtorProject = {
+        debtorDetails: {
+          $cond: {
+            if: { $eq: ['$entityType', 'debtor-director'] },
+            then: '$debtorOfDirector',
+            else: '$debtor',
+          },
+        },
+      };
+    }
+
+    const projectFields = fields.reduce((obj, [key, val]) => {
+      obj[key] = val;
+      return obj;
+    }, {});
+    facetQuery.push({
+      $project: { ...debtorProject, ...projectFields },
+    });
+
+    if (requestedQuery.page && requestedQuery.limit) {
+      query.push({
+        $facet: {
+          paginatedResult: [
+            {
+              $skip:
+                (parseInt(requestedQuery.page) - 1) *
+                parseInt(requestedQuery.limit),
+            },
+            { $limit: parseInt(requestedQuery.limit) },
+            ...facetQuery,
+          ],
+          totalCount: [
+            {
+              $count: 'count',
+            },
+          ],
+        },
+      });
+    } else {
+      query.push({
+        $facet: {
+          paginatedResult: [
+            ...facetQuery,
+          ],
+        },
+      });
+    }
+    query.unshift({ $match: queryFilter });
+    const alerts = await Alert.aggregate(query).allowDiskUse(true);
+    const response =
+      alerts && alerts[0] && alerts[0]['paginatedResult']
+        ? alerts[0]['paginatedResult']
+        : alerts;
+    const total =
+      alerts.length !== 0 &&
+        alerts[0]['totalCount'] &&
+        alerts[0]['totalCount'].length !== 0
+        ? alerts[0]['totalCount'][0]['count']
+        : 0;
+    response.forEach((alert) => {
+      if (isDescriptionFieldSelected) {
+        alert.description = StaticData.AlertList[alert.alertId].description;
+      }
+      if (isClientFieldSelected) {
+        if (alert.entityId) {
+          alert.clientName = mapClientNames[alert.entityId]?.join(', ') || '';
+        } else {
+          alert.clientName =
+            mapClientNames[alert.debtorDetails?._id]?.join(', ') || '';
+        }
+      }
+      if (isABNFieldSelected) {
+        alert.abn = alert.debtorDetails?.abn;
+      }
+      if (isACNFieldSelected) {
+        alert.acn = alert.debtorDetails?.acn;
+      }
+      if (isDebtorFieldSelected) {
+        if (alert.companyName) {
+          alert.debtorName = alert.companyName;
+        } else {
+          alert.debtorName = alert.debtorDetails?.entityName;
+        }
+      }
+      delete alert.alertId;
+      delete alert.debtorDetails;
+    });
+    return { response, total, filterArray };
+  } catch (e) {
+    Logger.log.error('Error occurred in get alert report');
+    Logger.log.error(e.message || e);
+  }
+};
+
 module.exports = {
   retrieveAlertListFromIllion,
   listEntitySpecificAlerts,
@@ -1008,4 +1220,5 @@ module.exports = {
   checkForEntityInProfile,
   checkForActiveCreditLimit,
   addImportApplicationEntitiesToProfile,
+  getClientAlertList,
 };
