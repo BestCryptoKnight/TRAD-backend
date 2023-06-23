@@ -149,9 +149,7 @@ const generateDecisionLetter = async ({
     }
     if (expiryDate && status !== 'DECLINED') {
       tableData.push({
-        column1: `Expiry Date: ${moment(expiryDate)
-          .tz(config.organization.timeZone)
-          .format('DD/MM/YYYY')}`,
+        column1: `Expiry Date: ${moment(expiryDate).format('DD/MM/YYYY')}`,
       });
     }
     table.addBody(tableData);
