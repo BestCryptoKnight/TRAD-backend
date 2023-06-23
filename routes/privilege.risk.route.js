@@ -11,6 +11,7 @@ const User = mongoose.model('user');
  * */
 const authenticate = require('./../middlewares/authenticate').authMiddleWare;
 const Logger = require('./../services/logger');
+const StaticFile = require('./../static-files/systemModules.json');
 
 router.get('/', authenticate, async function (req, res) {
   try {

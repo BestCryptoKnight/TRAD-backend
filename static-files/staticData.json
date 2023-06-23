@@ -2701,7 +2701,6 @@
         "accountType",
         "reasonToReport",
         "defaultDate",
-        "status",
         "lastStatusDate",
         "lastStatusDate",
         "defaultingEntity",
@@ -2722,7 +2721,6 @@
         "startAmt",
         "amtOwing",
         "comments",
-        "status",
         "changeDate"
       ]
     },
@@ -2739,7 +2737,6 @@
         "formCodeDescription",
         "subFormCode",
         "subFormCodeDescription",
-        "processingStatus",
         "documentReceivedDate",
         "documentImagedDate"
       ]
@@ -2757,7 +2754,6 @@
         "formCodeDescription",
         "subFormCode",
         "subFormCodeDescription",
-        "processingStatus",
         "documentReceivedDate",
         "documentImagedDate"
       ]
@@ -2775,7 +2771,6 @@
         "formCodeDescription",
         "subFormCode",
         "subFormCodeDescription",
-        "processingStatus",
         "documentReceivedDate",
         "documentImagedDate"
       ]
@@ -2793,7 +2788,6 @@
         "formCodeDescription",
         "subFormCode",
         "subFormCodeDescription",
-        "processingStatus",
         "documentReceivedDate",
         "documentImagedDate"
       ]
@@ -2811,7 +2805,6 @@
         "formCodeDescription",
         "subFormCode",
         "subFormCodeDescription",
-        "processingStatus",
         "documentReceivedDate",
         "documentImagedDate"
       ]
@@ -2829,7 +2822,6 @@
         "formCodeDescription",
         "subFormCode",
         "subFormCodeDescription",
-        "processingStatus",
         "documentReceivedDate",
         "documentImagedDate"
       ]
@@ -2847,7 +2839,6 @@
         "formCodeDescription",
         "subFormCode",
         "subFormCodeDescription",
-        "processingStatus",
         "documentReceivedDate",
         "documentImagedDate"
       ]
@@ -2865,7 +2856,6 @@
         "formCodeDescription",
         "subFormCode",
         "subFormCodeDescription",
-        "processingStatus",
         "documentReceivedDate",
         "documentImagedDate"
       ]
@@ -2883,7 +2873,6 @@
         "formCodeDescription",
         "subFormCode",
         "subFormCodeDescription",
-        "processingStatus",
         "documentReceivedDate",
         "documentImagedDate"
       ]
@@ -2901,7 +2890,6 @@
         "formCodeDescription",
         "subFormCode",
         "subFormCodeDescription",
-        "processingStatus",
         "documentReceivedDate",
         "documentImagedDate"
       ]
@@ -2919,7 +2907,6 @@
         "formCodeDescription",
         "subFormCode",
         "subFormCodeDescription",
-        "processingStatus",
         "documentReceivedDate",
         "documentImagedDate"
       ]
@@ -2937,7 +2924,6 @@
         "formCodeDescription",
         "subFormCode",
         "subFormCodeDescription",
-        "processingStatus",
         "documentReceivedDate",
         "documentImagedDate"
       ]
@@ -2955,7 +2941,6 @@
         "formCodeDescription",
         "subFormCode",
         "subFormCodeDescription",
-        "processingStatus",
         "documentReceivedDate",
         "documentImagedDate"
       ]
@@ -2973,7 +2958,6 @@
         "formCodeDescription",
         "subFormCode",
         "subFormCodeDescription",
-        "processingStatus",
         "documentReceivedDate",
         "documentImagedDate"
       ]
@@ -2991,7 +2975,6 @@
         "formCodeDescription",
         "subFormCode",
         "subFormCodeDescription",
-        "processingStatus",
         "documentReceivedDate",
         "documentImagedDate"
       ]
@@ -3009,7 +2992,6 @@
         "formCodeDescription",
         "subFormCode",
         "subFormCodeDescription",
-        "processingStatus",
         "documentReceivedDate",
         "documentImagedDate"
       ]
@@ -3027,7 +3009,6 @@
         "formCodeDescription",
         "subFormCode",
         "subFormCodeDescription",
-        "processingStatus",
         "documentReceivedDate",
         "documentImagedDate"
       ]
@@ -3041,7 +3022,6 @@
       "alertFields": [
         "previousStatus",
         "previousStatusDescription",
-        "status",
         "statusDescription",
         "entityType",
         "changeDate"
@@ -3056,7 +3036,6 @@
       "alertFields": [
         "previousStatus",
         "previousStatusDescription",
-        "status",
         "statusDescription",
         "entityType",
         "changeDate"
@@ -3071,7 +3050,6 @@
       "alertFields": [
         "previousStatus",
         "previousStatusDescription",
-        "status",
         "statusDescription",
         "abnStatusFromDate",
         "entityType",
@@ -3091,7 +3069,6 @@
         "formCodeDescription",
         "subFormCode",
         "subFormCodeDescription",
-        "processingStatus",
         "documentReceivedDate",
         "documentImagedDate"
       ]
@@ -3109,7 +3086,6 @@
         "formCodeDescription",
         "subFormCode",
         "subFormCodeDescription",
-        "processingStatus",
         "documentReceivedDate",
         "documentImagedDate"
       ]

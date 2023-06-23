@@ -312,10 +312,14 @@ const addColumnsForAlertList = async ({ data, worksheet, headers, filter }) => {
     }
     worksheet.getColumn(1).width = 40;
     worksheet.getColumn(2).width = 40;
-    worksheet.getColumn(3).width = 40;
-    worksheet.getColumn(4).width = 25;
-    worksheet.getColumn(5).width = 25;
-    worksheet.getColumn(6).width = 25;
+    worksheet.getColumn(3).width = 20;
+    worksheet.getColumn(4).width = 20;
+    worksheet.getColumn(5).width = 40;
+    worksheet.getColumn(6).width = 20;
+    worksheet.getColumn(7).width = 20;
+    worksheet.getColumn(8).width = 20;
+    worksheet.getColumn(9).width = 45;
+    worksheet.getColumn(10).width = 15;
     worksheet.addRow();
     worksheet.mergeCells(
       `A${worksheet.lastRow.number}:I${worksheet.lastRow.number}`,
