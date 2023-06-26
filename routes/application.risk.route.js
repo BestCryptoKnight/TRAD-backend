@@ -494,6 +494,13 @@ router.get('/drawer-details/:applicationId', async function (req, res) {
         message: 'No application found',
       });
     }
+    if (!application.expiryDate) {
+      const date = new Date();
+      let aYearFromNow = new Date(date.setMonth(date.getMonth() + 12));
+      aYearFromNow = new Date(aYearFromNow.setDate(aYearFromNow.getDate() - 1));
+
+      application.expiryDate = aYearFromNow;
+    }
     module = JSON.parse(JSON.stringify(module));
     if (req.accessTypes && req.accessTypes.indexOf('full-access') === -1) {
       const clients = await getClientList({
