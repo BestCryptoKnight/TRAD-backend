@@ -547,7 +547,7 @@ const getDebtorCreditLimit = async ({
         {
           $unwind: {
             path: '$activeApplicationId',
-            preserveNullAndEmptyArrays: true,
+            // preserveNullAndEmptyArrays: true,
           },
         },
       );
@@ -676,7 +676,11 @@ const getDebtorCreditLimit = async ({
       if (debtor.activeApplicationId?.expiryDate) {
         debtor.expiryDate = debtor.activeApplicationId.expiryDate;
       } else {
-        debtor.expiryDate = null;
+        const date = new Date();
+        let expiryDate = new Date(date.setMonth(date.getMonth() + 12));
+        expiryDate = new Date(expiryDate.setDate(expiryDate.getDate() - 1));
+
+        debtor.expiryDate = expiryDate;
       }
       if (debtor.activeApplicationId?.approvalOrDecliningDate) {
         debtor.approvalOrDecliningDate =
