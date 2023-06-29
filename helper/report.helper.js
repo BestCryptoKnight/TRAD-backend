@@ -2508,6 +2508,7 @@ const getAlertReport = async ({
   try {
     const queryFilter = {};
     let query = [];
+    query.push({ $sort: {'alertDate': -1}});
     const facetQuery = [];
     let creditLimits;
     let debtorProject = {};
