@@ -112,12 +112,12 @@ const retrieveAlertListFromIllion = async ({ startDate, endDate }) => {
                   ][l]['alertDetails']) {
                     alertResponse[key] =
                       detailedResponse.detailedAlerts[j][
-                        alertDetails.fieldName
+                      alertDetails.fieldName
                       ][l]['alertDetails'][key];
                   }
                   alertResponse[alertDetails.fieldName] =
                     detailedResponse.detailedAlerts[j][alertDetails.fieldName][
-                      l
+                    l
                     ];
 
                   alertResponse = Object.assign(
@@ -199,8 +199,8 @@ const listEntitySpecificAlerts = async ({
 
     const total =
       alerts.length !== 0 &&
-      alerts[0]['totalCount'] &&
-      alerts[0]['totalCount'].length !== 0
+        alerts[0]['totalCount'] &&
+        alerts[0]['totalCount'].length !== 0
         ? alerts[0]['totalCount'][0]['count']
         : 0;
     const headers = [
@@ -318,14 +318,14 @@ const addEntitiesToAlertProfile = async ({
           debtor.address.country.code === 'NZL'
             ? 'NCN'
             : debtor.abn
-            ? 'ABN'
-            : 'ACN';
+              ? 'ABN'
+              : 'ACN';
         lookupValue =
           debtor.address.country.code === 'NZL'
             ? debtor.acn
             : debtor.abn
-            ? debtor.abn
-            : debtor.acn;
+              ? debtor.abn
+              : debtor.acn;
         if (action === 'add') {
           const valid = await checkForValidEntity({
             lookupValue,
@@ -368,14 +368,14 @@ const addEntitiesToAlertProfile = async ({
                       stakeholders[i].country.code === 'NZL'
                         ? 'NCN'
                         : stakeholders[i].abn
-                        ? 'ABN'
-                        : 'ACN';
+                          ? 'ABN'
+                          : 'ACN';
                     lookupValue =
                       stakeholders[i].country.code === 'NZL'
                         ? stakeholders[i].acn
                         : stakeholders[i].abn
-                        ? stakeholders[i].abn
-                        : stakeholders[i].acn;
+                          ? stakeholders[i].abn
+                          : stakeholders[i].acn;
                     if (lookupValue) {
                       let foundEntity;
                       if (
@@ -463,14 +463,14 @@ const addEntitiesToAlertProfile = async ({
           stakeholder.country.code === 'NZL'
             ? 'NCN'
             : stakeholder.abn
-            ? 'ABN'
-            : 'ACN';
+              ? 'ABN'
+              : 'ACN';
         lookupValue =
           stakeholder.country.code === 'NZL'
             ? stakeholder.acn
             : stakeholder.abn
-            ? stakeholder.abn
-            : stakeholder.acn;
+              ? stakeholder.abn
+              : stakeholder.acn;
         if (action === 'add') {
           if (lookupValue) {
             let foundEntity;
@@ -552,14 +552,14 @@ const checkForEntityInProfile = async ({
           debtor.address.country.code === 'NZL'
             ? 'NCN'
             : debtor.abn
-            ? 'ABN'
-            : 'ACN';
+              ? 'ABN'
+              : 'ACN';
         lookupValue =
           debtor.address.country.code === 'NZL'
             ? debtor.acn
             : debtor.abn
-            ? debtor.abn
-            : debtor.acn;
+              ? debtor.abn
+              : debtor.acn;
         if (action === 'add') {
           if (
             debtor.entityType !== 'TRUST' &&
@@ -596,14 +596,14 @@ const checkForEntityInProfile = async ({
                   stakeholders[i].country.code === 'NZL'
                     ? 'NCN'
                     : stakeholders[i].abn
-                    ? 'ABN'
-                    : 'ACN';
+                      ? 'ABN'
+                      : 'ACN';
                 lookupValue =
                   stakeholders[i].country.code === 'NZL'
                     ? stakeholders[i].acn
                     : stakeholders[i].abn
-                    ? stakeholders[i].abn
-                    : stakeholders[i].acn;
+                      ? stakeholders[i].abn
+                      : stakeholders[i].acn;
                 if (lookupValue) {
                   let foundEntity;
                   if (response && response?.monitoredEntities?.length !== 0) {
@@ -675,14 +675,14 @@ const checkForEntityInProfile = async ({
           stakeholder.country.code === 'NZL'
             ? 'NCN'
             : stakeholder.abn
-            ? 'ABN'
-            : 'ACN';
+              ? 'ABN'
+              : 'ACN';
         lookupValue =
           stakeholder.country.code === 'NZL'
             ? stakeholder.acn
             : stakeholder.abn
-            ? stakeholder.abn
-            : stakeholder.acn;
+              ? stakeholder.abn
+              : stakeholder.acn;
         if (action === 'add') {
           if (lookupValue) {
             let foundEntity;
@@ -767,10 +767,10 @@ const mapEntityToAlert = async ({ alertList }) => {
         .companyNumbers.abn
         ? alertList[i].companyNumbers.abn?.toString()
         : alertList[i].companyNumbers.acn
-        ? alertList[i].companyNumbers.acn?.toString()?.length !== 0
-          ? alertList[i].companyNumbers.acn?.toString().padStart(9, '0')
-          : alertList[i].companyNumbers.acn?.toString()
-        : alertList[i].companyNumbers.ncn?.toString();
+          ? alertList[i].companyNumbers.acn?.toString()?.length !== 0
+            ? alertList[i].companyNumbers.acn?.toString().padStart(9, '0')
+            : alertList[i].companyNumbers.acn?.toString()
+          : alertList[i].companyNumbers.ncn?.toString();
       const [debtor, stakeholder] = await Promise.all([
         Debtor.findOne(query).select('_id').lean(),
         DebtorDirector.findOne(query).select('_id debtorId').lean(),
@@ -1014,6 +1014,9 @@ const getClientAlertList = async ({
       $match: {
         status: 'Processed',
       },
+    });
+    query.push({
+      $sort: { 'alertDate': -1 }
     });
     const facetQuery = [];
     let creditLimits;
