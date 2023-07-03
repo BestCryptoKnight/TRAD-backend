@@ -215,7 +215,7 @@ const getDebtorList = async ({
           _id: { $in: debtorIds },
         };
       }
-    } else if (!isForRisk && isForFilter) {
+    } else if (!isForRisk && isForFilter && clientId) {
       const clientDebtor = await ClientDebtor.find({
         clientId: clientId,
         isActive: true,
