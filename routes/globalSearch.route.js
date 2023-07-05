@@ -45,9 +45,9 @@ router.get('/', authenticate, async function (req, res) {
         searchString: req.query.searchString,
         clientId: req.user.clientId,
       }),
-      getClientDebtorList({
-        clientId: req.user.clientId,
+      getDebtorList({
         searchString: req.query.searchString,
+        isForRisk: false,
       }),
       getTaskList({
         searchString: req.query.searchString,
