@@ -1326,6 +1326,7 @@ const getUsageReport = async ({
     let queryFilter = {
       isDeleted: false,
     };
+
     const query = [];
     query.push({ $sort: { 'name': 1 } });
     const filterArray = [];
