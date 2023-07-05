@@ -1327,6 +1327,7 @@ const getUsageReport = async ({
       isDeleted: false,
     };
     const query = [];
+    query.push({ $sort: { 'name': 1 } });
     const filterArray = [];
     if (requestedQuery.clientIds) {
       const clientIds = requestedQuery.clientIds
