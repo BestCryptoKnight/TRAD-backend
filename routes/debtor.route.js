@@ -50,6 +50,11 @@ const {
 const { generateExcel } = require('./../helper/excel.helper');
 const { addAuditLog } = require('./../helper/audit-log.helper');
 
+const {
+  getDebtorList,
+  getDebtorDirectorList,
+} = require('./../helper/globalSearch.helper');
+
 /**
  * Get Column Names
  */
@@ -152,6 +157,43 @@ router.get('/entity-list', async function (req, res) {
     });
   } catch (e) {
     Logger.log.error('Error occurred in get entity type list', e.message || e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+/**
+ * Get Debtors List
+ * */
+router.get('/global', async function (req, res) {
+  if (!req.query.searchString) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing',
+    });
+  }
+  try {
+    const [debtors, debtorDirector] = await Promise.all([
+      getDebtorList({
+        searchString: req.query.searchString,
+      }),
+      getDebtorDirectorList({
+        searchString: req.query.searchString,
+      }),
+    ]);
+    let response = debtors.concat(debtorDirector);
+    res.status(200).send({
+      status: 'SUCCESS',
+      data: response,
+    });
+  } catch (e) {
+    Logger.log.error(
+      'Error occurred in global risk panel search',
+      e.message || e,
+    );
     res.status(500).send({
       status: 'ERROR',
       message: e.message || 'Something went wrong, please try again later.',
