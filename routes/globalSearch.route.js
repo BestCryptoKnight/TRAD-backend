@@ -14,7 +14,6 @@ const {
   getClients,
   getDebtorDirectorListClient,
   getTaskList,
-  getDebtorList,
   getApplications,
   getClientDebtorList,
 } = require('./../helper/globalSearch.helper');
@@ -45,9 +44,9 @@ router.get('/', authenticate, async function (req, res) {
         searchString: req.query.searchString,
         clientId: req.user.clientId,
       }),
-      getDebtorList({
+      getClientDebtorList({
+        clientId: req.user.clientId,
         searchString: req.query.searchString,
-        isForRisk: false,
       }),
       getTaskList({
         searchString: req.query.searchString,
