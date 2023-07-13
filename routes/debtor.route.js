@@ -829,6 +829,7 @@ router.put('/column-name', async function (req, res) {
     switch (req.body.columnFor) {
       case 'debtor':
       case 'credit-limit':
+      case 'debtor-credit-limit':
       case 'stakeholder':
         if (req.body.isReset) {
           module = StaticFile.modules.find(
