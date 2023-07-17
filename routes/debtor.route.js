@@ -10,6 +10,8 @@ const Debtor = mongoose.model('debtor');
 const Client = mongoose.model('client');
 const Application = mongoose.model('application');
 
+const { Parser } = require('json2csv');
+
 /*
  * Local Imports
  * */
@@ -1183,6 +1185,117 @@ router.put('/details/:debtorId', async function (req, res) {
     });
   }
 });
+
+/**
+ * Download credit-limit in CSV
+ */
+router.get('/download/:debtorId', async function (req, res) {
+  if (
+    !req.params.debtorId ||
+    !mongoose.Types.ObjectId.isValid(req.params.debtorId)
+  ) {
+    return res.status(400).send({
+      status: 'ERROR',
+      messageCode: 'REQUIRE_FIELD_MISSING',
+      message: 'Require fields are missing.',
+    });
+  }
+  try {
+    const module = StaticFile.modules.find(
+      (i) => i.name === 'debtor-credit-limit',
+    );
+    const debtorColumn = [
+      'name',
+      'contactNumber',
+      'activeApplicationId',
+      'creditLimit',
+      'limitType',
+      'expiryDate',
+      'abn',
+      'acn',
+      'createdAt',
+      'updatedAt',
+    ];
+    const response = await getDebtorCreditLimit({
+      requestedQuery: req.query,
+      debtorColumn: debtorColumn,
+      moduleColumn: module.manageColumns,
+      debtorId: req.params.debtorId,
+    });
+    if (response && response.docs.length !== 0) {
+      const debtor = await Debtor.findOne({ _id: req.params.debtorId })
+        .select('debtorCode')
+        .lean();
+      const finalArray = await formatCSVList({
+        moduleColumn: debtorColumn,
+        response: response.docs,
+      });
+      const csvResponse = await convertToCSV(finalArray);
+      const fileName = debtor.debtorCode + '-credit-limit' + '.csv';
+      res.header('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename=' + fileName);
+      res.send(csvResponse);
+    } else {
+      res.status(400).send({
+        status: 'ERROR',
+        message: 'No data found for download file',
+      });
+    }
+  } catch (e) {
+    Logger.log.error('Error occurred in download credit-limit in csv', e);
+    res.status(500).send({
+      status: 'ERROR',
+      message: e.message || 'Something went wrong, please try again later.',
+    });
+  }
+});
+
+const formatCSVList = async ({ response, moduleColumn }) => {
+  try {
+    const finalArray = [];
+    let data = {};
+    response.forEach((i) => {
+      data = {};
+      moduleColumn.map((key) => {
+        if (
+          (key === 'entityName' ||
+            key === 'activeApplicationId' ||
+            key === 'name') &&
+          i[key] &&
+          i[key]['value']
+        ) {
+          i[key] = i[key]['value'];
+        }
+        if (
+          (key === 'expiryDate' ||
+            key === 'inceptionDate' ||
+            key === 'createdAt' ||
+            key === 'updatedAt') &&
+          i[key]
+        ) {
+          i[key] =
+            new Date(i[key]).getDate() +
+            '-' +
+            (new Date(i[key]).getMonth() + 1) +
+            '-' +
+            new Date(i[key]).getFullYear();
+        }
+        data[key] = i[key];
+      });
+      finalArray.push(data);
+    });
+    return finalArray;
+  } catch (e) {
+    Logger.log.error('Error occurred in format credit-limit list');
+    Logger.log.error(e.message || e);
+  }
+};
+
+const convertToCSV = (arr) => {
+  const json2csvParser = new Parser();
+  const csv = json2csvParser.parse(arr);
+  return csv;
+};
 
 /**
  * Export Router
