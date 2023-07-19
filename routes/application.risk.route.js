@@ -1422,10 +1422,17 @@ router.put('/', async function (req, res) {
       'Error occurred in generating application ',
       e.message || e,
     );
-    res.status(500).send({
-      status: 'ERROR',
-      message: e,
-    });
+    if (e.messageCode === 'BAD_REQUEST') {
+      res.status(400).send({
+        status: 'ERROR',
+        message: e.message,
+      });
+    } else {
+      res.status(500).send({
+        status: 'ERROR',
+        message: e,
+      });
+    }
   }
 });
 
