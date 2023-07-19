@@ -193,7 +193,7 @@ const getClientCreditLimit = async ({
         {
           $unwind: {
             path: '$activeApplicationId',
-            preserveNullAndEmptyArrays: true,
+            // preserveNullAndEmptyArrays: true,
           },
         },
       );
