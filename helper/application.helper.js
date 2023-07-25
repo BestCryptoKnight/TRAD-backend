@@ -777,6 +777,7 @@ const storeCompanyDetails = async ({
     return application;
   } catch (e) {
     Logger.log.error('Error occurred in store company details ', e);
+    return Promise.reject(e);
   }
 };
 

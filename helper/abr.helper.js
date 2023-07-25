@@ -131,12 +131,12 @@ const getEntityListByNameFromNZBN = async ({
     })
       .select({ 'integration.nzbn': 1 })
       .lean();
-    const url = `https://api.business.govt.nz/services/v4/nzbn/entities?search-term=${searchString}&page-size=${limit}&page=${page}`;
+    const url = `https://api.business.govt.nz/gateway/nzbn/v5/entities?search-term=${searchString}&page-size=${limit}&page=${page}`;
     const options = {
       method: 'GET',
       url: url,
       headers: {
-        Authorization: `Bearer ${organization.integration.nzbn.accessToken}`,
+        'Ocp-Apim-Subscription-Key': organization.integration.nzbn.accessToken,
       },
     };
     const { data } = await axios(options);
@@ -154,12 +154,12 @@ const getEntityDetailsByNZBN = async ({ searchString }) => {
     })
       .select({ 'integration.nzbn': 1 })
       .lean();
-    const url = `https://api.business.govt.nz/services/v4/nzbn/entities/${searchString}`;
+    const url = `https://api.business.govt.nz/gateway/nzbn/v5/entities/${searchString}`;
     const options = {
       method: 'GET',
       url: url,
       headers: {
-        Authorization: `Bearer ${organization.integration.nzbn.accessToken}`,
+        'Ocp-Apim-Subscription-Key': organization.integration.nzbn.accessToken,
       },
     };
     const { data } = await axios(options);
@@ -187,6 +187,16 @@ const getEntityDetailsByNZBN = async ({ searchString }) => {
       return Promise.reject({
         status: 'ERROR',
         messageCode: 'UPSTREAM_SERVICE_ERROR',
+        message: 'NZ lookup error: ' + e.response.data.errorDescription,
+      });
+    } else if (
+      e.response &&
+      e.response.data &&
+      e.response.data.errorDescription
+    ) {
+      return Promise.reject({
+        status: 'ERROR',
+        messageCode: 'BAD_REQUEST',
         message: 'NZ lookup error: ' + e.response.data.errorDescription,
       });
     } else {
