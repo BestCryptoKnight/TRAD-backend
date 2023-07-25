@@ -189,6 +189,16 @@ const getEntityDetailsByNZBN = async ({ searchString }) => {
         messageCode: 'UPSTREAM_SERVICE_ERROR',
         message: 'NZ lookup error: ' + e.response.data.errorDescription,
       });
+    } else if (
+      e.response &&
+      e.response.data &&
+      e.response.data.errorDescription
+    ) {
+      return Promise.reject({
+        status: 'ERROR',
+        messageCode: 'BAD_REQUEST',
+        message: 'NZ lookup error: ' + e.response.data.errorDescription,
+      });
     } else {
       return Promise.reject({
         status: 'ERROR',
