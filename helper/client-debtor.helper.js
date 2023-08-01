@@ -193,7 +193,7 @@ const getClientCreditLimit = async ({
         {
           $unwind: {
             path: '$activeApplicationId',
-            preserveNullAndEmptyArrays: true,
+            // preserveNullAndEmptyArrays: true,
           },
         },
       );
@@ -400,8 +400,11 @@ const getClientCreditLimit = async ({
         if (debtor.activeApplicationId?.limitType) {
           debtor.limitType = formatString(debtor.activeApplicationId.limitType);
         }
-        if (debtor.activeApplicationId?.expiryDate) {
+        if (debtor.activeApplicationId?.expiryDate !== undefined) {
           debtor.expiryDate = debtor.activeApplicationId.expiryDate;
+        }
+        if (debtor.activeApplicationId?.creditLimit !== undefined) {
+          debtor.creditLimit = debtor.activeApplicationId.creditLimit;
         }
         if (debtor.activeApplicationId?.approvalOrDecliningDate) {
           debtor.approvalOrDecliningDate =
