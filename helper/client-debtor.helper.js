@@ -122,7 +122,7 @@ const getClientCreditLimit = async ({
     const queryFilter = {
       // isActive: true,
       clientId: mongoose.Types.ObjectId(clientId),
-      // status: { $exists: true, $in: ['APPROVED', 'DECLINED'] },
+      status: { $exists: true, $in: ['APPROVED', 'DECLINED'] },
       // creditLimit: { $exists: true, $ne: null },
       // $and: [
       //   { creditLimit: { $exists: true } },
