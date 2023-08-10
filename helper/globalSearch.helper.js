@@ -266,6 +266,19 @@ const getDebtorList = async ({
               $options: 'i',
             },
           },
+          {
+            _id: {
+              $in: await Application.distinct('debtorId', {
+                clientReference: {
+                  $regex: searchString,
+                  $options: 'i',
+                },
+                _id: {
+                  $in: await ClientDebtor.distinct('activeApplicationId'),
+                },
+              }),
+            },
+          },
         ],
       });
       debtors = await Debtor.find(queryFilter)
@@ -930,6 +943,16 @@ const getClientDebtorList = async ({ searchString, clientId, limit = 100 }) => {
               'debtorId.registrationNumber': {
                 $regex: searchString,
                 $options: 'i',
+              },
+            },
+            {
+              activeApplicationId: {
+                $in: await Application.distinct('_id', {
+                  clientReference: {
+                    $regex: searchString,
+                    $options: 'i',
+                  },
+                }),
               },
             },
           ],
