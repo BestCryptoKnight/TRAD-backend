@@ -269,31 +269,10 @@ router.get('/:entityId', async function (req, res) {
       const applicationIds = applications.map((i) =>
         mongoose.Types.ObjectId(i._id),
       );
-      const conditions = [
-        {
-          entityRefId: { $in: applicationIds },
-        },
-        { uploadByType: 'user' },
-        /* {
-          uploadByType: 'user',
-          uploadById: mongoose.Types.ObjectId(req.user._id),
-        },*/
-      ];
-      if (debtor && debtor.clientId) {
-        conditions.push({
-          uploadByType: 'client-user',
-          uploadById: mongoose.Types.ObjectId(debtor.clientId),
-        });
-      }
       query = {
         $and: [
           { isDeleted: false },
-          {
-            entityRefId: mongoose.Types.ObjectId(req.params.entityId),
-          },
-          {
-            $or: conditions,
-          },
+          { entityRefId: { $in: applicationIds } },
         ],
       };
     } else if (req.query.documentFor === 'client') {
