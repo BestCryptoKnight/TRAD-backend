@@ -3220,6 +3220,7 @@
     "documentReceivedDate": "date",
     "documentImagedDate": "date",
     "startAmt": "dollar",
+    "amt": "dollar",
     "amtOwing": "dollar"
   },
   "limitType": [
