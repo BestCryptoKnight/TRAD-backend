@@ -710,9 +710,8 @@ const getPendingApplicationReport = async ({
         $in: [
           'SENT_TO_INSURER',
           'REVIEW_APPLICATION',
-          'PENDING_INSURER_REVIEW',
+          'PENDING_DIRECT_APPROACH',
           'SUBMITTED',
-          'UNDER_REVIEW',
           'AWAITING_INFORMATION',
         ],
       },

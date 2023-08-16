@@ -63,11 +63,10 @@ router.get('/', async function (req, res) {
         clientId: { $in: clientIds },
         status: {
           $in: [
-            'SENT_TO_INSURER',
+            'PENDING_WITH_INSURER',
             'REVIEW_APPLICATION',
-            'PENDING_INSURER_REVIEW',
+            'PENDING_DIRECT_APPROACH',
             'SUBMITTED',
-            'UNDER_REVIEW',
             'AWAITING_INFORMATION',
           ],
         },

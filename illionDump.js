@@ -762,7 +762,7 @@ const mapApplicationStatus = ({ status }) => {
         status = '';
         break;
       case 'Refer':
-        status = 'PENDING_INSURER_REVIEW';
+        status = 'PENDING_DIRECT_APPROACH';
         break;
       case 'Nil Approved':
         status = 'DECLINED';
