@@ -272,10 +272,7 @@ const getDebtorList = async ({
                 clientReference: {
                   $regex: searchString,
                   $options: 'i',
-                },
-                _id: {
-                  $in: await ClientDebtor.distinct('activeApplicationId'),
-                },
+                }
               }),
             },
           },
