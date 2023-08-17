@@ -26,7 +26,7 @@ jobs:
           key: node_modules-${{ hashFiles('package.json') }}
       - name: project update on server
         run: |
-          ssh -tt ${{ env.PROD_SSH_USERNAME }}@${{ env.PROD_SSH_HOST }} -p ${{ env.PROD_SSH_PORT }} "cd ${{ env.PROD_PROJECT_PATH }}; git fetch; git reset --hard origin/master; git pull; exit;"
+          ssh -tt ${{ env.PROD_SSH_USERNAME }}@${{ env.PROD_SSH_HOST }} -p ${{ env.PROD_SSH_PORT }} "cd ${{ env.PROD_PROJECT_PATH }}; git reset --hard; git pull; exit;"
         env:
           PROD_SSH_PORT: ${{ secrets.PROD_SSH_PORT}}
           PROD_SSH_USERNAME: ${{ secrets.PROD_SSH_USERNAME }}
