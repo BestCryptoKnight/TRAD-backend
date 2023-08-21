@@ -995,16 +995,16 @@
       "label": "Draft"
     },
     {
-      "value": "SENT_TO_INSURER",
-      "label": "Sent To Insurer"
+      "value": "PENDING_WITH_INSURER",
+      "label": "Pending With Insurer"
     },
     {
       "value": "REVIEW_APPLICATION",
       "label": "Review Application"
     },
     {
-      "value": "PENDING_INSURER_REVIEW",
-      "label": "Pending Insurer Review"
+      "value": "PENDING_DIRECT_APPROACH",
+      "label": "Pending Direct Approach"
     },
     {
       "value": "APPROVED",
@@ -1021,10 +1021,6 @@
     {
       "value": "WITHDRAWN",
       "label": "Withdrawn"
-    },
-    {
-      "value": "UNDER_REVIEW",
-      "label": "Under Review"
     },
     {
       "value": "AWAITING_INFORMATION",
