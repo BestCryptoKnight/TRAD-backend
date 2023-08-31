@@ -561,6 +561,7 @@ const storeCompanyDetails = async ({
   createdByType,
   createdByName,
   clientId,
+  clientReference,
 }) => {
   try {
     const organization = await Organization.findOne({ isDeleted: false })
@@ -714,6 +715,7 @@ const storeCompanyDetails = async ({
       debtorId: debtor._id,
       clientDebtorId: clientDebtor._id,
       applicationStage: 1,
+      clientReference: clientReference,
     };
     let application;
     if (requestBody.applicationId) {
@@ -754,7 +756,7 @@ const storeCompanyDetails = async ({
         applicationDetails,
       );
       application = await Application.findById(requestBody.applicationId)
-        .select('_id applicationStage')
+        .select('_id applicationStage clientReference')
         .lean();
       if (!application) {
         return {
@@ -908,6 +910,9 @@ const storeCreditLimitDetails = async ({ requestBody }) => {
     update.passedOverdueDetails = requestBody?.passedOverdueDetails || '';
     update.clientReference = requestBody?.clientReference || '';
     await Application.updateOne({ _id: requestBody.applicationId }, update);
+    currentApplication = await Application.findOne({ _id: requestBody.applicationId });
+    await Application.updateMany({ clientId: currentApplication.clientId }, 
+      {'clientReference': requestBody?.clientReference})
     application = await Application.findById(requestBody.applicationId)
       .select('_id applicationStage')
       .lean();

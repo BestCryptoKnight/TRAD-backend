@@ -1354,12 +1354,16 @@ router.put('/', async function (req, res) {
     let message;
     switch (req.body.stepper) {
       case 'company':
+        const clientApplication = await Application.findOne(
+          {clientId: req.body.clientId}
+        )
         response = await storeCompanyDetails({
           requestBody: req.body,
           createdByType: 'user',
           createdBy: req.user._id,
           createdByName: req.user.name,
           clientId: req.body.clientId,
+          clientReference: clientApplication.clientReference,
         });
         break;
       case 'person':
