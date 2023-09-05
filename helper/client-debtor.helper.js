@@ -404,7 +404,7 @@ const getClientCreditLimit = async ({
           debtor.expiryDate = debtor.activeApplicationId.expiryDate;
         }
         if (debtor.activeApplicationId?.creditLimit !== undefined) {
-          debtor.creditLimit = debtor.activeApplicationId.creditLimit;
+          // debtor.creditLimit = debtor.activeApplicationId.creditLimit;
         }
         if (debtor.activeApplicationId?.approvalOrDecliningDate) {
           debtor.approvalOrDecliningDate =
