@@ -471,6 +471,21 @@ const getLimitListReport = async ({
         },
       });
     }
+    if (reportColumn.includes('stakeHolder')) {
+      query.push({
+        $lookup: {
+           from: "debtor-directors",
+           localField: "debtorId",
+           foreignField: "debtorId",
+           as: "debtordirectorId"
+        }
+      });
+      // query.push({
+      //   $match: {
+      //      "debtordirectorId.isDeleted": false
+      //   }
+      // });
+    }
     if (reportColumn.includes('insurerId')) {
       query.push({
         $lookup: {
@@ -504,6 +519,9 @@ const getLimitListReport = async ({
       if (i === 'debtorId') {
         i = i + '.entityName';
       }
+      if (i === 'stakeHolder') {
+        i = 'debtordirectorId.entityName';
+      }
       if (i === 'abn' || i === 'acn' || i === 'registrationNumber') {
         i = 'debtorId.' + i;
       }
@@ -523,6 +541,12 @@ const getLimitListReport = async ({
       }
       return [i, 1];
     });
+    if (reportColumn.includes('stakeHolder')) {
+      fields.push(['debtordirectorId.title', 1]);
+      fields.push(['debtordirectorId.firstName', 1]);
+      fields.push(['debtordirectorId.middleName', 1]);
+      fields.push(['debtordirectorId.lastName', 1]);
+    }
     query.push({
       $project: fields.reduce((obj, [key, val]) => {
         obj[key] = val;
@@ -582,6 +606,31 @@ const getLimitListReport = async ({
           limit.clientId && limit.clientId[0] && limit.clientId[0]['name']
             ? limit.clientId[0]['name']
             : '';
+      }
+      if (
+        limit.debtordirectorId &&
+        limit.debtordirectorId[0] &&
+        limit.debtordirectorId[0].entityName
+      ) {
+        limit.stakeHolder = limit.debtordirectorId[0]['entityName']
+          ? limit.debtordirectorId[0]['entityName']
+          : '';
+      }
+      if (limit.debtordirectorId) {
+        limit.stakeHolder = '';
+        const divider = isForDownload ? ', ' : ', ';
+        limit.debtordirectorId.map((i, index) => {
+          limit.stakeHolder +=
+            `${i.entityName ? i.entityName : ''}` +
+            `${i.title ? i.title + '.' : ''}` +
+            `${i.firstName ? i.firstName + ' ' : ''}` +
+            `${i.middleName ? i.middleName + ' ' : ''}` +
+            `${i.lastName ? i.lastName : ''}`;
+          if (index != limit.debtordirectorId.length - 1) {
+            limit.stakeHolder += divider;
+          }
+        });
+        delete limit.debtordirectorId;
       }
       if (limit.debtorId && limit.debtorId[0] && limit.debtorId[0].abn) {
         limit.abn = limit.debtorId[0]['abn'] ? limit.debtorId[0]['abn'] : '';
