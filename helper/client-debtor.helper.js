@@ -620,6 +620,7 @@ const getDebtorCreditLimit = async ({
 
     fields.push(['activeApplicationId._id', 1]);
     fields.push(['activeApplicationId.expiryDate', 1]);
+    fields.push(['activeApplicationId.approvalOrDecliningDate', 1]);
     if (debtorColumn.includes('name')) {
       fields.push(['clientId._id', 1]);
     }
