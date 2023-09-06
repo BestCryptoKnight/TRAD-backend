@@ -1028,6 +1028,7 @@ const downloadDecisionLetterFromApplication = async ({ applicationId }) => {
         approvedAmount: application?.acceptedAmount?.toFixed(2),
         approvalStatus: application?.comments,
         country: application?.debtorId?.address?.country?.code,
+        clientReference: application?.clientReference,
         tradingName: application?.debtorId?.tradingName,
         requestedDate: application?.requestDate,
         approvalOrDecliningDate: application?.approvalOrDecliningDate,
