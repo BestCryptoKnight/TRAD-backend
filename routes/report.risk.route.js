@@ -365,6 +365,7 @@ router.get('/download', async function (req, res) {
           'clientId',
           'insurerId',
           'debtorId',
+          'stakeHolder',
           'abn',
           'acn',
           'registrationNumber',

@@ -200,6 +200,7 @@ router.get('/download', async function (req, res) {
     const debtorColumn = [
       'entityName',
       'entityType',
+      'stakeHolder',
       'abn',
       'acn',
       'registrationNumber',
@@ -230,6 +231,7 @@ router.get('/download', async function (req, res) {
     if (response && response.docs.length !== 0) {
       const headers = [
         { name: 'entityName', label: 'Debtor Name', type: 'string' },
+        { name: 'stakeHolder', label: 'Stakeholder', type: 'string' },
         { name: 'abn', label: 'ABN/NZBN', type: 'string' },
         { name: 'acn', label: 'ACN/NCN', type: 'string' },
         {

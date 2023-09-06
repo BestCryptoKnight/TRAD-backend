@@ -253,16 +253,16 @@ const addColumnsForDebtorList = async ({
 
 const addColumnsForLimitList = async ({ data, worksheet, headers, filter }) => {
   try {
-    worksheet.mergeCells('A1:O1');
+    worksheet.mergeCells('A1:P1');
     for (let i = 0; i <= filter.length; i++) {
       if (filter[i]) {
-        worksheet.mergeCells(`A${i + 2}:O${i + 2}`);
+        worksheet.mergeCells(`A${i + 2}:P${i + 2}`);
       }
     }
 
     worksheet.addRow();
     worksheet.mergeCells(
-      `A${worksheet.lastRow.number}:O${worksheet.lastRow.number}`,
+      `A${worksheet.lastRow.number}:P${worksheet.lastRow.number}`,
     );
 
     const staticDisclaimer = [];
@@ -274,27 +274,28 @@ const addColumnsForLimitList = async ({ data, worksheet, headers, filter }) => {
       wrapText: true,
     };
     worksheet.mergeCells(
-      `A${worksheet.lastRow.number}:O${worksheet.lastRow.number}`,
+      `A${worksheet.lastRow.number}:P${worksheet.lastRow.number}`,
     );
 
     worksheet.getColumn(1).width = 40;
     worksheet.getColumn(2).width = 25;
     worksheet.getColumn(3).width = 40;
-    worksheet.getColumn(4).width = 20;
+    worksheet.getColumn(4).width = 30;
     worksheet.getColumn(5).width = 20;
-    worksheet.getColumn(6).width = 25;
-    worksheet.getColumn(7).width = 20;
-    worksheet.getColumn(8).width = 30;
-    worksheet.getColumn(9).width = 20;
+    worksheet.getColumn(6).width = 20;
+    worksheet.getColumn(7).width = 25;
+    worksheet.getColumn(8).width = 20;
+    worksheet.getColumn(9).width = 30;
     worksheet.getColumn(10).width = 20;
     worksheet.getColumn(11).width = 20;
     worksheet.getColumn(12).width = 20;
     worksheet.getColumn(13).width = 20;
-    worksheet.getColumn(14).width = 30;
-    worksheet.getColumn(15).width = 35;
+    worksheet.getColumn(14).width = 20;
+    worksheet.getColumn(15).width = 30;
+    worksheet.getColumn(16).width = 35;
     worksheet.addRow();
     worksheet.mergeCells(
-      `A${worksheet.lastRow.number}:O${worksheet.lastRow.number}`,
+      `A${worksheet.lastRow.number}:P${worksheet.lastRow.number}`,
     );
     await addDataForTable({ data, headers, worksheet });
   } catch (e) {

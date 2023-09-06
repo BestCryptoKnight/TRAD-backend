@@ -923,6 +923,11 @@
           "type": "string"
         },
         {
+          "name": "stakeHolder",
+          "label": "Stakeholder",
+          "type": "string"
+        },
+        {
           "name": "registrationNumber",
           "label": "Registration Number",
           "type": "string"
@@ -1811,6 +1816,11 @@
         {
           "name": "debtorId",
           "label": "Debtor Name",
+          "type": "string"
+        },
+        {
+          "name": "stakeHolder",
+          "label": "Stakeholder",
           "type": "string"
         },
         {

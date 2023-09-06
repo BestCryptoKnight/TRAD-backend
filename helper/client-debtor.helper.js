@@ -154,19 +154,34 @@ const getClientCreditLimit = async ({
           from: 'debtors',
           localField: 'debtorId',
           foreignField: '_id',
-          as: 'debtorId',
+          as: 'debtorID',
         },
       },
       {
         $unwind: {
-          path: '$debtorId',
+          path: '$debtorID',
         },
       },
     ];
+    if (debtorColumn.includes('stakeHolder')) {
+      aggregationQuery.push({
+        $lookup: {
+          from: 'debtor-directors',
+          localField: 'debtorId',
+          foreignField: 'debtorId',
+          as: 'debtordirectorId',
+        },
+      });
+      // aggregationQuery.push({
+      //   $match: {
+      //      "debtordirectorId.isDeleted": false
+      //   }
+      // });
+    }
     if (requestedQuery.entityType) {
       aggregationQuery.push({
         $match: {
-          'debtorId.entityType': requestedQuery.entityType,
+          'debtorID.entityType': requestedQuery.entityType,
         },
       });
       if (isForDownload) {
@@ -232,10 +247,16 @@ const getClientCreditLimit = async ({
         ? 'activeApplicationId.' + i
         : i === 'activeApplicationId'
         ? 'activeApplicationId.applicationId'
-        : 'debtorId.' + i;
+        : i === 'stakeHolder'
+        ? 'debtordirectorId.entityName'
+        : 'debtorID.' + i;
       return [i, 1];
     });
-    fields.push(['debtorId._id', 1]);
+    fields.push(['debtordirectorId.title', 1]);
+    fields.push(['debtordirectorId.firstName', 1]);
+    fields.push(['debtordirectorId.middleName', 1]);
+    fields.push(['debtordirectorId.lastName', 1]);
+    fields.push(['debtorID._id', 1]);
     fields.push(['activeApplicationId._id', 1]);
     fields.push(['activeApplicationId.expiryDate', 1]);
     fields.push(['activeApplicationId.clientReference', 1]);
@@ -250,7 +271,7 @@ const getClientCreditLimit = async ({
     if (requestedQuery.search) {
       aggregationQuery.push({
         $match: {
-          'debtorId.entityName': {
+          'debtorID.entityName': {
             $regex: getRegexForSearch(requestedQuery.search),
             $options: 'i',
           },
@@ -263,7 +284,7 @@ const getClientCreditLimit = async ({
       requestedQuery.sortBy = !clientDebtorDetails.includes(
         requestedQuery.sortBy,
       )
-        ? 'debtorId.' + requestedQuery.sortBy
+        ? 'debtorID.' + requestedQuery.sortBy
         : requestedQuery.sortBy === 'activeApplicationId'
         ? 'activeApplicationId._id'
         : requestedQuery.sortBy;
@@ -331,13 +352,28 @@ const getClientCreditLimit = async ({
           debtor?.activeApplicationId?.clientReference || '';
         debtor.comments = debtor?.activeApplicationId?.comments || '';
 
-        if (debtor.debtorId) {
-          delete debtor.debtorId._id;
-          for (let key in debtor.debtorId) {
-            debtor[key] = debtor.debtorId[key];
+        if (debtor.debtorID) {
+          delete debtor.debtorID._id;
+          for (let key in debtor.debtorID) {
+            debtor[key] = debtor.debtorID[key];
           }
-          delete debtor.debtorId;
+          delete debtor.debtorID;
         }
+        if (debtor.debtordirectorId) {
+          debtor.stakeHolder = '';
+          debtor.debtordirectorId.map((i, index) => {
+            debtor.stakeHolder +=
+              `${i.entityName ? i.entityName : ''}` +
+              `${i.title ? i.title + '.' : ''}` +
+              `${i.firstName ? i.firstName + ' ' : ''}` +
+              `${i.middleName ? i.middleName + ' ' : ''}` +
+              `${i.lastName ? i.lastName : ''}`;
+            if (index != debtor.debtordirectorId.length - 1) {
+              debtor.stakeHolder += '\n';
+            }
+          });
+        }
+        delete debtor.debtordirectorId;
         debtor.entityType = formatString(debtor?.entityType);
         debtor.country = debtor?.address?.country?.name || '';
         delete debtor.address;
@@ -418,15 +454,30 @@ const getClientCreditLimit = async ({
                 value: debtor.activeApplicationId.applicationId,
               };
         }
-        if (debtor.debtorId) {
-          delete debtor.debtorId._id;
-          for (let key in debtor.debtorId) {
-            debtor[key] = debtor.debtorId[key];
+        if (debtor.debtorID) {
+          delete debtor.debtorID._id;
+          for (let key in debtor.debtorID) {
+            debtor[key] = debtor.debtorID[key];
           }
-          delete debtor.debtorId;
+          delete debtor.debtorID;
         }
         if (debtor.entityType) {
           debtor.entityType = formatString(debtor.entityType);
+        }
+        if (debtor.debtordirectorId) {
+          debtor.stakeHolder = '';
+          debtor.debtordirectorId.map((i, index) => {
+            debtor.stakeHolder +=
+              `${i.entityName ? i.entityName : ''}` +
+              `${i.title ? i.title + '.' : ''}` +
+              `${i.firstName ? i.firstName + ' ' : ''}` +
+              `${i.middleName ? i.middleName + ' ' : ''}` +
+              `${i.lastName ? i.lastName : ''}`;
+            if (index != debtor.debtordirectorId.length - 1) {
+              debtor.stakeHolder += ', ';
+            }
+          });
+          delete debtor.debtordirectorId;
         }
         if (
           debtor.entityName &&
