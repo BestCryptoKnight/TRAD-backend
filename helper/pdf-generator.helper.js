@@ -27,6 +27,7 @@ const generateDecisionLetter = async ({
   status,
   serviceManagerNumber,
   country,
+  clientReference,
   tradingName,
   requestedDate,
   approvalOrDecliningDate,
@@ -55,7 +56,7 @@ const generateDecisionLetter = async ({
         top: 0,
         bottom: 0,
         left: 0,
-        right: 0,
+        right: 10,
       },
     });
     table
@@ -137,20 +138,30 @@ const generateDecisionLetter = async ({
     }
     if (requestedDate) {
       tableData.push({
-        column1: `Requested Date: ${moment(requestedDate)
-          .tz(config.organization.timeZone)
-          .format('DD/MM/YYYY')}`,
-        column2: `${
+        column1: `${
           status === 'DECLINED' ? 'Declining' : 'Approved'
         } Date: ${moment(approvalOrDecliningDate)
           .tz(config.organization.timeZone)
           .format('DD/MM/YYYY')}`,
+        column2: `${'Client Reference: '} ${
+          clientReference ? clientReference : '-'
+        }`,
       });
     }
-    if (expiryDate && status !== 'DECLINED') {
-      tableData.push({
-        column1: `Expiry Date: ${moment(expiryDate).format('DD/MM/YYYY')}`,
-      });
+    if (status !== 'DECLINED') {
+      const approvalData = {};
+      if (expiryDate) approvalData.column1 = `Expiry Date: ${
+        moment(expiryDate)
+        .tz(config.organization.timeZone)
+        .format('DD/MM/YYYY')}`;
+      // if (approvalType) approvalData.column2 = `Approval Type: ${approvalType ? approvalType : '-'}`;
+      tableData.push(approvalData);
+    }
+    if (status === 'DECLINED') {
+      const approvalData = {};
+      if (expiryDate) approvalData.column1 = `Expiry Date: ${moment(expiryDate).format('DD/MM/YYYY')}`;
+      // approvalData.column2 = 'Approval Type: -';
+      tableData.push(approvalData);
     }
     table.addBody(tableData);
 
@@ -211,7 +222,7 @@ const generateDecisionLetter = async ({
       pdf.text(
         `After careful analysis, we are pleased to provide a recommendation of $${numberWithCommas(
           approvedAmount,
-        )} on ${debtorName}`,
+        )} on ${debtorName}.`,
         {
           // align: 'center',
         },
@@ -220,7 +231,7 @@ const generateDecisionLetter = async ({
       pdf.text(
         `After careful analysis, we are pleased to provide a recommendation of $${numberWithCommas(
           approvedAmount,
-        )} on ${debtorName}`,
+        )} on ${debtorName}.`,
         {
           // align: 'center',
         },
@@ -240,7 +251,7 @@ const generateDecisionLetter = async ({
     pdf.moveDown(0.6);
     pdf.fill('#828F9D').font('Helvetica').fontSize(11.25);
     pdf.text(
-      'Our sources include ASIC, illion and the TCR Internal Database.',
+      'Our sources include ASIC, Illion, TCR Internal Database & other resources.',
       {
         // align: 'center',
       },
@@ -267,8 +278,9 @@ Please contact your Service Manager${
         },
       );
     } else if (status === 'PARTIALLY_APPROVED' || status === 'APPROVED') {
+      const formattedDate = moment(expiryDate).tz(config.organization.timeZone).format('DD/MM/YYYY')
       pdf.text(
-        `The above opinion will be expired after 12 months. A review of your trading history will be required to support your credit limit. This debtor has been added to our database for monitoring purposes and we will inform you of any updates we receive. Please contact your Service Manager${
+        `The above opinion will expire after ${formattedDate}. This debtor has been added to our database for monitoring purposes and we will inform you of any changes we receive. Please contact your Service Manager${
           serviceManagerNumber ? ' on ' + serviceManagerNumber : ''
         } for further information`,
         {
@@ -280,7 +292,7 @@ Please contact your Service Manager${
     /*Licence Detail Starts*/
     pdf.moveDown(2);
     pdf.fill('#0073ab').font('Helvetica-Bold').fontSize(12);
-    pdf.text('Australian Financial Services Licence #: 422672', 0, 715, {
+    pdf.text('Australian Financial Services Licence #: 342385', 0, 715, {
       align: 'center',
     });
     /*Licence of Opinion Ends*/
