@@ -1182,6 +1182,13 @@ router.put('/:applicationId', async function (req, res) {
     const applicationUpdate = {};
     if (req.body.clientReference) {
       applicationUpdate.clientReference = req.body.clientReference;
+      const currentApplication = await Application.findOne(
+        {_id: req.params.applicationId},
+      )
+      await Application.updateMany(
+        {clientId: currentApplication.clientId},
+        {clientReference: req.body.clientReference}
+      )
     }
     //TODO notify user
     await Application.updateOne(
